@@ -41,5 +41,6 @@
     "rockHigh": 0.4,
     "rockMinHeight": 3,
     "rockFade": 0.5
-  }
+  },
+  "story": {"note": "The island's own past under the ground (docs/future/13 10.7.7; src/world/dig/story.js): 0, 1 or 2 old hearths by these weights, within hearthFromCampM of the island's middle (it has no camp block), and the keeper's cache under a marked stone. letter: the cache's letter (recipes/world/keeper-cache.json).", "hearths": [15, 60, 25], "hearthFromCampM": [8, 40], "cacheFromCampM": [12, 30], "letter": "other"}
 }

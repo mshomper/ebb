@@ -7,6 +7,7 @@
 import { on } from '../core/events.js';
 import { loadRecipe } from '../core/recipes.js';
 import { dispatch } from '../input/actions.js';
+import { withCacheLetters } from './journal-keeper.js';
 
 const esc = (/** @type {string} */ s) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c] ?? c);
 
@@ -37,7 +38,7 @@ export function mountKeeperCard(parent) {
   }
   card.addEventListener('click', close);
   const off = on('keeper:card', async (/** @type {{ id: string }} */ e) => {
-    const K = await loadRecipe('world/keeper-pages');
+    const K = withCacheLetters(await loadRecipe('world/keeper-pages'), await loadRecipe('world/keeper-cache'));
     const p = (K?.pages ?? []).find((/** @type {any} */ x) => x.id === e.id);
     if (!p) return;
     shownId = p.id;

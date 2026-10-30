@@ -1,0 +1,19 @@
+{
+  "note": "Beach glints (Matt, October 29, 2026: finds are hard to notice among the stones, wrack and driftwood; src/world/glints.js, src/render/passes/glints.js, glint-draw.wgsl). The things worth finding on the shore now and then catch the light in a brief twinkle: every keepsake on the strandline, bottles most (bottle times as strong), and the finds named in finds (plus the storm tide's rarer shells when stormShells is true). Living finds and the ground pickups (pebbles, flat stones, wrack, kelp, drift twigs, shell handfuls) never glint, so the finds stand out from them. Each glint has its own rhythm, seeded by what it is: a chance to flash every everyS seconds (its own gap between the two), chance of those chances flash, each flash flashS long. In each flash a small facet, tilted up to facetDeg from up, reflects the sun and the moon toward the eye (a Blinn lobe about the half vector between them, of sharpness sharp), so a glint shows from some places and not others, is strong by day, faint by moonlight, and gone at night without a moon. Its light: strength times the illuminance caught (linear HDR, pre-exposed; bloom spreads it), drawn as a core and four thin rays (rayShare) sizePx pixels across, fading out between rangeM[0] and rangeM[1] meters from the eye. liftM: how far above the object's foot it sits; towardEyeM: how far toward the eye it is drawn, so its own object never hides it. findBoost: a find's strength (a keepsake's is 1). Real seconds, live only, never saved.",
+  "version": 1,
+  "everyS": [3, 7],
+  "flashS": 0.4,
+  "chance": 0.6,
+  "facetDeg": 80,
+  "sharp": 8,
+  "strength": 8,
+  "bottle": 2.5,
+  "findBoost": 0.8,
+  "sizePx": 12,
+  "rayShare": 0.5,
+  "rangeM": [10, 22],
+  "liftM": 0.1,
+  "towardEyeM": 0.3,
+  "finds": ["sanddollars"],
+  "stormShells": true
+}

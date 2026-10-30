@@ -130,7 +130,7 @@ export function addTrailsTests(test, assert, eq) {
       progress: { line: () => [], beachLine: () => trailLine(firstsOf(e, 'beach'), B.stops, ['net'], e.kept), shapeLine: () => trailLine(firstsOf(e, 'shape'), S.stops, []) } };
     const wide = trailsView({ live, words, R, B, S, which: 'beach', wide: true });
     eq((wide.match(/ebb-trails__col/g) ?? []).length, 3, 'three columns');
-    assert(wide.includes('5 of 13 families kept') && wide.includes('2 of 7 kinds of place'), 'kinds counted, never totals');
+    assert(wide.includes('5 of 14 families kept') && wide.includes('2 of 7 kinds of place'), 'kinds counted, never totals');
     assert(wide.includes('You can weave a net') && wide.includes('A glass case'), 'the net inked, the case in pencil');
     const narrow = trailsView({ live, words, R, B, S, which: 'shape', wide: false });
     eq((narrow.match(/ebb-trails__col/g) ?? []).length, 1, 'one trail at a time');

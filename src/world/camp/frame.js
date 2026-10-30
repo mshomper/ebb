@@ -14,6 +14,7 @@ import { kelvinRgb, flicker } from './light.js';
 import { starLogs, logPlace } from './star.js';
 import { potOnHearth, pieceOf } from './pots.js';
 import { gameFlame, newFireLook, feedLook, stepFireLook } from './fire-look.js';
+import { tentWeather, canvasWear, canvasPatches } from './canvas.js';
 
 const DEG = Math.PI / 180;
 
@@ -39,6 +40,12 @@ export function createCampFrame(k) {
   let mothsAt = null;
   const mothsVel = [0, 0, 0];
   let mothsPace = 0;
+  /** The canvas check (`?camp=canvas`, tools/canvas-check.html): more tents beside yours at these ages (seasons). @type {number[] | null} */
+  let showAges = null;
+  /** The canvas check's sort view on those tents: what the shader takes for wood, lining and canvas. */
+  let showSort = false;
+  /** The tent seed its patches were placed from. */
+  let patchSeed = -1;
 
   /**
    * Where the lantern's moths circle now (render-side smoothing, not simulation): a critically
@@ -83,7 +90,17 @@ export function createCampFrame(k) {
     let lanternGlass = /** @type {number[] | null} */ (null);
     if (t && pitched(c)) {
       const sh = R.props.models.tent.shade;
-      list.push({ key: 'tent', x: t.x, y: t.y, z: t.z, yaw: t.yaw, shade: sh });
+      // Weathered by the seasons since it was first pitched (C-35, canvas.js); its patches from its seed.
+      const seed = inSlot(c, 'tent')?.seed ?? 0;
+      if (seed !== patchSeed) { patchSeed = seed; k.props.setPatches(canvasPatches(seed, R.canvas)); }
+      list.push({ key: 'tent', x: t.x, y: t.y, z: t.z, yaw: t.yaw, shade: sh, ...tentWeather(k.hourNow(), c.firstPitchedHour, R.canvas, R.poles) });
+      // The canvas check: the same tent at other ages in a row behind it, along its ridge (its own -z),
+      // so from the side every slope shows.
+      (showAges ?? []).forEach((s, i) => {
+        const w = canvasWear(s, R.canvas, R.poles), off = (i + 1) * R.canvas.checkGapM;
+        const x = t.x - Math.sin(t.yaw) * off, z = t.z - Math.cos(t.yaw) * off, y = o.terrain?.sampleHeight ? o.terrain.sampleHeight(x, z) : t.y;
+        list.push({ key: 'tent', x, y, z, yaw: t.yaw, shade: sh, wear: [w.fade, w.silver, w.patches, showSort ? 1 : 0] });
+      });
       // The lantern: on the front pole, or in your hand off the pad at night, unless the kit leaves it
       // on the pole (the Walker page, K4: the lantern slot empty).
       const you = k.walk.below ? k.walk.you() : null;
@@ -208,6 +225,8 @@ export function createCampFrame(k) {
     strikeEnd() { strikeT = -1; },
     /** Draw more camp things with the camp's models each frame. @param {() => import('../../render/passes/props.js').Prop[]} f */
     addProps(f) { extra.push(f); },
+    /** More tents beside yours at these ages in seasons, or none (null; the canvas check); sort: shown as the shader sorts their paint. @param {number[] | null} ages @param {boolean} [sort] */
+    canvasAges(ages, sort = false) { showAges = ages; showSort = sort; },
     /** Leave the star's logs out, or draw them again (the bench). @param {boolean} on */
     hideStar(on) { starHidden = on; },
     /** Lay the star by another rule, or by star.js again (null; the hearth check). @param {typeof starLogs | null} f */

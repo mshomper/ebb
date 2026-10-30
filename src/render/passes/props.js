@@ -13,8 +13,11 @@ import { liftAt, liftLook, liftLookVersion, liftVersion } from '../lift.js';
 /** @typedef {import('../frame-graph.js').PassContext} PassContext */
 
 const MAX = 64;
-// at, more, look, shade, tilt (a held prop's pitch and roll), then burn (a star fire's log, raw clay).
-const PROP_FLOATS = 24;
+// at, more, look, shade, tilt (a held prop's pitch and roll), burn (a star fire's log, raw clay),
+// then wear and dye (the tent's canvas weathering, C-35).
+const PROP_FLOATS = 32;
+/** The canvas patches the uniform holds (canvas.js canvasPatches). */
+const PATCHES = 3;
 // position, normal, uv, then a vertex colour (a model made in code, painted in COLOR_0; white otherwise).
 const VERTEX_BYTES = 44;
 
@@ -35,6 +38,9 @@ const VERTEX_BYTES = 44;
  *   log: the end in the fire); with it, char and glow sit at that end instead of rising from the bottom
  * @property {number} [halfX]   the model's half length along its own x (m), for endChar
  * @property {number} [raw]     0..1 unfired clay: pale, dry and matte (a shaped piece waiting to be fired)
+ * @property {number[]} [wear]  the tent's weathering (src/world/camp/canvas.js tentWeather): canvas fade,
+ *   poles' silver, patches sewn on, spare; none on any other prop
+ * @property {number[]} [dye]   a dyed canvas's linear tint and the share faded (Phase 4's hook; zero: undyed)
  */
 
 /**
@@ -116,9 +122,10 @@ export function packModel(buffer) {
 
 /**
  * @param {{ name?: string, recipe: { ember: number[], emberNits: number, emberHz: number, charAlbedo: number[], dryTint?: number[], dryMix?: number, rawAlbedo?: number[], rawKeep?: number },
- *   bias?: { depthBias: number, depthBiasSlopeScale: number } }} opts
+ *   bias?: { depthBias: number, depthBiasSlopeScale: number }, canvas?: { C: any, P: any } }} opts
  *   recipe: recipes/world/camp.json props (the embers' glow and the charcoal's albedo); bias: the
- *   shadow pass's, so the props' shadows match the terrain's
+ *   shadow pass's, so the props' shadows match the terrain's; canvas: camp.json canvas and poles (the
+ *   tent's weathering look, C-35)
  */
 export function createPropsPass(opts) {
   const R = opts.recipe;
@@ -129,8 +136,9 @@ export function createPropsPass(opts) {
   const inst = new Float32Array(MAX * PROP_FLOATS);
   /** @type {{ key: string, first: number, count: number }[]} */ let groups = [];
   let count = 0, dirty = true, liftSeen = -1, lookSeen = -1;
-  /** The draw uniform: ember glow, charcoal, the lift's tint and rim (src/render/lift.js liftLook), a dried plant's tint, then raw clay's. */
-  const uniform = new Float32Array(24);
+  /** The draw uniform: ember glow, charcoal, the lift's tint and rim (src/render/lift.js liftLook), a dried plant's tint, raw clay's,
+   *  then the canvas weathering's look (C-35) and the tent's patches. */
+  const uniform = new Float32Array(60 + PATCHES * 8);
   /** @type {GPURenderPipeline} */ let drawPipe;
   /** @type {GPURenderPipeline} */ let shadePipe;
   /** @type {GPURenderPipeline | null} */ let castPipe = null;
@@ -268,12 +276,25 @@ export function createPropsPass(opts) {
         const sh = p.shade ?? [0, 0, 0];
         inst.set([p.x, p.y, p.z, p.yaw, p.scale ?? 1, p.char ?? 0, p.glow ?? 0, p.squash ?? 1,
           L.albedo ?? 1, L.rough ?? 1, L.normal ?? 1, L.normalY ?? -1, sh[0], sh[1], sh[2], 0, p.pitch ?? 0, p.roll ?? 0, p.dry ?? 0, 0,
-          p.stretch ?? 1, p.endChar ?? 0, p.halfX ?? 0.2, p.raw ?? 0], i * PROP_FLOATS);
+          p.stretch ?? 1, p.endChar ?? 0, p.halfX ?? 0.2, p.raw ?? 0, ...(p.wear ?? [0, 0, 0, 0]), ...(p.dye ?? [0, 0, 0, 0])], i * PROP_FLOATS);
         const last = groups[groups.length - 1];
         if (last && last.key === p.key) last.count++;
         else groups.push({ key: p.key, first: i, count: 1 });
       });
       dirty = true;
+    },
+
+    /**
+     * The tent's patches (src/world/camp/canvas.js canvasPatches; the same for every tent drawn).
+     * @param {import('../../world/camp/canvas.js').Patch[]} list
+     */
+    setPatches(list) {
+      for (let i = 0; i < PATCHES; i++) {
+        const q = list[i];
+        uniform.set(q ? [q.z, q.y, q.hw, q.hh] : [0, 0, 0, 0], 60 + i * 4);
+        uniform.set(q ? [q.side, q.turn, q.tone, 0] : [0, 0, 0, 0], 60 + (PATCHES + i) * 4);
+      }
+      if (device && ubuf) device.queue.writeBuffer(ubuf, 0, uniform);
     },
 
     /** @param {PassContext} ctx */
@@ -317,6 +338,12 @@ export function createPropsPass(opts) {
       uniform.set([e[0] * k, e[1] * k, e[2] * k, R.emberHz, ...R.charAlbedo, 0]);
       uniform.set([...(R.dryTint ?? [1, 1, 1]), R.dryMix ?? 0], 16);
       uniform.set([...(R.rawAlbedo ?? [0.5, 0.45, 0.37]), R.rawKeep ?? 0.3], 20);
+      // The canvas weathering's look (camp.json canvas, poles); its share per prop is the prop's wear.
+      const C = opts.canvas?.C, P = opts.canvas?.P;
+      if (C && P) {
+        uniform.set([C.pale, C.greyShare, C.liningLum, C.liningShare, ...C.greyTint, C.patchFade, ...C.woodHue, C.stitchM, C.stitchDashM,
+          ...C.stitchAlbedo, P.silverGain, ...P.silverTint, P.reachM, ...P.endZ, ...P.frameM, ...P.insideM, C.paleAdd, P.silverBase, ...C.patchTints[0], 0, ...C.patchTints[1], 0], 24);
+      }
       lookSeen = -1;
       sbuf = makeBuffer(d, { label: 'prop-instances', size: inst.byteLength, usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST });
       group = d.createBindGroup({ label: 'props', layout, entries: [{ binding: 0, resource: { buffer: ubuf } }, { binding: 1, resource: { buffer: sbuf } }] });

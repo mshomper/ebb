@@ -23,7 +23,10 @@
         "sub": { "text": ["paler subsoil,", "small stones"], "learn": ["dig:subsoil"] },
         "clay": { "text": ["blue-grey clay,", "by the bank"], "learn": ["dig:clay"] },
         "worm": { "text": [], "learn": ["dig:worm-small"] }, "bigworm": { "text": [], "learn": ["dig:worm-big"] },
-        "stone": { "text": [], "learn": ["dig:stone"] }, "belemnite": { "text": [], "learn": ["dig:belemnite"] } } }
+        "stone": { "text": [], "learn": ["dig:stone"] }, "belemnite": { "text": [], "learn": ["dig:belemnite"] },
+        "deep": { "text": ["dark smooth clay,", "very old mud"], "learn": ["dig:deepclay"] },
+        "charcoal": { "text": ["a black band:", "an old fire"], "learn": ["dig:charcoal"] },
+        "sherd": { "text": [], "learn": ["dig:sherd"] } } }
     },
     "sand": {
       "name": "Sand", "icon": "sand", "measure": "share", "tap": "sand",

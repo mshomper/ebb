@@ -21,6 +21,7 @@ import { cuttleNumbers, cuttleMesh, cuttleWords } from './cuttlebone.js';
 import { coralNumbers, coralMesh, coralWords } from './coral.js';
 import { bivalveNumbers, bivalveMesh, bivalveWords } from './bivalve.js';
 import { artifactNumbers, artifactMesh, artifactWords } from './artifact.js';
+import { sherdNumbers, sherdMesh, sherdWords } from './sherd.js';
 
 /**
  * @typedef {{ salt: number, numbers: (h0: number, rarity: any, K: any) => any,
@@ -44,6 +45,7 @@ export const FAMILIES = /** @type {Record<string, Family>} */ ({
   coral: { salt: 0xc0a1, numbers: coralNumbers, mesh: coralMesh, words: coralWords, view: () => [0, 82] },
   bivalve: { salt: 0xb1a1, numbers: bivalveNumbers, mesh: bivalveMesh, words: bivalveWords, view: (n) => (n.pair ? [30, 30] : [0, 72]) },
   artifact: { salt: 0xa271, numbers: artifactNumbers, mesh: artifactMesh, words: artifactWords, view: (n) => n.view },
+  sherd: { salt: 0x5e2d, numbers: sherdNumbers, mesh: sherdMesh, words: sherdWords, view: () => [20, 58] },
 });
 
 /**

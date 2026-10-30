@@ -80,9 +80,12 @@ export function addEvent(ev, e, R) {
 export const seasonEvents = (ev, day) => ev.filter((e) => seasonNo(e.d) === seasonNo(day));
 
 /**
- * The `dig` save section made safe: { version: 1, events, firsts }. Events with a bad field are left
- * out; firsts are the layers and moments whose first line was said. Unreadable comes back empty.
- * @param {any} v @returns {{ version: 1, events: DugEvent[], firsts: string[] }}
+ * The `dig` save section made safe: { version: 1, events, firsts, cache, sleepers }. Events with a
+ * bad field are left out; firsts are the layers and moments whose first line was said; cache is the
+ * game hour the keeper's cache was found (and the blade fitted), or null; sleepers the sleeping
+ * toads found, { c: cell, y: the island's year }, kept for that winter (B1 D1). An older save reads
+ * with no cache and no sleepers. Unreadable comes back empty.
+ * @param {any} v @returns {DigSection}
  */
 export function cleanDig(v) {
   if (!v || typeof v !== 'object' || Array.isArray(v)) return emptyDig();
@@ -91,8 +94,15 @@ export function cleanDig(v) {
     .filter((/** @type {any} */ e) => e && int(e.c) && e.c >= 0 && int(e.d) && e.d >= 0 && int(e.l) && e.l >= 1)
     .map((/** @type {any} */ e) => ({ c: e.c, d: e.d, l: e.l, k: e.k ? 1 : 0 }));
   const firsts = Array.isArray(v.firsts) ? [...new Set(v.firsts.filter((/** @type {any} */ f) => typeof f === 'string'))] : [];
-  return { version: 1, events, firsts };
+  const cache = Number.isFinite(v.cache) && v.cache >= 0 ? v.cache : null;
+  const sleepers = (Array.isArray(v.sleepers) ? v.sleepers : [])
+    .filter((/** @type {any} */ s) => s && int(s.c) && s.c >= 0 && int(s.y) && s.y >= 0).map((/** @type {any} */ s) => ({ c: s.c, y: s.y }));
+  return { version: 1, events, firsts, cache, sleepers };
 }
 
+/**
+ * @typedef {{ version: 1, events: DugEvent[], firsts: string[], cache: number | null, sleepers: { c: number, y: number }[] }} DigSection
+ */
+
 /** A new island's dig section. */
-export const emptyDig = () => /** @type {{ version: 1, events: DugEvent[], firsts: string[] }} */ ({ version: 1, events: [], firsts: [] });
+export const emptyDig = () => /** @type {DigSection} */ ({ version: 1, events: [], firsts: [], cache: null, sleepers: [] });

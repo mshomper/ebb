@@ -57,6 +57,8 @@ import { previewSpots } from './world/creatures/preview-spots.js';
 import { createCreatures } from './world/creatures/index.js';
 import { createFinds } from './world/finds/index.js';
 import { createKeepsakes } from './world/keepsakes/index.js';
+import { keepsakeGlints, findGlints } from './world/glints.js';
+import { createGlintsPass } from './render/passes/glints.js';
 import { keepsakeWords } from './world/keepsakes/families/index.js';
 import { keptFamily } from './world/expansion.js';
 import { addFirst, keptFirsts, seenMark, firstsOf, sampleTrails, trailLine } from './world/trails.js';
@@ -293,7 +295,8 @@ export async function startApp(canvas, hooks = {}) {
   // `?dragonflies=N` starts on summer day 2: they fly from the start of summer (recipes/world/seasons.json).
   // `?damselflies=N` starts on the last day of spring (day 13): the first ones climb out at 0.9.
   // `?turtles=N` starts on summer day 2 too: they wake once the water has warmed (0.05 into summer).
-  const testDay = params.has('dragonflies') || params.has('turtles') ? '15' : params.has('damselflies') ? '13' : params.has('frogs') ? '6' : '0';
+  // `?dig=sleeper` starts on winter day 1 (day 43), when toads sleep in the ground (B1 D1).
+  const testDay = params.has('dragonflies') || params.has('turtles') ? '15' : params.has('damselflies') ? '13' : params.has('frogs') ? '6' : params.get('dig') === 'sleeper' ? '43' : '0';
   const startDay = Math.max(0, Number.parseInt(params.get('day') ?? testDay, 10) || 0);
   // `?autumn` (testing, unsaved): a new world starts on its first misty autumn morning with fungi
   // grown (src/world/finds/autumn.js), and a kept log is laid near the view once the island is up.
@@ -567,6 +570,14 @@ export async function startApp(canvas, hooks = {}) {
   const bottleMessages = await loadRecipe('world/bottle-messages');
   /** @type {Map<string, string>} */ const shoreLetters = new Map();
   sim.addSystem(keepsakes);
+  // Beach glints (src/world/glints.js): the keepsakes, bottles most, and a few finds now and then
+  // catch the light, so the eye finds them among the stones and wrack; ground pickups never do.
+  // `?glints=steady` (testing): every glint flashes, one slow two-second pulse after another.
+  const glintsRecipe = params.get('glints') === 'steady' ? { ...(await loadRecipe('world/glints')), everyS: [2, 2], flashS: 2, chance: 1 } : await loadRecipe('world/glints');
+  const glints = createGlintsPass({ recipe: glintsRecipe, time: () => clock.animT() });
+  sim.addSystem({ id: 'glints', tick() {
+    glints.set([...keepsakeGlints(keepsakes.lying(), glintsRecipe), ...findGlints(finds.shown(), (x, z) => terrain.sampleHeight(x, z), glintsRecipe)]);
+  } });
   // The nets (docs/future/12, K6; src/world/nets): cast with the Water tool's Net mode once the
   // beachcomber's trail gives the general net; `?nets` (testing, unsaved) gives it at once, and a
   // net cast there is ready to lift straight away.
@@ -874,8 +885,15 @@ export async function startApp(canvas, hooks = {}) {
   // Digging (docs/future/13 section 10, P2c; src/world/dig): Dig and Scoop sand on the here-bar once
   // the shovel is made at the workbench; `?shovel` (testing, unsaved) puts it in the walker's kit.
   const dig = createDig({ recipe: await loadRecipe('world/dig'), keepsakes: keepsakesRecipe, seed, world, walk, terrain, water, pieces, pack, gather, presence,
-    worldT: () => clock.worldT(), test: params.has('shovel'), propsRecipe: campRecipe.props, shadowBias: shadowPass.bias, noteKept: (n) => noteKept(n) });
+    worldT: () => clock.worldT(), test: params.has('shovel'), propsRecipe: campRecipe.props, shadowBias: shadowPass.bias, noteKept: (n) => noteKept(n),
+    // Digging deeper (B1 D1): the land's story block (the old hearths, the marked stone) and `?dig=cache|hearth|sherd|sleeper|blade`.
+    land: landRecipe, terrainSeed: subSeed(seed, 'terrain'), piecesRecipe: await loadRecipe('world/pieces'), testDig: back ? null : params.get('dig') });
   dig.setKeepsakeWords((n) => keepsakeWords(n, keepsakesRecipe));
+  // A `?dig=` test link stands the walker by its spot (src/world/dig testSetUp): the view looks at it from close by.
+  on('dig:test-stood', (/** @type {{ x: number, z: number, yaw: number, target: { x: number, z: number } }} */ p) => {
+    const mx = (p.x + p.target.x) / 2, mz = (p.z + p.target.z) / 2;
+    camera.setPose({ ...camera.pose(), target: [mx, terrain.sampleHeight(mx, mz), mz], yaw: p.yaw + Math.PI * 0.7, distance: 3.2, pitch: (38 * Math.PI) / 180 });
+  });
   sim.addSystem(dig);
   // The perch stick (B1 P1; src/world/creatures/perch-sticks.js): once the dragonflies are found, the
   // sticks pouch's card stands a handful upright in a pond's shallows, a piece they rest on. `?perch`
@@ -951,6 +969,20 @@ export async function startApp(canvas, hooks = {}) {
     const giftLink = params.get('camp') === 'gift';
     // `?camp=nest` (the hen's slice 4): the workbench built and the pack holding the nest box's parts.
     const nestLink = params.get('camp') === 'nest';
+    // `?camp=canvas` (B1 C2, C-35; tools/canvas-check.html): your tent as pitched `&age=` seasons ago
+    // (0 by default), with the same tent new, after one season and after a year in a row behind it,
+    // and the view stood back to see them all; `&row=0,2,8` other ages; `&sort` those tents drawn as
+    // the shader sorts their paint (wood red, lining blue, canvas green, patches yellow).
+    if (params.get('camp') === 'canvas') {
+      const row = params.has('row') ? (params.get('row') ?? '').split(',').filter((v) => v !== '').map(Number).filter(Number.isFinite) : [0, 1, 4];
+      const t = camp.debug.canvasAge(Number(params.get('age')) || 0, row, params.has('sort'));
+      // From the tents' side, a little up, the row's middle in view.
+      if (t) {
+        const mid = (row.length * campRecipe.canvas.checkGapM) / 2, cx = t.x - Math.sin(t.yaw) * mid, cz = t.z - Math.cos(t.yaw) * mid;
+        camera.setPose({ ...camera.pose(), target: [cx, terrain.sampleHeight(cx, cz) + 0.7, cz], yaw: t.yaw + 1.2,
+          distance: 4 + row.length * 1.8, pitch: (14 * Math.PI) / 180 });
+      }
+    }
     const kit = carriersLink ? [['rushes.stems', 1], ['willow.withies', 1], ['rush-cord', 4]]
       : giftLink ? [['flat-stones', 1], ['shells', 2]]
       : nestLink ? [['sticks', 1], ['rushes.stems', 2]]
@@ -982,7 +1014,7 @@ export async function startApp(canvas, hooks = {}) {
     const ringAt = rp && pad ? (() => { const a = Math.atan2(pad.z - rp.z, pad.x - rp.x) - 0.5;
       return { x: rp.x, z: rp.z, stand: { x: rp.x + Math.cos(a) * 1.2, z: rp.z + Math.sin(a) * 1.2 } }; })() : null;
     const at = hearthLink ? ringAt : camp.stations.benchAt(apo ? 'apothecary' : 'workbench');
-    if (at && walk.placeAt(at.stand.x, at.stand.z, Math.atan2(at.x - at.stand.x, at.z - at.stand.z), 'stand')) {
+    if (params.get('camp') !== 'canvas' && at && walk.placeAt(at.stand.x, at.stand.z, Math.atan2(at.x - at.stand.x, at.z - at.stand.z), 'stand')) {
       const p = camera.pose();
       camera.setPose({ ...p, target: [at.stand.x, terrain.sampleHeight(at.stand.x, at.stand.z), at.stand.z], yaw: Math.atan2(at.x - at.stand.x, at.z - at.stand.z) + Math.PI + 0.9,
         distance: campRecipe.rest.viewDistanceM, pitch: (campRecipe.rest.viewPitchDeg * Math.PI) / 180 });
@@ -1142,6 +1174,8 @@ export async function startApp(canvas, hooks = {}) {
     // smoke, sparks and moths: after the sky too, so smoke against it shows.
     camp.firePass,
     camp.fx,
+    // Beach glints: added light on the keepsakes and finds, after everything that could hide them.
+    glints,
     exposure,
     bloom,
     tonemap,
@@ -2385,6 +2419,8 @@ export async function startApp(canvas, hooks = {}) {
     finds,
     /** The keepsakes on the strandline (the journal asks it what a tap landed on). */
     keepsakes: keepsakesApi,
+    /** Beach glints (tools, tests): the pass, how many are set now. */
+    glints,
     /** The nets (the journal asks which one a tap landed on; the haul tray reads the recipe). */
     nets: { ...nets, recipe: netsRecipe, keepsakesRecipe },
     /** The placed loose stones (the journal asks which one a tap landed on). */

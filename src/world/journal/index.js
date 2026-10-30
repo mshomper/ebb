@@ -466,6 +466,15 @@ export function createJournal(opts) {
       const next = flag(journal, `dig:${p.id}`);
       if (next !== journal) { journal = next; update('journal', () => journal); }
     }),
+    // The keeper's cache (B1 D1): written once. A toad dug up asleep in winter is a find of the toad,
+    // and teaches its page where it spends the winter (`asleep`).
+    on('dig:cache', (/** @type {{ text: string }} */ p) => commit(noteOnce(journal, 'dig:cache', p.text, { state: world.state, hour: hourIndex(), words }))),
+    on('dig:found', (/** @type {{ kind: string }} */ p) => {
+      if (p.kind !== 'sleeper' || !words.species.toads) return;
+      const ctx = { state: world.state, hour: hourIndex(), words };
+      if (!journal.species.toads?.ever) commit(foundFind(journal, 'toads', ctx));
+      commit(learn(journal, 'toads', 'asleep', ctx));
+    }),
     // The island gave you something (src/world/expansion.js): written once, shown as a card.
     on('progress:gifted', (/** @type {any} */ g) => commit(noteGift(journal, g, { state: world.state, hour: hourIndex(), words }))),
     // The camp became a known place (B1 C1, src/world/camp/gift-stone.js): written once.
