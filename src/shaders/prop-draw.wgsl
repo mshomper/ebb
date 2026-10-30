@@ -5,7 +5,8 @@
 // no tangents. Lit like the creatures (sun and moon with shadows, sky fill, the small lights, GGX,
 // aerial perspective). A fire's wood can char (darker, sunk lower as it burns down) and glow from its
 // embers. Under each prop a soft contact shadow; into the sun's shadow map through prop-cast.wgsl. Physical
-// albedo only: the palette paints at tonemap (docs/05).
+// albedo only: the palette paints at tonemap (docs/05). The tent's canvas weathers (C-35, weather() below):
+// it pales and greys, gains stitched patches, and its poles silver, all as linear albedo.
 
 // #include common
 // #include lib-hash
@@ -21,6 +22,17 @@ struct PropDraw {
   liftRim: vec4f,   // rim colour and its power
   dryTint: vec4f,   // a dried plant: rgb the tint its brightness takes, w how far it goes at dry 1
   raw: vec4f,       // unfired clay: rgb its pale albedo (linear), w how much of the fired paint's light and dark it keeps
+  // Canvas weathering (C-35; recipes/world/camp.json canvas, poles):
+  canvasA: vec4f,   // x pale (brightness at full fade), y grey share at full fade, z lining's sRGB lightness, w the lining's share of the fade
+  greyTint: vec4f,  // rgb the grey the canvas fades toward (times its brightness), w a patch's share of the canvas's fade
+  sortHue: vec4f,   // x, y the sRGB hue (degrees) below which the paint is wood, blended up to y; z stitch width (m), w stitch dash (m)
+  stitch: vec4f,    // rgb the stitches' thread (linear), w silver gain (how much of the wood's own light and dark silvered wood keeps)
+  silver: vec4f,    // rgb silvered wood's tint, w the poles' reach either side of the tent's end edges (m)
+  frameA: vec4f,    // the tent's frame in its own space (m): x, y |z| where the end poles begin (blended), z the ridge's height, w the base's half width
+  frameB: vec4f,    // x the inside's half width at the ground (narrowing to the ridge), y its height: kept as it is (the bedroll and groundsheet); z the faded canvas's added brightness; w silvered wood's base grey
+  patchA: vec4f,    // rgb one patch cloth (times the fresh canvas), w spare
+  patchB: vec4f,    // rgb the other
+  patches: array<vec4f, 6>,  // 0..2: z, y (centre on its slope), half width, half height (m); 3..5: side (+1 / -1 x), turn, tone, spare
 };
 
 struct Prop {
@@ -30,6 +42,8 @@ struct Prop {
   shade: vec4f,     // contact shadow: x, y half sizes along its own x and z (m), z darkness 0..1, w the prop's lift 0..1 (F5: hovered or its card open)
   tilt: vec4f,      // x pitch about its own x (its +y toward its +z), y roll about its own z, both before the yaw (a held tool); z dry 0..1 (a herb bunch); w spare
   burn: vec4f,      // x its length along its own x (1 as made); y burnt from its -x end this far along it (0: char rises from the bottom instead); z the model's half length along x (m); w raw clay 0..1
+  wear: vec4f,      // the tent's weathering (src/world/camp/canvas.js): x canvas fade 0..1, y poles' silver 0..1, z patches sewn on, w 1: the canvas check's sort view
+  dye: vec4f,       // a dyed canvas (Phase 4's hook, section 9.3): rgb its tint on the cloth (linear, faded: canvas.js dyeTint), w 1 when dyed (0: undyed)
 };
 
 @group(0) @binding(0) var<uniform> frame: FrameUniforms;
@@ -49,6 +63,7 @@ struct VsOut {
   @location(4) @interpolate(flat) ii: u32,
   @location(5) localX: f32,
   @location(6) paint: vec3f,
+  @location(7) localZ: f32,
 };
 
 struct FsOut {
@@ -96,6 +111,7 @@ fn vsProp(@location(0) position: vec3f, @location(1) normal: vec3f, @location(2)
   o.uv = uv;
   o.localY = position.y;
   o.localX = position.x;
+  o.localZ = position.z;
   o.paint = paint;
   o.ii = ii;
   return o;
@@ -115,6 +131,77 @@ fn perturb(n: vec3f, p: vec3f, uv: vec2f, tn: vec3f) -> vec3f {
   if (m < 1e-20) { return n; }
   let inv = inverseSqrt(m);
   return normalize(t * inv * tn.x + b * inv * tn.y + n * tn.z);
+}
+
+/** The paint's hue in degrees (0..360) and its lightness, read in sRGB as the recipe's numbers are. */
+fn hueOf(lin: vec3f) -> vec2f {
+  let c = sqrt(max(lin, vec3f(0.0)));
+  let hi = max(c.r, max(c.g, c.b));
+  let lo = min(c.r, min(c.g, c.b));
+  let d = max(hi - lo, 1e-5);
+  var h = 0.0;
+  if (hi == c.r) { h = (c.g - c.b) / d; } else if (hi == c.g) { h = 2.0 + (c.b - c.r) / d; } else { h = 4.0 + (c.r - c.g) / d; }
+  return vec2f(fract(h / 6.0 + 1.0) * 360.0, (hi + lo) * 0.5);
+}
+
+/**
+ * Canvas weathering (C-35): the tent's paint by what it is (sorted by hue, since the tent is one
+ * painted model): wood (the poles, the seams' thread) silvers; canvas pales and greys, the inner lining
+ * half as much; patches of a newer cloth sit on its slopes with a dashed stitch round them. Then the
+ * hook for a dyed canvas (Phase 4): the dye times the cloth, sliding toward weathered canvas as it fades.
+ * All linear albedo. p: the point in the tent's own frame (x across, y up, z along the ridge).
+ */
+fn weather(c: vec3f, pr: Prop, p: vec3f) -> vec3f {
+  let hl = hueOf(c);
+  // Wood: the A-frame poles at the two ends, along the slopes' end edges (their crossed tops too),
+  // and warm-hued paint (the stakes, the seams' thread), but not the bedroll and groundsheet inside.
+  let ends = smoothstep(pd.frameA.x, pd.frameA.y, abs(p.z));
+  let edgeX = pd.frameA.w * max(0.0, 1.0 - p.y / pd.frameA.z);
+  let onEdge = 1.0 - smoothstep(pd.silver.w * 0.6, pd.silver.w, abs(abs(p.x) - edgeX));
+  let inside = step(abs(p.x), pd.frameB.x * max(0.0, 1.0 - p.y / pd.frameA.z)) * step(p.y, pd.frameB.y) * (1.0 - ends);
+  let warm = (1.0 - smoothstep(pd.sortHue.x, pd.sortHue.y, hl.x)) * (1.0 - inside);
+  let wood = max(ends * max(onEdge, step(pd.frameA.z - 0.08, p.y)), warm);
+  let lining = smoothstep(pd.canvasA.z - 0.05, pd.canvasA.z + 0.05, hl.y);
+  let lum = dot(c, vec3f(0.2126, 0.7152, 0.0722));
+  // Patches: on the slope facing its side, a newer cloth in its own frame on the slope (z, y).
+  var patchK = 0.0;
+  var patchTint = vec3f(1.0);
+  var stitchK = 0.0;
+  let n = i32(pr.wear.z);
+  for (var i = 0; i < 3; i++) {
+    if (i >= n) { break; }
+    let q = pd.patches[i];
+    let m = pd.patches[i + 3];
+    if (p.x * m.x < 0.08) { continue; }
+    let cs = cos(m.y);
+    let sn = sin(m.y);
+    let d = vec2f(p.z - q.x, p.y - q.y);
+    let r = vec2f(cs * d.x + sn * d.y, -sn * d.x + cs * d.y);
+    let e = abs(r) - q.zw;
+    let box = max(e.x, e.y);
+    if (box < 0.0) { patchK = 1.0; patchTint = mix(pd.patchA.rgb, pd.patchB.rgb, m.z); }
+    // The stitch, just inside the edge: dashes along it.
+    let inset = box + pd.sortHue.z * 1.5;
+    let along = select(r.x, r.y, e.x > e.y);
+    let dash = step(0.5, fract(along / max(pd.sortHue.w, 1e-3)));
+    stitchK = max(stitchK, (1.0 - smoothstep(0.0, pd.sortHue.z * 0.5, abs(inset))) * dash);
+  }
+  // The canvas check's sort view (wear.w 1): wood red, lining blue, canvas green, the inside grey (kept), patches and stitches yellow.
+  if (pr.wear.w > 0.5) { return mix(mix(mix(vec3f(0.05, 0.3, 0.05), vec3f(0.05, 0.05, 0.4), lining), vec3f(0.2), inside) * (1.0 - wood) + vec3f(0.4, 0.04, 0.03) * wood, vec3f(0.5, 0.45, 0.02), max(patchK * 0.6, stitchK)); }
+  let canvasK = (1.0 - wood) * mix(1.0, pd.canvasA.w, lining) * (1.0 - inside);
+  let fade = pr.wear.x * canvasK * mix(1.0, pd.greyTint.w, patchK);
+  let cloth = mix(c, c * patchTint, patchK * (1.0 - wood));
+  // Faded: brighter (times pale, plus a little), with greyShare of its colour gone to a tinted grey.
+  let clothLum = max(dot(cloth, vec3f(0.2126, 0.7152, 0.0722)), 1e-4);
+  let paler = clothLum * pd.canvasA.x + pd.frameB.z;
+  let faded = mix(cloth * (paler / clothLum), vec3f(paler) * pd.greyTint.rgb, pd.canvasA.y);
+  let greyed = mix(cloth, faded, fade);
+  // Silvered wood: a pale grey with the grain's light and dark kept.
+  let silvered = mix(greyed, (vec3f(pd.frameB.w) + lum * pd.stitch.w) * pd.silver.rgb, pr.wear.y * wood);
+  let stitched = mix(silvered, pd.stitch.rgb, stitchK * (1.0 - wood));
+  // The hook for a dyed canvas (Phase 4, section 9.3): the dye's tint, already faded on the CPU
+  // (canvas.js dyeTint), on the cloth only; the poles and thread keep their own.
+  return select(stitched, mix(stitched, stitched * pr.dye.rgb, 1.0 - wood), pr.dye.w > 0.0);
 }
 
 @fragment
@@ -141,7 +228,8 @@ fn fsProp(in: VsOut) -> FsOut {
   // Raw clay (a shaped piece not yet fired): pale and dry, keeping a little of its light and dark.
   let lum = dot(dried, vec3f(0.2126, 0.7152, 0.0722));
   let raw = pd.raw.rgb * mix(1.0, clamp(lum / 0.12, 0.4, 1.8), pd.raw.w);
-  let albedo = mix(mix(dried, raw, pr.burn.w), pd.charCol.rgb, charred * charK);
+  var albedo = mix(mix(dried, raw, pr.burn.w), pd.charCol.rgb, charred * charK);
+  if (pr.wear.x + pr.wear.y + pr.wear.z > 0.0) { albedo = weather(albedo, pr, vec3f(in.localX, in.localY, in.localZ)); }
   let rough = mix(clamp(mr.g * pr.look.y, 0.04, 1.0), 1.0, pr.burn.w);
 
   let viewDist = distance(in.world, frame.cameraPos);

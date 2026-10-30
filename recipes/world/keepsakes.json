@@ -11,13 +11,14 @@
   },
   "shoreNote": "Keepsakes on the strandline (piece K2). Each high tide leaves a few on the whole island, never more for walking the beach: budget is how many a tide leaves (weights for 0, 1, 2, 3), springBudget the same at a spring tide (spring at least springMin). Cells on a tide's strandline (within lineToleranceM of where its waves reached) are drawn by seed, weighted by how sheltered they are (the cove field, once it is in) and kept spacingM apart. At most maxOnIsland show at once, the newest tides first. families weighs which family a keepsake is. scale is how much larger than life they are drawn, like the strandline shells; nearM how close to the view they are drawn. testBudget and testMax are for the ?keepsakes test link.",
   "shore": {
-    "budget": [30, 50, 20, 0],
-    "springBudget": [10, 40, 35, 15],
+    "frequencyNote": "October 29, 2026 (Matt: more keepsakes and bottles): budget was [30, 50, 20, 0], springBudget [10, 40, 35, 15], maxOnIsland 3, bottle 3 (about 2.3%); now about 2.8 keepsakes a game day, at most 5 lying out, a bottle about 10% of them (about one every 3.5 days).",
+    "budget": [15, 50, 30, 5],
+    "springBudget": [0, 35, 40, 25],
     "springMin": 0.5,
     "lineToleranceM": 0.06,
     "spacingM": 3,
-    "maxOnIsland": 3,
-    "families": { "shell": 30, "bivalve": 14, "stone": 18, "driftwood": 11, "feather": 10, "urchin": 7, "starfish": 6, "seed": 5, "purse": 5, "cuttlebone": 4, "coral": 3, "fossil": 6, "bottle": 3 },
+    "maxOnIsland": 5,
+    "families": { "shell": 30, "bivalve": 14, "stone": 18, "driftwood": 11, "feather": 10, "urchin": 7, "starfish": 6, "seed": 5, "purse": 5, "cuttlebone": 4, "coral": 3, "fossil": 6, "bottle": 14 },
     "scale": 2,
     "nearM": 22,
     "testBudget": [0, 0, 0, 1],
@@ -350,6 +351,6 @@
       "lifetime": { "sizeM": [0.067, 0.157], "frost": [0.05, 0.35], "stopperChance": 0.8, "glass": [2, 5, 6], "shapes": [0, 3, 3], "markLean": 20 }
     },
     "colors": { "glass": [[0.32, 0.55, 0.42], [0.55, 0.32, 0.08], [0.1, 0.18, 0.55], [0.74, 0.8, 0.78], [0.82, 0.83, 0.8], [0.46, 0.3, 0.58], [0.62, 0.12, 0.16]], "glassNames": ["green", "amber", "cobalt", "clear", "milk-white", "violet", "ruby"], "cork": [0.5, 0.36, 0.22] },
-    "marks": { "message": { "chance": 0.08, "word": "with a rolled message inside" }}
+    "marks": { "message": { "chance": 0.45, "word": "with a rolled message inside", "note": "October 29, 2026 (Matt): about 60% of bottles hold a letter (0.45 times each tier's markLean; was 0.08), so a letter comes about every 6 game days." }}
   }
 }

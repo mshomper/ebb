@@ -68,7 +68,7 @@ const H = 3600;
 export function createCamp(o) {
   const R = o.recipe, W = R.words, F = R.fire;
   const campSeed = subSeed(o.seed, 'camp');
-  const props = createPropsPass({ recipe: R.props, bias: o.shadowBias });
+  const props = createPropsPass({ recipe: R.props, bias: o.shadowBias, canvas: { C: R.canvas, P: R.poles } });
   const fx = createCampFxPass({ recipe: R, low: o.low });
   // The live fire sim and its volume (Matt's fire study): the flame and its smoke while it burns.
   const firePass = createCampFirePass({ recipe: R, tier: o.tier ?? (o.low ? 'low' : 'high'), getViewProj: () => o.camera?.viewProj ?? null });
@@ -498,6 +498,18 @@ export function createCamp(o) {
       },
       /** @param {boolean} on */
       hide(on) { hidden = on; },
+      /**
+       * The canvas check (C-35; `?camp=canvas`, tools/canvas-check.html): the tent as first pitched
+       * `seasons` ago, and more tents beside it at `ages` (seasons), or none. Live only, never saved
+       * by a test link.
+       * sort: those tents drawn as the shader sorts their paint (wood red, lining blue, canvas green, patches yellow).
+       * @param {number} seasons @param {number[] | null} [ages] @param {boolean} [sort] @returns {{ x: number, y: number, z: number, yaw: number } | null} where the tent stands
+       */
+      canvasAge(seasons, ages = null, sort = false) {
+        change((c) => ({ ...c, firstPitchedHour: hourNow() - Math.max(0, seasons) * 24 * 14 }));
+        frame.canvasAges(ages, sort);
+        return slotAt('tent');
+      },
       /** The star's logs left out (the bench's star row). @param {boolean} on */
       hideStar(on) { frame.hideStar(on); },
       /** @param {Parameters<typeof frame.starAs>[0]} f */
