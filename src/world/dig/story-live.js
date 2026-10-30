@@ -4,17 +4,22 @@
 // worked out again whenever the habitat or the camp pad changes. The marked stone is drawn in the
 // pieces pass (not a saved piece: it comes from the seed, cannot be carried and is not one of the
 // loose stones), with the hearths' sunken ring stones; it keeps holes off itself (a footprint) and
-// has a card. Read by the dig module (src/world/dig/index.js).
+// has a card. The marked stone is not there from the start (Matt, October 30, 2026): it shows once
+// the walker has learned the ground, having dug both second layers, the subsoil and the blue-grey
+// clay (story.cacheAfter; the subsoil alone on an island with no damp bank to dig), and the dig
+// module keeps that in its firsts. Until then the cache spot is plain ground. Read by the dig module
+// (src/world/dig/index.js).
 
 import { get } from '../../core/store.js';
 import { packMesh } from '../creatures/bodies.js';
-import { groundClass } from './layers.js';
+import { groundClass, cellCenter } from './layers.js';
 import { storySpots, liveSpot, storyAt, storyHome } from './story.js';
 import { markedStone, ringBeings } from './story-draw.js';
 
 /**
  * @param {{ R: any, land: any, terrainSeed: number, worldSeed: number, piecesRecipe: any, pieces: any,
- *   hab: () => any, ground: (x: number, z: number) => number }} o R: recipes/world/dig.json
+ *   hab: () => any, ground: (x: number, z: number) => number, shown: () => boolean }} o R: recipes/world/dig.json;
+ *   shown: the marked stone is there now (the dig module's reveal)
  */
 export function createStoryLive(o) {
   const R = o.R, S = R.story;
@@ -47,12 +52,29 @@ export function createStoryLive(o) {
   }
 
   /** What the story makes of a point (story.js storyAt). @param {number} x @param {number} z */
-  const at = (x, z) => storyAt(x, z, spots(), S);
+  const at = (x, z) => storyAt(x, z, o.shown() ? spots() : { ...spots(), cache: null }, S);
+
+  /** @type {{ h: any, bank: boolean } | null} */ let banks = null;
+  /** Has the island any damp bank to dig (where the clay lies)? Worked out once per habitat. */
+  function hasBank() {
+    const h = o.hab();
+    if (!h) return true;
+    if (banks?.h === h) return banks.bank;
+    const pad = get('campPad') ?? null;
+    let bank = false;
+    for (let k = 0; k < h.n * h.n && !bank; k++) {
+      if (!h.open[k] || h.moisture[k] < R.ground.dampBank.moistureMin * 255) continue;
+      const [x, z] = cellCenter(k);
+      bank = groundClass(x, z, { hab: h, pad }, R).cls === 'bank';
+    }
+    banks = { h, bank };
+    return bank;
+  }
 
   /** The marked stone and the hearths' ring stones, for the pieces pass. */
   function beings() {
     const sp = spots(), out = ringBeings(sp.hearths, o.ground, S, shapes);
-    const c = sp.cache;
+    const c = o.shown() ? sp.cache : null;
     if (c) {
       const sink = stone.hy * o.piecesRecipe.sink;
       out.push({ x: c.x, y: o.ground(c.x, c.z), z: c.z, yaw: (o.worldSeed % 628) / 100, size: S.stone.sizeM, mesh: 'marked-stone',
@@ -65,13 +87,14 @@ export function createStoryLive(o) {
   return {
     spots, at,
     /** The marked stone as a footprint circle (no hole on it). */
-    footprint: () => { const c = spots().cache; return c ? [{ x: c.x, z: c.z, r: S.stone.footR }] : []; },
+    footprint: () => { const c = o.shown() ? spots().cache : null; return c ? [{ x: c.x, z: c.z, r: S.stone.footR }] : []; },
+    hasBank,
     /**
      * The marked stone's card, before and after the cache is found. @param {number} x @param {number} z
      * @param {boolean} found
      */
     cardAt(x, z, found) {
-      const c = spots().cache;
+      const c = o.shown() ? spots().cache : null;
       if (!c || (c.x - x) ** 2 + (c.z - z) ** 2 > (S.stone.sizeM * 0.7) ** 2) return null;
       const W = R.words;
       return { sp: 'soil', name: W.stoneName, sub: null, icon: 'rock', itemIcon: 'keep-stone', text: found ? W.stoneAfter : W.stoneBefore,

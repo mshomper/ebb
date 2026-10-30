@@ -7,7 +7,8 @@
 // spring frees it); the dig section's new fields saved and read back; the sherd family's numbers,
 // mesh and words; the cache letter as a keeper page; the toad's sleeping pose on its rig.
 
-import { storySpots, liveSpot, storyAt, storyHome, hearthCount, cacheDue } from '../src/world/dig/story.js';
+import { storySpots, liveSpot, storyAt, storyHome, hearthCount, cacheDue, stoneShown } from '../src/world/dig/story.js';
+import { pickHint } from '../src/world/hints/morning.js';
 import { nextLayer, cellOf, cellCenter } from '../src/world/dig/layers.js';
 import { digFinds, digFamily, digRarityWeights } from '../src/world/dig/finds.js';
 import { sleeperCellOf, sleeperAt, sleeperNear, yearOf, nearestSleeper } from '../src/world/dig/sleepers.js';
@@ -93,6 +94,23 @@ export function addDigDeeperTests(test, assert, eq) {
     eq(back.cache, 312, 'the hour found comes back');
     eq(cleanDig({ version: 1, events: [], firsts: [] }).cache, null, 'an older save: not found');
     eq(cleanDig({ version: 1, cache: -4 }).cache, null, 'a bad value: not found');
+  });
+
+  test(G, 'the marked stone shows once both second layers are dug (the subsoil alone with no bank), stays, and the morning hint speaks of it until the cache is found', async () => {
+    const R = await RP, S = R.story, H = await json('world/morning-hints');
+    eq(stoneShown([], true, S), false, 'not there at the start');
+    eq(stoneShown(['layer:topsoil', 'layer:subsoil'], true, S), false, 'the subsoil alone, with a bank to dig: not yet');
+    eq(stoneShown(['layer:topsoil', 'layer:clay'], true, S), false, 'the clay alone: not yet');
+    eq(stoneShown(['layer:subsoil', 'layer:clay'], true, S), true, 'both second layers');
+    eq(stoneShown(['layer:subsoil'], false, S), true, 'no damp bank on the island: the subsoil is enough');
+    eq(stoneShown(['stone:shown'], true, S), true, 'once shown it stays');
+    // Hidden, the cache spot is plain ground: the dig module masks it (storyAt with no cache).
+    eq(storyAt(30, 0, { hearths: [], cache: null }, S).cache, false, 'no cache while the stone is not there');
+    const s = (/** @type {string[]} */ flags) => ({ journal: { flags: ['did:gathered', 'did:shaped', 'did:planted', 'did:web', ...flags], species: { crab: { ever: true } } }, cook: { made: { 'rush-cord': 1 } }, kindOf: () => 'find' });
+    assert(pickHint(H, s([]), 20)?.id !== 'stone', 'no stone hint before it shows');
+    eq(pickHint(H, s(['dig:marked-stone']), 20)?.id, 'stone', 'the morning after it shows');
+    assert(pickHint(H, s(['dig:marked-stone', 'dig:cache']), 20)?.id !== 'stone', 'not once the cache is found');
+    assert(pickHint(H, s(['dig:marked-stone', 'hint:stone@4']), 20)?.id !== 'stone', 'never twice');
   });
 
   test(G, 'layer 3 waits for the blade: deeper clay under a bank, the charcoal band at a hearth, stones under soil', async () => {
