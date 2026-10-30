@@ -97,5 +97,6 @@
     },
     "mooring": { "stakeLevelM": 0.05, "boatOutM": 1.6, "searchM": 24 },
     "kingTideMarginM": 0.3
-  }
+  },
+  "story": {"note": "The island's own past under the ground (docs/future/13 10.7.7; src/world/dig/story.js): the starter island always has exactly one old hearth 8 to 20 m from the camp pad and the keeper's cache under one marked stone 12 to 30 m from it. letter: the cache's letter (recipes/world/keeper-cache.json).", "hearthCount": 1, "hearthFromCampM": [8, 20], "cacheFromCampM": [12, 30], "letter": "starter"}
 }

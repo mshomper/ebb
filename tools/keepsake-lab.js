@@ -19,7 +19,7 @@ const SEED = 20261021;
 const $ = (/** @type {string} */ id) => /** @type {any} */ (document.getElementById(id));
 /** Each family's block in keepsakes.json. */
 const RECIPE_KEY = /** @type {Record<string, string>} */ ({ shell: 'shells', stone: 'stones', fossil: 'fossils', driftwood: 'driftwood', feather: 'feathers', bottle: 'bottles',
-  urchin: 'urchins', starfish: 'starfish', seed: 'seeds', purse: 'purses', cuttlebone: 'cuttlebones', coral: 'corals', bivalve: 'bivalves', artifact: 'artifacts', belemnite: 'fossils' });
+  urchin: 'urchins', starfish: 'starfish', seed: 'seeds', purse: 'purses', cuttlebone: 'cuttlebones', coral: 'corals', bivalve: 'bivalves', artifact: 'artifacts', belemnite: 'fossils', sherd: 'sherds' });
 
 /**
  * A keepsake of a family (or the belemnite form, dug from the clay: P2c, src/world/dig), as rollKeepsake.
@@ -290,7 +290,7 @@ for (const b of $('views').children) {
 }
 for (const id of ['tide', 'season', 'from']) $(id).addEventListener('change', renderGrid);
 const FAMILY_LABEL = /** @type {Record<string, string>} */ ({ shell: 'Shells', stone: 'Stones', fossil: 'Fossils', driftwood: 'Driftwood', feather: 'Feathers', bottle: 'Bottles',
-  urchin: 'Sea urchins', starfish: 'Starfish', seed: 'Drift seeds', purse: "Mermaid's purses", cuttlebone: 'Cuttlebones', coral: 'Coral sprigs', bivalve: 'Half-shells', artifact: 'Artifacts', belemnite: 'Belemnites (dug)' });
+  urchin: 'Sea urchins', starfish: 'Starfish', seed: 'Drift seeds', purse: "Mermaid's purses", cuttlebone: 'Cuttlebones', coral: 'Coral sprigs', bivalve: 'Half-shells', artifact: 'Artifacts', belemnite: 'Belemnites (dug)', sherd: 'Sherds (dug)' });
 for (const f of [...Object.keys(FAMILIES), 'belemnite']) $('family').append(new Option(FAMILY_LABEL[f] ?? f, f));
 $('family').addEventListener('change', () => {
   state.family = $('family').value;

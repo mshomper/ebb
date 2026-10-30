@@ -61,7 +61,7 @@ export function addDigTests(test, assert, eq) {
   test(G, 'layer stacks: soil and the bank two spades, sand one; the word under the last', async () => {
     const R = await RP;
     eq(stackOf('soil', R).join(), 'topsoil,subsoil'); eq(bottomOf('soil', R), 'stones');
-    eq(stackOf('bank', R).join(), 'topsoil,clay'); eq(bottomOf('bank', R), 'harder');
+    eq(stackOf('bank', R).join(), 'topsoil,clay'); eq(JSON.stringify(nextLayer('bank', 2, R)), JSON.stringify({ bottom: 'harder' }), 'the deeper clay under a bank waits for the blade');
     eq(stackOf('sand', R).join(), 'sand'); eq(bottomOf('sand', R), 'sand');
     eq(JSON.stringify(nextLayer('bank', 1, R)), JSON.stringify({ layer: 'clay', depth: 2 }));
     eq(JSON.stringify(nextLayer('sand', 1, R)), JSON.stringify({ bottom: 'sand' }));

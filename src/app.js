@@ -289,7 +289,8 @@ export async function startApp(canvas, hooks = {}) {
   // `?dragonflies=N` starts on summer day 2: they fly from the start of summer (recipes/world/seasons.json).
   // `?damselflies=N` starts on the last day of spring (day 13): the first ones climb out at 0.9.
   // `?turtles=N` starts on summer day 2 too: they wake once the water has warmed (0.05 into summer).
-  const testDay = params.has('dragonflies') || params.has('turtles') ? '15' : params.has('damselflies') ? '13' : params.has('frogs') ? '6' : '0';
+  // `?dig=sleeper` starts on winter day 1 (day 43), when toads sleep in the ground (B1 D1).
+  const testDay = params.has('dragonflies') || params.has('turtles') ? '15' : params.has('damselflies') ? '13' : params.has('frogs') ? '6' : params.get('dig') === 'sleeper' ? '43' : '0';
   const startDay = Math.max(0, Number.parseInt(params.get('day') ?? testDay, 10) || 0);
   // `?autumn` (testing, unsaved): a new world starts on its first misty autumn morning with fungi
   // grown (src/world/finds/autumn.js), and a kept log is laid near the view once the island is up.
@@ -815,8 +816,15 @@ export async function startApp(canvas, hooks = {}) {
   // Digging (docs/future/13 section 10, P2c; src/world/dig): Dig and Scoop sand on the here-bar once
   // the shovel is made at the workbench; `?shovel` (testing, unsaved) puts it in the walker's kit.
   const dig = createDig({ recipe: await loadRecipe('world/dig'), keepsakes: keepsakesRecipe, seed, world, walk, terrain, water, pieces, pack, gather, presence,
-    worldT: () => clock.worldT(), test: params.has('shovel'), propsRecipe: campRecipe.props, shadowBias: shadowPass.bias, noteKept: (n) => noteKept(n) });
+    worldT: () => clock.worldT(), test: params.has('shovel'), propsRecipe: campRecipe.props, shadowBias: shadowPass.bias, noteKept: (n) => noteKept(n),
+    // Digging deeper (B1 D1): the land's story block (the old hearths, the marked stone) and `?dig=cache|hearth|sherd|sleeper|blade`.
+    land: landRecipe, terrainSeed: subSeed(seed, 'terrain'), piecesRecipe: await loadRecipe('world/pieces'), testDig: back ? null : params.get('dig') });
   dig.setKeepsakeWords((n) => keepsakeWords(n, keepsakesRecipe));
+  // A `?dig=` test link stands the walker by its spot (src/world/dig testSetUp): the view looks at it from close by.
+  on('dig:test-stood', (/** @type {{ x: number, z: number, yaw: number, target: { x: number, z: number } }} */ p) => {
+    const mx = (p.x + p.target.x) / 2, mz = (p.z + p.target.z) / 2;
+    camera.setPose({ ...camera.pose(), target: [mx, terrain.sampleHeight(mx, mz), mz], yaw: p.yaw + Math.PI * 0.7, distance: 3.2, pitch: (38 * Math.PI) / 180 });
+  });
   sim.addSystem(dig);
   // The perch stick (B1 P1; src/world/creatures/perch-sticks.js): once the dragonflies are found, the
   // sticks pouch's card stands a handful upright in a pond's shallows, a piece they rest on. `?perch`

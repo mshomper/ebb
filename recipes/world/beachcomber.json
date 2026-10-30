@@ -16,14 +16,14 @@
     { "id": "sinker", "need": { "rarity": "veryRare" }, "icon": "net", "hint": "a net that reaches the bottom", "title": "The sinker net", "line": "Weighted with stones, for the deepest water." },
     { "id": "shelf2", "need": { "marks": 3 }, "icon": "shelf", "hint": "more room to keep things", "title": "A second shelf", "line": "Sixteen more spaces." },
     { "id": "gold", "need": { "rarity": "lifetime" }, "icon": "shelf", "hint": "something golden", "title": "A pressed-gold border", "line": "For the space that holds it." },
-    { "id": "cabinet", "need": { "families": 13 }, "icon": "picture", "hint": "a frame for it all", "title": "The cabinet", "line": "A frame for the shelf's picture." }
+    { "id": "cabinet", "need": { "families": 14 }, "icon": "picture", "hint": "a frame for it all", "title": "The cabinet", "line": "A frame for the shelf's picture." }
   ],
   "words": {
     "title": "The beachcomber",
     "sub": "what you keep",
     "intro": "What the sea has given you that you kept, and the marks you have noticed, in the order they came.",
     "count": "{n} of {total} families kept",
-    "familyTotal": 13,
+    "familyTotal": 14,
     "icons": { "family": "shells", "rarity": "shelf", "mark": "eye", "dug": "dig" },
     "family": "Kept: {name}",
     "rarity": "Kept: your first {name} one",
@@ -33,7 +33,8 @@
     "families": {
       "shell": "a coiled shell", "bivalve": "a half-shell", "stone": "a stone", "driftwood": "driftwood", "feather": "a feather",
       "urchin": "an urchin", "starfish": "a starfish", "seed": "a drift seed", "purse": "a mermaid's purse", "cuttlebone": "a cuttlebone",
-      "coral": "a coral sprig", "fossil": "a fossil", "bottle": "a bottle", "artifact": "something made"
+      "coral": "a coral sprig", "fossil": "a fossil", "bottle": "a bottle", "artifact": "something made",
+      "sherd": "a piece of old pot"
     },
     "rarities": { "uncommon": "uncommon", "rare": "rare", "veryRare": "very rare", "lifetime": "once in a lifetime" },
     "marks": {
@@ -41,7 +42,8 @@
       "driftwood:rootKnot": "driftwood with a root knot", "feather:twinned": "two vanes from one quill", "bottle:message": "a message in a bottle",
       "urchin:sixRayed": "a six-rayed urchin", "starfish:oddArms": "a starfish with odd arms", "seed:seaHeart": "a sea heart",
       "purse:curly": "a catshark's purse", "cuttlebone:whole": "a whole cuttlebone", "coral:fan": "a coral fan", "bivalve:pair": "a shell with both halves",
-      "artifact:broken": "something made, snapped across", "artifact:pair": "something made, grown with its twin", "artifact:gilded": "something made, gilded"
+      "artifact:broken": "something made, snapped across", "artifact:pair": "something made, grown with its twin", "artifact:gilded": "something made, gilded",
+      "sherd:fingerprint": "a fingerprint in old clay"
     }
   }
 }

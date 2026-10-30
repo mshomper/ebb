@@ -16,21 +16,31 @@ const CLAY = '#7F95A0';
  * Soil as a cross-section that inks band by band as the walker digs (docs/future/13 10.9.1, P2c): the
  * topsoil is there from the start; the subsoil, the blue-grey clay (a wedge rising toward the bank
  * side) and the small details (a red worm, a big dark worm, a stone, a belemnite) ink the first time
- * each is dug (the page's `dig:` labels). A band not yet seen is blank paper.
+ * each is dug (the page's `dig:` labels). With the keeper's blade (B1 D1) a third band inks under it:
+ * the dark deeper clay, or the old hearth's thin black charcoal band with its flecks; and a sherd
+ * lies in the subsoil once one is dug. A band not yet seen is blank paper.
  * @param {import('./pen.js').Pen} p
  */
 export function soil(p) {
-  const sub = p.knows('sub'), clay = p.knows('clay');
-  const bottom = clay ? 270 : sub ? 220 : 150;
+  const sub = p.knows('sub'), clay = p.knows('clay'), deep = p.knows('deep'), coal = p.knows('charcoal');
+  const third = deep || coal;
+  const bottom = third ? 320 : clay ? 270 : sub ? 220 : 150;
   p.tint('M40 70H236V150H40Z', EARTH, 0.4);
   if (sub) p.tint(`M40 150H236V${bottom}H40Z`, SUBSOIL, 0.35);
   // The clay: a wedge under the topsoil, rising toward the bank on the right.
   if (clay) p.tint('M40 270H236V168C196 176 120 230 40 262Z', CLAY, 0.45);
+  // The third band, with the blade: the deeper clay under it all, the charcoal band a thin black line over it.
+  if (third) p.tint('M40 320H236V272C160 270 100 280 40 276Z', deep ? '#4E5A60' : SUBSOIL, deep ? 0.5 : 0.3);
+  if (coal) {
+    p.tint('M40 280C100 284 160 274 236 278V286C160 282 100 292 40 288Z', '#2A2622', 0.75);
+    for (const [x, y] of [[62, 283], [96, 286], [140, 280], [178, 281], [214, 280]]) p.oval(x, y, 3, 1.6, '#1A1715', 0.9, 0.8);
+  }
   // The block: its surface, the lines between the bands, and its sides as deep as is known.
   p.line(wave(40, 236, 70, 1.6, 28), 1.6);
   p.line('M40 150C90 146 150 154 236 148', 1);
-  if (sub && !clay) p.line('M40 220C90 216 150 224 236 218', 1);
+  if (sub && !clay && !third) p.line('M40 220C90 216 150 224 236 218', 1);
   if (clay) p.line('M40 262C120 230 196 176 236 168', 1);
+  if (third) p.line('M40 278C100 282 160 272 236 276', 1);
   p.line(`M40 70V${bottom}H236V70`, 1.1);
   // Clods in the topsoil; stones in the subsoil and a worm, once dug.
   for (const [x, y, rx, ry] of [[70, 96, 7, 5], [104, 118, 5, 4], [84, 136, 6, 4], [200, 100, 6, 4], [210, 124, 5, 3.5]]) p.oval(x, y, rx, ry, EARTH, 0.6, 1);
@@ -38,6 +48,8 @@ export function soil(p) {
   if (p.knows('worm')) p.line('M168 136C174 130 182 132 186 136S196 142 202 138', 2);
   if (sub && p.knows('bigworm')) p.line('M54 176C66 166 82 170 90 178S110 190 122 180', 3.4);
   // A belemnite lying in the clay: a stone bullet with its blunt end and point.
+  // A sherd in the subsoil: a curved piece of pot with its rim.
+  if (sub && p.knows('sherd')) p.shape('M150 200C160 194 176 194 186 200L182 208C174 204 162 204 154 208Z', WASH.brown, 0.75, 1.1);
   if (clay && p.knows('belemnite')) p.shape('M168 244L196 238C200 237 201 242 197 243L169 249C165 250 164 245 168 244Z', WASH.brown, 0.8, 1.1);
   // A sprout with its roots: side roots grow from the main one.
   const R = /** @type {[number, number, number, number, number]} */ ([150, 72, 146, 156, 4]);
@@ -56,7 +68,9 @@ export function soil(p) {
   p.label('roots', 250, 140, rx + 24, ry + 12);
   if (sub) p.label('sub', 250, 188, 226, 190);
   if (clay) p.label('clay', 250, 240, 226, 236);
-  return p.svg(380, clay ? 290 : 250, 'Field sketch of soil');
+  if (deep) p.label('deep', 250, 300, 226, 300);
+  if (coal) p.label('charcoal', 250, deep ? 340 : 296, 226, 283);
+  return p.svg(380, third ? (coal && deep ? 370 : 340) : clay ? 290 : 250, 'Field sketch of soil');
 }
 
 /** @param {import('./pen.js').Pen} p */

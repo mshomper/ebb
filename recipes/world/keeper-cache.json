@@ -1,0 +1,35 @@
+{
+  "type": "keeper-cache",
+  "version": 1,
+  "note": "The keeper's cache (docs/future/13 10.6.4, D-23, D-78; B1 D1): the letter in the bundle under each island's marked stone, from the keeper who tended it before. The land recipe's story.letter names which (starter for the first island, other for any other until each has its own). Each is a page in the keeper pages' shape ({ id, form, title, body }, src/ui/journal-keeper.js), added to them as cache-<key>: it opens as a card when the bundle is opened and is kept with the keeper's pages, to be read again. Under 80 words each. Drafted by the session for Matt to edit (his call, B1 plan, October 29, 2026); a story collaborator may rewrite them.",
+  "letters": {
+    "starter": {
+      "form": "A letter from the old keeper",
+      "title": "Under the stone",
+      "body": [
+        "To whoever keeps the island next,",
+        "",
+        "I kept it nine years. The old hearth near camp was mine, and someone's before me. Bits of their pots are still in the ground there.",
+        "",
+        "The blade is for you. It cuts deeper than stone will. Dig gently, and put back what sleeps.",
+        "",
+        "The toads come out of the winter ground in spring. Watch for them.",
+        "",
+        "Keep well."
+      ]
+    },
+    "other": {
+      "form": "A letter from the old keeper",
+      "title": "Under the stone",
+      "body": [
+        "To the next keeper,",
+        "",
+        "I didn't stay long here, but I left you what I could. The blade goes deeper than the ground lets a stone go.",
+        "",
+        "There are older things than me down there. Look, then put them back if they want to stay.",
+        "",
+        "Keep well."
+      ]
+    }
+  }
+}
