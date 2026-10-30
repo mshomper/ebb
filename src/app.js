@@ -890,6 +890,20 @@ export async function startApp(canvas, hooks = {}) {
     const carriersLink = params.get('camp') === 'carriers';
     // `?camp=gift` (B1 C1): the workbench built and the pack holding the gift stone's parts.
     const giftLink = params.get('camp') === 'gift';
+    // `?camp=canvas` (B1 C2, C-35; tools/canvas-check.html): your tent as pitched `&age=` seasons ago
+    // (0 by default), with the same tent new, after one season and after a year in a row behind it,
+    // and the view stood back to see them all; `&row=0,2,8` other ages; `&sort` those tents drawn as
+    // the shader sorts their paint (wood red, lining blue, canvas green, patches yellow).
+    if (params.get('camp') === 'canvas') {
+      const row = params.has('row') ? (params.get('row') ?? '').split(',').filter((v) => v !== '').map(Number).filter(Number.isFinite) : [0, 1, 4];
+      const t = camp.debug.canvasAge(Number(params.get('age')) || 0, row, params.has('sort'));
+      // From the tents' side, a little up, the row's middle in view.
+      if (t) {
+        const mid = (row.length * campRecipe.canvas.checkGapM) / 2, cx = t.x - Math.sin(t.yaw) * mid, cz = t.z - Math.cos(t.yaw) * mid;
+        camera.setPose({ ...camera.pose(), target: [cx, terrain.sampleHeight(cx, cz) + 0.7, cz], yaw: t.yaw + 1.2,
+          distance: 4 + row.length * 1.8, pitch: (14 * Math.PI) / 180 });
+      }
+    }
     const kit = carriersLink ? [['rushes.stems', 1], ['willow.withies', 1], ['rush-cord', 4]]
       : giftLink ? [['flat-stones', 1], ['shells', 2]]
       : benchesLink ? [['willow.withies', 1], ['sticks', 1], ['rush-cord', 2], ['flat-stones', 1], ['pebbles', 1], ['rushes.stems', 2], ['clay', 1], ['watermint.leaves', 1]] : apo ? [['shells', 3], ['watermint.leaves', 2], ['chamomile.flowers', 2], ['sticks', 3], ['pebbles', 2], ['rushes.stems', 3]]
@@ -914,7 +928,7 @@ export async function startApp(canvas, hooks = {}) {
     const ringAt = rp && pad ? (() => { const a = Math.atan2(pad.z - rp.z, pad.x - rp.x) - 0.5;
       return { x: rp.x, z: rp.z, stand: { x: rp.x + Math.cos(a) * 1.2, z: rp.z + Math.sin(a) * 1.2 } }; })() : null;
     const at = hearthLink ? ringAt : camp.stations.benchAt(apo ? 'apothecary' : 'workbench');
-    if (at && walk.placeAt(at.stand.x, at.stand.z, Math.atan2(at.x - at.stand.x, at.z - at.stand.z), 'stand')) {
+    if (params.get('camp') !== 'canvas' && at && walk.placeAt(at.stand.x, at.stand.z, Math.atan2(at.x - at.stand.x, at.z - at.stand.z), 'stand')) {
       const p = camera.pose();
       camera.setPose({ ...p, target: [at.stand.x, terrain.sampleHeight(at.stand.x, at.stand.z), at.stand.z], yaw: Math.atan2(at.x - at.stand.x, at.z - at.stand.z) + Math.PI + 0.9,
         distance: campRecipe.rest.viewDistanceM, pitch: (campRecipe.rest.viewPitchDeg * Math.PI) / 180 });

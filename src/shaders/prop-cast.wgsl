@@ -9,6 +9,8 @@ struct Prop {
   shade: vec4f,
   tilt: vec4f,
   burn: vec4f,
+  wear: vec4f,
+  dye: vec4f,
 };
 
 @group(0) @binding(0) var<uniform> cascadeViewProj: mat4x4f;   // dynamic offset per cascade
