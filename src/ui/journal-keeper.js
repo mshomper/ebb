@@ -43,6 +43,14 @@ export function keeperEntry(K, flags, newDot) {
 }
 
 /**
+ * A page's lines for the flags held: a line { if, line } shows only with that flag, { not, line }
+ * only without it (a set piece's page follows what you did; docs/future/14).
+ * @param {{ body: any[] }} page @param {string[]} flags @returns {string[]}
+ */
+export const pageBody = (page, flags) => page.body.flatMap((b) => (typeof b === 'string' ? [b]
+  : (b?.if && !flags.includes(b.if)) || (b?.not && flags.includes(b.not)) ? [] : [String(b?.line ?? '')]));
+
+/**
  * A keeper page on its paper, or the list of them. @param {any} K @param {string[]} flags
  * @param {string | null | undefined} id @param {string} newDot
  */
@@ -54,7 +62,7 @@ export function keeperView(K, flags, id, newDot) {
   if (page) {
     return `<section class="ebb-shelf">${back}
       <h3 class="ebb-shelf__title">${esc(page.title)}</h3>
-      ${letterHtml({ ...page, preface: page.preface ?? [] })}</section>`;
+      ${letterHtml({ ...page, body: pageBody(page, flags), preface: page.preface ?? [] })}</section>`;
   }
   return `<section class="ebb-shelf">${back}<h3 class="ebb-shelf__title">${esc(W.title)}</h3>
     <ul class="ebb-letters">${had.map((/** @type {any} */ p) => `<li><button type="button" class="ebb-letters__row" data-view="keeper" data-keeper="${esc(p.id)}">

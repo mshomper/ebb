@@ -7,7 +7,8 @@
 import { on } from '../core/events.js';
 import { loadRecipe } from '../core/recipes.js';
 import { dispatch } from '../input/actions.js';
-import { withCacheLetters } from './journal-keeper.js';
+import { get } from '../core/store.js';
+import { pageBody, withCacheLetters } from './journal-keeper.js';
 
 const esc = (/** @type {string} */ s) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c] ?? c);
 
@@ -42,7 +43,7 @@ export function mountKeeperCard(parent) {
     const p = (K?.pages ?? []).find((/** @type {any} */ x) => x.id === e.id);
     if (!p) return;
     shownId = p.id;
-    card.innerHTML = keeperCardHtml(p);
+    card.innerHTML = keeperCardHtml({ ...p, body: pageBody(p, get('journal')?.flags ?? []) });
     card.setAttribute('aria-label', `${p.title}. Click to close.`);
     requestAnimationFrame(() => card.classList.add('is-shown'));
   });

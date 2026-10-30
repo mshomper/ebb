@@ -932,5 +932,26 @@
     0.023
    ]
   }
+ },
+ "fishing-boat": {
+  "source": "Ebb_Fishing+Boat.glb",
+  "file": "fishing-boat.glb",
+  "bytes": 1286548,
+  "sourceBytes": 13830488,
+  "trianglesBefore": 24747,
+  "triangles": 11999,
+  "maps": 1024,
+  "bounds": {
+   "min": [
+    -2.785,
+    0,
+    -5.5
+   ],
+   "max": [
+    2.785,
+    7.152,
+    5.5
+   ]
+  }
  }
 }

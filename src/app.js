@@ -116,6 +116,9 @@ import { setActRate } from './world/figure/acts.js';
 import { ashMarks } from './world/gather/ashes.js';
 import { createDig } from './world/dig/index.js';
 import { createPerchSticks } from './world/creatures/perch-sticks.js';
+import { createSetpiecesLive } from './world/setpieces/live.js';
+import { createCairnsLive } from './world/setpieces/cairns-live.js';
+import { createBoatLive } from './world/setpieces/boat-live.js';
 import { createSketchbook } from './world/sketchbook/index.js';
 import { createKit } from './world/kit/index.js';
 import { joinCarriers, packForSave, wearsBand } from './world/kit/model.js';
@@ -793,8 +796,10 @@ export async function startApp(canvas, hooks = {}) {
   const spreadOf = (kind) => pack.recipe.pickups?.kinds?.[kind]?.spreadM ?? 0.4;
   // The keeper's camp (docs/future/13 section 3; src/world/camp): the tent and the fire ring in their
   // slots, the fire and the lantern as small lights, smoke and moths, and a night's rest in the tent.
+  /** The passing boat (made below), whose lantern joins the camp's lights. @type {{ lights: () => any[] } | null} */ let passingBoatRef = null;
   const camp = createCamp({ recipe: campRecipe, seed, walk, terrain, water, clock, orbit: skyRecipe.orbit, camera, world, piles,
-    seasons: seasonsRecipe, lighting, pack, shadowBias: shadowPass.bias, low: tier === 'low', tier, poses: (await loadRecipe('world/figure')).poses,
+    // The camp sets the small lights each frame; the passing boat's lantern joins them (docs/future/14).
+    seasons: seasonsRecipe, lighting: { setPoints: (/** @type {any[]} */ l) => lighting.setPoints([...l, ...(passingBoatRef?.lights() ?? [])]) }, pack, shadowBias: shadowPass.bias, low: tier === 'low', tier, poses: (await loadRecipe('world/figure')).poses,
     beat: () => intro.live?.intro.current?.id ?? null, cook: await loadRecipe('world/cook'), sowing: sowingRecipe });
   sim.addSystem(camp);
   ringPlace = camp.ringPlace;
@@ -920,6 +925,20 @@ export async function startApp(canvas, hooks = {}) {
       }
     } });
   }
+  // Set pieces (docs/future/14; src/world/setpieces): written events over game days, run in the
+  // hourly tick from recipes/setpieces/<id>.json. The cairn builder and the passing boat live here;
+  // `?setpiece=<id>&beat=N` (a test link, unsaved) starts one now at step N.
+  const spWorld = await loadRecipe('world/setpieces');
+  const spList = Object.fromEntries(await Promise.all(spWorld.order.map(async (/** @type {string} */ id) => [id, await loadRecipe(`setpieces/${id}`)])));
+  const setpieces = createSetpiecesLive({ world, recipes: { world: spWorld, list: spList }, hourIndex: () => clock.hourIndex(),
+    record: () => updateStore('world', () => world.state),
+    test: params.has('setpiece') && !back ? { id: params.get('setpiece') ?? '', beat: Number.parseInt(params.get('beat') ?? '0', 10) || 0 } : null });
+  sim.addSystem(setpieces);
+  const cairns = createCairnsLive({ R: spList.cairns, sp: setpieces, seed, pieces, pack, walk, terrain, camera, hourIndex: () => clock.hourIndex() });
+  sim.addSystem(cairns);
+  const passingBoat = createBoatLive({ R: spList.boat, sp: setpieces, seed, pieces, pack, walk, terrain, water, boatRecipe, mooring: () => boat.mooring });
+  sim.addSystem(passingBoat);
+  passingBoatRef = passingBoat;
   shadowPass.addCaster(dig.props.caster);
   // The walker's sketchbook (P2i I5; src/world/sketchbook): Sketch on the here-bar with charcoal
   // sticks in the pack and a creature, plant or find near the middle of the view.
@@ -1157,6 +1176,8 @@ export async function startApp(canvas, hooks = {}) {
     // The shovel in the walker's hands while it digs (src/world/dig).
     dig.props,
     boat.pass,
+    // The passing boat at anchor offshore (docs/future/14).
+    passingBoat.pass,
     // What lives under a log, while it is lifted (L3a).
     underLog.pass,
     // Autumn's fungi (a creature pass) and dewy webs, after the logs and the grass they are on.
@@ -1305,6 +1326,9 @@ export async function startApp(canvas, hooks = {}) {
     // A perch stick stands up out of the water (B1 P1): the ray is tried against the stick itself.
     const stick = perchSticks.underRay(r.o, r.d);
     if (stick) return /** @type {any} */ (stick);
+    // A cairn stands up off the ground too (docs/future/14).
+    const cairn = cairns.underRay(r.o, r.d);
+    if (cairn) return /** @type {any} */ (cairn);
     for (const h of [0.3, 0.2, 0.12, 0.05]) {
       if (r.d[1] > -1e-4) break;
       const t = (point[1] + h - r.o[1]) / r.d[1];
@@ -2447,6 +2471,8 @@ export async function startApp(canvas, hooks = {}) {
     dig,
     /** Perch sticks (B1 P1): the journal asks whether a tap landed on one; tests stand and take them up. */
     perchSticks,
+    /** Set pieces (docs/future/14): the runner's live core, and the cairns' and the boat's taps and cards. */
+    setpieces, cairns, passingBoat,
     /**
      * Testing helpers, on window.ebb with `?debug`: autumn's misty morning and kept logs, skipping to
      * a time of year, and bringing a settled school or swarm. They change this island's time and

@@ -1,0 +1,40 @@
+{
+  "type": "setpiece",
+  "version": 1,
+  "id": "cairns",
+  "note": "The cairn builder (docs/future/14): a mystery told over weeks. Played by the set-piece runner (src/world/setpieces/runner.js, hooks.js) in the hourly tick; drawn and tapped by src/world/setpieces/cairns-live.js. trigger: the island's second spring (season 0, year 1 or later), or the cave mouth once F16 reports it (a cond note 'caveMouth'). beats: a cairn at dawn every afterDays [min, max] game days (seeded), repeat times; each waits for the trail the live game plans once (a 'trail' note); they fall while you are away too. The last, the letter, falls once the letter under the last cairn has been read (a 'read' note). cairn: stones a new cairn is built of [min, max] (seeded); a stone added (Add a stone, a flat stone or a pebble from the pack, at most addMax a cairn) is answered by the next cairn with one more than the one before holds, up to maxStones. trail: count cairns from startM out from the camp pad (or the island's middle) toward the trail's end (the old keeper's cache once the dig reports one, else shoreM short of the far shore along the longest line of dry land), evenly spaced, each on dry land at least landM above the sea; leanDeg each leans toward the next. look: the stones' sizes (m), how much each is turned and offset, how lumpy (lump), the colour (linear, physical; the palette paints it) and moss: the share of moss colour a cairn has gathered after mossDays game days (none at first). tapM: how near a tap on a cairn opens its card; reachM: how near you stand to add a stone. hideM: a cairn that stands up while you play stays hidden only while its spot is on screen within this far of the view, and shows the moment you look away (they never appear while you watch); ones that stood while you were away or asleep, or by a test link, show at once. words: card and notices; the letter and the journal page are keeper pages (recipes/world/keeper-pages.json 'cairns-letter', 'cairns').",
+  "size": "small",
+  "repeat": "once",
+  "trigger": { "any": [ { "check": "season", "season": 0, "minYear": 1 }, { "check": "cond", "name": "caveMouth" } ] },
+  "beats": [
+    { "id": "cairn", "at": "dawn", "afterDays": [1, 3], "repeat": 7, "waitFor": "trail" },
+    { "id": "letter", "at": "any", "afterDays": 0, "waitFor": "read" }
+  ],
+  "cairn": { "stones": [4, 6], "addMax": 3, "maxStones": 12, "addKinds": ["flat-stones", "pebbles"] },
+  "trail": { "count": 7, "startM": 9, "shoreM": 4, "landM": 0.8, "leanDeg": 4, "endSearchM": 140, "stepM": 1 },
+  "look": {
+    "baseM": [0.34, 0.24], "topM": [0.14, 0.1], "thickM": [0.075, 0.05], "jitterM": 0.025, "turnDeg": 40, "lump": 0.22,
+    "color": [0.31, 0.3, 0.28], "shade": 0.22, "moss": [0.12, 0.17, 0.06], "mossDays": 56, "mossMax": 0.55,
+    "letter": { "sizeM": [0.11, 0.07, 0.012], "color": [0.62, 0.57, 0.46] }
+  },
+  "tapM": 0.55,
+  "reachM": 0.9,
+  "hideM": 28,
+  "words": {
+    "name": "A cairn",
+    "nameLast": "The last cairn",
+    "lines": ["Flat stones, stacked with care. It leans a little, toward somewhere.", "Another stone has been added since. Someone answered.", "Moss is starting on the lower stones."],
+    "lineLetter": "Something pale is tucked under the top stone.",
+    "lineRead": "The trail ends here. The letter is in your journal.",
+    "add": "Add a stone",
+    "read": "Read the letter",
+    "added": "You set a stone on top.",
+    "full": "It won't take another.",
+    "noStone": "A flat stone or a pebble from the pack first.",
+    "far": "Closer first.",
+    "first": "A cairn stands on the island this morning. Nobody was seen building it.",
+    "next": "Another cairn this morning, a little further on.",
+    "answer": "The new cairn has one stone more than the last.",
+    "end": "The trail of cairns ends. There is a letter."
+  }
+}

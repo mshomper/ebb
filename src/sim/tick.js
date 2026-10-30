@@ -13,6 +13,7 @@ import * as creatures from '../world/creatures/coarse.js';
 import * as swarms from '../world/creatures/swarms.js';
 import * as spring from '../world/creatures/spring.js';
 import * as hen from '../world/hen/trust.js';
+import * as setpieces from '../world/setpieces/runner.js';
 
 /** @typedef {{name: string, payload: any, hour?: number}} CoarseEvent */
 /** @typedef {(state: any, hourIndex: number, env: Env) => {state: any, events: CoarseEvent[]}} CoarseStep */
@@ -58,6 +59,9 @@ export const COARSE_ORDER = Object.freeze([
   // The hen's trust and Fond (docs/future/15, slice 2; src/world/hen/trust.js): what live play
   // recorded near her. Skips until she has been out.
   { id: 'hen', coarseStep: hen.coarseStep },
+  // Set pieces (docs/future/14; src/world/setpieces/runner.js): written events over game days, last,
+  // so a trigger sees this hour's seasons and creatures. Skips until env.recipes.setpieces exists.
+  { id: 'setpieces', coarseStep: setpieces.coarseStep },
 ]);
 
 /**

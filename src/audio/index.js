@@ -27,6 +27,7 @@ import { wingRecipe } from './voices/dragonfly.js';
 import { createMusic } from './music/index.js';
 import { createKeepsakeSounds } from './keepsake-sounds.js';
 import { createCampLoops } from './camp-loops.js';
+import { ringBell } from './bell.js';
 import { hash32 } from '../core/rng.js';
 import { emit, on } from '../core/events.js';
 import { sunMoon } from '../world/sky/sun-moon.js';
@@ -203,6 +204,8 @@ export async function startAudio(store) {
     heldKeepsake = id;
   }));
   unsubs.push(on('keepsake:sound', (/** @type {{ name: string, seed?: number }} */ p) => keepsakeSounds?.play(p.name, p.seed)));
+  // The passing boat's bell, far out on the water (docs/future/14; src/audio/bell.js).
+  unsubs.push(on('setpiece:bell', (/** @type {any} */ b) => { const dest = mixer?.input('ambience'); if (mixer && dest && b) ringBell(mixer.ctx, dest, b); }));
   // The first evening (src/world/intro): lighting the fire brings one call far out over the water,
   // the frog voice (Matt's choice; recipes/audio/intro.json), outM along the camp pad's seaward line.
   unsubs.push(on('intro:curlew', () => {

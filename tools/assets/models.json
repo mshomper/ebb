@@ -13,6 +13,7 @@
     { "source": "Ebb_Iron+Shovel.glb", "out": "shovel-iron", "along": "longest", "sizeM": 1.1, "yawDeg": 0, "triangles": 4000, "maps": 512 },
     { "source": "Ebb_Wood+Shovel.glb", "out": "shovel-wood", "along": "longest", "sizeM": 1.1, "yawDeg": 0, "triangles": 4000, "maps": 512 },
     { "source": "Ebb_Boat.glb", "out": "boat", "along": "longest", "sizeM": 2.6, "yawDeg": 90, "triangles": 6000, "maps": 1024 },
+    { "source": "Ebb_Fishing+Boat.glb", "out": "fishing-boat", "along": "longest", "sizeM": 11, "yawDeg": 90, "triangles": 12000, "maps": 1024 },
     { "source": "Ebb_Lantern.glb", "out": "lantern", "along": "height", "sizeM": 0.3, "yawDeg": 0, "triangles": 7000, "maps": 512 },
     { "source": "Ebb_log_single.obj", "out": "log", "along": "longest", "sizeM": 0.45, "yawDeg": 0, "triangles": 2500, "maps": 512, "paint": { "from": "Ebb_Log+Pile.glb" } },
     { "source": "Ebb_stone_single.obj", "out": "stone", "along": "longest", "sizeM": 0.15, "yawDeg": 0, "triangles": 5000, "maps": 512, "subdivide": 1, "restFlat": true, "paint": { "from": "Ebb_Stones.glb", "style": "stone" } },

@@ -90,6 +90,8 @@ export function catchUpJob(a) {
   const env = makeEnv(a.seed, a.recipes);
   // The camp's standing presence (docs/future/13 CP-13) is earned only while away.
   /** @type {any} */ (env).awayCamp = a.camp ?? null;
+  // You are away: set pieces' beats that need you there wait (src/world/setpieces/runner.js).
+  /** @type {any} */ (env).away = true;
   const byDay = a.habitatInputs ? habitatByDay(a.habitatInputs) : null;
   let habitat = a.habitat;
   env.habitat = () => habitat;
