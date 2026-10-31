@@ -77,6 +77,7 @@ export const PARALLEL = {
   digDeeper: () => import('./unit-tests-dig-deeper.js').then((m) => m.addDigDeeperTests),
   campMaking: () => import('./unit-tests-camp-making.js').then((m) => m.addCampMakingTests),
   campKnown: () => import('./unit-tests-camp-known.js').then((m) => m.addCampKnownTests),
+  keepsakeShelf: () => import('./unit-tests-keepsake-shelf.js').then((m) => m.addKeepsakeShelfTests),
   campCanvas: () => import('./unit-tests-camp-canvas.js').then((m) => m.addCampCanvasTests),
   glints: () => import('./unit-tests-glints.js').then((m) => m.addGlintsTests),
   fireProducts: () => import('./unit-tests-fire-products.js').then((m) => m.addFireProductsTests),

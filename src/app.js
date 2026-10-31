@@ -59,6 +59,7 @@ import { previewSpots } from './world/creatures/preview-spots.js';
 import { createCreatures } from './world/creatures/index.js';
 import { createFinds } from './world/finds/index.js';
 import { createKeepsakes } from './world/keepsakes/index.js';
+import { testShelf, shelfPoint } from './world/camp/shelf-fit.js';
 import { keepsakeGlints, findGlints } from './world/glints.js';
 import { createGlintsPass } from './render/passes/glints.js';
 import { keepsakeWords } from './world/keepsakes/families/index.js';
@@ -810,7 +811,7 @@ export async function startApp(canvas, hooks = {}) {
   const camp = createCamp({ recipe: campRecipe, seed, walk, terrain, water, clock, orbit: skyRecipe.orbit, camera, world, piles,
     // The camp sets the small lights each frame; the passing boat's lantern joins them (docs/future/14).
     seasons: seasonsRecipe, lighting: { setPoints: (/** @type {any[]} */ l) => lighting.setPoints([...l, ...(passingBoatRef?.lights() ?? []), ...(lanternsRef?.lights() ?? [])]) }, pack, shadowBias: shadowPass.bias, low: tier === 'low', tier, poses: (await loadRecipe('world/figure')).poses,
-    beat: () => intro.live?.intro.current?.id ?? null, cook: await loadRecipe('world/cook'), sowing: sowingRecipe,
+    beat: () => intro.live?.intro.current?.id ?? null, cook: await loadRecipe('world/cook'), sowing: sowingRecipe, keepsakes: keepsakesRecipe,
     // The nest box goes on the camp's rim on the side of the hen's home bushes (docs/future/15 slice 4).
     rimToward: (/** @type {string} */ slot) => (slot === 'nest' && speciesRecipes.hen?.home ? scrubHome(world.state?.growth?.plants ?? [], speciesRecipes.hen.home) : null) });
   sim.addSystem(camp);
@@ -1028,6 +1029,10 @@ export async function startApp(canvas, hooks = {}) {
     const giftLink = params.get('camp') === 'gift';
     // `?camp=nest` (the hen's slice 4): the workbench built and the pack holding the nest box's parts.
     const nestLink = params.get('camp') === 'nest';
+    // `?camp=shelf` (B2): the workbench built, the keepsake shelf made beside the tent with sixteen
+    // keepsakes on it (`&keep=N` that many, 0 to 16), and you standing in front of it; `&make` leaves
+    // the shelf unmade with its parts (a stick, woven twigs, rush cord) in the pack, at the workbench.
+    const shelfLink = params.get('camp') === 'shelf', shelfMake = shelfLink && params.has('make');
     // `?camp=canvas` (B1 C2, C-35; tools/canvas-check.html): your tent as pitched `&age=` seasons ago
     // (0 by default), with the same tent new, after one season and after a year in a row behind it,
     // and the view stood back to see them all; `&row=0,2,8` other ages; `&sort` those tents drawn as
@@ -1045,11 +1050,17 @@ export async function startApp(canvas, hooks = {}) {
     const kit = carriersLink ? [['rushes.stems', 1], ['willow.withies', 1], ['rush-cord', 4]]
       : giftLink ? [['flat-stones', 1], ['shells', 2]]
       : nestLink ? [['sticks', 1], ['rushes.stems', 2]]
+      : shelfLink ? (shelfMake ? [['sticks', 1], ['woven-twigs', 1], ['rush-cord', 1]] : [])
       : benchesLink ? [['willow.withies', 1], ['sticks', 1], ['rush-cord', 2], ['flat-stones', 1], ['pebbles', 1], ['rushes.stems', 2], ['clay', 1], ['watermint.leaves', 1]] : apo ? (params.has('eggs') ? [['sticks', 1]] : [['shells', 3], ['watermint.leaves', 2], ['chamomile.flowers', 2], ['sticks', 3], ['pebbles', 2], ['rushes.stems', 3]])
       : hearthLink ? (params.has('eggs') ? [['sticks', 1]] : [['clay', 3], ['sand', 2], ['crushed-shell', 1], ['sticks', 3]])
       : [['flat-stones', 3], ['sticks', 2], ['rush-cord', 1], ['pebbles', 2]];
     for (const [k, n] of kit) pack.add(/** @type {string} */ (k), /** @type {number} */ (n));
-    if (params.get('camp') === 'bench' || apo || benchesLink || hearthLink || carriersLink || giftLink || nestLink) camp.stations.debug.buildNow('workbench');
+    if (params.get('camp') === 'bench' || apo || benchesLink || hearthLink || carriersLink || giftLink || nestLink || shelfLink) camp.stations.debug.buildNow('workbench');
+    if (shelfLink && !shelfMake) {
+      camp.stations.debug.placeNow('keepsake-shelf');
+      const n = params.has('keep') ? Math.max(0, Math.min(16, Number(params.get('keep')) || 0)) : 16;
+      updateStore('keepsakes', () => testShelf(keepsakesRecipe, n, clock.worldT() / 3600));
+    }
     // `&eggs` (the hen's slice 4): two eggs, a pinch of sea salt, eggshells and grit in the pack; at
     // the hearth, the cooking pot full of spring water, so `?camp=hearth&fire=lit&eggs` cooks at once.
     if (params.has('eggs')) {
@@ -1072,10 +1083,14 @@ export async function startApp(canvas, hooks = {}) {
     // At the ring, on the pad's side of it, a little round so the workbench shows too.
     const ringAt = rp && pad ? (() => { const a = Math.atan2(pad.z - rp.z, pad.x - rp.x) - 0.5;
       return { x: rp.x, z: rp.z, stand: { x: rp.x + Math.cos(a) * 1.2, z: rp.z + Math.sin(a) * 1.2 } }; })() : null;
-    const at = hearthLink ? ringAt : camp.stations.benchAt(apo ? 'apothecary' : 'workbench');
+    // At the shelf: beside it, so the low view takes in you and the whole shelf from its front.
+    const shelfAt = shelfLink && !shelfMake ? camp.shelf.at() : null;
+    const shelfSide = shelfAt ? shelfPoint(shelfAt, campRecipe.keepsakeShelf.testStandM) : null;
+    const at = hearthLink ? ringAt : shelfAt && shelfSide ? { x: shelfAt.x, z: shelfAt.z, stand: { x: shelfSide[0], z: shelfSide[2] } } : camp.stations.benchAt(apo ? 'apothecary' : 'workbench');
     if (params.get('camp') !== 'canvas' && at && walk.placeAt(at.stand.x, at.stand.z, Math.atan2(at.x - at.stand.x, at.z - at.stand.z), 'stand')) {
       const p = camera.pose();
-      camera.setPose({ ...p, target: [at.stand.x, terrain.sampleHeight(at.stand.x, at.stand.z), at.stand.z], yaw: Math.atan2(at.x - at.stand.x, at.z - at.stand.z) + Math.PI + 0.9,
+      camera.setPose({ ...p, target: [at.stand.x, terrain.sampleHeight(at.stand.x, at.stand.z), at.stand.z],
+        yaw: shelfAt ? shelfAt.yaw + campRecipe.keepsakeShelf.testViewRad : Math.atan2(at.x - at.stand.x, at.z - at.stand.z) + Math.PI + 0.9,
         distance: campRecipe.rest.viewDistanceM, pitch: (campRecipe.rest.viewPitchDeg * Math.PI) / 180 });
       walk.downHere();
     }
@@ -1210,6 +1225,8 @@ export async function startApp(canvas, hooks = {}) {
     ...packDraw.passes,
     // The gift stone, what lies on it and the herb bed's edging pebbles (B1 C1).
     camp.gifts.pass,
+    // The keepsakes standing on the keepsake shelf at camp (B2).
+    camp.shelf.pass,
     pieces.pass,
     // The camp's tent, fire ring and lantern, drawn with their own paint maps.
     camp.props,
@@ -2082,7 +2099,11 @@ export async function startApp(canvas, hooks = {}) {
       // Carrying, the tap sets the piece down instead.
       case 'look.tap':
         if (pieces.carrying()) carryTap(a.x, a.y);
-        else emitDeferred('look:tapped', { x: a.x, y: a.y, point: groundAt(a.x, a.y) });
+        else {
+          // The keepsake shelf stands tall: a tap on it from above would land on the ground behind (B2).
+          const r = camera.ray(a.x, a.y), shelfHit = camp.shelf.underRay(r.o, r.d), g = groundAt(a.x, a.y);
+          emitDeferred('look:tapped', { x: a.x, y: a.y, point: shelfHit && g ? [shelfHit.x, g[1], shelfHit.z] : g });
+        }
         break;
       case 'history.undo': if (!stroking) runHistory('undo'); break;
       case 'history.redo': if (!stroking) runHistory('redo'); break;
