@@ -27,15 +27,17 @@ const ID = 'spring-cave';
 /**
  * A lathe round +y (the pan): profile [radius, height] pairs, n sides, both faces; VERT floats a
  * vertex with an albedo. @param {number[][]} prof @param {number} n @param {number[]} col
+ * @param {(number[] | null)[]} [ringCol] an albedo for some rings of the profile (the rusted rim)
  */
-function lathe(prof, n, col) {
+function lathe(prof, n, col, ringCol = []) {
   const data = [], idx = [];
   for (let j = 0; j < prof.length; j++) {
     const [r, y] = prof[j], [r0, y0] = prof[Math.max(0, j - 1)], [r1, y1] = prof[Math.min(prof.length - 1, j + 1)];
     const tx = r1 - r0, ty = y1 - y0, l = Math.hypot(tx, ty) || 1;
+    const k = ringCol[j] ?? col;
     for (let i = 0; i <= n; i++) {
       const a = (i / n) * Math.PI * 2, c = Math.cos(a), s = Math.sin(a);
-      data.push(r * c, y, r * s, (-ty / l) * c, tx / l, (-ty / l) * s, col[0], col[1], col[2], 1);
+      data.push(r * c, y, r * s, (-ty / l) * c, tx / l, (-ty / l) * s, k[0], k[1], k[2], 1);
     }
   }
   for (let j = 0; j < prof.length - 1; j++) for (let i = 0; i < n; i++) {
@@ -73,6 +75,23 @@ function tube(pts, r, sides, col, alpha = 1) {
   return { data, idx };
 }
 
+/**
+ * A lumpy stone: a small sphere pushed in and out, its foot at y0. @param {number} x @param {number} y0
+ * @param {number} z @param {number} r @param {(k: number) => number} u seeded 0..1 by k
+ * @param {number} lumpK @param {number[]} col @param {number} [flat] how squashed (0.65 a pebble)
+ */
+function lumpStone(x, y0, z, r, u, lumpK, col, flat = 0.65) {
+  const sph = [], sidx = [], LAT = 5, LON = 8;
+  for (let a = 0; a <= LAT; a++) for (let b = 0; b <= LON; b++) {
+    const th = (a / LAT) * Math.PI, ph = (b / LON) * Math.PI * 2;
+    const k = 1 + lumpK * (Math.sin(2 * ph + u(4) * 6) * Math.sin(th) * 0.6 + Math.cos(3 * th + u(5) * 6) * 0.4);
+    const nx = Math.sin(th) * Math.cos(ph), ny = Math.cos(th), nz = Math.sin(th) * Math.sin(ph);
+    sph.push(x + nx * r * k, y0 + r * 0.55 + ny * r * flat * k, z + nz * r * k * (0.8 + u(6) * 0.4), nx, ny, nz, col[0], col[1], col[2], 1);
+  }
+  for (let a = 0; a < LAT; a++) for (let b = 0; b < LON; b++) { const q = a * (LON + 1) + b; sidx.push(q, q + LON + 1, q + 1, q + 1, q + LON + 1, q + LON + 2); }
+  return { data: sph, idx: sidx };
+}
+
 /** Several meshes in one. @param {{ data: number[], idx: number[] }[]} parts */
 function join(parts) {
   const data = [], idx = [];
@@ -107,15 +126,22 @@ export function createSpringCave(o) {
   }
   /** World to the cave's frame and back. */
   const lx = (/** @type {number} */ x) => x - (O?.x ?? 0), lz = (/** @type {number} */ z) => z - (O?.z ?? 0);
-  /** The pan's place by the pool, toward the light (cave frame). */
+  /**
+   * The pan's place by the pool's edge (cave frame): round from the side you come at it from the
+   * rope by aroundDeg, so it stands ahead of you in view when you come down and never where you land;
+   * and the way it faces (fx, fz): toward the rope's foot, so its bowl is what you see.
+   */
   const panAt = (() => {
-    const p = S.pool, dx = -p.at[0], dz = -p.at[1], l = Math.hypot(dx, dz) || 1, d = p.radiusM + P.fromPoolM;
-    return { x: p.at[0] + (dx / l) * d + P.at[0], z: p.at[1] + (dz / l) * d + P.at[1] };
+    const p = S.pool, dx = R.rope.at[0] - p.at[0], dz = R.rope.at[1] - p.at[1], l = Math.hypot(dx, dz) || 1, d = p.radiusM + P.fromPoolM;
+    const g = (P.aroundDeg * Math.PI) / 180, ux = dx / l, uz = dz / l, rx = ux * Math.cos(g) - uz * Math.sin(g), rz = ux * Math.sin(g) + uz * Math.cos(g);
+    const x = p.at[0] + rx * d, z = p.at[1] + rz * d;
+    const ex = R.rope.at[0] - x, ez = R.rope.at[1] - z, el = Math.hypot(ex, ez) || 1;
+    return { x, z, fx: ex / el, fz: ez / el };
   })();
-  /** Where you stand to pan: just back from the water's edge, by the pan. */
+  /** Where you stand to pan: at the water's edge on the pan's side, facing the water. */
   const panStand = (() => {
-    const p = S.pool, dx = panAt.x - p.at[0], dz = panAt.z - p.at[1], l = Math.hypot(dx, dz) || 1;
-    return { x: panAt.x + (dx / l) * 0.25, z: panAt.z + (dz / l) * 0.25, yaw: Math.atan2(-dx, -dz) };
+    const p = S.pool, dx = panAt.x - p.at[0], dz = panAt.z - p.at[1], l = Math.hypot(dx, dz) || 1, d = p.radiusM + P.standM;
+    return { x: p.at[0] + (dx / l) * d, z: p.at[1] + (dz / l) * d, yaw: Math.atan2(-dx, -dz) };
   })();
 
   /** The cave's floor (world height) under a point, high where the walls close in. @param {number} x @param {number} z */
@@ -163,15 +189,30 @@ export function createSpringCave(o) {
     const key = (held ? held.x.toFixed(2) + held.y.toFixed(2) + held.z.toFixed(2) + held.tilt.toFixed(2) : hasPan() ? 'kit' : 'lying') + (shrimpT > 0 ? `s${Math.round(shrimpT * 30)}` : '');
     if (key === thingsKey) return;
     thingsKey = key;
-    const L = R.look, r = P.radiusM, rim = P.rimM;
-    const pan = lathe([[0, 0], [r * 0.55, 0.008], [r * 0.85, rim * 0.6], [r, rim], [r * 1.04, rim * 1.05]], 28, L.pan);
-    const px = held ? held.x : at.x + panAt.x, pz = held ? held.z : at.z + panAt.z, py = held ? held.y : at.y + shape.floorAt(panAt.x, panAt.z) + 0.01;
-    const tilt = held ? held.tilt : 0.12, ct = Math.cos(tilt), st = Math.sin(tilt);
-    for (let i = 0; i < pan.data.length; i += 10) {
-      const x = pan.data[i], y = pan.data[i + 1], nx = pan.data[i + 3], ny = pan.data[i + 4];
-      pan.data[i] = px + x * ct - y * st; pan.data[i + 1] = py + x * st + y * ct; pan.data[i + 2] += pz;
-      pan.data[i + 3] = nx * ct - ny * st; pan.data[i + 4] = nx * st + ny * ct;
+    const L = R.look, r = P.radiusM, rim = P.rimM, rust = L.panRim;
+    // A miner's pan: a flat floor, a straight sloping wall, two riffle rings in it and a rolled,
+    // rusted lip, so it reads as a pan from across the cave and not as a hole in the floor.
+    const pan = lathe([[0, 0], [r * 0.5, 0], [r * 0.56, rim * 0.18], [r * 0.6, rim * 0.22], [r * 0.66, rim * 0.4], [r * 0.7, rim * 0.44],
+      [r * 0.92, rim * 0.92], [r, rim], [r * 1.05, rim * 1.02], [r * 1.07, rim * 0.9]], 32, L.pan, [null, null, rust, null, rust, null, null, rust, rust, rust]);
+    if (held) {
+      const px = held.x, py = held.y, pz = held.z, ct = Math.cos(held.tilt), st = Math.sin(held.tilt);
+      for (let i = 0; i < pan.data.length; i += 10) {
+        const x = pan.data[i], y = pan.data[i + 1], nx = pan.data[i + 3], ny = pan.data[i + 4];
+        pan.data[i] = px + x * ct - y * st; pan.data[i + 1] = py + x * st + y * ct; pan.data[i + 2] += pz;
+        pan.data[i + 3] = nx * ct - ny * st; pan.data[i + 4] = nx * st + ny * ct;
+      }
+    } else {
+      // Lying by the pool, it leans up on its stone, its bowl toward the rope.
+      const a = P.lean.angle, ca = Math.cos(a), sa = Math.sin(a), yaw = Math.atan2(panAt.fx, panAt.fz), cy = Math.cos(yaw), sy = Math.sin(yaw);
+      const px = at.x + panAt.x, pz = at.z + panAt.z, py = at.y + shape.floorAt(panAt.x, panAt.z) + r * 1.07 * sa + 0.005;
+      const turn = (/** @type {number} */ x, /** @type {number} */ y, /** @type {number} */ z) => { const y1 = y * ca - z * sa, z1 = y * sa + z * ca; return [x * cy + z1 * sy, y1, -x * sy + z1 * cy]; };
+      for (let i = 0; i < pan.data.length; i += 10) {
+        const p = turn(pan.data[i], pan.data[i + 1], pan.data[i + 2]), n = turn(pan.data[i + 3], pan.data[i + 4], pan.data[i + 5]);
+        pan.data[i] = px + p[0]; pan.data[i + 1] = py + p[1]; pan.data[i + 2] = pz + p[2];
+        pan.data[i + 3] = n[0]; pan.data[i + 4] = n[1]; pan.data[i + 5] = n[2];
+      }
     }
+    const px = held ? held.x : at.x + panAt.x, pz = held ? held.z : at.z + panAt.z, py = held ? held.y : at.y + shape.floorAt(panAt.x, panAt.z) + 0.01;
     // The rope, from the hole's lip down to its foot, sagging a little.
     const fx = at.x + R.rope.at[0], fz = at.z + R.rope.at[1], fy = at.y + shape.floorAt(R.rope.at[0], R.rope.at[1]) + 0.02;
     const pts = [];
@@ -215,18 +256,13 @@ export function createSpringCave(o) {
       // The way from the rope to the pool stays clear.
       const ax = S.pool.at[0] - foot.x, az = S.pool.at[1] - foot.z, al = Math.hypot(ax, az), t = Math.max(0, Math.min(1, ((x - foot.x) * ax + (z - foot.z) * az) / (al * al)));
       if (Math.hypot(x - (foot.x + ax * t), z - (foot.z + az * t)) < 0.4) continue;
-      const size = T.sizeM[0] + (T.sizeM[1] - T.sizeM[0]) * u(i, 3) ** 2, r = size / 2, y0 = at.y + shape.floorAt(x, z);
-      const sph = [], sidx = [], LAT = 5, LON = 8;
-      for (let a = 0; a <= LAT; a++) for (let b = 0; b <= LON; b++) {
-        const th = (a / LAT) * Math.PI, ph = (b / LON) * Math.PI * 2;
-        const k = 1 + T.lump * (Math.sin(2 * ph + u(i, 4) * 6) * Math.sin(th) * 0.6 + Math.cos(3 * th + u(i, 5) * 6) * 0.4);
-        const nx = Math.sin(th) * Math.cos(ph), ny = Math.cos(th), nz = Math.sin(th) * Math.sin(ph);
-        sph.push(at.x + x + nx * r * k, y0 + r * 0.55 + ny * r * 0.65 * k, at.z + z + nz * r * k * (0.8 + u(i, 6) * 0.4), nx, ny, nz, T.albedo[0], T.albedo[1], T.albedo[2], 1);
-      }
-      for (let a = 0; a < LAT; a++) for (let b = 0; b < LON; b++) { const q = a * (LON + 1) + b; sidx.push(q, q + LON + 1, q + 1, q + 1, q + LON + 1, q + LON + 2); }
-      parts.push({ data: sph, idx: sidx });
+      const size = T.sizeM[0] + (T.sizeM[1] - T.sizeM[0]) * u(i, 3) ** 2, y0 = at.y + shape.floorAt(x, z);
+      parts.push(lumpStone(at.x + x, y0, at.z + z, size / 2, (k) => u(i, k), T.lump, T.albedo));
       n++;
     }
+    // The flat stone the pan leans on, behind it from the way you come.
+    const B = P.lean, bx = panAt.x - panAt.fx * B.stoneBackM, bz = panAt.z - panAt.fz * B.stoneBackM;
+    parts.push(lumpStone(at.x + bx, at.y + shape.floorAt(bx, bz) - 0.04, at.z + bz, B.stoneM / 2, (k) => u(9001, k), T.lump * 0.6, T.albedo, 0.8));
     const all = join(parts);
     stoneMesh = { data: Array.from(all.data), idx: Array.from(all.idx) };
     return stoneMesh;
@@ -241,7 +277,7 @@ export function createSpringCave(o) {
     const foot = { x: at.x + R.rope.at[0], z: at.z + R.rope.at[1] };
     const p = S.pool, yaw = Math.atan2(at.x + p.at[0] - foot.x, at.z + p.at[1] - foot.z);
     const ok = o.walk.enterZone({ id: ID, ground, water, bounds: [at.x + S.boundsM[0], at.z + S.boundsM[2], at.x + S.boundsM[3], at.z + S.boundsM[5]], cellM: R.walk.cellM,
-      at: { x: foot.x + Math.sin(yaw) * 0.45, z: foot.z + Math.cos(yaw) * 0.45, yaw }, camera: R.view.camera });
+      at: { x: foot.x + Math.sin(yaw) * R.view.arriveM, z: foot.z + Math.cos(yaw) * R.view.arriveM, yaw, viewYaw: yaw + Math.PI + (R.view.arriveTurnDeg * Math.PI) / 180 }, camera: R.view.camera });
     if (!ok) return false;
     if (!(get('journal')?.flags ?? []).includes('setpiece:cairns:below')) dispatch(/** @type {any} */ ({ type: 'journal.flag', flag: 'setpiece:cairns:below' }));
     emitDeferred('island:notice', { text: W.below, showS: 6 });
@@ -273,7 +309,8 @@ export function createSpringCave(o) {
   function pan() {
     const at = origin();
     if (!at || o.walk.zone !== ID || panning || o.walk.busy()) return;
-    if (!hasPan()) { emitDeferred('island:notice', { text: W.needPan, showS: 5 }); return; }
+    // No pan yet: the old keeper's pan is right there by the water, so you take it up and pan.
+    if (!hasPan()) { update('cook', (c) => recordMade(cleanCook(c), 'keepers-pan', o.hour(), true)); thingsKey = ''; emitDeferred('island:notice', { text: W.tookPan, showS: 6 }); }
     if (pansLeft(pans(), o.day(), o.hour(), P) <= 0) { emitDeferred('island:notice', { text: W.settled, showS: 6 }); return; }
     update('identify', () => null);
     const p = S.pool;
@@ -337,20 +374,23 @@ export function createSpringCave(o) {
     const at = origin();
     if (!at || o.walk.zone !== ID) return null;
     const fy = at.y + shape.floorAt(R.rope.at[0], R.rope.at[1]);
-    const rope = rayToSegment(ro, rd, [at.x + R.rope.at[0], fy, at.z + R.rope.at[1]], [at.x, at.top, at.z]);
-    if (rope.d <= R.rope.tapM) return ropeCard();
+    // Whichever the ray passes nearest for its size (the rope runs down past the pan from where you
+    // stand, so the first found would hide it).
+    const rope = rayToSegment(ro, rd, [at.x + R.rope.at[0], fy, at.z + R.rope.at[1]], [at.x, at.top, at.z]).d / R.rope.tapM;
+    let pan = Infinity;
     if (!hasPan() && !panning) {
       const px = at.x + panAt.x, pz = at.z + panAt.z, py = at.y + shape.floorAt(panAt.x, panAt.z);
-      if (rayToSegment(ro, rd, [px, py, pz], [px, py + 0.06, pz]).d <= P.radiusM + 0.1) return panCard();
+      pan = rayToSegment(ro, rd, [px, py, pz], [px, py + P.radiusM * 2, pz]).d / (P.radiusM + P.lean.tapM);
     }
-    return null;
+    if (Math.min(rope, pan) > 1) return null;
+    return pan < rope ? panCard() : ropeCard();
   }
   /** The card at a point down here: the pan, the rope, the pool. @param {number} x @param {number} z */
   function cardAt(x, z) {
     const at = origin();
     if (!at || o.walk.zone !== ID) return null;
     const a = lx(x), b = lz(z);
-    if (!hasPan() && !panning && Math.hypot(a - panAt.x, b - panAt.z) < P.radiusM + 0.12) return panCard();
+    if (!hasPan() && !panning && Math.hypot(a - panAt.x, b - panAt.z) < P.radiusM + P.lean.tapM) return panCard();
     if (Math.hypot(a - R.rope.at[0], b - R.rope.at[1]) < 0.4) return ropeCard();
     if (Math.hypot(a - S.pool.at[0], b - S.pool.at[1]) < S.pool.radiusM + 0.2) {
       return { ...base, sp: 'spring:pool', name: W.name, icon: 'pan', text: hasPan() ? W.pool : `${W.pool} ${W.poolNoPan}`, wx: at.x + panStand.x, wz: at.z + panStand.z, r: 0.3, reachR: 0.6, springPool: true };
@@ -362,7 +402,7 @@ export function createSpringCave(o) {
     registerCardAction({ id: 'springtakepan', icon: 'takeup', order: 9, main: true, label: W.takePan,
       when: (c) => !!c?.springPan && !hasPan() && o.walk.zone === ID, action: () => ({ type: 'spring.takePan' }) }),
     registerCardAction({ id: 'springpan', icon: 'pan', order: 10, main: true, label: W.panAct,
-      when: (c) => !!c?.springPool && hasPan() && o.walk.zone === ID, action: () => ({ type: 'spring.pan' }) }),
+      when: (c) => !!c?.springPool && o.walk.zone === ID, action: () => ({ type: 'spring.pan' }) }),
     registerCardAction({ id: 'springup', icon: 'climbup', order: 11, main: true, label: W.climbUp,
       when: (c) => !!c?.springRope && o.walk.zone === ID, action: () => ({ type: 'spring.climbUp' }) }),
     onAction((/** @type {any} */ a) => {

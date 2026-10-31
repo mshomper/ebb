@@ -423,7 +423,8 @@ export async function startApp(canvas, hooks = {}) {
     center: () => [camera.target[0], camera.target[2]],
     /** @param {number} x @param {number} z @returns {{ x: number, y: number, behind: boolean }} */
     project(x, z) {
-      const m = camera.viewProj, y = terrain.sampleHeight(x, z);
+      // Down in a zone, the zone's own floor (the hover tag over the cave's pan, not the island above).
+      const m = camera.viewProj, y = zoneGround ? zoneGround(x, z) : terrain.sampleHeight(x, z);
       const cx = m[0] * x + m[4] * y + m[8] * z + m[12], cy = m[1] * x + m[5] * y + m[9] * z + m[13];
       const w = m[3] * x + m[7] * y + m[11] * z + m[15];
       const behind = w <= 1e-4, s = behind ? -1 / Math.max(Math.abs(w), 1e-4) : 1 / w;
@@ -943,10 +944,21 @@ export async function startApp(canvas, hooks = {}) {
   /** A card down in a zone, opened once you arrive beside it. @type {{ card: any, x: number, y: number } | null} */
   let zoneCardOnArrival = null;
   /** A tap in a zone: walk on its floor, or to a card of its own and open it there. @param {number} sx @param {number} sy */
-  function zoneTap(sx, sy) {
+  /**
+   * What a tap or a rest at a screen point meets in the zone: its card (a thing the ray picks out
+   * first, then whatever is on the floor there) and the floor point. Shared by the tap and the hover,
+   * so what the hand names is what a click opens. @param {number} sx @param {number} sy CSS pixels
+   */
+  function zoneCardAt(sx, sy) {
     const z = zones.zone(), r = camera.ray(sx, sy), p = z?.groundAt?.(r.o, r.d) ?? null;
-    if (!z || !p) return;
-    const card = z.rayCard?.(r.o, r.d) ?? z.cardAt?.(p[0], p[2]) ?? null;
+    if (!z) return { card: null, p: null };
+    // A thing the ray picks out counts even where the ray meets no floor (the rope, high against the wall).
+    const card = z.rayCard?.(r.o, r.d) ?? (p ? z.cardAt?.(p[0], p[2]) : null) ?? null;
+    return { card, p: p ?? (card ? [card.wx, zoneGround ? zoneGround(card.wx, card.wz) : 0, card.wz] : null) };
+  }
+  function zoneTap(sx, sy) {
+    const { card, p } = zoneCardAt(sx, sy);
+    if (!p) return;
     zoneCardOnArrival = null;
     if (card) {
       const reach = card.reachR ?? 0.5;
@@ -1655,6 +1667,11 @@ export async function startApp(canvas, hooks = {}) {
    * @returns {{ key: string, name: string, wx: number, wz: number, lift: import('./render/lift.js').LiftTarget[] } | null}
    */
   function hoverPick(ox, oy) {
+    // Down in a zone (the spring's cave): its own cards, as its tap finds them (zoneCardAt).
+    if (walk.below && zones.active()) {
+      const c = zones.busy() ? null : zoneCardAt(ox, oy).card;
+      return c ? { key: `${c.sp}|${Math.round(c.wx * 10)}|${Math.round(c.wz * 10)}`, name: c.name, wx: c.wx, wz: c.wz, lift: [] } : null;
+    }
     if (!walk.below || !cards || zones.active()) return null;
     const p = groundAt(ox, oy);
     const pc = p ? pieceUnderTap(ox, oy, p) : null;

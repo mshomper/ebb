@@ -517,7 +517,7 @@ export function createWalk(o) {
      * bounds, no island solids, and you stand at `at`, below, the view behind you. The island's spot
      * and grid are kept for leaveZone. False if there is nowhere to stand there.
      * @param {{ id: string, ground: (x: number, z: number) => number, water: (x: number, z: number) => number,
-     *   bounds: number[], cellM: number, at: { x: number, z: number, yaw: number }, camera?: any }} z bounds [x0, z0, x1, z1] (m);
+     *   bounds: number[], cellM: number, at: { x: number, z: number, yaw: number, viewYaw?: number }, camera?: any }} z bounds [x0, z0, x1, z1] (m);
      *   camera: the zone's own view below (walker.json camera's fields), else the walker's
      */
     enterZone(z) {
@@ -533,6 +533,8 @@ export function createWalk(o) {
       figure?.motion.place('stand');
       if (!below) { below = true; figure?.motion.arrive(); }
       camera.setGround(zone.camera ?? R.camera, head());
+      // The view behind you, looking the way you face (into the cave, not at the wall behind the rope).
+      camera.setYaw(z.at.viewYaw ?? z.at.yaw + Math.PI);
       publish();
       return true;
     },
