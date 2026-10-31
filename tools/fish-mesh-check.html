@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+<head>
+<!-- The fish as the game draws them (docs/future/17, catch gen 2): each water's species, the five named net fish and the twelve rare ones, as meshes that swim, or as the journal sketch traced from them. Open from a local static server. -->
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ebb fish meshes</title>
+<link rel="stylesheet" href="../src/ui/tokens.css">
+<style>
+  * { box-sizing: border-box; }
+  html, body { height: auto; overflow-y: auto; position: static; }
+  body { margin: 0; font: 17px/1.5 Nunito, system-ui, sans-serif; background: #F4EEE4; color: #2F3A35; padding: 20px 16px; overflow-x: hidden; }
+  h1 { font-size: 26px; margin: 0 0 4px; }
+  h2 { font-size: 20px; margin: 24px 0 8px; }
+  .muted { color: #6B6A5E; font-size: 16px; }
+  .row { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0; }
+  button { font: inherit; font-size: 16px; min-height: 44px; padding: 8px 14px; border: 1px solid #C9BDA6; border-radius: 8px; background: #FBF7F0; color: inherit; cursor: pointer; }
+  button[aria-pressed="true"] { background: #2F3A35; color: #F4EEE4; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; }
+  figure { margin: 0; background: #FBF7F0; border: 1px solid #DCCFBB; border-radius: 10px; padding: 8px; min-width: 0; }
+  figure canvas, figure .sk { width: 100%; aspect-ratio: 1; display: block; }
+  figure .sk svg { width: 100%; height: 100%; }
+  figcaption { font-size: 15px; line-height: 1.35; }
+  figcaption b { display: block; }
+</style>
+</head>
+<body>
+<h1>Fish meshes</h1>
+<p class="muted">Catch gen 2 in the game: each species built from its seed, each card one individual. Swimming as on the haul tray, or as the journal's ink sketch traced from the mesh.</p>
+<div class="row" id="views"><button data-view="model" aria-pressed="true">Swimming</button><button data-view="sketch" aria-pressed="false">Journal sketch</button><button id="more">New individuals</button></div>
+<div id="out"></div>
+<script type="module">
+import { fishNumbers, fishMeshOf, fishName, fishClear } from '../src/world/nets/living/fish2.js';
+import { bendCatch, fitOf } from '../src/ui/catch-motion.js';
+import { drawMesh } from '../src/ui/keepsake-view.js';
+import { traceKeepsake } from '../src/ui/sketches/keepsake.js';
+import { drawTracedData } from '../src/ui/sketches/traced.js';
+import { makePen } from '../src/ui/sketches/pen.js';
+import { hash32 } from '../src/core/rng.js';
+
+const FR = await fetch('../recipes/world/fishing.json').then((r) => r.json());
+const state = { view: 'model', batch: 0 };
+let moving = [];
+const sets = [
+  ...FR.waters.order.map((w) => ({ title: FR.words.waters[w], fish: [0, 1, 2].map((i) => ({ kind: `${w}-${i}`, ref: { water: w, seed: hash32(777, i, w.length) } })) })),
+  { title: 'The named net fish', fish: FR.named.map((n) => ({ kind: n.id, ref: { water: n.water, named: n.id } })) },
+  { title: 'The rare fish', fish: FR.rare.map((r) => ({ kind: r.id, ref: { water: r.water, rare: r.id } })) },
+];
+function render() {
+  const out = document.getElementById('out');
+  out.innerHTML = '';
+  moving = [];
+  const only = new URLSearchParams(location.search).get('only');
+  for (const s of sets.filter((x, i) => !only || only.split(',').includes(String(i)))) {
+    const h = document.createElement('h2'); h.textContent = s.title; out.append(h);
+    const g = document.createElement('div'); g.className = 'grid'; out.append(g);
+    for (const f of s.fish) {
+      const n = fishNumbers(f.kind, f.ref, hash32(f.kind.length, state.batch, f.ref.seed ?? 3, f.kind.charCodeAt(0)), FR);
+      const mesh = fishMeshOf(n, FR);
+      const fig = document.createElement('figure');
+      const cap = `<figcaption><b>${fishName(n, FR)}</b>${Math.round(n.lengthM * 100)} cm, ${FR.words.rarity[n.rarity]}${n.morphId ? `, ${n.morphId}` : ''}</figcaption>`;
+      if (state.view === 'model') {
+        fig.innerHTML = `<canvas></canvas>${cap}`;
+        moving.push({ cv: fig.querySelector('canvas'), mesh, n, fit: { ...fitOf(mesh), alpha: fishClear(n, FR) ? 0.55 : 1 }, out: new Float32Array(mesh.vertices.length) });
+      } else {
+        const T = traceKeepsake(mesh, {}, [90, 8]);
+        const p = makePen(1, {});
+        const w = Math.min(270, 140 / Math.max(T.aspect, 0.05)), hh = T.aspect * w;
+        drawTracedData(p, T, 200 - w / 2, 140 - hh / 2, w, { creases: 30, hatch: 3.6 });
+        fig.innerHTML = `<div class="sk">${p.svg(380, 280, 'sketch')}</div>${cap}`;
+      }
+      g.append(fig);
+    }
+  }
+}
+function frame(ms) {
+  const t = ms / 1000;
+  moving.forEach((p, i) => { if (p.cv.clientWidth) drawMesh(p.cv, bendCatch(p.mesh, p.n, 'swim', t + i * 0.37, p.out), Math.PI / 2, 0.14, 1.2, p.fit); });
+  requestAnimationFrame(frame);
+}
+for (const b of document.querySelectorAll('#views [data-view]')) b.addEventListener('click', () => { state.view = b.dataset.view; for (const x of document.querySelectorAll('#views [data-view]')) x.setAttribute('aria-pressed', String(x === b)); render(); });
+document.getElementById('more').addEventListener('click', () => { state.batch++; render(); });
+render();
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
