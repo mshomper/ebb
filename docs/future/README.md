@@ -31,6 +31,7 @@
 | [F14 Scripted events](14-scripted-events.md) | Seed (Matt: "a great start") | Written set pieces with a warning, beats over days, choices made by doing and a lasting change: the wreck, the great storm, the falling star, the cairn builder, the hard freeze, the new bank, the passing boat |
 | [F15 The hen](15-the-hen.md) | Seed | A feral hen who comes to trust the walker, roosts at camp, follows you, and lays eggs for the walker's first meal; chicks if Matt wants them |
 | [F16 The sea cave and the Hollow](16-the-sea-cave.md) | Leaning (Matt's design; for a later date) | An optional cave: a fixed mouth, a rubble passage to the sleeping bear, and an arch that needs a made weapon, leading to the Hollow's changing floors. Enemies scale to four skill tracks and the gear you've made; the lantern is the limit. Pools of weapons, lanterns and coats; its own trail |
+| [F17 Fishing and the angler's chart](17-fishing-and-the-anglers-chart.md) | Decided (direction; nothing built) | A made line, two worms as bait, fish sketched and let go, one generator for every fish, a fixed roster per island, twelve rare species, and a chart that inks in as you sketch and hands out riddles; the aquarium waits for a living space |
 
 ## How they connect
 
@@ -58,6 +59,11 @@ flowchart TB
   F14 --> F16
   F12 --> F16[F16 Sea cave]
   F13 --> F16
+  F12 --> F17[F17 Fishing]
+  F13 --> F17
+  F10 --> F17
+  F08 --> F17
+  F17 --> F02
   F04 --> F16
   F03 --> F13[F13 Keeper's camp]
   F02 --> F13
