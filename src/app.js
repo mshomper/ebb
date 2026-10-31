@@ -944,7 +944,7 @@ export async function startApp(canvas, hooks = {}) {
   function zoneTap(sx, sy) {
     const z = zones.zone(), r = camera.ray(sx, sy), p = z?.groundAt?.(r.o, r.d) ?? null;
     if (!z || !p) return;
-    const card = z.cardAt?.(p[0], p[2]) ?? null;
+    const card = z.rayCard?.(r.o, r.d) ?? z.cardAt?.(p[0], p[2]) ?? null;
     zoneCardOnArrival = null;
     if (card) {
       const reach = card.reachR ?? 0.5;
@@ -2567,7 +2567,8 @@ export async function startApp(canvas, hooks = {}) {
     };
     grassPass.update(bladeFrame);
     // No blade grows through a loose stone (src/world/pieces).
-    const clears = pieces.clears(camera.target);
+    // And none through the clay furnace's stones.
+    const clears = [...pieces.clears(camera.target), ...camp.stations.clears(camera.target)].sort((a, b) => a.d - b.d);
     grassPass.setClears(clears);
     rushPass.setClears(clears);
     // Grass and rushes bend away from the walker's feet and body (W6).

@@ -10,7 +10,7 @@ import { makeBuffer, makeShaderModule } from '../../core/gpu.js';
 
 /** @typedef {import('../frame-graph.js').PassContext} PassContext */
 
-const FLOATS = 56;
+const FLOATS = 60;
 /** Floats a vertex: position, normal, colour (rgb albedo, a 1 for a made thing's own). */
 const VERT = 10;
 

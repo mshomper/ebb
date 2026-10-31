@@ -25,6 +25,7 @@ struct CaveUniforms {
   tint: vec4f,      // rgb: what the water scatters; w: ripple slope
   drips: vec4f,     // x: count, y: every dripS seconds, z: beam nits per 1000 lux, w: beam scatter per meter
   you: vec4f,       // xyz: the walker's chest (world): the rock between the eye and it fades out; w: within this far of the line (m)
+  glow: vec4f,      // the pool's own soft light (Matt: illuminate it slightly; fake light for the look): rgb its colour, w nits
 };
 
 @group(0) @binding(0) var<uniform> frame: FrameUniforms;
@@ -211,7 +212,11 @@ fn waterNormal(p: vec3f) -> vec3f {
     let inHole = 1.0 - smoothstep(cu.hole.w * 0.8, cu.hole.w * 1.1, length(q.xz - cu.hole.xz));
     refl += cu.lightIn.rgb / PI * inHole;
   }
-  let color = mix(under * T + scatter, refl * frame.exposure, f);
+  // A soft light of its own, strongest in the deep middle and on the ripples, so the pool reads.
+  let deep = 1.0 - exp(-thick * 3.0);
+  let ripple = 1.0 + 4.0 * (1.0 - n.y);
+  let own = cu.glow.rgb * cu.glow.w * deep * ripple * frame.exposure;
+  let color = mix(under * T + scatter, refl * frame.exposure, f) + own;
   return FsOut(vec4f(color, 1.0), vec4f(octEncode(n), 1.0, 0.0));
 }
 

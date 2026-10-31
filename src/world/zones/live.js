@@ -18,7 +18,8 @@ import { idleFade, stepFade, darkness, startFade } from './zone.js';
  * @typedef {{ id: string, enter: () => boolean, leave: () => void, tick?: (dt: number) => void,
  *   cardAt?: (x: number, z: number) => any, light?: (d: any) => { uniforms: number[], sunDir: number[], sunIlluminance: number[] },
  *   sound?: () => any, groundAt?: (ro: number[], rd: number[]) => number[] | null, viewRoom?: (target: ArrayLike<number>, eye: ArrayLike<number>) => number,
- *   ready?: () => boolean }} Zone
+ *   ready?: () => boolean, rayCard?: (ro: number[], rd: number[]) => any }} Zone
+ *   rayCard: a card a tap's ray picks out before the floor (a rope, a small thing lying there)
  */
 
 /** @param {{ R: any, host?: HTMLElement | null }} o R: recipes/world/zones.json; host: where the fade's veil goes (none in tests) */

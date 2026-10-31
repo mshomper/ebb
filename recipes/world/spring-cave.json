@@ -34,12 +34,12 @@
   "look": {
     "rock": [0.16, 0.15, 0.13], "rockWet": [0.07, 0.07, 0.065], "floor": [0.12, 0.11, 0.095], "wetNearM": 0.6,
     "roughness": [0.85, 0.3], "pan": [0.05, 0.048, 0.045], "rope": [0.32, 0.25, 0.16],
-    "water": { "absorption": [0.42, 0.12, 0.09], "f0": 0.02, "ripple": 0.04, "drips": 3, "dripS": 4.5, "tint": [0.02, 0.035, 0.04] }
+    "water": { "absorption": [0.42, 0.12, 0.09], "f0": 0.02, "ripple": 0.04, "drips": 3, "dripS": 4.5, "tint": [0.02, 0.035, 0.04], "glow": [0.35, 0.75, 0.8], "glowNits": 0.7 }
   },
-  "lookNote": "Linear albedos (the palette paints them at the tonemap): rock, the walls; rockWet, wet rock by the pool and under the drips (within wetNearM of the water), smoother (roughness dry to wet); floor; pan, the old keeper's iron pan; rope, the old rope hanging from the hole. water: absorption per meter (rgb, red goes first), f0 its reflectance head on, ripple the ripples' slope, drips seeded spots where water drips from the ceiling every dripS seconds, tint the light the water itself scatters.",
+  "lookNote": "Linear albedos (the palette paints them at the tonemap): rock, the walls; rockWet, wet rock by the pool and under the drips (within wetNearM of the water), smoother (roughness dry to wet); floor; pan, the old keeper's iron pan; rope, the old rope hanging from the hole. water: absorption per meter (rgb, red goes first), f0 its reflectance head on, ripple the ripples' slope, drips seeded spots where water drips from the ceiling every dripS seconds, tint the light the water itself scatters; glow, glowNits: a soft light of the pool's own (Matt, October 31, 2026: illuminate it slightly), teal, strongest over the deep middle and on the ripples, dimmer at night.",
 
   "pan": {
-    "at": [0.0, 0.0], "fromPoolM": 0.35, "radiusM": 0.2, "rimM": 0.05, "panS": 5.5, "perDay": 3, "settleH": 6,
+    "at": [0.0, 0.0], "fromPoolM": 0.35, "radiusM": 0.2, "rimM": 0.05, "panS": 5.5, "perDay": 3, "settleH": 6, "holdOutM": 0.32,
     "finds": { "iron-ore": 46, "copper-ore": 12, "gravel": 14, "ochre": 9, "mica": 6, "keepsake": 10, "shrimp": 2 },
     "firstFind": "iron-ore",
     "copperAfter": 2,
@@ -56,8 +56,8 @@
   "stonesNote": "Loose stones on the floor: gathered along the walls' foot and round the pool's edge (seeded), lumpy (lump), sizeM across, never on the rope's foot, the pan or the way from the rope to the pool.",
   "shrimp": { "lengthM": 0.03, "color": [0.7, 0.68, 0.62] },
   "shrimpNote": "The well shrimp in the pan (the pan finds): drawn at the findable scale, about 3 times its real 1 cm, pale and eyeless, curling and flexing until you tip it back (pan.shrimpS seconds).",
-  "rope": { "radiusM": 0.018, "at": [0.18, -0.12], "sway": 0.03 },
-  "ropeNote": "The old rope down from the hole (radiusM thick), its foot at `at` (m from the hole's axis), swaying a little. Its card offers Climb up.",
+  "rope": { "radiusM": 0.018, "at": [-0.5, -0.4], "sway": 0.03, "tapM": 0.22 },
+  "ropeNote": "The old rope down from the hole (radiusM thick), its foot at `at` (m from the hole's axis), swaying a little. Its card offers Climb up; a tap anywhere within tapM of the rope picks it (Matt, October 31, 2026: it was hard to click, and too near the pool and the pan).",
 
   "sound": { "waterSlow": 0.85, "under": 1 },
   "soundNote": "The cave's sound bed (recipes/audio/ambience.json): the island's beds fall away underground (under) and the trickle plays as slow water near you (waterSlow).",
@@ -70,6 +70,10 @@
     "ropeName": "An old rope",
     "rope": "A rope hangs down from the light, knotted for hands. It holds.",
     "panAct": "Pan the pool",
+    "takePan": "Take the pan",
+    "tookPan": "The old keeper's pan. It hangs on your pack now. Pan the pool from its edge.",
+    "needPan": "A pan first. There is one lying by the water.",
+    "poolNoPan": "An old pan lies on the stones by the water.",
     "climbUp": "Climb up",
     "panned": {
       "iron-ore": "Swirl, tip, swirl. Black sand stays in the bottom of the pan, heavy and fine. Into the pack.",
