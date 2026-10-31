@@ -95,7 +95,7 @@ export function addKitTests(test, assert, eq) {
     }
     for (const id of emptyKit().owned.hat) assert(R.items.hat[id], `the own hat ${id} has words`);
     for (const id of emptyKit().owned.coat) assert(R.items.coat[id], `the own coat ${id} has words`);
-    eq(R.belt.map((/** @type {any} */ t) => t.id).join(), 'shovel,knife,steel,sketchbook,net,line', 'the belt in order');
+    eq(R.belt.map((/** @type {any} */ t) => t.id).join(), 'shovel,knife,steel,sketchbook,net,line,pan', 'the belt in order');
     for (const t of R.belt) assert(drawn(t.icon), `belt ${t.id}'s icon ${t.icon} is drawn`);
     for (const n of ['hat', 'coat', 'pack']) assert(hasItemIcon(n), `the ${n} glyph is in the item family`);
     assert(ICON_NAMES.includes('walker'), 'the walker button is drawn');

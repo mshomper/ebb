@@ -14,6 +14,8 @@ import { subSeed, hash32 as hashOf } from '../../core/rng.js';
 import { run } from '../../core/workers.js';
 import { dispatch, onAction } from '../../input/actions.js';
 import { registerCardAction } from '../../ui/card-actions.js';
+import { rayToSegment } from '../creatures/perch-rules.js';
+import { cleanCook, recordMade } from '../camp/making.js';
 import { caveShape } from './cave-field.js';
 import { cleanPans, pansLeft, panFind, panned, keeperDue, panKeepsake } from './pan.js';
 import { springNumbers } from '../keepsakes/families/spring.js';
@@ -158,7 +160,7 @@ export function createSpringCave(o) {
   function things(held) {
     const at = origin();
     if (!at) return;
-    const key = (held ? held.x.toFixed(2) + held.y.toFixed(2) + held.z.toFixed(2) + held.tilt.toFixed(2) : 'lying') + (shrimpT > 0 ? `s${Math.round(shrimpT * 30)}` : '');
+    const key = (held ? held.x.toFixed(2) + held.y.toFixed(2) + held.z.toFixed(2) + held.tilt.toFixed(2) : hasPan() ? 'kit' : 'lying') + (shrimpT > 0 ? `s${Math.round(shrimpT * 30)}` : '');
     if (key === thingsKey) return;
     thingsKey = key;
     const L = R.look, r = P.radiusM, rim = P.rimM;
@@ -187,6 +189,8 @@ export function createSpringCave(o) {
       }
       parts.push(tube(sp, /** @type {any} */ ([0.002, 0.004, 0.005, 0.005, 0.0045, 0.004, 0.003, 0.0015]), 5, R.shrimp?.color ?? [0.7, 0.68, 0.62]));
     }
+    // Taken into the kit, the pan is not by the pool any more (only in your hands while you pan).
+    if (!held && hasPan()) parts.splice(parts.indexOf(pan), 1);
     o.pass.setMesh('things', join(parts));
   }
 
@@ -254,9 +258,22 @@ export function createSpringCave(o) {
   /** The pans kept in the dig section's spring record. */
   const pans = () => cleanPans(cleanDig(get('dig')).spring?.pans);
   /** @type {{ t: number } | null} */ let panning = null;
+  /** Is the old keeper's pan in your kit (taken from beside the pool; the cook section's tools)? */
+  const hasPan = () => cleanCook(get('cook')).tools.includes('keepers-pan');
+  /** Take the pan from beside the pool: it hangs on your pack from now on (the Keeper book's belt). */
+  function takePan() {
+    const at = origin();
+    if (!at || hasPan() || o.walk.zone !== ID) return;
+    o.walk.kneelToward(at.x + panAt.x, at.z + panAt.z, 1.2, 'takeUp');
+    update('cook', (c) => recordMade(cleanCook(c), 'keepers-pan', o.hour(), true));
+    update('identify', () => null);
+    thingsKey = '';
+    emitDeferred('island:notice', { text: W.tookPan, showS: 6 });
+  }
   function pan() {
     const at = origin();
     if (!at || o.walk.zone !== ID || panning || o.walk.busy()) return;
+    if (!hasPan()) { emitDeferred('island:notice', { text: W.needPan, showS: 5 }); return; }
     if (pansLeft(pans(), o.day(), o.hour(), P) <= 0) { emitDeferred('island:notice', { text: W.settled, showS: 6 }); return; }
     update('identify', () => null);
     const p = S.pool;
@@ -307,32 +324,52 @@ export function createSpringCave(o) {
 
   // ---- cards ----
 
+  const base = { noPage: true, stage: -1, sub: null, canCarry: false };
+  const panCard = () => { const at = /** @type {NonNullable<typeof O>} */ (origin());
+    return { ...base, sp: 'spring:pan', name: W.panName, icon: 'pan', itemIcon: 'keepers-pan', text: W.pan, wx: at.x + panAt.x, wz: at.z + panAt.z, r: 0.3, reachR: 0.55, springPan: true }; };
+  const ropeCard = () => { const at = /** @type {NonNullable<typeof O>} */ (origin());
+    return { ...base, sp: 'spring:rope', name: W.ropeName, icon: 'climbup', text: W.rope, wx: at.x + R.rope.at[0], wz: at.z + R.rope.at[1], r: 0.3, reachR: 0.8, springRope: true }; };
+  /**
+   * The card a tap's ray picks out down here before the floor: the rope (anywhere along it, a
+   * generous reach) or the pan lying by the pool. @param {number[]} ro @param {number[]} rd
+   */
+  function rayCard(ro, rd) {
+    const at = origin();
+    if (!at || o.walk.zone !== ID) return null;
+    const fy = at.y + shape.floorAt(R.rope.at[0], R.rope.at[1]);
+    const rope = rayToSegment(ro, rd, [at.x + R.rope.at[0], fy, at.z + R.rope.at[1]], [at.x, at.top, at.z]);
+    if (rope.d <= R.rope.tapM) return ropeCard();
+    if (!hasPan() && !panning) {
+      const px = at.x + panAt.x, pz = at.z + panAt.z, py = at.y + shape.floorAt(panAt.x, panAt.z);
+      if (rayToSegment(ro, rd, [px, py, pz], [px, py + 0.06, pz]).d <= P.radiusM + 0.1) return panCard();
+    }
+    return null;
+  }
   /** The card at a point down here: the pan, the rope, the pool. @param {number} x @param {number} z */
   function cardAt(x, z) {
     const at = origin();
     if (!at || o.walk.zone !== ID) return null;
-    const a = lx(x), b = lz(z), base = { noPage: true, stage: -1, sub: null, canCarry: false };
-    if (Math.hypot(a - panAt.x, b - panAt.z) < 0.35 && !panning) {
-      return { ...base, sp: 'spring:pan', name: W.panName, icon: 'pan', itemIcon: 'keepers-pan', text: W.pan, wx: at.x + panStand.x, wz: at.z + panStand.z, r: 0.3, reachR: 0.5, springPan: true };
-    }
-    if (Math.hypot(a - R.rope.at[0], b - R.rope.at[1]) < 0.45 || Math.hypot(a, b) < 0.3) {
-      return { ...base, sp: 'spring:rope', name: W.ropeName, icon: 'climbup', text: W.rope, wx: at.x + R.rope.at[0], wz: at.z + R.rope.at[1], r: 0.3, reachR: 0.7, springRope: true };
-    }
+    const a = lx(x), b = lz(z);
+    if (!hasPan() && !panning && Math.hypot(a - panAt.x, b - panAt.z) < P.radiusM + 0.12) return panCard();
+    if (Math.hypot(a - R.rope.at[0], b - R.rope.at[1]) < 0.4) return ropeCard();
     if (Math.hypot(a - S.pool.at[0], b - S.pool.at[1]) < S.pool.radiusM + 0.2) {
-      return { ...base, sp: 'spring:pool', name: W.name, icon: 'pan', text: W.pool, wx: at.x + panStand.x, wz: at.z + panStand.z, r: 0.3, reachR: 0.6, springPool: true };
+      return { ...base, sp: 'spring:pool', name: W.name, icon: 'pan', text: hasPan() ? W.pool : `${W.pool} ${W.poolNoPan}`, wx: at.x + panStand.x, wz: at.z + panStand.z, r: 0.3, reachR: 0.6, springPool: true };
     }
     return null;
   }
 
   const offs = [
+    registerCardAction({ id: 'springtakepan', icon: 'takeup', order: 9, main: true, label: W.takePan,
+      when: (c) => !!c?.springPan && !hasPan() && o.walk.zone === ID, action: () => ({ type: 'spring.takePan' }) }),
     registerCardAction({ id: 'springpan', icon: 'pan', order: 10, main: true, label: W.panAct,
-      when: (c) => !!(c?.springPan || c?.springPool) && o.walk.zone === ID, action: () => ({ type: 'spring.pan' }) }),
+      when: (c) => !!c?.springPool && hasPan() && o.walk.zone === ID, action: () => ({ type: 'spring.pan' }) }),
     registerCardAction({ id: 'springup', icon: 'climbup', order: 11, main: true, label: W.climbUp,
       when: (c) => !!c?.springRope && o.walk.zone === ID, action: () => ({ type: 'spring.climbUp' }) }),
     onAction((/** @type {any} */ a) => {
       if (a.type === 'spring.climbDown') { if (o.dig.springHole() && o.walk.below) { update('identify', () => null); o.zones.go(ID); } }
       else if (a.type === 'spring.climbUp') { update('identify', () => null); o.zones.back(); }
       else if (a.type === 'spring.pan') pan();
+      else if (a.type === 'spring.takePan') takePan();
     }),
   ];
 
@@ -376,6 +413,7 @@ export function createSpringCave(o) {
       ...W2.tint, W2.ripple,
       W2.drips, W2.dripS, L.beam.nits, L.beam.scatter,
       (o.walk.walker?.x ?? at.x), (o.walk.walker?.y ?? at.y) + 0.9, (o.walk.walker?.z ?? at.z), R.view.fadeM,
+      ...W2.glow, W2.glowNits * Math.max(0.15, Math.min(1, sy * 3)),
     ];
     // The walker: lit from the hole as a light from its direction, as bright as the hole is there.
     const y = o.walk.walker, wx = y?.x ?? at.x, wz = y?.z ?? at.z, wy = (y?.y ?? at.y) + 0.9;
@@ -430,12 +468,13 @@ export function createSpringCave(o) {
     if (shrimpT > 0) shrimpT = Math.max(0, shrimpT - dt);
     if (!panning) { if (built) things(null); return; }
     panning.t += dt;
-    const hr = o.walk.hand('r'), hl = o.walk.hand('l');
-    if (hr && hl) things({ x: (hr.x + hl.x) / 2, y: (hr.y + hl.y) / 2 - 0.03, z: (hr.z + hl.z) / 2, tilt: Math.sin(panning.t * 2.2) * 0.25 });
+    // The pan in both hands, held out in front of you over the water (never inside the figure).
+    const hr = o.walk.hand('r'), hl = o.walk.hand('l'), w = o.walk.walker, out = P.holdOutM ?? 0.32;
+    if (hr && hl && w) things({ x: (hr.x + hl.x) / 2 + Math.sin(w.yaw) * out, y: (hr.y + hl.y) / 2 - 0.05, z: (hr.z + hl.z) / 2 + Math.cos(w.yaw) * out, tilt: Math.sin(panning.t * 2.2) * 0.25 });
     if (panning.t >= P.panS) { panning = null; panDone(); }
   }
 
-  o.zones.register({ id: ID, enter, leave, tick, cardAt, light, sound, groundAt, viewRoom, camera: R.camera ?? null, ready: () => !!origin() });
+  o.zones.register({ id: ID, enter, leave, tick, cardAt, rayCard, light, sound, groundAt, viewRoom, camera: R.camera ?? null, ready: () => !!origin() });
 
   return {
     id: ID,
@@ -445,7 +484,7 @@ export function createSpringCave(o) {
     /** The floor alone (no raised walls), for the view to keep above. @param {number} x @param {number} z */
     floor: (x, z) => (O?.y ?? 0) + shape.floorAt(lx(x), lz(z)),
     /** Tests and the test links. */
-    debug: { origin, pans, panDone, shape, panAt, panStand, get built() { return built; } },
+    debug: { origin, pans, panDone, shape, panAt, panStand, takePan, hasPan, get built() { return built; } },
     dispose() { for (const off of offs) off(); },
   };
 }

@@ -43,7 +43,7 @@ struct Prop {
   tilt: vec4f,      // x pitch about its own x (its +y toward its +z), y roll about its own z, both before the yaw (a held tool); z dry 0..1 (a herb bunch); w spare
   burn: vec4f,      // x its length along its own x (1 as made); y burnt from its -x end this far along it (0: char rises from the bottom instead); z the model's half length along x (m); w raw clay 0..1
   wear: vec4f,      // the tent's weathering (src/world/camp/canvas.js): x canvas fade 0..1, y poles' silver 0..1, z patches sewn on, w 1: the canvas check's sort view
-  dye: vec4f,       // a dyed canvas (Phase 4's hook, section 9.3): rgb its tint on the cloth (linear, faded: canvas.js dyeTint), w 1 when dyed (0: undyed); w 2: a pot fired with ochre slip, its clay times rgb
+  dye: vec4f,       // a dyed canvas (Phase 4's hook, section 9.3): rgb its tint on the cloth (linear, faded: canvas.js dyeTint), w 1 when dyed (0: undyed); w 2: a pot fired with ochre slip, or coal, its albedo times rgb; w 3: glowing coals, rgb their own light (nits)
 };
 
 @group(0) @binding(0) var<uniform> frame: FrameUniforms;
@@ -259,7 +259,11 @@ fn fsProp(in: VsOut) -> FsOut {
     // A log's embers run along its charred end in a deep orange, never blown out to white.
     let k = pr.more.z * select(smoothstep(0.42, 0.8, patchy) * max(low, dark * 0.6), smoothstep(0.3, 0.7, patchy) * low * charred * 0.6, endMode);
     radiance += pd.ember.rgb * k;
+    // Glow past 1 (the clay furnace's embers in its arch): aglow all over, patches only shading it.
+    if (pr.more.z > 1.0) { radiance += pd.ember.rgb * (pr.more.z - 1.0) * (0.55 + 0.45 * patchy); }
   }
+  // Coals glowing of their own (the clay furnace's arch, dye w 3): their light added, rgb in nits.
+  if (pr.dye.w > 2.5) { radiance = radiance * 0.25 + pr.dye.rgb * (0.75 + 0.25 * sin(frame.animTime * 1.7 + in.world.x * 13.0)); }
   let color = applyAerial(radiance * frame.exposure, in.pos.xy * frame.invRenderSize, viewDist);
   let lifted = liftShade(color, nMesh, v, pr.shade.w, pd.liftTint, pd.liftRim);
   let safe = select(vec3f(0.0), lifted, lifted == lifted);

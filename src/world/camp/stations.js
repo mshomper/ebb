@@ -68,6 +68,8 @@ export function createStations(k) {
     const f = s.slot.faces ? k.where.slotAt(s.slot.faces) : null;
     let dx = pad.fx, dz = pad.fz;
     if (f) { const l = Math.hypot(s.x - f.x, s.z - f.z) || 1; dx = (s.x - f.x) / l; dz = (s.z - f.z) / l; }
+    // front 'faces' (the clay furnace): its front, and where you stand, toward the slot it faces.
+    if (f && s.slot.front === 'faces') { dx = -dx; dz = -dz; }
     const out = (s.slot.d ?? 0.6) / 2 + S.standM;
     return { x: s.x, z: s.z, y: s.y, yaw: Math.atan2(dx, dz), slot: s.slot, stand: { x: s.x + dx * out, z: s.z + dz * out } };
   }
@@ -365,6 +367,38 @@ export function createStations(k) {
   }
 
   /**
+   * What is in the furnace, drawn: while a load burns, charcoal heaped in its top and embers
+   * glowing in its arch (the camp's log model, small, charred and lit); cooled, the dark heap only.
+   * cook.json furnace.load. @param {{ x: number, y: number, z: number, yaw: number }} at
+   */
+  function furnaceLoad(at) {
+    const st = furnaceNow(), Ld = FR.load;
+    if (!Ld || (st !== 'burning' && st !== 'done')) return [];
+    const c = Math.cos(at.yaw), sn = Math.sin(at.yaw), out = [];
+    /** A lump at a point in the furnace's frame: the camp's stone model, small, coloured (dye: coal dark, or glowing). */
+    const put = (/** @type {number[]} */ p, /** @type {number} */ i, /** @type {number} */ sc, /** @type {number[]} */ dye) => out.push({ key: 'stand',
+      x: at.x + p[0] * c + p[2] * sn, y: at.y + p[1], z: at.z - p[0] * sn + p[2] * c, yaw: at.yaw + i * 1.9, scale: sc, squash: 0.7, dye, shade: [0, 0, 0] });
+    // The heap in its top: charcoal and ore, dark, a dull glow between while it burns.
+    for (let i = 0; i < Ld.top; i++) {
+      const a = (i / Ld.top) * Math.PI * 2, r = i % 2 ? Ld.topR : Ld.topR * 0.4;
+      const glow = st === 'burning' && i % 3 === 0;
+      put([Math.cos(a) * r, Ld.topY + (i % 3) * 0.012, Math.sin(a) * r], i, Ld.lumpScale, glow ? [...Ld.ember.map((e) => e * Ld.topGlow), 3] : [...Ld.coal, 2]);
+    }
+    // Coals in the arch, glowing, while it burns.
+    if (st === 'burning') for (let i = 0; i < Ld.arch; i++) {
+      put([(i - (Ld.arch - 1) / 2) * 0.06, Ld.archY, Ld.archZ - (i % 2) * 0.05], i + 7, Ld.lumpScale * 0.9, [...Ld.ember, 3]);
+    }
+    return out;
+  }
+
+  /** The furnace's footprint, where no grass grows through its stones (the grass pass's clears). @param {ArrayLike<number>} focus */
+  function clears(focus) {
+    const at = benchAt('furnace');
+    if (!at || !built('furnace')) return [];
+    return [{ x: at.x, z: at.z, r: FR.clearM ?? 0.55, d: (at.x - focus[0]) ** 2 + (at.z - focus[2]) ** 2 }];
+  }
+
+  /**
    * Why the furnace cannot take a make now, or null: it is still drying (every make there wants its
    * heat), or a load is already in (one at a time). @param {string} id
    */
@@ -462,6 +496,7 @@ export function createStations(k) {
     for (const id of Object.keys(C.builds ?? {})) {
       const b = C.builds[id], at = benchAt(b.slot);
       if (at && built(b.slot)) out.push({ key: id, x: at.x, y: at.y, z: at.z, yaw: at.yaw, shade: R.props.models[id]?.shade });
+      if (at && id === 'furnace' && built(b.slot)) out.push(...furnaceLoad(at));
     }
     return [...out, ...keeps.props()];
   });
@@ -536,10 +571,13 @@ export function createStations(k) {
       if (!at || !L || !built('furnace') || furnaceNow() !== 'burning') return [];
       const d = FR.doorAt ?? [0, 0.1, 0.35], c = Math.cos(at.yaw), sn = Math.sin(at.yaw);
       const fl = 1 - (L.flicker ?? 0) * (0.5 + 0.5 * Math.sin(time * 6.283 * (L.flickerHz ?? 0.7)) * Math.sin(time * 4.1 + 1.3));
-      return [{ key: 'furnace', x: at.x + d[0] * c + (d[2] + (L.outM ?? 0.1)) * sn, y: at.y + d[1] + (L.upM ?? 0.06), z: at.z - d[0] * sn + (d[2] + (L.outM ?? 0.1)) * c, rangeM: L.rangeM, cd: L.cd * fl, rgb: L.rgb }];
+      return [{ key: 'furnace', x: at.x + d[0] * c + (d[2] + (L.outM ?? 0.1)) * sn, y: at.y + d[1] + (L.upM ?? 0.06), z: at.z - d[0] * sn + (d[2] + (L.outM ?? 0.1)) * c, rangeM: L.rangeM, cd: L.cd * fl, rgb: L.rgb },
+        // And a small one inside the bore, so the fire shows through the arch.
+        ...(FR.load?.innerCd ? [{ key: 'furnace-inner', x: at.x, y: at.y + (FR.glowAt?.[1] ?? 0.15), z: at.z, rangeM: FR.load.innerRangeM, cd: FR.load.innerCd * fl, rgb: L.rgb }] : [])];
     },
     /** What the furnace is doing now (furnace.js furnaceState). */
     furnaceNow,
+    clears,
     /** What the workspace shows now (tests). */
     view,
     benchAt,
