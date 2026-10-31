@@ -86,6 +86,7 @@
     "species/slowworm": "species/slowworm.json",
     "species/lizard": "species/lizard.json",
     "species/hen": "species/hen.json",
+    "birds/turnstone": "birds/turnstone.json",
     "world/setpieces": "world/setpieces.json",
     "setpieces/cairns": "setpieces/cairns.json",
     "setpieces/boat": "setpieces/boat.json",

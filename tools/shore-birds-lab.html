@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ebb shore birds lab</title>
+<link rel="icon" href="../brand/ebb-favicon.svg" type="image/svg+xml">
+<style>
+  @font-face { font-family: 'Nunito'; src: url('../src/vendor/fonts/nunito-latin-600-normal.woff2') format('woff2'); font-weight: 600; }
+  @font-face { font-family: 'Nunito'; src: url('../src/vendor/fonts/nunito-latin-800-normal.woff2') format('woff2'); font-weight: 800; }
+  @font-face { font-family: 'Fraunces'; src: url('../src/vendor/fonts/fraunces-latin-full-italic.woff2') format('woff2'); font-style: italic; }
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; max-width: 100%; overflow-x: hidden; }
+  body { background: #F4EEE4; color: #1E2624; font: 600 17px/1.45 'Nunito', system-ui, sans-serif; padding: 16px; overflow-wrap: anywhere; }
+  main { max-width: 1400px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; padding-bottom: 60px; }
+  .split { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; }
+  @media (min-width: 1000px) { .split { grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); align-items: start; } }
+  h1 { font-size: 24px; font-weight: 800; margin: 0; }
+  h2 { font-size: 18px; font-weight: 800; margin: 0; }
+  .muted { color: #4A5551; font-size: 16px; margin: 0; }
+  .card { background: #FBF7F0; border: 1px solid #E3D9C9; border-radius: 14px; padding: 14px 16px; min-width: 0; display: flex; flex-direction: column; gap: 12px; }
+  .view { width: 100%; aspect-ratio: 4 / 3; display: block; border-radius: 10px; background: #D4DBDB; touch-action: none; cursor: grab; }
+  .group { display: flex; flex-direction: column; gap: 8px; }
+  .grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+  button { font: 800 16px/1.2 'Nunito', system-ui, sans-serif; color: #FBF7F0; background: #4a6a47; border: 0; border-radius: 12px; padding: 10px 8px; cursor: pointer; min-height: 44px; }
+  button[aria-pressed=true] { background: #23361F; box-shadow: inset 0 0 0 3px #A9C39B; }
+  dl { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 4px 14px; margin: 0; font-size: 16px; }
+  dt { color: #4A5551; } dd { margin: 0; font-weight: 800; }
+  .note { font-family: 'Fraunces', Georgia, serif; font-style: italic; font-size: 18px; margin: 0; color: #2E4A2C; min-height: 1.5em; }
+  a { color: #4a6a47; }
+</style>
+</head>
+<body>
+<main>
+  <h1>ebb shore birds lab</h1>
+  <p class="muted">The small-bird rig (B3 R1) carrying the ruddy turnstone, made in code from <code>recipes/birds/turnstone.json</code> and drawn at the findable scale (about 0.64 m, 2.8 times real). Life runs its whole day on a loop: a scurry, turning a stone, pecks, a run, preening, take-off, a lap in the air and a landing back where it began. Each clip plays on its own too. The grid is 10 cm (darker every metre), so a foot that slid would show. Drag to turn the view, scroll to come closer. <a href="./">All tools</a></p>
+  <div class="split">
+    <div class="card">
+      <canvas id="view" class="view" aria-label="The turnstone on wet sand"></canvas>
+      <p class="note" id="note" role="status" aria-live="polite">Baking the turnstone (a few seconds)</p>
+    </div>
+    <div class="card">
+      <div class="group">
+        <h2>Clips</h2>
+        <div class="grid" id="clips">
+          <button data-clip="life" aria-pressed="true">Life</button>
+          <button data-clip="idle" aria-pressed="false">Breathe</button>
+          <button data-clip="walk" aria-pressed="false">Scurry</button>
+          <button data-clip="run" aria-pressed="false">Run</button>
+          <button data-clip="peck" aria-pressed="false">Peck</button>
+          <button data-clip="flip-stone" aria-pressed="false">Turn a stone</button>
+          <button data-clip="flip-wrack" aria-pressed="false">Turn wrack</button>
+          <button data-clip="preen" aria-pressed="false">Preen</button>
+          <button data-clip="takeoff" aria-pressed="false">Take off</button>
+          <button data-clip="fly" aria-pressed="false">Fly</button>
+          <button data-clip="glide" aria-pressed="false">Glide</button>
+          <button data-clip="land" aria-pressed="false">Land</button>
+          <button data-clip="flock" aria-pressed="false">Flock</button>
+          <button data-clip="wings" aria-pressed="false">Wings open</button>
+        </div>
+      </div>
+      <div class="group">
+        <h2>Plumage</h2>
+        <div class="grid" id="plumage">
+          <button data-plumage="winter" aria-pressed="true">Winter</button>
+          <button data-plumage="breeding" aria-pressed="false">Breeding</button>
+        </div>
+      </div>
+      <div class="group">
+        <h2>Speed</h2>
+        <div class="grid" id="speed">
+          <button data-speed="0.25" aria-pressed="false">Quarter</button>
+          <button data-speed="0.5" aria-pressed="false">Half</button>
+          <button data-speed="1" aria-pressed="true">Real</button>
+          <button id="play" aria-pressed="false">Pause</button>
+        </div>
+      </div>
+      <div class="group">
+        <h2>View</h2>
+        <div class="grid" id="views">
+          <button data-view="side">Side</button>
+          <button data-view="three-quarter">Three quarter</button>
+          <button data-view="front">Front</button>
+          <button data-view="above">From above</button>
+          <button data-view="close">Close</button>
+          <button data-view="wide">Wide</button>
+        </div>
+      </div>
+      <dl><dt>Doing</dt><dd id="doing">-</dd></dl>
+      <dl id="stats"></dl>
+    </div>
+  </div>
+</main>
+<script src="./boot-guard.js"></script>
+<script type="importmap">{ "imports": {
+  "wgpu-matrix": "../src/vendor/wgpu-matrix/wgpu-matrix.module.js" } }</script>
+<script type="module" src="./shore-birds-lab.js"></script>
+</body>
+</html>
