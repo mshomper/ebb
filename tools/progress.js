@@ -67,3 +67,6 @@ main().catch((e) => {
   note.hidden = false;
   note.textContent = `Could not read the progress files: ${e instanceof Error ? e.message : e}`;
 });
+
+// A module (the page loads it with type="module"), not a script sharing names with the others.
+export {};

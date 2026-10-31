@@ -1,6 +1,6 @@
 {
  "checker": "typescript@5.9.3",
- "total": 403,
+ "total": 396,
  "byFile": {
   "src/app.js": {
    "TS2322": 2,
@@ -320,9 +320,6 @@
    "TS2339": 3,
    "TS2353": 1
   },
-  "tools/layout-check.js": {
-   "TS2451": 3
-  },
   "tools/move-arena.js": {
    "TS2339": 2
   },
@@ -332,9 +329,6 @@
   "tools/music-lab/main.js": {
    "TS2367": 2,
    "TS2554": 5
-  },
-  "tools/rock-lab.js": {
-   "TS2451": 1
   },
   "tools/shore-lab.js": {
    "TS2339": 1
@@ -346,8 +340,7 @@
    "TS2339": 1
   },
   "tools/texture-lab.js": {
-   "TS2345": 1,
-   "TS2451": 3
+   "TS2345": 1
   },
   "tools/turtle-lab-stage.js": {
    "TS2339": 1
