@@ -2,7 +2,7 @@
   "type": "journal",
   "version": 1,
   "note": "The field journal (docs 13, 15): the words it writes and the numbers that shape them. order: the living things with pages, in page order. Each species: name and icon (src/ui/icons), riddle (shown before it has been seen), amount ([at least this many plants, words] steps; a cover plant (kind cover: grass, rushes) uses its share of the dry ground instead, or with amountBy area the square meters it covers), place and compass (where words: compass false skips the side of the island), none (after it has gone), clause words (flowering, dormant, spreading, receding), stages (what tapping one says, by growth stage: seed, sprout, young, mature, flowering, dormant), seasons (what each season box says: grow per season, flower, dormant), likes (lines learned when one of the learn triggers happens: seen, spread, flower, lost:drown, lost:seed, refused:<need>, grass:flooded), gives (a pencil line until the when trigger, then the ink line), notes (the lines the journal writes). trend: a species is spreading when it has gained at least max(upMin, upShare x then) plants over trend hours, receding when it has lost at least max(downMin, downShare x then). where: spreadOut is the mean distance from the plants' middle, as a share of the island's radius, past which they are all around the island; centerShare is how close to the island's middle counts as the middle. notesKept: notes the journal keeps; pageNotes: notes on a species page. islandNote: how long a note stays on the island (showS), the gap between two (gapS) and how many may wait (queue). identify: how near a tap must be to a plant (radiusM), how long the card stays (showS; it closes by itself only after closeS at the least, never while the pointer is over it or after one of its actions was pressed, and for closingGraceS after closing it still takes a late press so it never falls through as a walk), and the size of the breathing ring around what was tapped (ringM for a full-grown plant, smaller for young ones; grassRingM on grass; its timing is in recipes/world/growth.json marks); a species may set its own tapM (how near a tap must be) and ringM, as grey willow does for its wide crown. arrivedHours: plants seen within this many hours of the journal starting were here when you arrived. J1.5: each species also has plural (for the story lines), field (field notes: natural history lines learned like likes, by triggers that include dormant, woke and moment:<id>) and fieldHint (the pencil line while some are still to learn). story: the lines of 'your island's story' ({Plural}, {plural} and {date} are filled in; peak shows when the count has fallen under peakShare of its best). moments: four frames per page by kind (plant, cover for grass and rushes, ground in journal-island.json), each filled the first time you tap that thing at that moment: flower (in flower), summer, winter, rain (rain at least rainAt), mist (at least mistAt), dawn and dusk (hours of the day, inclusive start, exclusive end), frost (a winter dawn); note is the line written. showMe: how long (showS) the ring and card stay after a page's Show me rings the example nearest the middle of your view (the camera does not move). S6a, animals: a creature (kind creature: frogs) is known only once you find one yourself (tap it, or watch it from close by; recipes/species/frog.json find), never just because it is on the island; until then its page shows the riddle, or the latest of its hints whose journal flag is set (frogs:right when the pond is right for them, frogs:sign after the first sign). Its notes come in two voices: the unseen ones speak of something (a sign, rings on the water), never naming it; the others once it is known. A swarm (kind swarm: midges) is known by itself, like a plant, at the first dusk (seenAt.hours) that at least seenAt.m2 square meters hold seenAt.share of a full cloud; its amount is in those square meters. seenAt.drawn: whether the island draws the swarm yet; until it does (S6b), midges stay a pencil ? and nothing names them, because the journal only tells what you could see. card: what a tap on one says. foundLine: its story's first line. The animals' moments are moments.creature. buried (src/world/journal/buried.js, docs/future/13 PR-21, PR-29): line, the kind journal line for a patch still gone an hour after the stroke ({where}: the side of the island and the page's place); stroke, the island's notice when one stroke covers growth.json bury.strokeNotice gather plants ({others}: otherOne or others with numbers, {back}: it or them); session, the notice once a session (load or rest to the next rest) at bury.sessionNotice; showS, how long a notice shows.",
-  "order": ["grass", "rushes", "reeds", "lilies", "iris", "marigold", "willow", "thrift", "campion", "gorse", "pondweed", "watermint", "meadowsweet", "nettle", "chamomile", "marram", "frogs", "midges", "minnows", "dragonflies", "damselflies", "turtles", "hens"],
+  "order": ["grass", "rushes", "reeds", "lilies", "iris", "marigold", "willow", "thrift", "campion", "gorse", "pondweed", "watermint", "meadowsweet", "nettle", "chamomile", "marram", "harebell", "trefoil", "thyme", "clover", "bedstraw", "frogs", "midges", "minnows", "dragonflies", "damselflies", "turtles", "hens"],
   "findsNote": "Finds (docs/future/11): small shore lives (kind find) found by tapping them, kept apart from order in findOrder. They show under Small lives at the end of Living things, once found and never before (the journal never lists what is missing), with smallLives.marks: one drawn mark for each you have found. card is what a tap names it, cardLine the line under it; place is its page's status once found.",
   "findOrder": ["anemone", "periwinkle", "lugworm", "hermitcrab", "ediblecrab", "shells", "barnacles", "pondskaters", "mussels", "sanddollars", "moonjelly", "fungi", "webs", "sandeel", "goby", "pipefish", "plaice", "wrasse", "shrimp", "shorecrab", "frogspawn", "toads", "slowworms", "lizards", "woodlice", "groundbeetle", "wellshrimp"],
   "smallLives": { "title": "Small lives", "none": "Look closely along the shore, at low tide, in the rock pools and on the wet sand.", "marks": "Found so far" },
@@ -839,6 +839,848 @@
         "drown": "Some marram drowned where the tide reached it.",
         "seed": "A marram seed found no loose sand to take in.",
         "gone": "The last of the marram is gone."
+      }
+    },
+    "harebell": {
+      "name": "Harebell",
+      "icon": "harebell",
+      "plural": "harebells",
+      "plantable": false,
+      "field": [
+        {
+          "text": "Pale blue bells hang from stems as thin as wire, and nod at the slightest wind.",
+          "learn": [
+            "seen"
+          ]
+        },
+        {
+          "text": "It flowers late, from midsummer into autumn, after most of the meadow has gone to seed.",
+          "learn": [
+            "flower"
+          ]
+        },
+        {
+          "text": "Its first leaves are round, but they wither by the time it flowers; the stem leaves are narrow as grass.",
+          "learn": [
+            "seen"
+          ]
+        },
+        {
+          "text": "Its seed shakes out of little holes in the dry heads, like pepper from a pot.",
+          "learn": [
+            "spread"
+          ]
+        },
+        {
+          "text": "On a wet day the bells hang right down and keep the pollen dry inside.",
+          "learn": [
+            "moment:rain"
+          ]
+        }
+      ],
+      "fieldHint": "Watch the islet's sandy turf late in the summer to learn more.",
+      "sketch": {
+        "scale": "about 25 cm",
+        "labels": {
+          "bell": {
+            "text": [
+              "nodding",
+              "blue bells"
+            ],
+            "learn": [
+              "flower"
+            ]
+          },
+          "stem": {
+            "text": [
+              "wiry",
+              "stems"
+            ],
+            "learn": [
+              "seen"
+            ]
+          },
+          "leaves": {
+            "text": [
+              "round leaves,",
+              "gone by flowering"
+            ],
+            "learn": [
+              "seen"
+            ]
+          }
+        }
+      },
+      "riddle": "Something blue would nod on a thin stem in dry, sandy turf, late in the summer.",
+      "amount": [
+        [
+          1,
+          "A single harebell"
+        ],
+        [
+          2,
+          "A few harebells"
+        ],
+        [
+          6,
+          "Harebells through the turf"
+        ],
+        [
+          16,
+          "Harebells nodding all over the islet"
+        ]
+      ],
+      "place": "in the islet's sandy turf",
+      "compass": true,
+      "none": "No harebells grow on the island now.",
+      "flowering": "in blue flower",
+      "dormant": "gone to ground for winter",
+      "spreading": "seeding through the turf",
+      "receding": "thinning out",
+      "stages": [
+        "A harebell seed, waiting in the sand",
+        "A new harebell shoot",
+        "A young harebell",
+        "A harebell",
+        "A harebell hung with blue bells",
+        "A harebell, gone to ground for winter"
+      ],
+      "seasons": {
+        "grow": [
+          "round leaves",
+          "thin stems",
+          "blue bells",
+          "gone to ground"
+        ],
+        "flower": "blue bells",
+        "dormant": "gone to ground"
+      },
+      "likes": [
+        {
+          "text": "Dry, sandy turf",
+          "learn": [
+            "seen"
+          ]
+        },
+        {
+          "text": "Dry ground, out of the tide's reach",
+          "learn": [
+            "refused:low",
+            "refused:wet",
+            "lost:drown"
+          ]
+        },
+        {
+          "text": "Sand in the ground, with a little turf",
+          "learn": [
+            "refused:ground"
+          ]
+        },
+        {
+          "text": "Only a little salt",
+          "learn": [
+            "refused:salt",
+            "lost:seed"
+          ]
+        },
+        {
+          "text": "Seeds itself nearby",
+          "learn": [
+            "spread"
+          ]
+        }
+      ],
+      "gives": [
+        {
+          "pencil": "Something that hums might creep right inside these bells one day.",
+          "ink": "Bells that bees climb into.",
+          "when": "bees:seen"
+        }
+      ],
+      "notes": {
+        "arrived": "Harebells were already growing on the islet when it rose.",
+        "seen": "A harebell has come up in the islet's turf, nodding on its thin stem.",
+        "spread": "More harebells have come up through the turf.",
+        "flower": "The harebells are hung with blue bells.",
+        "dormant": "The harebells have gone to ground for winter.",
+        "woke": "The harebells' round leaves are back.",
+        "drown": "Some harebells drowned where the tide reached them.",
+        "seed": "A harebell seed found no dry turf to take in.",
+        "gone": "The last of the harebells is gone."
+      }
+    },
+    "trefoil": {
+      "name": "Bird's-foot trefoil",
+      "icon": "trefoil",
+      "plural": "trefoil mats",
+      "plantable": false,
+      "field": [
+        {
+          "text": "A low mat over the sand, its leaves split into small leaflets, its flowers little yellow slippers.",
+          "learn": [
+            "seen"
+          ]
+        },
+        {
+          "text": "The buds are red and the open flowers yellow, so a patch looks streaked with both. Some call it eggs and bacon.",
+          "learn": [
+            "flower"
+          ]
+        },
+        {
+          "text": "Its pods splay out from the stalk like the toes of a bird's foot, and that is its name.",
+          "learn": [
+            "spread"
+          ]
+        },
+        {
+          "text": "The pods twist and split with a snap on hot days and flick their seeds away.",
+          "learn": [
+            "spread"
+          ]
+        },
+        {
+          "text": "In winter it is a few brown runners pressed to the sand.",
+          "learn": [
+            "dormant",
+            "moment:winter"
+          ]
+        }
+      ],
+      "fieldHint": "Watch the islet's open sand through the summer to learn more.",
+      "sketch": {
+        "scale": "about 15 cm",
+        "labels": {
+          "flower": {
+            "text": [
+              "yellow",
+              "pea flowers"
+            ],
+            "learn": [
+              "flower"
+            ]
+          },
+          "pods": {
+            "text": [
+              "pods like",
+              "a bird's foot"
+            ],
+            "learn": [
+              "spread"
+            ]
+          },
+          "mat": {
+            "text": [
+              "a low,",
+              "sprawling mat"
+            ],
+            "learn": [
+              "seen"
+            ]
+          }
+        }
+      },
+      "riddle": "Something yellow would sprawl low over open sand, its seed pods spread like a bird's toes.",
+      "amount": [
+        [
+          1,
+          "A single trefoil mat"
+        ],
+        [
+          2,
+          "A few trefoil mats"
+        ],
+        [
+          6,
+          "Trefoil over the sand"
+        ],
+        [
+          16,
+          "Trefoil yellow all over the islet"
+        ]
+      ],
+      "place": "on the islet's open sand",
+      "compass": true,
+      "none": "No bird's-foot trefoil grows on the island now.",
+      "flowering": "in yellow flower",
+      "dormant": "brown for winter",
+      "spreading": "seeding over the sand",
+      "receding": "thinning out",
+      "stages": [
+        "A trefoil seed, waiting in the sand",
+        "A new trefoil shoot",
+        "A young trefoil mat",
+        "A trefoil mat",
+        "A trefoil mat in yellow flower",
+        "A trefoil mat, brown for winter"
+      ],
+      "seasons": {
+        "grow": [
+          "new leaflets",
+          "red buds, yellow flowers",
+          "bird's-foot pods",
+          "brown runners"
+        ],
+        "flower": "yellow flowers",
+        "dormant": "brown runners"
+      },
+      "likes": [
+        {
+          "text": "Open, sandy ground above the shore",
+          "learn": [
+            "seen"
+          ]
+        },
+        {
+          "text": "Dry ground, out of the tide's reach",
+          "learn": [
+            "refused:low",
+            "refused:wet",
+            "lost:drown"
+          ]
+        },
+        {
+          "text": "Mostly sand, with little turf",
+          "learn": [
+            "refused:ground"
+          ]
+        },
+        {
+          "text": "Some salt spray at most",
+          "learn": [
+            "refused:salt",
+            "lost:seed"
+          ]
+        },
+        {
+          "text": "Flicks its seeds about",
+          "learn": [
+            "spread"
+          ]
+        }
+      ],
+      "gives": [
+        {
+          "pencil": "Something small and blue might lay its eggs on these leaves one day.",
+          "ink": "Food for the common blue butterfly's caterpillars.",
+          "when": "butterflies:seen"
+        }
+      ],
+      "notes": {
+        "arrived": "Bird's-foot trefoil was already growing on the islet when it rose.",
+        "seen": "Bird's-foot trefoil has spread a low mat over the islet's sand.",
+        "spread": "The trefoil has seeded further over the sand.",
+        "flower": "The trefoil is in yellow flower, red in bud.",
+        "dormant": "The trefoil has gone brown for winter.",
+        "woke": "The trefoil is greening again.",
+        "drown": "Some trefoil drowned where the tide reached it.",
+        "seed": "A trefoil seed found no open sand to take in.",
+        "gone": "The last of the trefoil is gone."
+      }
+    },
+    "thyme": {
+      "name": "Wild thyme",
+      "icon": "thyme",
+      "plural": "thyme mats",
+      "plantable": false,
+      "field": [
+        {
+          "text": "A low, woody mat of tiny leaves. Kneel on it and the air smells of thyme.",
+          "learn": [
+            "seen"
+          ]
+        },
+        {
+          "text": "Through summer it is covered in small pink-purple heads, and bees work them all day.",
+          "learn": [
+            "flower"
+          ]
+        },
+        {
+          "text": "It creeps along the sand, rooting where its woody stems touch down.",
+          "learn": [
+            "spread"
+          ]
+        },
+        {
+          "text": "It grows where the ground is driest and the turf thinnest, where little else can.",
+          "learn": [
+            "seen"
+          ]
+        },
+        {
+          "text": "After rain the whole mat breathes out its scent, and you can smell it from the bar.",
+          "learn": [
+            "moment:rain"
+          ]
+        }
+      ],
+      "fieldHint": "Watch the islet's driest sand through the summer to learn more.",
+      "sketch": {
+        "scale": "about 10 cm",
+        "labels": {
+          "flower": {
+            "text": [
+              "pink-purple",
+              "heads"
+            ],
+            "learn": [
+              "flower"
+            ]
+          },
+          "leaves": {
+            "text": [
+              "tiny scented",
+              "leaves"
+            ],
+            "learn": [
+              "seen"
+            ]
+          },
+          "mat": {
+            "text": [
+              "a woody,",
+              "creeping mat"
+            ],
+            "learn": [
+              "spread"
+            ]
+          }
+        }
+      },
+      "riddle": "Something low and sweet-smelling would creep over the driest sand and flower purple for the bees.",
+      "amount": [
+        [
+          1,
+          "A single thyme mat"
+        ],
+        [
+          2,
+          "A few thyme mats"
+        ],
+        [
+          6,
+          "Thyme over the dry sand"
+        ],
+        [
+          16,
+          "Thyme in cushions all over the islet"
+        ]
+      ],
+      "place": "on the islet's driest sand",
+      "compass": true,
+      "none": "No wild thyme grows on the island now.",
+      "flowering": "in purple flower",
+      "dormant": "low and dark for winter",
+      "spreading": "creeping over the sand",
+      "receding": "thinning out",
+      "stages": [
+        "A thyme seed, waiting in the sand",
+        "A new thyme shoot",
+        "A young thyme mat",
+        "A thyme mat",
+        "A thyme mat in purple flower",
+        "A thyme mat, low and dark for winter"
+      ],
+      "seasons": {
+        "grow": [
+          "tiny leaves",
+          "purple heads",
+          "creeping mats",
+          "low and dark"
+        ],
+        "flower": "purple heads",
+        "dormant": "low and dark"
+      },
+      "likes": [
+        {
+          "text": "The driest, thinnest turf",
+          "learn": [
+            "seen"
+          ]
+        },
+        {
+          "text": "Dry ground, out of the tide's reach",
+          "learn": [
+            "refused:low",
+            "refused:wet",
+            "lost:drown"
+          ]
+        },
+        {
+          "text": "Sand, the more the better",
+          "learn": [
+            "refused:ground"
+          ]
+        },
+        {
+          "text": "Some salt spray at most",
+          "learn": [
+            "refused:salt",
+            "lost:seed"
+          ]
+        },
+        {
+          "text": "Creeps and roots along the sand",
+          "learn": [
+            "spread"
+          ]
+        }
+      ],
+      "gives": [
+        {
+          "pencil": "Something that hums might visit these flowers all day long.",
+          "ink": "Flowers the bees work all summer.",
+          "when": "bees:seen"
+        }
+      ],
+      "notes": {
+        "arrived": "Wild thyme was already growing on the islet when it rose.",
+        "seen": "Wild thyme has crept over the islet's dry sand. It smells of the kitchen.",
+        "spread": "The thyme has crept further over the sand.",
+        "flower": "The thyme is in pink-purple flower.",
+        "dormant": "The thyme has gone low and dark for winter.",
+        "woke": "The thyme is greening again.",
+        "drown": "Some thyme drowned where the tide reached it.",
+        "seed": "A thyme seed found no dry sand to take in.",
+        "gone": "The last of the thyme is gone."
+      }
+    },
+    "clover": {
+      "name": "Red clover",
+      "icon": "clover",
+      "plural": "clover patches",
+      "plantable": false,
+      "field": [
+        {
+          "text": "Leaves of three leaflets, each marked with a pale chevron, and round pink heads above them.",
+          "learn": [
+            "seen"
+          ]
+        },
+        {
+          "text": "Each head is a ball of tiny tube flowers, too deep for most insects; long-tongued bumblebees reach in.",
+          "learn": [
+            "flower"
+          ]
+        },
+        {
+          "text": "It grows in the grassier patches, where the turf has closed over the sand.",
+          "learn": [
+            "seen"
+          ]
+        },
+        {
+          "text": "Its roots feed the ground they grow in, so the turf greens up around it.",
+          "learn": [
+            "spread"
+          ]
+        },
+        {
+          "text": "At dusk the leaflets fold together, as if for the night.",
+          "learn": [
+            "moment:dusk"
+          ]
+        }
+      ],
+      "fieldHint": "Watch the islet's grassy patches through the summer to learn more.",
+      "sketch": {
+        "scale": "about 20 cm",
+        "labels": {
+          "head": {
+            "text": [
+              "round",
+              "pink heads"
+            ],
+            "learn": [
+              "flower"
+            ]
+          },
+          "leaf": {
+            "text": [
+              "three leaflets,",
+              "a pale chevron"
+            ],
+            "learn": [
+              "seen"
+            ]
+          },
+          "stem": {
+            "text": [
+              "soft",
+              "hairy stem"
+            ],
+            "learn": [
+              "seen"
+            ]
+          }
+        }
+      },
+      "riddle": "Something pink and round would grow in the grassier patches, with three leaves to each stalk.",
+      "amount": [
+        [
+          1,
+          "A single clover"
+        ],
+        [
+          2,
+          "A few clover patches"
+        ],
+        [
+          6,
+          "Clover in the grassy patches"
+        ],
+        [
+          16,
+          "Clover pink all over the islet's turf"
+        ]
+      ],
+      "place": "in the islet's grassy patches",
+      "compass": true,
+      "none": "No red clover grows on the island now.",
+      "flowering": "in pink flower",
+      "dormant": "low for winter",
+      "spreading": "seeding through the turf",
+      "receding": "thinning out",
+      "stages": [
+        "A clover seed, waiting in the turf",
+        "A new clover shoot",
+        "A young clover",
+        "A clover patch",
+        "A clover patch in pink flower",
+        "A clover patch, low for winter"
+      ],
+      "seasons": {
+        "grow": [
+          "chevron leaves",
+          "pink heads",
+          "brown heads",
+          "low leaves"
+        ],
+        "flower": "pink heads",
+        "dormant": "low leaves"
+      },
+      "likes": [
+        {
+          "text": "The islet's grassier patches",
+          "learn": [
+            "seen"
+          ]
+        },
+        {
+          "text": "Dry ground, out of the tide's reach",
+          "learn": [
+            "refused:low",
+            "refused:wet",
+            "lost:drown"
+          ]
+        },
+        {
+          "text": "Turf, with only a little sand",
+          "learn": [
+            "refused:ground"
+          ]
+        },
+        {
+          "text": "Little salt",
+          "learn": [
+            "refused:salt",
+            "lost:seed"
+          ]
+        },
+        {
+          "text": "Seeds into the turf nearby",
+          "learn": [
+            "spread"
+          ]
+        }
+      ],
+      "gives": [
+        {
+          "pencil": "Something big and humming might reach deep into these heads one day.",
+          "ink": "Deep flowers for the bumblebees.",
+          "when": "bees:seen"
+        }
+      ],
+      "notes": {
+        "arrived": "Red clover was already growing on the islet when it rose.",
+        "seen": "Red clover has come up in a grassy patch on the islet.",
+        "spread": "The clover has seeded through more of the turf.",
+        "flower": "The clover is in pink flower.",
+        "dormant": "The clover has gone low for winter.",
+        "woke": "The clover is greening again.",
+        "drown": "Some clover drowned where the tide reached it.",
+        "seed": "A clover seed found no turf to take in.",
+        "gone": "The last of the clover is gone."
+      }
+    },
+    "bedstraw": {
+      "name": "Lady's bedstraw",
+      "icon": "bedstraw",
+      "plural": "bedstraw clumps",
+      "plantable": false,
+      "field": [
+        {
+          "text": "Wiry stems ringed with whorls of needle leaves, topped with a froth of tiny yellow flowers.",
+          "learn": [
+            "seen"
+          ]
+        },
+        {
+          "text": "In flower it smells of honey, and dried it smells of new hay. People once stuffed mattresses with it.",
+          "learn": [
+            "flower"
+          ]
+        },
+        {
+          "text": "Dig one up and its roots are red. They were once boiled for a red dye.",
+          "learn": [
+            "seen"
+          ]
+        },
+        {
+          "text": "It spreads by creeping stems under the turf, and comes up in clumps.",
+          "learn": [
+            "spread"
+          ]
+        },
+        {
+          "text": "In winter only a few dark stems are left standing.",
+          "learn": [
+            "dormant",
+            "moment:winter"
+          ]
+        }
+      ],
+      "fieldHint": "Watch the islet's turf through the summer to learn more.",
+      "sketch": {
+        "scale": "about 30 cm",
+        "labels": {
+          "flower": {
+            "text": [
+              "a froth of tiny",
+              "yellow flowers"
+            ],
+            "learn": [
+              "flower"
+            ]
+          },
+          "whorl": {
+            "text": [
+              "whorls of",
+              "needle leaves"
+            ],
+            "learn": [
+              "seen"
+            ]
+          },
+          "root": {
+            "text": [
+              "red",
+              "roots"
+            ],
+            "learn": [
+              "seen"
+            ]
+          }
+        }
+      },
+      "riddle": "Something frothy and yellow would grow in sandy turf, smelling of honey, with roots as red as rust.",
+      "amount": [
+        [
+          1,
+          "A single bedstraw clump"
+        ],
+        [
+          2,
+          "A few bedstraw clumps"
+        ],
+        [
+          6,
+          "Bedstraw through the turf"
+        ],
+        [
+          16,
+          "Bedstraw yellow all over the islet"
+        ]
+      ],
+      "place": "in the islet's turf",
+      "compass": true,
+      "none": "No lady's bedstraw grows on the island now.",
+      "flowering": "in yellow froth",
+      "dormant": "dark stems for winter",
+      "spreading": "creeping under the turf",
+      "receding": "thinning out",
+      "stages": [
+        "A bedstraw seed, waiting in the turf",
+        "A new bedstraw shoot",
+        "A young bedstraw clump",
+        "A bedstraw clump",
+        "A bedstraw clump in yellow froth",
+        "A bedstraw clump, dark stems for winter"
+      ],
+      "seasons": {
+        "grow": [
+          "needle whorls",
+          "yellow froth",
+          "dark seed",
+          "dark stems"
+        ],
+        "flower": "yellow froth",
+        "dormant": "dark stems"
+      },
+      "likes": [
+        {
+          "text": "Sandy turf, a little grassy",
+          "learn": [
+            "seen"
+          ]
+        },
+        {
+          "text": "Dry ground, out of the tide's reach",
+          "learn": [
+            "refused:low",
+            "refused:wet",
+            "lost:drown"
+          ]
+        },
+        {
+          "text": "Sand and turf together",
+          "learn": [
+            "refused:ground"
+          ]
+        },
+        {
+          "text": "Little salt",
+          "learn": [
+            "refused:salt",
+            "lost:seed"
+          ]
+        },
+        {
+          "text": "Creeps under the turf",
+          "learn": [
+            "spread"
+          ]
+        }
+      ],
+      "gives": [
+        {
+          "pencil": "These red roots might be good for something one day.",
+          "ink": "Red roots for a dye.",
+          "when": "dye:bedstraw"
+        }
+      ],
+      "notes": {
+        "arrived": "Lady's bedstraw was already growing on the islet when it rose.",
+        "seen": "Lady's bedstraw has come up in the islet's turf, smelling of honey.",
+        "spread": "The bedstraw has crept further under the turf.",
+        "flower": "The bedstraw is in a froth of yellow flower.",
+        "dormant": "The bedstraw is down to dark stems for winter.",
+        "woke": "The bedstraw is greening again.",
+        "drown": "Some bedstraw drowned where the tide reached it.",
+        "seed": "A bedstraw seed found no turf to take in.",
+        "gone": "The last of the bedstraw is gone."
       }
     },
     "anemone": {

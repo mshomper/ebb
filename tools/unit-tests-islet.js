@@ -77,8 +77,15 @@ export function addIsletTests(test, assert, eq) {
     eq(S.heightAt(L.x + L.ux * 60, L.z + L.uz * 60), -Infinity, 'the open sea beyond is not touched');
     const [grass, sand] = S.paintAt(mid[0], mid[1], crest);
     assert(sand > 0.99 && grass < 0.01, 'the bar is sand');
-    const meadow = S.paintAt(L.x, L.z, top);
-    assert(meadow[0] > 0.4 && meadow[1] < 0.01, 'its top is meadow');
+    // Machair: mostly sand through a thin turf, with sparse grassy patches.
+    let sandSum = 0, n = 0, grassy = 0;
+    for (let a = -0.7; a <= 0.7; a += 0.05) for (let b = -0.6; b <= 0.6; b += 0.05) {
+      const x = L.x + a * L.A * L.tx + b * L.B * L.ux, z = L.z + a * L.A * L.tz + b * L.B * L.uz;
+      const [g, sa] = S.paintAt(x, z, 1.4);
+      sandSum += sa; n++; if (g > 0.5) grassy++;
+    }
+    assert(sandSum / n > 0.5, `its top is mostly sand (${(sandSum / n).toFixed(2)})`);
+    assert(grassy > 0 && grassy / n < 0.4, `with sparse grassy patches (${(100 * grassy / n).toFixed(0)}% of it)`);
   });
 
   test(G, 'it first shows at the big low tide of day 27, or at the first low water after a later milestone', async () => {
@@ -142,5 +149,23 @@ export function addIsletTests(test, assert, eq) {
     const th = T.threads.find((/** @type {any} */ t) => t.id === 'islet');
     assert(th && th.lines.every((/** @type {any} */ l) => T.tests[l.test]) && th.end.every((/** @type {string} */ e) => T.tests[e]), 'every thread line has its test');
     assert(R.starters.clumps.some((/** @type {any} */ c) => c.sp === 'flax'), 'flax has its slot');
+  });
+
+  test(G, 'the machair plants: each a flora recipe, a journal page and a web node, and none comes to the pond island by itself', async () => {
+    const [R, Gr, J, W] = await Promise.all([load('land/meadow-islet'), load('world/growth'), load('world/journal'), load('world/journal-web')]);
+    const machair = ['harebell', 'trefoil', 'thyme', 'clover', 'bedstraw'];
+    for (const sp of machair) {
+      const rec = await load(`flora/${sp}`);
+      eq(rec.id, sp, `${sp} has its recipe`);
+      assert(Gr.species.includes(sp), `${sp} is in growth's list`);
+      assert(!Gr.volunteers.order.includes(sp), `${sp} never volunteers on the pond island`);
+      eq(rec.plantTool, false, `${sp} is not in the Plant tool`);
+      assert(J.species[sp] && J.order.includes(sp), `${sp} has a journal page`);
+      assert(W.nodes[sp], `${sp} is a web node`);
+      assert(R.starters.clumps.some((/** @type {any} */ c) => c.sp === sp), `${sp} is planted when the islet rises`);
+    }
+    // None of the pond island's own plants are planted on it: its biome is its own.
+    const own = R.starters.clumps.map((/** @type {any} */ c) => c.sp).filter((/** @type {string} */ sp) => sp !== 'flax');
+    assert(own.every((/** @type {string} */ sp) => machair.includes(sp)), 'only machair plants as its starters');
   });
 }

@@ -12,7 +12,7 @@ import { CHUNK_SIZE, WORLD_ORIGIN, WORLD_CELLS, CELL } from '../terrain/grid.js'
 const DEG = det.PI / 180;
 /** The world window's far edge (m). */
 const WORLD_END = WORLD_ORIGIN + WORLD_CELLS * CELL;
-const L_SIDE = 1, L_COAST = 2, L_DETAIL = 3, L_SAND = 4, L_SOIL = 5, L_BAR = 6;
+const L_SIDE = 1, L_COAST = 2, L_DETAIL = 3, L_SAND = 4, L_PATCH = 5, L_BAR = 6;
 
 /**
  * @typedef {Object} Box @property {number} x0 @property {number} z0 @property {number} x1 @property {number} z1
@@ -108,7 +108,7 @@ export function isletLayout(R, land, terrainSeed, seed, base) {
 export function makeShape(L, R, seed, seabedM) {
   const S = R.shape, Bar = R.bar, M = R.materials;
   const coast = makeFbm(seed, L_COAST, S.coast), detail = makeFbm(seed, L_DETAIL, S.detail);
-  const sandN = makeFbm(seed, L_SAND, M.sand), soilN = makeFbm(seed, L_SOIL, M.soil);
+  const sandN = makeFbm(seed, L_SAND, M.sand), patchN = makeFbm(seed, L_PATCH, M.machair.patches);
   const wander = makeFbm(seed, L_BAR, Bar.wander);
   const n = S.roundness, [ax, az] = L.bar.from, [bx, bz] = L.bar.to;
   const vx = bx - ax, vz = bz - az, l2 = vx * vx + vz * vz || 1, len = Math.sqrt(l2);
@@ -158,12 +158,12 @@ export function makeShape(L, R, seed, seabedM) {
      */
     paintAt(x, z, h) {
       const j = M.sandJitterM * fbm(sandN, x, z);
-      // The beach, then a ring of sandy turf inside it (sand through the grass, as on the island's
-      // dune), where chamomile and marram take.
-      const { inward } = inwardAt(x, z), T = M.turf;
-      const turf = T.share * smooth(T.fromM - 1, T.fromM, inward) * (1 - smooth(T.toM, T.toM + 3, inward)) * smooth(-0.6, 0.6, fbm(sandN, x * 0.5, z * 0.5) + 0.3);
-      const sand = Math.max(1 - smooth(M.sandHighM - M.sandSoftM + j, M.sandHighM + j, h), turf);
-      const soil = M.soilMax * smooth(M.soilLow, M.soilHigh, fbm(soilN, x, z)) * (1 - sand);
+      const beach = 1 - smooth(M.sandHighM - M.sandSoftM + j, M.sandHighM + j, h);
+      // Machair above the beach (Matt, October 31, 2026): mostly sand through a thin turf, with
+      // sparse patches where the grass closes over (where the clover and bedstraw take).
+      const P = M.machair, patch = smooth(P.patchFrom, P.patchTo, fbm(patchN, x, z));
+      const sand = Math.max(beach, P.sand + (P.patchSand - P.sand) * patch);
+      const soil = P.soil * patch * (1 - beach);
       return [Math.max(0, 1 - sand - soil), sand, 0, soil];
     },
   };
