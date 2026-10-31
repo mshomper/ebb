@@ -148,6 +148,15 @@ Size and color come from CSS: set `width`/`height` on `.icon` and `color` on the
 | `walker` | a figure in a tall soft hat with a wide brim and a long coat: the Keeper book's Kit tab (src/ui/keeper-book.js; once the Walker page's button) |
 | `keeper` | a field book, its binding down the left, a cord wound round it and tied in a loop, a ribbon marker below: the Keeper book's button (src/ui/keeper-book.js) |
 | `threads` | a wooden spool with thread wound round it, its loose end curling away: the Keeper book's Threads tab |
+| `photo` | a small camera, the hump of its finder, the lens: Photo on the ground bar, photo mode |
+| `shot` | a round shutter button pressed in: Take the picture |
+| `aperture` | a lens ring with six blades round an open middle: photo mode's aperture |
+| `thirds` | a frame cut by two lines each way: the thirds guide |
+| `aspect` | four corner marks round a shape: the frame shape |
+| `margin` | a picture set on a wider sheet: the paper margin |
+| `exposure` | a disc half lit, a plus and a minus beside the line: photo mode's exposure |
+| `filter-soft` | a bright middle with a soft broken glow round it: the Soft filter |
+| `filter-pencil` | a pencil over three hatched strokes: the Pencil filter |
 
 The clock dial (`src/ui/clock-dial.js`) is drawn live in the same style rather than from this sprite: a season ring, the sky's arc over a horizon with the sun or moon on it, and a tide wave with a rising or falling chevron.
 

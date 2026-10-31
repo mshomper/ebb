@@ -1,6 +1,6 @@
 // Tonemap and present (docs/05): pre-exposed HDR + bloom -> Purkinje night shift -> AgX with the
 // palette's look -> palette LUT (two LUTs, crossfaded) -> the camp fire's banded flame -> soft outline
-// -> journal wash -> dither -> screen. Everything before the LUT is physical or perceptual; the palette
+// -> journal wash -> photo mode's filter -> dither -> screen. Everything before the LUT is physical or perceptual; the palette
 // is the painted step, and the fire's flame (Matt's fire study, October 29, 2026) its one sanctioned
 // exception: painted in display colour from the fire sim's heat, so AgX and the LUT never smear its bands.
 
@@ -24,10 +24,15 @@ struct Post {
   washPencil: vec3f, washWell: f32,
   washLine: vec4f,      // edge width (px), edge alpha, circle line width (px), circle alpha
   circles: array<vec4f, 3>, // pencil circles: x, z, radius (m), dashes per ring (0 = none)
-  _p3: vec4f,
+  lens: vec4f,          // x: photo mode's depth of field is drawn (the HDR alpha holds each pixel's blur radius, px); yz: where ink fades (px)
   // The camp fire (camp-fire.js): x on, y halo strength; then its bands.
   fire: vec4f,
   bands: FireBands,
+  // Photo mode's filter (B2 P1, recipes/world/photo.json filters), painted after the palette.
+  photoSoft: vec4f,     // x filter (0 none, 1 Soft, 2 Pencil), y shadow lift, z saturation, w vignette
+  photoPencil: vec4f,   // x colour kept, y hatch spacing (output px), z graphite strength, w paper grain
+  paper: vec4f,         // paper (display sRGB), w Pencil's outline strength
+  graphite: vec4f,      // graphite (display sRGB), w Soft's glow
 };
 
 @group(0) @binding(0) var<uniform> frame: FrameUniforms;
@@ -185,6 +190,73 @@ fn washOver(c: vec3f, uv: vec2f) -> vec3f {
   return out;
 }
 
+// Smooth value noise on a pixel grid, for the pencil's wobble and the paper's tooth.
+fn valueNoise(p: vec2f, seed: u32) -> f32 {
+  let i = vec2u(vec2i(floor(p)) + vec2i(4096));
+  let f = fract(p);
+  let u = f * f * (3.0 - 2.0 * f);
+  let a = hashToFloat(hash3(vec3u(i, seed)));
+  let b = hashToFloat(hash3(vec3u(i + vec2u(1u, 0u), seed)));
+  let c = hashToFloat(hash3(vec3u(i + vec2u(0u, 1u), seed)));
+  let d = hashToFloat(hash3(vec3u(i + vec2u(1u, 1u), seed)));
+  return mix(mix(a, b, u.x), mix(c, d, u.x), u.y);
+}
+
+// The palette's finished colour for an HDR value: the same steps as the image itself (Purkinje,
+// AgX with the look, the LUT crossfade), for the Soft filter's glow.
+fn paletted(hdr: vec3f) -> vec3f {
+  let d = clamp(agxEotf(agxLook(agx(nightShift(hdr)))), vec3f(0.0), vec3f(1.0));
+  let uvw = d * (31.0 / 32.0) + 0.5 / 32.0;
+  let a = textureSampleLevel(lutA, linearSampler, uvw, 0.0).rgb;
+  let b = textureSampleLevel(lutB, linearSampler, uvw, 0.0).rgb;
+  return mix(select(a, b, post.lutFrom == 1u), select(a, b, post.lutTo == 1u), post.lutFade);
+}
+
+// Soft: a diffusion glow (the picture lightened toward the soft copy the bloom chain keeps, in the
+// palette's own colours), the shadows lifted toward the paper, the saturation eased, and the edges
+// fading toward the paper. Display colour in, display colour out: a painted step after the palette.
+fn softFilter(c: vec3f, uv: vec2f, glow: vec3f) -> vec3f {
+  var o = max(c, mix(c, glow, post.graphite.w));
+  let luma = dot(o, LUM);
+  o = mix(vec3f(luma), o, post.photoSoft.z);
+  o = mix(o, post.paper.rgb, post.photoSoft.y * (1.0 - luma));
+  let r = length((uv - 0.5) * vec2f(1.0, 0.8)) * 1.6;
+  return mix(o, post.paper.rgb, post.photoSoft.w * smoothstep(0.45, 1.05, r));
+}
+
+// One layer of pencil strokes along a direction: lines `spacing` pixels apart, each covering
+// `width` (0..1) of the gap, wobbling gently along their length and pressed harder in places.
+fn hatchLayer(px: vec2f, dir: vec2f, spacing: f32, width: f32, seed: u32) -> f32 {
+  if (width <= 0.0) { return 0.0; }
+  let along = dot(px, vec2f(dir.y, -dir.x));
+  let row = dot(px, dir) / spacing;
+  let across = row + (valueNoise(vec2f(along / (spacing * 24.0), floor(row) * 0.37), seed) - 0.5) * 0.6;
+  let d = abs(fract(across) - 0.5) * 2.0;            // 0 on the line, 1 half way between
+  let aa = 2.0 / spacing;                             // about a pixel
+  let w = min(width, 0.9);
+  let press = mix(0.55, 1.0, valueNoise(vec2f(along / (spacing * 14.0), floor(across) * 1.7), seed + 7u));
+  return (1.0 - smoothstep(w - aa, w + aa, d)) * press;
+}
+
+// Pencil: graphite hatching on paper from the image's lightness (OKLab): the light parts left as
+// paper, one layer of strokes through the middle tones, crossing as it darkens; the soft outline
+// drawn firmly, and a little of the palette's colour washed into the paper. The sky is left
+// bare but for the wash, as a sketch leaves it.
+fn pencilFilter(c: vec3f, px: vec2f, edge: f32, sky: bool) -> vec3f {
+  let L = linearToOklab(srgbToLinear3(c)).x;
+  let tone = clamp((0.76 - L) / 0.46, 0.0, 1.0) * select(1.0, 0.0, sky);
+  let s = post.photoPencil.y;
+  var g = hatchLayer(px, normalize(vec2f(1.0, 1.0)), s, tone * 0.75, 11u);
+  g = max(g, hatchLayer(px, normalize(vec2f(1.0, -0.7)), s, (tone - 0.45) * 1.1, 23u));
+  g = max(g, hatchLayer(px, normalize(vec2f(0.15, 1.0)), s * 0.8, (tone - 0.75) * 1.6, 37u));
+  let grain = (valueNoise(px * 0.35, 51u) - 0.5) * post.photoPencil.w;
+  let paper = post.paper.rgb * (1.0 + grain);
+  let tint = c / max(dot(c, LUM), 0.05);
+  let wash = mix(paper, paper * mix(vec3f(1.0), tint, 0.6), post.photoPencil.x * (0.3 + tone * 0.7));
+  let ink = clamp(max(g * post.photoPencil.z, edge * post.paper.w), 0.0, 1.0);
+  return mix(wash, post.graphite.rgb, ink);
+}
+
 @vertex
 fn vs(@builtin(vertex_index) vi: u32) -> FullscreenOut {
   return fullscreenTriangle(vi);
@@ -192,8 +264,10 @@ fn vs(@builtin(vertex_index) vi: u32) -> FullscreenOut {
 
 @fragment
 fn fs(in: FullscreenOut) -> @location(0) vec4f {
-  var hdr = textureSampleLevel(hdrTex, linearSampler, in.uv, 0.0).rgb;
-  hdr += textureSampleLevel(bloomTex, linearSampler, in.uv, 0.0).rgb * post.bloomMix;
+  let hdrPx = textureSampleLevel(hdrTex, linearSampler, in.uv, 0.0);
+  var hdr = hdrPx.rgb;
+  let bloom = textureSampleLevel(bloomTex, linearSampler, in.uv, 0.0).rgb;
+  hdr += bloom * post.bloomMix;
   hdr = nightShift(hdr);
   let display = clamp(agxEotf(agxLook(agx(hdr))), vec3f(0.0), vec3f(1.0));
 
@@ -217,8 +291,13 @@ fn fs(in: FullscreenOut) -> @location(0) vec4f {
     }
   }
 
-  // Soft outline: a darker shade of the pixel's own color in OKLab, never black.
-  let ink = outlineAt(in.uv * frame.renderSize) * (1.0 - flame);
+  // Soft outline: a darker shade of the pixel's own color in OKLab, never black. Under the Pencil
+  // filter the same line is drawn in graphite instead.
+  let look = i32(round(post.photoSoft.x));
+  // Out of focus (photo mode's lens), the line goes soft with what it outlines.
+  let unfocused = select(0.0, smoothstep(post.lens.y, post.lens.z, hdrPx.a), post.lens.x > 0.5);
+  let line = outlineAt(in.uv * frame.renderSize) * (1.0 - flame) * (1.0 - unfocused);
+  let ink = select(line, 0.0, look == 2);
   if (ink > 0.0) {
     var lab = linearToOklab(srgbToLinear3(c));
     lab.x *= 1.0 - ink;
@@ -228,6 +307,13 @@ fn fs(in: FullscreenOut) -> @location(0) vec4f {
 
   // The journal's show-where wash: the one painted mark on the island, after the palette.
   c = washOver(c, in.uv);
+
+  // Photo mode's filter, the last painted step (recipes/world/photo.json filters).
+  if (look == 1) { c = softFilter(c, in.uv, paletted(bloom)); }
+  else if (look == 2) {
+    let skyPx = textureLoad(depthTex, clamp(vec2i(in.uv * frame.renderSize), vec2i(0), vec2i(textureDimensions(depthTex)) - 1), 0) <= 0.0;
+    c = pencilFilter(c, in.pos.xy, clamp(line / max(post.outlineAmount, 0.05), 0.0, 1.0), skyPx);
+  }
 
   // Triangular dither of about one code value so pastel skies never band.
   let h = hash3(vec3u(vec2u(in.pos.xy), frame.frameIndex & 63u));

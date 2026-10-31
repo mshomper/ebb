@@ -1329,6 +1329,52 @@ const ICONS = {
     <path d="M6.5 4V16M13.5 4V16"/>
     <path d="M6.5 8L13.5 6.6M6.5 11L13.5 9.6M6.5 14L13.5 12.6"/>
     <path d="M13.5 12.6C16.4 12.6 18.4 14 17.6 16.4C16.9 18.4 14.6 18.8 15.6 20.2C16.4 21.2 18.6 21 20 20"/>`,
+  // Photo mode (B2 P1): a small camera, its body, the hump of the finder, the lens.
+  photo: `
+    <path ${ACCENT} d="M3.5 8.5H7.5L9 6H15L16.5 8.5H20.5V19H3.5Z"/>
+    <path d="M3.5 8.5H7.5L9 6H15L16.5 8.5H20.5V19H3.5Z"/>
+    <circle cx="12" cy="13.5" r="3.4"/>
+    <path d="M17.6 11H18.4"/>`,
+  // Take the picture: a round shutter button, pressed in.
+  shot: `
+    <circle cx="12" cy="12" r="8.5"/>
+    <circle ${ACCENT} cx="12" cy="12" r="5"/>
+    <circle cx="12" cy="12" r="5"/>`,
+  // Aperture: a lens ring with six blades closing toward an open middle.
+  aperture: `
+    <circle cx="12" cy="12" r="8.5"/>
+    <path ${ACCENT} d="M12 8.6L14.9 10.3V13.7L12 15.4L9.1 13.7V10.3Z"/>
+    <path d="M12 3.5L14.9 10.3M19.4 7.8L14.9 13.7M19.4 16.2L12 15.4M12 20.5L9.1 13.7M4.6 16.2L9.1 10.3M4.6 7.8L12 8.6"/>`,
+  // Thirds guide: a frame cut by two lines each way.
+  thirds: `
+    <rect x="3.5" y="5.5" width="17" height="13" rx="1"/>
+    <path d="M9.2 5.5V18.5M14.8 5.5V18.5M3.5 9.8H20.5M3.5 14.2H20.5" opacity="0.8"/>`,
+  // Frame shape: four corner marks round a shape, as a cropping guide.
+  aspect: `
+    <rect ${ACCENT} x="6.5" y="7.5" width="11" height="9"/>
+    <path d="M3.5 8V4.5H7M17 4.5H20.5V8M20.5 16V19.5H17M7 19.5H3.5V16"/>`,
+  // Paper margin: a picture set on a wider sheet.
+  margin: `
+    <rect x="3.5" y="3.5" width="17" height="17" rx="1"/>
+    <rect ${ACCENT} x="7" y="7" width="10" height="8"/>
+    <rect x="7" y="7" width="10" height="8"/>`,
+  // Exposure: a disc half lit, a line between.
+  exposure: `
+    <circle cx="12" cy="12" r="8.5"/>
+    <path ${ACCENT} d="M12 3.5A8.5 8.5 0 0 0 12 20.5Z"/>
+    <path d="M12 3.5V20.5"/>
+    <path d="M15 9H18M16.5 7.5V10.5M15 15H18"/>`,
+  // Soft filter: a glow, its edge drawn in soft breaks round a bright middle.
+  'filter-soft': `
+    <circle ${ACCENT} cx="12" cy="12" r="4.5"/>
+    <circle cx="12" cy="12" r="4.5"/>
+    <path d="M12 3.5A8.5 8.5 0 0 1 18 6M20.5 12A8.5 8.5 0 0 1 18 18M12 20.5A8.5 8.5 0 0 1 6 18M3.5 12A8.5 8.5 0 0 1 6 6" opacity="0.7"/>`,
+  // Pencil filter: a pencil over three hatched strokes.
+  'filter-pencil': `
+    <path d="M3.5 20.5L9 15M3.5 16.5L7 13M7.5 20.5L11 17" opacity="0.8"/>
+    <path ${ACCENT} d="M10 15.5L18.2 7.3L20.7 9.8L12.5 18Z"/>
+    <path d="M10 15.5L18.2 7.3L20.7 9.8L12.5 18L9.2 18.8Z"/>
+    <path d="M16.6 8.9L19.1 11.4"/>`,
 };
 
 /** Names of every icon in the sprite. */

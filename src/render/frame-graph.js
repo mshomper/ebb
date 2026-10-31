@@ -126,8 +126,9 @@ export function createFrameGraph(gpu, passes, opts) {
     ctx.targets = {
       hdr: makeTexture(device, {
         label: 'hdr', size: [width, height], format: 'rgba16float',
-        // COPY_SRC: the water pass copies the opaque scene for refraction (docs/04).
-        usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_SRC,
+        // COPY_SRC: the water pass copies the opaque scene for refraction (docs/04); COPY_DST: photo
+        // mode's depth of field copies its blurred image back (passes/post/dof.js).
+        usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_SRC | GPUTextureUsage.COPY_DST,
       }),
       depth: makeTexture(device, {
         label: 'depth', size: [width, height], format: 'depth32float',

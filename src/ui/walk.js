@@ -7,7 +7,7 @@
 //   The ground bar (W4): along the bottom while you are below, in the tool bar's place, its buttons
 //     drawn icons with the word on hover only, as on cards (F17, Matt, October 23, 2026). Sit and
 //     Kneel lower you where you stand (a second press stands you up); Feed kneels and puts food
-//     down in front of you. Photo joins when photo mode exists. There is no Look button: one click
+//     down in front of you; Photo opens photo mode (B2 P1, src/render/photo-mode.js). There is no Look button: one click
 //     walks and uses (Matt, October 22, 2026; src/world/walk/click.js).
 //   Planting on foot (D1a, Matt, October 24, 2026; src/world/sowing): the seed tin and the gift spot,
 //     each one drawn icon that opens its own small menu above it (the tin's seeds; the gifts waiting
@@ -18,7 +18,7 @@
 // while you sit, ebb-sitting (the buttons fade).
 //
 // Reads the store slices `walk` { below, posture }, `unlocks` and `hand`; a press goes out as the
-// action walk.down, walk.up, walk.stuck, walk.posture, walk.feed, hand.pick or hand.putAway.
+// action walk.down, walk.up, walk.stuck, walk.posture, walk.feed, hand.pick, hand.putAway or photo.open.
 // Styles: walk.css.
 
 import { get, subscribe } from '../core/store.js';
@@ -31,7 +31,7 @@ import { itemIconFor } from './icons/item-registry.js';
 
 /**
  * @param {HTMLElement} parent the HUD layer
- * @param {{ down: string, up: string, stuck: string, sit: string, kneel: string, feed: string, net: string }} words
+ * @param {{ down: string, up: string, stuck: string, sit: string, kneel: string, feed: string, net: string, photo?: string }} words
  *   recipes/world/walker.json words
  * @param {any} sowing recipes/world/sowing.json (the seed tin and the gift spot)
  * @returns {() => void} dispose
@@ -59,7 +59,8 @@ export function mountWalk(parent, words, sowing) {
     + btn('', 'feed', words.feed, ' data-feed')
     + btn('', 'seed-tin', W.tin, ' data-menu="tin" aria-pressed="false" aria-haspopup="true" aria-expanded="false"')
     + btn('', 'gift-spot', W.gifts, ' data-menu="gifts" aria-pressed="false" aria-haspopup="true" aria-expanded="false"')
-    + btn('', 'net', words.net, ' data-pick-kind="net" data-pick-id="net" aria-pressed="false" hidden') + '</div>'
+    + btn('', 'net', words.net, ' data-pick-kind="net" data-pick-id="net" aria-pressed="false" hidden')
+    + btn('', 'photo', words.photo ?? 'Photo', ' data-photo') + '</div>'
     + '<div class="ebb-ground__menu" role="menu" hidden></div>';
 
   const go = /** @type {HTMLButtonElement} */ (root.querySelector('.ebb-walk__go'));
@@ -144,6 +145,7 @@ export function mountWalk(parent, words, sowing) {
     else if (b === stuckBtn) dispatch({ type: 'walk.stuck', source: 'button' });
     else if (b.dataset.posture) dispatch({ type: 'walk.posture', posture: b.dataset.posture, source: 'button' });
     else if (b.dataset.feed !== undefined) dispatch({ type: 'walk.feed', source: 'button' });
+    else if (b.dataset.photo !== undefined) dispatch({ type: 'photo.open', source: 'mouse' });
     else if (b.dataset.menu) {
       const which = /** @type {'tin' | 'gifts'} */ (b.dataset.menu);
       open = open === which || !itemsOf(which).length ? null : which;

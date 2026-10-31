@@ -43,6 +43,7 @@ import { mountWalk } from './ui/walk.js';
 import { mountHoverTag } from './ui/hover-tag.js';
 import { mountPack } from './ui/pack.js';
 import { mountGroundHere } from './ui/ground-here.js';
+import { mountPhoto } from './ui/photo.js';
 
 /** Shown in the corner badge when no build.json or local server info is available. */
 export const BUILD = 'm1-s3-palette';
@@ -105,6 +106,8 @@ startApp(canvas, { onDeviceLost: (rebuilding) => showRebuildingNote(rebuilding),
       mountWalk(hud.layer, walkerR.words, await loadRecipe('world/sowing'));
       // Below, over something a click can use: a drawn hand, and once the pointer rests, its name over it.
       mountHoverTag(walkerR.click);
+      // Photo mode's bar and guide (B2 P1): P, or Photo on the ground bar (src/render/photo-mode.js).
+      mountPhoto(document.body, await loadRecipe('world/photo'));
       // The pouch row in the ground bar, and the "here" bar beside it (docs/future/13 section 4.1).
       const groundBar = /** @type {HTMLElement | null} */ (hud.layer.querySelector('.ebb-ground'));
       const pouchRow = /** @type {HTMLElement | null} */ (groundBar?.querySelector('.ebb-ground__pouches') ?? null);

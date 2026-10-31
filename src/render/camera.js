@@ -87,6 +87,15 @@ export function createOrbitCamera(r) {
    * @type {{ minDistance: number, maxDistance: number, pitchMin: number, pitchMax: number, minEyeHeight: number } | null}
    */
   let ground = null;
+  /**
+   * Photo mode's free camera (src/render/free-camera.js): while set, the view is this eye and look
+   * and the orbit's own pose waits untouched underneath, so closing photo mode returns to it.
+   * @type {{ eye: number[], yaw: number, pitch: number } | null}
+   */
+  let free = null;
+  /** The point a free view looks at, a couple of meters ahead (what follows the camera's target). */
+  const freeTarget = vec3.create();
+  const FREE_AHEAD_M = 2;
   /** The view above you left when you went down, so Go up rises to the same height and angle. */
   let above = { distance: r.start.distance, pitch: r.start.pitchDeg * DEG };
   const minSoft = () => ground?.minDistance ?? close?.minDistance ?? r.distanceSoft[0];
@@ -215,6 +224,7 @@ export function createOrbitCamera(r) {
 
   /** Advance damping and rebuild matrices. @param {number} dt real seconds */
   function update(dt) {
+    if (free) { updateFree(free); return; }
     sinceInput += dt;
     const returning = sinceInput > r.softReturnDelay;
     if (returning) {
@@ -265,6 +275,18 @@ export function createOrbitCamera(r) {
     mat4.inverse(viewProj, invViewProj);
   }
 
+  /** Build the matrices from photo mode's eye and look. @param {{ eye: number[], yaw: number, pitch: number }} f */
+  function updateFree(f) {
+    const cp = Math.cos(f.pitch);
+    vec3.set(f.eye[0], f.eye[1], f.eye[2], eye);
+    vec3.set(f.eye[0] - Math.sin(f.yaw) * cp * FREE_AHEAD_M, f.eye[1] + Math.sin(f.pitch) * FREE_AHEAD_M,
+      f.eye[2] - Math.cos(f.yaw) * cp * FREE_AHEAD_M, freeTarget);
+    mat4.lookAt(eye, freeTarget, [0, 1, 0], view);
+    mat4.perspectiveReverseZ(fovY, viewW / viewH, r.near, Infinity, proj);
+    mat4.multiply(proj, view, viewProj);
+    mat4.inverse(viewProj, invViewProj);
+  }
+
   /** @param {number} pitch */
   function placeEye(pitch) {
     const cp = Math.cos(pitch);
@@ -288,9 +310,17 @@ export function createOrbitCamera(r) {
   return {
     orbit, pan, zoom, twist, update, ray, focus, look,
     /** The yaw the view is turning to (radians; the eye sits at +sin, +cos from the target). */
-    get yaw() { return goal.yaw; },
-    /** Is the game gliding the camera (not the player moving it)? */
-    driven: () => focusing,
+    get yaw() { return free ? free.yaw : goal.yaw; },
+    /** Is the game gliding the camera (not the player moving it)? Photo mode's free view counts: it never startles. */
+    driven: () => focusing || !!free,
+    /**
+     * Photo mode's free view (src/render/free-camera.js), set each frame, or null to give the view
+     * back to the orbit as it was.
+     * @param {{ eye: number[], yaw: number, pitch: number } | null} f
+     */
+    setFree(f) { free = f; },
+    /** Is photo mode's free view in charge? */
+    get free() { return !!free; },
     /** @param {number} w CSS px @param {number} h CSS px */
     setViewport(w, h) {
       viewW = Math.max(1, w);
@@ -372,9 +402,9 @@ export function createOrbitCamera(r) {
     get invViewProj() { return invViewProj; },
     get near() { return r.near; },
     /** Current distance from the eye to the orbit target, meters. */
-    get distance() { return cur.distance; },
-    /** The point the camera orbits around (world meters, on the ground). */
-    get target() { return cur.target; },
+    get distance() { return free ? FREE_AHEAD_M : cur.distance; },
+    /** The point the camera orbits around (world meters, on the ground); a free view's point ahead. */
+    get target() { return free ? freeTarget : cur.target; },
   };
 }
 
