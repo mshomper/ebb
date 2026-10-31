@@ -24,7 +24,7 @@ The audio branches only add new files. These shared files are edited only when a
 - Done (October 21, 2026): the audio recipe ids are in `recipes/index.json`, `src/audio/recipes.js` uses the shared loader, and `recipes/audio-index.json` is gone.
 - Done (October 20, 2026, piece B): the frog and midge voice settings now live in `recipes/species/frog.json` and `recipes/species/midge.json` as their `voice` field; `recipes/audio/voices/` is gone.
 - `tools/index.html`: link the music lab and the audio check page.
-- Done (October 21, 2026): `tools/unit-tests.html` runs the audio tests that need no Web Audio in its workers (listed in `tools/unit-tests-parallel.js`). The pond and keepsake sound tests render through an OfflineAudioContext, which workers lack, so they stay on `tools/unit-tests-audio.html`; that page and `node tools/run-audio-tests.mjs` still run every audio test.
+- Done (October 21, 2026): `tools/unit-tests.html` runs the audio tests that need no Web Audio in its workers (listed in `tools/unit-tests-parallel.js`). The pond and keepsake sound tests render through an OfflineAudioContext, which workers lack, so they stay on `tools/unit-tests-audio.html`; that page still runs every audio test. Since October 31, 2026 the main test page runs the pond and keepsake sound files on its main thread too, and `node tools/run-tests.mjs` runs every audio test in Node (their Web Audio checks skip themselves there); `tools/run-audio-tests.mjs` is gone.
 - `docs/README.md`: list docs 24 and 25.
 - `docs/17-audio.md`: apply doc 25's "Proposed amendments to doc 17", and point here.
 - `src/core/store.js`: add a music level (and the music frequency setting) to the audio settings; the mixer uses recipes/audio/mixer.json's musicDefault until then.

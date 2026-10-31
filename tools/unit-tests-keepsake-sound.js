@@ -6,6 +6,9 @@
 
 import { createKeepsakeSounds } from '../src/audio/keepsake-sounds.js';
 
+/** The test page runs this file on its main thread, where Web Audio is; in Node its decoding check skips itself (tools/index-tests.mjs). */
+export const NEEDS = 'web-audio';
+
 const G = 'sound: keepsakes';
 
 /** The recipe, by fetch in the browser and from disk in Node. */
