@@ -1,7 +1,7 @@
 // @ts-check
 // Morning hints in the live game (Matt, October 28, 2026; rules in morning.js): at the first quiet
 // daylight moment of each game day, the keeper's one line for the morning goes to the island-notes
-// corner as `morning:hint { id, text, sp, opens, showS }`, and its flag (`hint:<id>@<day>`) goes into
+// corner as `morning:hint { id, text, sp, at, opens, showS }` (at: where a visitor showed itself), and its flag (`hint:<id>@<day>`) goes into
 // journal.flags, so it is kept with the island and never shown again. Quiet means: the first evening
 // is over and none of its lines (or the camp's) shows, no keeper card or return reveal is up, the
 // tab is in view, and it has been so for quietS seconds. After a rest that is the wake at the flap.
@@ -15,7 +15,7 @@ import { on, emit } from '../../core/events.js';
 import { get, subscribe } from '../../core/store.js';
 import { dispatch } from '../../input/actions.js';
 import { sunMoon } from '../sky/sun-moon.js';
-import { pickHint, shownFlag, shownToday, showMeOf } from './morning.js';
+import { pickHint, shownFlag, shownToday, showMeOf, visitAt } from './morning.js';
 
 const DAY = 86400, HOUR = 3600;
 
@@ -60,12 +60,13 @@ export function createMorningHints(o) {
   function offer() {
     const t = o.clock.display(), day = Math.floor(t / DAY);
     if (day === passedDay || shownToday(R, flags(), day)) return;
-    const journal = get('journal'), s = { journal, cook: get('cook'), kindOf };
+    // Seasonal visitors' last visits (src/world/ecology/visits.js), for visit hints.
+    const journal = get('journal'), s = { journal, cook: get('cook'), kindOf, visits: get('shaped')?.visits?.by ?? {}, day };
     const age = (t / HOUR - (journal?.born ?? 0)) / 24;
     const h = pickHint(R, s, age);
     if (!h) { passedDay = day; return; }
     setFlag(shownFlag(R, h.id, day));
-    emit('morning:hint', { id: h.id, text: h.text, sp: showMeOf(h, s), opens: h.opens ?? null, showS: R.showS ?? 40 });
+    emit('morning:hint', { id: h.id, text: h.text, sp: showMeOf(h, s), at: visitAt(h, s), opens: h.opens ?? null, showS: R.showS ?? 40 });
   }
 
   return {

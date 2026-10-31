@@ -24,6 +24,7 @@ import * as fixtures from './fixtures.js';
 import * as setpieces from './setpieces.js';
 import * as kit from './kit.js';
 import * as fishing from './fishing.js';
+import * as shaped from './shaped.js';
 import * as graph from './graph.js';
 import * as photo from './photo.js';
 import * as quality from './quality.js';
@@ -70,6 +71,8 @@ export const SYSTEMS = [
   setpieces.start,
   kit.start,
   fishing.start,
+  shaped.start,
+  shaped.tests,
   testLinks.packs,
   testCamp.camp,
   testCamp.teas,

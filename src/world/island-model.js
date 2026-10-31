@@ -13,8 +13,10 @@ import { rectForBounds, waterCellOf } from './water/grid.js';
 import { buildHabitat } from './growth/habitat.js';
 
 /**
- * @param {{ seed: number, terrain: any, land: any, water: any, growth: any }} r
- *   seed: the world seed (as ?seed=); terrain, water, growth: recipes/world/*.json; land: the island's land recipe
+ * @param {{ seed: number, terrain: any, land: any, water: any, growth: any, edit?: (heightQ: Uint16Array, material: Uint8Array) => void }} r
+ *   seed: the world seed (as ?seed=); terrain, water, growth: recipes/world/*.json; land: the island's land recipe;
+ *   edit: shape the new island before its water and habitat are worked out, as a player would (tools/shaped-lab.html):
+ *   it changes copies of the heights and paint in place, and the island as generated stays the habitat's baseQ
  * @returns {{ habitat: import('./growth/habitat.js').Habitat, summaryHash: number, summary: import('./water/summary.js').Summary,
  *   heightQ: Uint16Array, material: Uint8Array }}
  */
@@ -36,12 +38,25 @@ export function buildIslandModel(r) {
       }
     }
   }
+  // A shaped island (the edit) keeps the island as generated for shapedCm.
+  const baseQ = heightQ;
+  if (r.edit) { const h = heightQ.slice(), m = material.slice(); r.edit(h, m); return finish(r, S, h, m, baseQ); }
+  return finish(r, S, heightQ, material, baseQ);
+}
+
+/**
+ * The water summary and habitat of an island's heights and paint.
+ * @param {any} r @param {{ chunkMin: number, chunkMax: number }} S @param {Uint16Array} heightQ @param {Uint8Array} material @param {Uint16Array} baseQ
+ */
+function finish(r, S, heightQ, material, baseQ) {
+  const N = WORLD_CELLS;
+  const tSeed = subSeed(r.seed >>> 0, 'terrain');
   const half = CHUNK_SIZE / 2;
   const rect = rectForBounds({ openMin: [CHUNK_SIZE * S.chunkMin - half, CHUNK_SIZE * S.chunkMin - half], openMax: [CHUNK_SIZE * S.chunkMax + half, CHUNK_SIZE * S.chunkMax + half] });
   const springs = landmarks(r.land, tSeed).springs.map((s) => ({ cellX: waterCellOf(s.x), cellY: waterCellOf(s.z), rateLps: s.rateLps }));
   const summary = buildSummary({ heightQ, rect, springs, params: { ...r.water.summary, manningN: r.water.sim.manningN }, tide: r.water.tide });
-  // A new island: nothing shaped yet (baseQ is the same heights).
+  // A new island: nothing shaped yet (baseQ is the same heights), unless an edit shaped it.
   const habitat = buildHabitat({ eco: summary.eco, material, materialCells: N, params: r.growth.habitat,
-    heightQ, baseQ: heightQ });
+    heightQ, baseQ });
   return { habitat, summaryHash: summary.hash, summary, heightQ, material };
 }

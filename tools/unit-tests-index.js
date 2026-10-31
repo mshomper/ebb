@@ -93,6 +93,7 @@ export const TEST_FILES = {
   'sampler': '',
   'save': '',
   'setpieces': '',
+  'shaped': '',
   'shore-sand': '',
   'sketchbook': '',
   'sky-and-seasons': '',

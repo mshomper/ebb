@@ -42,6 +42,7 @@ const KNOWN = ['meta', 'world', 'journal', 'water', 'unlocks', 'view', 'looks', 
  * @property {any} [keepsakes]  the shelf (src/world/keepsakes/shelf.js ShelfState)
  * @property {any} [nets]  the nets (src/world/nets/model.js NetsState)
  * @property {any} [camp] @property {any} [pack] @property {any} [gather] @property {any} [dig] @property {any} [cook] @property {any} [dyes]
+ * @property {any} [shaped] shaped ground's memory and the visits (B3 S0; src/world/ecology/shaped-live.js)
  * @property {any} [sketchbook] @property {any} [kit] @property {any} [threads] @property {any} [fishing] fishing (docs/future/17; src/world/fishing/model.js)
  *   the keeper's camp sections (format 9, docs/future/13 section 12.1; src/save/migrate-format9.js), the sketchbook (P2i),
  *   the walker's kit (the Keeper book's Kit page; src/world/kit/model.js) and the Keeper book's threads (src/world/threads/model.js)
@@ -111,7 +112,7 @@ export function snapshot(p) {
  * Placed pieces that are missing or unreadable come back as none.
  * @returns {{ meta: any, world: any, journal: any, water: any, unlocks: any, view: any, looks: any, music: any,
  *   pieces: import('../world/pieces/model.js').PiecesState, keepsakes: import('../world/keepsakes/shelf.js').ShelfState,
- *   nets: import('../world/nets/model.js').NetsState, camp: any, pack: any, gather: any, dig: any, cook: any, dyes: any, sketchbook: any, kit: any, threads: any, fishing: any,
+ *   nets: import('../world/nets/model.js').NetsState, camp: any, pack: any, gather: any, dig: any, cook: any, dyes: any, sketchbook: any, kit: any, threads: any, fishing: any, shaped: any,
  *   chunks: SavedChunk[], extra: [string, any][], bad: string[] }}
  */
 export function restore(sections) {
@@ -131,6 +132,6 @@ export function restore(sections) {
     water: sections.water ?? null, unlocks: sections.unlocks ?? {}, view: sections.view ?? null,
     looks: sections.looks ?? {}, music: sections.music ?? null, pieces: cleanPieces(sections.pieces), keepsakes: cleanShelf(sections.keepsakes), nets: cleanNets(sections.nets),
     camp: clean9('camp', sections.camp), pack: clean9('pack', sections.pack), gather: clean9('gather', sections.gather),
-    dig: clean9('dig', sections.dig), cook: clean9('cook', sections.cook), dyes: clean9('dyes', sections.dyes), sketchbook: clean9('sketchbook', sections.sketchbook), kit: clean9('kit', sections.kit), threads: clean9('threads', sections.threads), fishing: clean9('fishing', sections.fishing), chunks, extra, bad,
+    dig: clean9('dig', sections.dig), cook: clean9('cook', sections.cook), dyes: clean9('dyes', sections.dyes), sketchbook: clean9('sketchbook', sections.sketchbook), kit: clean9('kit', sections.kit), threads: clean9('threads', sections.threads), fishing: clean9('fishing', sections.fishing), shaped: clean9('shaped', sections.shaped), chunks, extra, bad,
   };
 }

@@ -184,6 +184,63 @@ A body recipe lists SDF primitives (sphere, ellipsoid, capsule, round cone, roun
 
 The coarse model keeps only **group records** (species, patch, population, group mood, trust per named individual) and swarm densities. There are no positions while away. On re-seed, agents spawn near their home cells in the state their activity curve gives for that hour, as described in `02-core-loop-and-idle-model.md`.
 
+### Visits and shaped homes (B3 S0, October 31, 2026)
+
+Plain language: a B3 newcomer comes to look first. It shows itself once in its season, and the next morning a note says what ground might keep it. The ground is always something the player shaped, never the island's own spit or rocky point. Once that ground is made, the visits stop and the species' own arrival takes over. One shared piece of code measures the ground and runs the visits; each species adds recipe lines only.
+
+```mermaid
+flowchart LR
+  G[The island's heights and paint<br/>habitat grid, shapedCm] --> C[shaped.js checks<br/>bar, wall, pond, wrack, coast]
+  M[(save section shaped<br/>pond ages, wrack streak,<br/>walker footprints)] --> C
+  I[store slice islet<br/>meadow islet, B3a] --> C
+  C --> R[store slice shapedNow<br/>numbers only]
+  R --> H{ecology.visit.home<br/>met?}
+  H -- no --> V[visits.js<br/>seeded visit days]
+  H -- yes --> F[flag sp:home<br/>visits stop]
+  V -- while you play --> S[visit:start<br/>species shows itself]
+  V -- while away --> A[flags only]
+  S & A --> N[flag sp:visited<br/>next morning: visit hint<br/>journal pencil circle]
+```
+
+**The checks** (`src/world/ecology/shaped.js`, rules in `recipes/world/shaped.json`) read the habitat grid's heights, paint and `shapedCm` (how far the player moved the ground from the island as generated). They report numbers and never say no:
+
+| Check | What it reports (in `shapedNow`) |
+|---|---|
+| `bars` | each raised bar in the tide band (dry at an ordinary low tide, under a spring high tide): `areaM2`, `lengthM`, `widthM`, `sand` (0..1), `quiet` (no walker within 15 m in the last game day), `nearM`, and `islet: true` for the meadow islet's bar when the store slice `islet` says it has risen |
+| `walls` | each Terrace sea wall: painted rock on shaped, steep ground at the waterline, standing out of the water: `lengthM`, `widthM`, `areaM2` |
+| `ponds` | each body of standing fresh water: `areaM2`, `deepCm`, `dug` (most of it on shaped ground), `ageDays` (since first seen), `seaM` (to the sea), `wetGrass` (a path of wet grass to the shore), `reeds` (share of its margin with reeds, iris or rushes) |
+| `wrack` | `lyingM` (metres of the newest strandline holding wrack nobody gathered), `days` it has stayed at least `wrack.minM` |
+| `shore` | the coast shared out: `coastM`, `wallM`, `barM`, `sandM`, `freeM` (homes compete) |
+
+A game year is 56 game days, so the eels' "year-old pond" is `ageDays` 56.
+
+**The visit block** (`ecology.visit` in a species recipe, read by `src/world/ecology/visits.js`):
+
+```json
+"visit": {
+  "sp": "seals",
+  "seasons": [2, 3],
+  "everyDays": 6,
+  "chance": 0.7,
+  "hours": [9, 16],
+  "fromDay": 0,
+  "show": { "kind": "surface-follow", "lastsH": 1, "where": "sea" },
+  "home": { "check": "bar", "need": { "areaM2": 18, "lengthM": 6, "widthM": 3, "quiet": true } }
+}
+```
+
+- `sp`: the journal page's id (defaults to the recipe's id). `seasons`: 0 spring to 3 winter. Days are cut into windows of `everyDays`; each window in season brings one visit with chance `chance`, on a day and hour the seed picks inside `hours`. `fromDay` holds visits back on a young island.
+- `show` is the species' own: `visits.js` passes it as it is in `visit:start { sp, show, x, z, hour, day }`. Only `where` is read here, to pick the spot: `shore` (land on the waterline), `sea` (sea beside it), `pond` (the largest pond's deepest square), `strand` (the tide band).
+- `home`: `check` is `bar`, `wall`, `pond` (dug ponds only) or `wrack`. Each `need` field must be at least its number (or hold, for `true`), each `max` field at most its number. The weakest need decides how near a home comes (`homeOf` gives `fit` 0..1). Teal: `{ "check": "pond", "need": { "areaM2": 30, "reeds": 0.6 } }`. Eels: `{ "check": "pond", "need": { "ageDays": 56, "wetGrass": true }, "max": { "seaM": 30 } }`. Purple sandpipers: `{ "check": "wall", "need": { "lengthM": 8 } }`. Turnstones: `{ "check": "wrack", "need": { "lyingM": 10, "days": 3 } }`.
+
+Visit days come from the seed alone, so a visit that fell while the island was away still sets its flags and brings its hint; it is just not shown. Trust is never touched. The visits look once a game hour; a jump of more than `visits.awayGapH` hours between looks is time away.
+
+**Flags**: `<sp>:visited` at the first visit (the journal page's pencil-circle hint uses it: `{ "when": "seals:visited", "text": "..." }`), `<sp>:home` once the home is made (visit hints are done then).
+
+**The morning hint** is one entry in `recipes/world/morning-hints.json`, no code: `{ "id": "seal-visit", "visit": "seals", "text": "The seal watched the shore a long while. A quiet bar of sand at low tide might keep it." }`. It comes the morning after a visit, rings the visit's spot on Show me, and comes again only after a newer visit at least `visitAgainDays` later. Add the species to the `animalCame` test with `{ "visited": ["seals"] }` or its `:sign` flag, and to any hint's `showMe` list where it fits.
+
+**Test links**: `?shape=bar`, `wall`, `pond`, `wrack` (or several, joined by commas) shape that ground with real strokes; `?shape=pond` makes the pond a game year old (`&pondAge=N` for another age), `?shape=wrack` thickens the strandline's wrack and says it has lain 4 days. `?visit=<sp>` makes that species' visit now and dates it yesterday, so the morning hint can come. `tools/shaped-lab.html` shows every check on the starter island.
+
 ### Fish on the line (F17)
 
 Fish caught on the line are catches, not simulated creatures: each is one individual made from a seed when it bites (`src/world/fishing/`, the generator in `src/world/nets/living/fish2.js`), shown, sketched if it is a species' first, and let go. They need no presence or trust and keep no group records. They still move like living things: a hooked fish wriggles on a skinned swim at the end of the line, and on the tray it swims in place.

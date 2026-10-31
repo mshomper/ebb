@@ -1,0 +1,49 @@
+{
+  "type": "shaped",
+  "version": 1,
+  "note": "Shaped ground (doc 13 'Shaped, not found'; B3 S0): what every B3 newcomer stands on, measured from the island's own heights and paint (the habitat grid, 1 m squares), the way the dragonflies already judge a pond the player made. Read by src/world/ecology/shaped.js (the pure checks) and shaped-live.js (the memory: pond ages, how long wrack has lain, where the walker went). Every check reports numbers and never says no: a species' visit block (ecology.visit.home, docs/11-creatures-and-ecology.md 'Visits and shaped homes') says which numbers it wants. shapedCm: ground moved at least this far from the island as generated counts as shaped (the dragonflies use 20). bar: a raised bar in the tide band. Its squares are ground the player raised (shapedCm) standing between dryAboveM (dry at an ordinary low tide: the mean amplitude 0.6 m under, with a margin) and coverBelowM (under a spring high tide, 0.6 x 1.15 x 1.15): ground higher than that is land, not a bar. minAreaM2 and minWidthM drop crumbs and the thin foot of a shelf; length and width come from the shape's spread (a 6 x 3 m bar reads about 6 x 3). quietM and quietH: a walker within quietM of the bar in the last quietH game hours breaks the seals' quiet (stepCellM: the footprint grid kept for that). wall: a Terrace sea wall at the waterline: squares painted rock (rockShare, 0..1) on ground the player moved (shapedCm), steep (minSlopeDeg), within the splash zone (lowM..highM above mean sea level), beside the sea or the tide band, and standing out of the water (some square within one of it at least topAboveM high, above a spring high tide: the sheer faces of a bar raised under the sea are rock too, but they are no wall). The rocky point that comes with the island is rock too, but nobody shaped it, so it never counts. Length from the spread of the longest run. pond: a body of standing fresh water at least minAreaM2, counted as dug when shapedShare of its squares lie on shaped ground (the starter pond has none). Its age runs from the game hour it was first seen (shaped-live.js keeps it; a pond within matchM of a remembered one is the same pond, and one unseen for forgetDays is forgotten, so a pond that dried and filled again starts over). seaMaxM: how far toward the sea its distance is measured. wetGrass: a path from the pond's edge to the shore through squares with grass at least grass and moisture at least moisture (0..255). reeds: the margin plants and the rushes' cover (as the shaper's trail reads a reed margin). wrack: wrack left lying along the strandline: the metres of the newest strandline still holding dried wrack nobody gathered, and how long (in game days) it has stayed at least minM. shore: the coast shared out (homes compete): how many metres of waterline the island has, and how much a wall, a bar or sand already holds. Test links (src/app/shaped.js) shape each kind of ground with real strokes: ?shaped=bar, wall, pond, wrack, or several joined by commas; test.* are their sizes (test.pond.ageDays: a game year is 56 game days, so ?shape=pond makes a year-old pond).",
+  "shapedCm": 20,
+  "bar": {
+    "dryAboveM": -0.45,
+    "coverBelowM": 0.8,
+    "minAreaM2": 4,
+    "minWidthM": 2,
+    "quietM": 15,
+    "quietH": 24,
+    "stepCellM": 4
+  },
+  "wall": {
+    "rockShare": 0.25,
+    "minSlopeDeg": 25,
+    "lowM": -0.8,
+    "highM": 1.6,
+    "topAboveM": 0.9,
+    "minCells": 3
+  },
+  "pond": {
+    "minAreaM2": 6,
+    "shapedShare": 0.5,
+    "matchM": 6,
+    "forgetDays": 3,
+    "seaMaxM": 60,
+    "wetGrass": { "grass": 90, "moisture": 120 },
+    "reeds": { "plants": ["reeds", "iris"], "rushCover": 38 }
+  },
+  "wrack": {
+    "minM": 10,
+    "binM": 2
+  },
+  "shore": {
+    "sandShare": 0.5
+  },
+  "visits": {
+    "note": "Visits (src/world/ecology/visits.js): awayGapH: a jump of more than this many game hours between two looks is time away (or catch-up), so the visits in it leave their flags and hint but are not shown. How often a visit hint repeats is morning-hints.json visitAgainDays.",
+    "awayGapH": 2
+  },
+  "test": {
+    "bar": { "lengthM": 9, "halfWidthM": 2.4, "topM": -0.25 },
+    "wall": { "lengthM": 14, "radiusM": 1.6, "heightM": 1.5 },
+    "pond": { "radiusM": 3.2, "depthM": 0.6, "ageDays": 56 },
+    "wrack": { "days": 4 }
+  }
+}

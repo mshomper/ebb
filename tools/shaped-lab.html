@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ebb shaped ground lab</title>
+<link rel="icon" href="../brand/ebb-favicon.svg" type="image/svg+xml">
+<style>
+  @font-face { font-family: 'Nunito'; src: url('../src/vendor/fonts/nunito-latin-600-normal.woff2') format('woff2'); font-weight: 600; }
+  @font-face { font-family: 'Nunito'; src: url('../src/vendor/fonts/nunito-latin-800-normal.woff2') format('woff2'); font-weight: 800; }
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; max-width: 100%; overflow-x: hidden; }
+  body { background: #F4EEE4; color: #1E2624; font: 600 17px/1.45 'Nunito', system-ui, sans-serif; padding: 16px; overflow-wrap: anywhere; }
+  main { max-width: 1200px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; }
+  h1 { font-size: 24px; font-weight: 800; margin: 0; }
+  h2 { font-size: 20px; font-weight: 800; margin: 0 0 6px; }
+  .muted { color: #4A5551; font-size: 16px; margin: 0; }
+  a { color: #4a6a47; }
+  .card { background: #FBF7F0; border: 1px solid #E3D9C9; border-radius: 14px; padding: 14px 16px; min-width: 0; }
+  .controls { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; }
+  .controls label { display: flex; flex-direction: column; gap: 4px; font-size: 16px; color: #4A5551; flex: 1 1 150px; }
+  .controls input, .controls select { font: 600 17px/1.2 'Nunito', system-ui, sans-serif; color: #1E2624; background: #FFFDF8; border: 1px solid #CFC3AF; border-radius: 10px; padding: 10px 12px; min-height: 48px; width: 100%; }
+  .controls input[type="range"] { padding: 0; min-height: 36px; }
+  .controls label.check { flex-direction: row; align-items: center; gap: 10px; min-height: 48px; }
+  .controls label.check input { width: 22px; min-height: 22px; height: 22px; flex: 0 0 auto; }
+  button { font: 800 17px/1.2 'Nunito', system-ui, sans-serif; color: #FBF7F0; background: #4a6a47; border: 0; border-radius: 12px; padding: 12px 18px; cursor: pointer; min-height: 48px; flex: 1 1 180px; }
+  button:disabled { background: #A9B3A6; cursor: default; }
+  .fields { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 12px; }
+  .fields button { flex: 0 1 auto; background: #FFFDF8; color: #1E2624; border: 1px solid #CFC3AF; min-height: 44px; padding: 8px 16px; }
+  .fields button[aria-pressed="true"] { background: #4a6a47; color: #FBF7F0; border-color: #4a6a47; }
+  .split { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 460px), 1fr)); gap: 16px; align-items: start; }
+  .map { width: 100%; aspect-ratio: 1; display: block; border-radius: 10px; background: #2F6E86; }
+  .legend { display: flex; flex-wrap: wrap; gap: 8px 16px; font-size: 16px; color: #4A5551; margin: 8px 0 0; }
+  .legend i { display: inline-block; width: 22px; height: 6px; border-radius: 3px; vertical-align: middle; margin-right: 6px; }
+  .checks { display: grid; gap: 12px; }
+  .check h2 { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px 12px; align-items: baseline; }
+  .facts { list-style: none; margin: 4px 0 0; padding: 0; display: grid; gap: 2px; }
+  .facts li { display: grid; grid-template-columns: minmax(9em, auto) minmax(0, 1fr); gap: 10px; padding: 3px 0; border-bottom: 1px solid #E3D9C9; }
+  .facts li span:first-child { color: #4A5551; font-size: 16px; }
+  .pill { font-size: 15px; font-weight: 800; border-radius: 999px; padding: 2px 12px; background: #E7DFD1; color: #4A5551; }
+  .pill.yes { background: #4a6a47; color: #FBF7F0; }
+  .bar-fit { height: 10px; border-radius: 5px; background: #E7DFD1; overflow: hidden; margin: 6px 0 2px; }
+  .bar-fit span { display: block; height: 100%; background: #4a6a47; }
+  .year { width: 100%; height: auto; display: block; }
+  .note { font-size: 16px; color: #4A5551; margin: 6px 0 0; }
+</style>
+</head>
+<body>
+<main>
+  <h1>ebb shaped ground lab</h1>
+  <p class="muted">What every B3 newcomer stands on (doc 13, "Shaped, not found"): the starter island built from its recipes with no graphics card, with the same test grounds the game's <b>?shape=bar,wall,pond,wrack</b> links shape, then measured by the real checks (src/world/ecology/shaped.js). Each check reports numbers; the example homes below are the ones wave 2 will write into each species recipe. Nothing here touches a saved world. <a href="./">All tools</a></p>
+  <div class="card">
+    <div class="fields" id="kinds" role="group" aria-label="Test grounds">
+      <button type="button" data-kind="bar" aria-pressed="true">Raised bar</button>
+      <button type="button" data-kind="wall" aria-pressed="true">Sea wall</button>
+      <button type="button" data-kind="pond" aria-pressed="true">Dug pond</button>
+    </div>
+    <div class="controls">
+      <label for="seed">World seed<input id="seed" type="number" min="0" step="1" value="1" inputmode="numeric"></label>
+      <label for="age">The pond's age<select id="age"><option value="0">Dug today</option><option value="14">14 days (a season)</option><option value="56" selected>56 days (a year)</option></select></label>
+      <label for="wrackM"><span>Wrack left lying: <b id="wrackMv">14</b> m</span><input id="wrackM" type="range" min="0" max="40" step="2" value="14"></label>
+      <label for="wrackD"><span>For: <b id="wrackDv">4</b> days</span><input id="wrackD" type="range" min="0" max="10" step="1" value="4"></label>
+      <label class="check" for="walked"><input id="walked" type="checkbox">A walker on the bar today</label>
+      <label class="check" for="islet"><input id="islet" type="checkbox">The meadow islet has risen</label>
+      <button id="run" type="button">Shape and measure</button>
+    </div>
+  </div>
+  <div class="split">
+    <div class="card">
+      <h2>The island</h2>
+      <canvas id="map" class="map" width="720" height="720" aria-label="Map of the island with the shaped grounds outlined"></canvas>
+      <div class="legend">
+        <span><i style="background:#E0A030"></i>Raised bar</span>
+        <span><i style="background:#C2452D"></i>Sea wall</span>
+        <span><i style="background:#2E9BD6"></i>Dug pond</span>
+        <span><i style="background:#9BA5A0"></i>Pond as the island began</span>
+        <span><i style="background:#F2E4B8"></i>Tide band</span>
+      </div>
+      <p class="note" id="status">Building the island...</p>
+    </div>
+    <div class="checks" id="checks"></div>
+  </div>
+  <div class="card">
+    <h2>Visits over a game year</h2>
+    <p class="muted">An example seal visit block (seasons autumn and winter, a window of 4 days, chance 0.7, 9:00 to 15:00), on this seed. Each dot is a visit; the hint comes the next morning, and again only after a newer visit 6 or more days on. Visits stop on the day the home is made: with the raised bar shaped and quiet, there are none.</p>
+    <svg id="year" class="year" viewBox="0 0 1000 130" aria-label="Visits across the year"></svg>
+    <p class="note" id="yearNote"></p>
+  </div>
+</main>
+<script type="module" src="./shaped-lab.js"></script>
+</body>
+</html>
