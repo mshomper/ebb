@@ -35,7 +35,7 @@ flowchart LR
   become the walk's, on a walk grid over the zone's bounds, with none of the island's solids. While
   in one, you are not on the island: presence, the finds and the here-bar feel nobody, no prints are
   left, and `spot()` keeps the island spot you went down from.
-- **Drawing** (`src/app.js`): the zone's own passes run (they clear the frame themselves), with the
+- **Drawing** (`src/app/graph.js`, `src/app/passes.js`): the zone's own passes run (they clear the frame themselves), with the
   walker and the post passes (exposure, bloom, tonemap, photo mode's lens); every island pass is off.
   The zone's light is a second lighting group on the same layout as the island's (doc 04): its own
   sky term (the cave's bounce) and no sun shadows, so the figure's shader takes either. The frame's
@@ -60,7 +60,7 @@ on the island, by the hole. Being in a zone is never saved.
 2. A world module that registers it (`zones.register({ id, enter, leave, tick, light, sound,
    cardAt, groundAt, viewRoom })`), builds its scene (in a worker when heavy), and calls
    `walk.enterZone` and `walk.leaveZone`.
-3. Its passes, added to the frame graph's zone set in `src/app.js` (enabled only while it is the
+3. Its passes, added to the frame graph's zone set (`zonePasses` in `src/app/passes.js`) (enabled only while it is the
    zone), and the zone's light written to the zone lighting group each frame.
 4. A way in on the island (a card action that calls `zones.go(id)`) and out (`zones.back()`).
 5. A test link that goes straight in (`zones.goNow(id)`), like `?spring=cave`.

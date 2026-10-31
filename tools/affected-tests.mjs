@@ -40,8 +40,8 @@ export const REPO = resolve(HERE, '..');
 export const CORE = ['rng', 'save', 'format9', 'smoke'];
 /** Files that need no tests (both runners check the test list whenever they run). */
 export const NO_TESTS = [/^tools\/unit-tests-index\.js$/, /^tools\/typecheck-baseline\.json$/, /^docs\//, /\.md$/i, /^brand\//, /^\.claude\//, /^\.gitignore$/, /^\.gitattributes$/, /^LICENSE/i];
-/** Files no unit test can reach (the app shell, the DOM UI): the core runs, and a note says to check them in the game. */
-export const NO_UNIT_TESTS = [/^src\/app\.js$/, /^src\/main\.js$/, /^src\/ui\//, /^index\.html$/, /^src\/render\//, /^src\/shaders\//, /^play\.cmd$/, /^tools\/(?!unit-tests).*\.(html|js|mjs|css)$/, /^tools\/assets\/(?!models\.json)/];
+/** Files no unit test can reach (the app shell and its start-up files, the DOM UI): the core runs, and a note says to check them in the game. */
+export const NO_UNIT_TESTS = [/^src\/app\.js$/, /^src\/app\//, /^src\/main\.js$/, /^src\/ui\//, /^index\.html$/, /^src\/render\//, /^src\/shaders\//, /^play\.cmd$/, /^tools\/(?!unit-tests).*\.(html|js|mjs|css)$/, /^tools\/assets\/(?!models\.json)/];
 /** The test runner itself: a change here runs everything. */
 export const RUNNER = [/^tools\/unit-tests\.(js|html)$/, /^tools\/unit-tests-(parallel|worker)\.js$/, /^tools\/affected-tests\.mjs$/, /^tools\/(run-tests|run-tests-env|run-tests-env-worker|index-tests)\.mjs$/];
 /** Changes that also need tools/determinism.html. */
