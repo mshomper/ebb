@@ -1,0 +1,441 @@
+{
+ "checker": "typescript@5.9.3",
+ "total": 403,
+ "byFile": {
+  "src/app.js": {
+   "TS2322": 2,
+   "TS2339": 11,
+   "TS2345": 4,
+   "TS2353": 2,
+   "TS2367": 14,
+   "TS2678": 3,
+   "TS2739": 1
+  },
+  "src/audio/keepsake-sounds.js": {
+   "TS2367": 1
+  },
+  "src/audio/music/synth/bell.js": {
+   "TS2339": 1
+  },
+  "src/input/desktop.js": {
+   "TS2322": 2
+  },
+  "src/main.js": {
+   "TS2339": 8,
+   "TS2353": 1
+  },
+  "src/render/camera.js": {
+   "TS2339": 2,
+   "TS2353": 1
+  },
+  "src/render/free-camera.js": {
+   "TS2345": 1
+  },
+  "src/render/passes/creatures.js": {
+   "TS2345": 1
+  },
+  "src/render/passes/flora.js": {
+   "TS2345": 1
+  },
+  "src/render/passes/jelly.js": {
+   "TS2345": 2
+  },
+  "src/render/passes/pieces.js": {
+   "TS2345": 1
+  },
+  "src/render/passes/post/tonemap.js": {
+   "TS2339": 1
+  },
+  "src/render/passes/props.js": {
+   "TS2345": 3,
+   "TS2353": 1
+  },
+  "src/render/portrait.js": {
+   "TS2345": 2
+  },
+  "src/save/backup.js": {
+   "TS2322": 1
+  },
+  "src/save/migrate-format9.js": {
+   "TS2367": 1
+  },
+  "src/save/world-file.js": {
+   "TS2322": 2
+  },
+  "src/ui/icons/icons.js": {
+   "TS1117": 1
+  },
+  "src/ui/icons/items.js": {
+   "TS2349": 1
+  },
+  "src/ui/pack.js": {
+   "TS2322": 4
+  },
+  "src/ui/station.js": {
+   "TS2322": 9
+  },
+  "src/ui/tools.js": {
+   "TS2339": 1
+  },
+  "src/ui/walk.js": {
+   "TS2322": 8
+  },
+  "src/ui/walker-page.js": {
+   "TS2322": 2
+  },
+  "src/world/camp/check.js": {
+   "TS2345": 1
+  },
+  "src/world/camp/frame.js": {
+   "TS2339": 1
+  },
+  "src/world/camp/gift-stone.js": {
+   "TS2322": 1
+  },
+  "src/world/camp/index.js": {
+   "TS2353": 1
+  },
+  "src/world/camp/teapot.js": {
+   "TS2339": 2
+  },
+  "src/world/creatures/presence.js": {
+   "TS2339": 1
+  },
+  "src/world/creatures/rigs/lizard.js": {
+   "TS2538": 8
+  },
+  "src/world/creatures/rigs/turtle.js": {
+   "TS2362": 2,
+   "TS2363": 2
+  },
+  "src/world/creatures/treat-check.js": {
+   "TS2339": 3
+  },
+  "src/world/creatures/treats.js": {
+   "TS2339": 2
+  },
+  "src/world/dig/check.js": {
+   "TS2339": 1,
+   "TS2353": 1
+  },
+  "src/world/dig/index.js": {
+   "TS2339": 1
+  },
+  "src/world/figure/acts.js": {
+   "TS2322": 1,
+   "TS2339": 20
+  },
+  "src/world/figure/motion.js": {
+   "TS2300": 1,
+   "TS2739": 1
+  },
+  "src/world/finds/index.js": {
+   "TS2322": 1,
+   "TS2339": 4,
+   "TS2345": 1,
+   "TS2353": 1
+  },
+  "src/world/finds/under-log-meshes.js": {
+   "TS2345": 2,
+   "TS2370": 1,
+   "TS2488": 1
+  },
+  "src/world/finds/under-log.js": {
+   "TS2322": 1
+  },
+  "src/world/growth/starters.js": {
+   "TS2322": 2
+  },
+  "src/world/growth/volunteers.js": {
+   "TS2339": 1
+  },
+  "src/world/hen/bands.js": {
+   "TS2322": 1
+  },
+  "src/world/hen/eggs.js": {
+   "TS2339": 1
+  },
+  "src/world/hen/index.js": {
+   "TS2339": 2
+  },
+  "src/world/hen/life.js": {
+   "TS2345": 1,
+   "TS2353": 1
+  },
+  "src/world/hen/rig.js": {
+   "TS2339": 1
+  },
+  "src/world/hollow/move-fx.js": {
+   "TS2353": 1
+  },
+  "src/world/intro/boat.js": {
+   "TS2322": 1
+  },
+  "src/world/journal/creatures.js": {
+   "TS2353": 1
+  },
+  "src/world/journal/index.js": {
+   "TS2322": 1,
+   "TS2339": 10,
+   "TS2367": 2
+  },
+  "src/world/journal/observe.js": {
+   "TS2339": 2
+  },
+  "src/world/keepsakes/families/artifact.js": {
+   "TS2322": 1
+  },
+  "src/world/keepsakes/shelf.js": {
+   "TS2339": 2
+  },
+  "src/world/kit/index.js": {
+   "TS2322": 2
+  },
+  "src/world/nets/index.js": {
+   "TS2339": 5
+  },
+  "src/world/nets/living/bodies.js": {
+   "TS2345": 1
+  },
+  "src/world/pack/draw.js": {
+   "TS2322": 1
+  },
+  "src/world/pack/index.js": {
+   "TS2339": 1
+  },
+  "src/world/pieces/camp-clear.js": {
+   "TS2345": 1
+  },
+  "src/world/pieces/index.js": {
+   "TS2322": 1,
+   "TS2339": 4,
+   "TS2367": 1
+  },
+  "src/world/pieces/lantern-live.js": {
+   "TS2322": 1,
+   "TS8024": 1
+  },
+  "src/world/setpieces/cairn-rules.js": {
+   "TS2769": 1
+  },
+  "src/world/setpieces/check.js": {
+   "TS2339": 1
+  },
+  "src/world/terrain/landform.js": {
+   "TS2339": 2
+  },
+  "src/world/walk/index.js": {
+   "TS2339": 1
+  },
+  "src/world/water/cove.js": {
+   "TS2339": 1
+  },
+  "src/world/water/sim.js": {
+   "TS2345": 3
+  },
+  "tools/arena/crawler-pass.js": {
+   "TS2345": 2
+  },
+  "tools/arena/fx-pass.js": {
+   "TS2345": 2
+  },
+  "tools/arena/mote-pass.js": {
+   "TS2345": 2
+  },
+  "tools/arena/moves.js": {
+   "TS2339": 13
+  },
+  "tools/arena/watcher-pass.js": {
+   "TS2345": 1
+  },
+  "tools/asset-lab.js": {
+   "TS2339": 2
+  },
+  "tools/camp-bench.js": {
+   "TS2339": 1
+  },
+  "tools/canvas-check.js": {
+   "TS2339": 1
+  },
+  "tools/cave-lab-view.js": {
+   "TS2345": 2
+  },
+  "tools/chunk-bench-cpu.js": {
+   "TS2322": 1
+  },
+  "tools/chunk-bench-frame.js": {
+   "TS2322": 1,
+   "TS2339": 1
+  },
+  "tools/clay-lineup.js": {
+   "TS2339": 1
+  },
+  "tools/cliff-bench.js": {
+   "TS2339": 1
+  },
+  "tools/creature-studio-stage.js": {
+   "TS2339": 1
+  },
+  "tools/creature-studio.js": {
+   "TS2339": 1
+  },
+  "tools/determinism.js": {
+   "TS2339": 16
+  },
+  "tools/dig-lab.js": {
+   "TS2339": 3,
+   "TS2698": 2
+  },
+  "tools/fire-lab.js": {
+   "TS2339": 3
+  },
+  "tools/frame-timing.js": {
+   "TS2339": 1
+  },
+  "tools/frog-lab.js": {
+   "TS2339": 1
+  },
+  "tools/fx-pass-check.js": {
+   "TS2339": 2
+  },
+  "tools/gather-lab-model.js": {
+   "TS2345": 1
+  },
+  "tools/growth-lab.js": {
+   "TS2339": 1
+  },
+  "tools/hearth-check.js": {
+   "TS2339": 1
+  },
+  "tools/hen-lab-stage.js": {
+   "TS2339": 1
+  },
+  "tools/hen-lab.js": {
+   "TS2339": 2
+  },
+  "tools/hollow-foes.js": {
+   "TS2339": 2
+  },
+  "tools/intro-lab.js": {
+   "TS2339": 3,
+   "TS2353": 1
+  },
+  "tools/layout-check.js": {
+   "TS2451": 3
+  },
+  "tools/move-arena.js": {
+   "TS2339": 2
+  },
+  "tools/move-fx-lab.js": {
+   "TS2339": 2
+  },
+  "tools/music-lab/main.js": {
+   "TS2367": 2,
+   "TS2554": 5
+  },
+  "tools/rock-lab.js": {
+   "TS2451": 1
+  },
+  "tools/shore-lab.js": {
+   "TS2339": 1
+  },
+  "tools/sky-lab.js": {
+   "TS2339": 1
+  },
+  "tools/terrain-brush-bench.js": {
+   "TS2339": 1
+  },
+  "tools/texture-lab.js": {
+   "TS2345": 1,
+   "TS2451": 3
+  },
+  "tools/turtle-lab-stage.js": {
+   "TS2339": 1
+  },
+  "tools/unit-tests-camp-making.js": {
+   "TS2339": 1
+  },
+  "tools/unit-tests-camp-sound.js": {
+   "TS2307": 3
+  },
+  "tools/unit-tests-develop.js": {
+   "TS2307": 1
+  },
+  "tools/unit-tests-dig-deeper.js": {
+   "TS2339": 2
+  },
+  "tools/unit-tests-dig.js": {
+   "TS2339": 1,
+   "TS2556": 1
+  },
+  "tools/unit-tests-director.js": {
+   "TS2307": 4
+  },
+  "tools/unit-tests-falls.js": {
+   "TS2345": 1
+  },
+  "tools/unit-tests-figure.js": {
+   "TS2339": 2,
+   "TS2739": 1
+  },
+  "tools/unit-tests-growth.js": {
+   "TS2367": 1
+  },
+  "tools/unit-tests-intro.js": {
+   "TS2307": 2
+  },
+  "tools/unit-tests-journal.js": {
+   "TS2339": 1
+  },
+  "tools/unit-tests-keepsake-sound.js": {
+   "TS2307": 2
+  },
+  "tools/unit-tests-melody.js": {
+   "TS2307": 1
+  },
+  "tools/unit-tests-music.js": {
+   "TS2339": 12
+  },
+  "tools/unit-tests-pack.js": {
+   "TS2307": 3,
+   "TS2322": 7,
+   "TS2345": 4
+  },
+  "tools/unit-tests-pieces.js": {
+   "TS2339": 1
+  },
+  "tools/unit-tests-pond-sound.js": {
+   "TS2307": 1,
+   "TS2554": 1
+  },
+  "tools/unit-tests-sound-game.js": {
+   "TS2345": 8
+  },
+  "tools/unit-tests-treats.js": {
+   "TS2339": 3
+  },
+  "tools/unit-tests-undo.js": {
+   "TS2353": 4
+  },
+  "tools/unit-tests-walk.js": {
+   "TS2339": 4
+  },
+  "tools/walk-lab.js": {
+   "TS2339": 1
+  },
+  "tools/walker-figure-stage.js": {
+   "TS2339": 1,
+   "TS2488": 2
+  },
+  "tools/walker-figure.js": {
+   "TS2339": 2
+  },
+  "tools/walker-strip.js": {
+   "TS2339": 8,
+   "TS2353": 3
+  },
+  "tools/water-lab.js": {
+   "TS2339": 1
+  }
+ }
+}
