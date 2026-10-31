@@ -3,7 +3,7 @@
 // input, history and the frame loop.
 // Shared by index.html (through main.js) and the tools pages, so they measure the same code.
 
-import { initGpu, onDeviceLost } from './core/gpu.js';
+import { initGpu, onDeviceLost, makeBuffer } from './core/gpu.js';
 import * as clock from './core/clock.js';
 import { flushDeferred, emit, emitDeferred, on } from './core/events.js';
 import { get as getStore, update as updateStore, subscribe as subscribeStore } from './core/store.js';
@@ -119,6 +119,10 @@ import { createTeaReveal } from './world/creatures/tea-reveal.js';
 import { setActRate } from './world/figure/acts.js';
 import { ashMarks } from './world/gather/ashes.js';
 import { createDig } from './world/dig/index.js';
+import { createZones } from './world/zones/live.js';
+import { createSpringCave } from './world/spring/cave-live.js';
+import { createCavePass } from './render/passes/cave.js';
+import { trailEndFor } from './world/dig/story.js';
 import { createPerchSticks } from './world/creatures/perch-sticks.js';
 import { createLanterns } from './world/pieces/lantern-live.js';
 import { createSetpiecesLive } from './world/setpieces/live.js';
@@ -407,7 +411,9 @@ export async function startApp(canvas, hooks = {}) {
   const camera = createOrbitCamera(camRecipe);
   if (back?.view) camera.setPose(back.view);   // the view you left
   // The ground, or the water's surface where it stands higher, so a close-up never dips under a pond.
-  camera.setGroundProbe((x, z) => Math.max(terrain.sampleHeight(x, z), water.sim.live ? water.sampleLive(x, z).surface : -Infinity));
+  /** A zone's floor under a point while you are in one (src/world/zones), else null: the view keeps above it, not the island over it. @type {((x: number, z: number) => number) | null} */
+  let zoneGround = null;
+  camera.setGroundProbe((x, z) => (zoneGround ? zoneGround(x, z) : Math.max(terrain.sampleHeight(x, z), water.sim.live ? water.sampleLive(x, z).surface : -Infinity)));
   // The view, for the UI (store slice `view`): the ground point in the middle of the screen, and
   // where a ground point lands on screen in CSS pixels (behind: it is behind the camera, and x, y
   // are mirrored so they still say which way to turn).
@@ -415,7 +421,8 @@ export async function startApp(canvas, hooks = {}) {
     center: () => [camera.target[0], camera.target[2]],
     /** @param {number} x @param {number} z @returns {{ x: number, y: number, behind: boolean }} */
     project(x, z) {
-      const m = camera.viewProj, y = terrain.sampleHeight(x, z);
+      // Down in a zone, the zone's own floor (the hover tag over the cave's pan, not the island above).
+      const m = camera.viewProj, y = zoneGround ? zoneGround(x, z) : terrain.sampleHeight(x, z);
       const cx = m[0] * x + m[4] * y + m[8] * z + m[12], cy = m[1] * x + m[5] * y + m[9] * z + m[13];
       const w = m[3] * x + m[7] * y + m[11] * z + m[15];
       const behind = w <= 1e-4, s = behind ? -1 / Math.max(Math.abs(w), 1e-4) : 1 / w;
@@ -437,7 +444,9 @@ export async function startApp(canvas, hooks = {}) {
   const atmosphere = await createAtmosphere(gpu.device, skyRecipe, tierSettings);
   const shadowPass = createShadowPass({ terrain, recipe: shadowRecipe, terrainRecipe, tierShadows: tierSettings.shadows, worldRadius: camRecipe.worldRadius,
     getEye: () => camera.eye, cliffDetailM: tierSettings.cliffDetailM });
-  const lighting = createLighting(gpu.device, atmosphere, shadowPass.resources(gpu.device));
+  // The small lights (doc 06): up to eight, the most important to the view, fading in and out (recipes/world/small-lights.json).
+  const smallLights = await loadRecipe('world/small-lights');
+  const lighting = createLighting(gpu.device, atmosphere, shadowPass.resources(gpu.device), undefined, smallLights);
   const exposure = createExposurePass(exposureRecipe);
   const daylight = createDaylight({ sky: skyRecipe, seasons: seasonsRecipe, shadows: shadowRecipe });
 
@@ -659,7 +668,7 @@ export async function startApp(canvas, hooks = {}) {
   // Spring at the pond (doc 13; src/world/creatures/spring-live.js): frogspawn, tadpoles and
   // froglets, the toad's night walk, and the basking spots (stones, logs, the raft) turtles and the
   // toad read. `?spring=spawn|tadpoles|froglets|toad` (testing, unsaved) sets one near the view.
-  const spring = createSpring({ world, terrain, water, camera, pieces, presence, test: params.get('spring'),
+  const spring = createSpring({ world, terrain, water, camera, pieces, presence, test: ['spawn', 'tadpoles', 'froglets', 'toad'].includes(params.get('spring') ?? '') ? params.get('spring') : null,
     recipes: { frogspawn: speciesRecipes.frogspawn, toad: speciesRecipes.toad, frog: frogRecipe, slowworm: speciesRecipes.slowworm, lizard: speciesRecipes.lizard } });
   sim.addSystem(spring);
   finds.addSource(spring.shown);
@@ -808,9 +817,11 @@ export async function startApp(canvas, hooks = {}) {
   // slots, the fire and the lantern as small lights, smoke and moths, and a night's rest in the tent.
   /** The passing boat (made below), whose lantern joins the camp's lights. @type {{ lights: () => any[] } | null} */ let passingBoatRef = null;
   /** The placed lanterns (made below, B2 L1), whose lights join the camp's too. @type {{ lights: () => any[] } | null} */ let lanternsRef = null;
+  /** The clay furnace's glow while a load burns (the spring-ore plan), set once the camp is made. @type {(() => any[]) | null} */ let furnaceLightsRef = null;
+  /** The dig (made below), for the boulders round the way down above the spring. @type {any} */ let digRef = null;
   const camp = createCamp({ recipe: campRecipe, seed, walk, terrain, water, clock, orbit: skyRecipe.orbit, camera, world, piles,
     // The camp sets the small lights each frame; the passing boat's lantern joins them (docs/future/14).
-    seasons: seasonsRecipe, lighting: { setPoints: (/** @type {any[]} */ l) => lighting.setPoints([...l, ...(passingBoatRef?.lights() ?? []), ...(lanternsRef?.lights() ?? [])]) }, pack, shadowBias: shadowPass.bias, low: tier === 'low', tier, poses: (await loadRecipe('world/figure')).poses,
+    seasons: seasonsRecipe, lighting: { setPoints: (/** @type {any[]} */ l) => lighting.setPoints([...l, ...(passingBoatRef?.lights() ?? []), ...(lanternsRef?.lights() ?? []), ...(furnaceLightsRef?.() ?? [])]) }, pack, shadowBias: shadowPass.bias, low: tier === 'low', tier, poses: (await loadRecipe('world/figure')).poses,
     beat: () => intro.live?.intro.current?.id ?? null, cook: await loadRecipe('world/cook'), sowing: sowingRecipe, keepsakes: keepsakesRecipe,
     // The nest box goes on the camp's rim on the side of the hen's home bushes (docs/future/15 slice 4).
     rimToward: (/** @type {string} */ slot) => (slot === 'nest' && speciesRecipes.hen?.home ? scrubHome(world.state?.growth?.plants ?? [], speciesRecipes.hen.home) : null) });
@@ -877,7 +888,9 @@ export async function startApp(canvas, hooks = {}) {
   // Solid things the walker cannot pass through (src/world/walk/solids-live.js): camp pieces, logs,
   // stones and the boat.
   const solidsLive = createSolidsLive({ walk, where: createWhere({ terrain }), benchAt: camp.stations.benchAt, rackYawDeg: campRecipe.rack?.yawDeg ?? 0,
-    strand: () => pieces.strandLogs(), boat: () => (boat.visible ? boat.mooring?.boat ?? null : null), boatSize: boatRecipe.boat.hull });
+    strand: () => pieces.strandLogs(), boat: () => (boat.visible ? boat.mooring?.boat ?? null : null), boatSize: boatRecipe.boat.hull,
+    // The boulders round the way down above the spring (the dig, made below).
+    extra: () => digRef?.story.mouthSolids() ?? [] });
   sim.addSystem({ id: 'solids', tick: (/** @type {any} */ f) => solidsLive.update(f.realDt) });
   shadowPass.addCaster(camp.props.caster);
   midges.keepClear(() => camp.smokeClear());
@@ -902,11 +915,66 @@ export async function startApp(canvas, hooks = {}) {
   const stores = createStores({ recipe: pack.recipe, piles, walk, glow: campRecipe.glow, ringLaid: () => camp.ringLaid() });
   // Digging (docs/future/13 section 10, P2c; src/world/dig): Dig and Scoop sand on the here-bar once
   // the shovel is made at the workbench; `?shovel` (testing, unsaved) puts it in the walker's kit.
-  const dig = createDig({ recipe: await loadRecipe('world/dig'), keepsakes: keepsakesRecipe, seed, world, walk, terrain, water, pieces, pack, gather, presence,
+  const digRecipe = await loadRecipe('world/dig');
+  const dig = createDig({ recipe: digRecipe, keepsakes: keepsakesRecipe, seed, world, walk, terrain, water, pieces, pack, gather, presence,
     worldT: () => clock.worldT(), test: params.has('shovel'), propsRecipe: campRecipe.props, shadowBias: shadowPass.bias, noteKept: (n) => noteKept(n),
     // Digging deeper (B1 D1): the land's story block (the old hearths, the marked stone) and `?dig=cache|hearth|sherd|sleeper|blade`.
     land: landRecipe, terrainSeed: subSeed(seed, 'terrain'), piecesRecipe: await loadRecipe('world/pieces'), testDig: back ? null : params.get('dig') });
   dig.setKeepsakeWords((n) => keepsakeWords(n, keepsakesRecipe));
+  digRef = dig;
+  // Zones (docs/26-zones.md, src/world/zones): places below the island you go to and come back from,
+  // through a fade. The island keeps simulating; only what is drawn, walked and heard swaps. The
+  // first is the spring's cave (src/world/spring, the spring-ore plan O3), under the hole where the
+  // ground gave way: its own pass (drawn first while it is the zone, so it clears the frame), its
+  // own light (a lighting group on the same layout: the bounce as its fill, no sun and no shadows).
+  const zones = createZones({ R: await loadRecipe('world/zones'), host: canvas.parentElement });
+  const cavePass = createCavePass({ active: () => zones.active() === 'spring-cave' });
+  const caveBeam = cavePass.beamPass();
+  const caveSH = makeBuffer(gpu.device, { label: 'cave-sh9', size: 9 * 16, usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST });
+  // The cave's own lighting keeps its own small lights (none yet) apart from the island's.
+  const caveLighting = createLighting(gpu.device, { transmittance: atmosphere.transmittance, aerial: atmosphere.aerial, sh: caveSH }, shadowPass.resources(gpu.device), lighting.layout, smallLights);
+  const caveSHData = new Float32Array(36);
+  const caveRecipe = await loadRecipe('world/spring-cave');
+  const springCave = createSpringCave({ R: caveRecipe, seed, dig, terrain, walk, pack, pass: cavePass, zones, K: keepsakesRecipe,
+    hour: () => clock.worldT() / 3600, day: () => clock.dayIndexOf(clock.worldT()), walkerCamera: walkerRecipe.camera });
+  // The cave is built in a worker as soon as the ground has given way, so climbing down is quick.
+  sim.addSystem({ id: 'spring-cave', tick: () => springCave.prepare() });
+  /** A card down in a zone, opened once you arrive beside it. @type {{ card: any, x: number, y: number } | null} */
+  let zoneCardOnArrival = null;
+  /** A tap in a zone: walk on its floor, or to a card of its own and open it there. @param {number} sx @param {number} sy */
+  /**
+   * What a tap or a rest at a screen point meets in the zone: its card (a thing the ray picks out
+   * first, then whatever is on the floor there) and the floor point. Shared by the tap and the hover,
+   * so what the hand names is what a click opens. @param {number} sx @param {number} sy CSS pixels
+   */
+  function zoneCardAt(sx, sy) {
+    const z = zones.zone(), r = camera.ray(sx, sy), p = z?.groundAt?.(r.o, r.d) ?? null;
+    if (!z) return { card: null, p: null };
+    // A thing the ray picks out counts even where the ray meets no floor (the rope, high against the wall).
+    const card = z.rayCard?.(r.o, r.d) ?? (p ? z.cardAt?.(p[0], p[2]) : null) ?? null;
+    return { card, p: p ?? (card ? [card.wx, zoneGround ? zoneGround(card.wx, card.wz) : 0, card.wz] : null) };
+  }
+  function zoneTap(sx, sy) {
+    const { card, p } = zoneCardAt(sx, sy);
+    if (!p) return;
+    zoneCardOnArrival = null;
+    if (card) {
+      const reach = card.reachR ?? 0.5;
+      if (walk.distTo(card.wx, card.wz) <= reach + 0.15) updateStore('identify', () => ({ ...card, x: sx, y: sy, at: performance.now() }));
+      else if (walk.tap(sx, sy, [card.wx, p[1], card.wz], reach)) zoneCardOnArrival = { card, x: sx, y: sy };
+      return;
+    }
+    updateStore('identify', () => null);
+    walk.tap(sx, sy, p);
+  }
+  // `?spring=cave` (a test link, unsaved): the ground above the spring given way, and you straight down in the cave.
+  if (params.get('spring') === 'cave' && !back) afterGrow(() => {
+    const spot = dig.story.spring();
+    if (!spot) return;
+    dig.debug.caveInNow();
+    if (walk.placeAt(spot.x + 1.2, spot.z, -Math.PI / 2, 'stand')) walk.downHere();
+    zones.goNow('spring-cave');
+  });
   // A `?dig=` test link stands the walker by its spot (src/world/dig testSetUp): the view looks at it from close by.
   on('dig:test-stood', (/** @type {{ x: number, z: number, yaw: number, target: { x: number, z: number } }} */ p) => {
     const mx = (p.x + p.target.x) / 2, mz = (p.z + p.target.z) / 2;
@@ -927,6 +995,7 @@ export async function startApp(canvas, hooks = {}) {
   const lanterns = createLanterns({ recipe: piecesRecipe.lantern, seed, pieces, pack, walk, terrain, water, camp, camera, liftM: piecesRecipe.driftwood.carry.liftM });
   sim.addSystem(lanterns);
   lanternsRef = lanterns;
+  furnaceLightsRef = () => camp.stations.lights(clock.animT());
   if (params.has('lantern') && !back) {
     for (const k of ['clay', 'pebbles', 'sticks', 'rushes.stems']) pack.add(k, 1);
     let stood = false;
@@ -944,6 +1013,22 @@ export async function startApp(canvas, hooks = {}) {
         camera.setPose({ ...camera.pose(), target: [p.x, terrain.sampleHeight(p.x, p.z) + 0.5, p.z], yaw: yaw + Math.PI + 0.8, distance: 3.2, pitch: (12 * Math.PI) / 180 });
         walk.downHere();
         return;
+      }
+    } });
+  }
+  // `?lanterns=N` (a test link, unsaved; doc 06): N lanterns (up to 16) stood in a ring round the
+  // camp, more than the eight small lights the shaders take, so the picker's choice and its fades can
+  // be seen as you walk among them (add `&hour=20` for dusk).
+  if (params.has('lanterns') && !back) {
+    const want = Math.max(1, Math.min(16, Number.parseInt(params.get('lanterns') ?? '12', 10) || 12));
+    let stood = false;
+    sim.addSystem({ id: 'lanterns-test', tick() {
+      const pad = stood ? null : getStore('campPad');
+      if (!pad || !water.getSummary?.()) return;
+      stood = true;
+      for (let i = 0; i < want; i++) {
+        const a = (i / want) * 2 * Math.PI, r = (pad.r ?? 4) + 1.6 + (i % 2) * 1.4;
+        lanterns.standNear(pad.x + Math.cos(a) * r, pad.z + Math.sin(a) * r);
       }
     } });
   }
@@ -975,7 +1060,13 @@ export async function startApp(canvas, hooks = {}) {
     record: () => updateStore('world', () => world.state),
     test: params.has('setpiece') && !back ? { id: params.get('setpiece') ?? '', beat: Number.parseInt(params.get('beat') ?? '0', 10) || 0 } : null });
   sim.addSystem(setpieces);
-  const cairns = createCairnsLive({ R: spList.cairns, sp: setpieces, seed, pieces, pack, walk, terrain, camera, hourIndex: () => clock.hourIndex() });
+  // The trail ends on the rise just above the spring's head, where the way down is (the spring-ore
+  // plan, O2): a little short of it, so the last cairn stands just below the worn mark.
+  const cairnsTrailEnd = () => {
+    const sp = dig.story.spring(), pad = getStore('campPad');
+    return sp ? trailEndFor(sp, pad ? { x: pad.x, z: pad.z } : sp, digRecipe.story.spring.trailBackM) : null;
+  };
+  const cairns = createCairnsLive({ R: spList.cairns, sp: setpieces, seed, pieces, pack, walk, terrain, camera, hourIndex: () => clock.hourIndex(), trailEnd: cairnsTrailEnd });
   sim.addSystem(cairns);
   const passingBoat = createBoatLive({ R: spList.boat, sp: setpieces, seed, pieces, pack, walk, terrain, water, boatRecipe, mooring: () => boat.mooring });
   sim.addSystem(passingBoat);
@@ -1120,6 +1211,25 @@ export async function startApp(canvas, hooks = {}) {
       }
     }
   });
+  // `?spring` (a test link, unsaved; the spring-ore plan): ore at the bench. The camp ready, the
+  // workbench and the clay furnace built and dry, ore, charcoal, sticks, a lump of iron and deep clay
+  // in the pack, and you standing at the furnace. `&furnace=burning` lays a load of copper ore in an
+  // hour ago (with `&hour=21` it glows); `&furnace=done` has iron waiting behind the arch.
+  // (`?spring=spawn` and the rest are the spring creatures'; `?spring=cave` goes straight to the cave.)
+  if (params.get('spring') === '' && !back && !params.has('camp')) afterGrow(() => {
+    emit('intro:camp-ready', { tent: true, ring: true });
+    for (const id of ['workbench', 'furnace']) camp.stations.debug.buildNow(id);
+    const h = clock.worldT() / 3600, f = params.get('furnace');
+    const load = f === 'burning' ? { id: 'smelt-copper', gives: 'copper', count: 1, laidHour: h - 1 } : f === 'done' ? { id: 'smelt-iron', gives: 'iron', count: 1, laidHour: h - 30 } : null;
+    updateStore('camp', (c) => ({ ...c, slots: c.slots.map((/** @type {any} */ q) => (q.slot === 'furnace' ? { ...q, placedHour: h - 48, ...(load ? { load } : {}) } : q)) }));
+    for (const [k, n] of [['iron-ore', 2], ['copper-ore', 1], ['charcoal-sticks', 2], ['sticks', 2], ['iron', 1], ['deep-clay', 2]]) pack.add(/** @type {string} */ (k), /** @type {number} */ (n));
+    const at = camp.stations.benchAt('furnace');
+    if (at && walk.placeAt(at.stand.x, at.stand.z, Math.atan2(at.x - at.stand.x, at.z - at.stand.z), 'stand')) {
+      camera.setPose({ ...camera.pose(), target: [at.stand.x, terrain.sampleHeight(at.stand.x, at.stand.z), at.stand.z], yaw: Math.atan2(at.x - at.stand.x, at.z - at.stand.z) + Math.PI + 0.9,
+        distance: campRecipe.rest.viewDistanceM, pitch: (campRecipe.rest.viewPitchDeg * Math.PI) / 180 });
+      walk.downHere();
+    }
+  });
   // A long, slow look (P2e, src/world/creatures/tea-reveal.js): an unfound creature gives itself away
   // once while that tea lasts. A strong back: the dig's swing keeps pace with its quicker beats.
   const teaReveal = createTeaReveal({ frogs: () => creatures.frogs(), schools, ripples, you: () => (walk.below ? walk.you() : null), spend: () => camp.boons.spendReveal() });
@@ -1206,7 +1316,20 @@ export async function startApp(canvas, hooks = {}) {
   const fallsPass = createFallsPass({ water, terrain, recipe: waterRecipe.falls, getTime: () => clock.animT(), tier: tierSettings,
     absorption: waterRecipe.look.absorptionPond, atmosphere, getEye: () => camera.eye, getProjY: () => camera.proj[5],
     getOpaqueDepth: () => waterPass.opaqueDepth });
-  const graph = createFrameGraph(gpu, [
+  // In a zone only the zone's own passes, the walker and the post passes run (src/world/zones); its
+  // lighting group stands in for the island's.
+  const ZONE_PASSES = new Set([walk.pass, exposure, bloom, tonemap, dof, cavePass, caveBeam]);
+  /** @param {import('./render/frame-graph.js').Pass[]} list */
+  const zoned = (list) => list.map((p) => {
+    if (ZONE_PASSES.has(p)) return p;
+    const on = p.enabled.bind(p);
+    p.enabled = (t) => !zones.active() && on(t);
+    return p;
+  });
+  const zoneLighting = { layout: lighting.layout, get group() { return zones.active() ? caveLighting.group : lighting.group; } };
+  const graph = createFrameGraph(gpu, zoned([
+    // The spring's cave (drawn only while you are down in it; it clears the frame).
+    cavePass,
     shadowPass,
     terrainPass,
     grassPass,
@@ -1215,6 +1338,8 @@ export async function startApp(canvas, hooks = {}) {
     walk.printsPass,
     creatures.pass,
     walk.pass,
+    // The beam of light down the cave's shaft, over the walker.
+    caveBeam,
     hen.pass,
     // The gathering knife on the walker's belt (the forager's trail).
     belt.pass,
@@ -1259,7 +1384,7 @@ export async function startApp(canvas, hooks = {}) {
     exposure,
     bloom,
     tonemap,
-  ], { tier, lighting });
+  ]), { tier, lighting: zoneLighting });
   // The banded flame is painted in the tonemap from the fire sim's heat (camp-fire.js).
   tonemap.setFire(camp.firePass);
   await graph.setup();
@@ -1358,7 +1483,7 @@ export async function startApp(canvas, hooks = {}) {
     // Shadows, bloom and the midges follow too. A texture's size is fixed once made, so a new
     // shadow map size re-makes only that map and the lighting group that binds it; new bloom levels
     // re-make the bloom chain at the next resize, which invalidate() forces.
-    if (shadowPass.setTier(tierSettings.shadows, gpu.device, tierSettings.cliffDetailM)) lighting.setShadow(shadowPass.resources(gpu.device));
+    if (shadowPass.setTier(tierSettings.shadows, gpu.device, tierSettings.cliffDetailM)) { lighting.setShadow(shadowPass.resources(gpu.device)); caveLighting.setShadow(shadowPass.resources(gpu.device)); }
     if (bloom.setLevels(tierSettings.bloomLevels)) graph.invalidate();
     midges.setBudget(tierSettings.boids ?? 4096);
     for (const s of schools) s.setBudget(tierSettings.liveCreatures ?? 120);
@@ -1476,7 +1601,7 @@ export async function startApp(canvas, hooks = {}) {
    * @returns {{ id: string, name: string, x: number, z: number } | null}
    */
   function sketchSubject() {
-    if (!walk.below || !cards) return null;
+    if (!walk.below || !cards || zones.active()) return null;
     const w = canvas.clientWidth, h = canvas.clientHeight, s = sketchRecipe.viewSampleSpreadPx ?? 70;
     for (let ring = 0; ring <= 4; ring++) {
       for (let k = 0; k < (ring ? 8 : 1); k++) {
@@ -1510,7 +1635,12 @@ export async function startApp(canvas, hooks = {}) {
    * @returns {{ key: string, name: string, wx: number, wz: number, lift: import('./render/lift.js').LiftTarget[] } | null}
    */
   function hoverPick(ox, oy) {
-    if (!walk.below || !cards) return null;
+    // Down in a zone (the spring's cave): its own cards, as its tap finds them (zoneCardAt).
+    if (walk.below && zones.active()) {
+      const c = zones.busy() ? null : zoneCardAt(ox, oy).card;
+      return c ? { key: `${c.sp}|${Math.round(c.wx * 10)}|${Math.round(c.wz * 10)}`, name: c.name, wx: c.wx, wz: c.wz, lift: [] } : null;
+    }
+    if (!walk.below || !cards || zones.active()) return null;
     const p = groundAt(ox, oy);
     const pc = p ? pieceUnderTap(ox, oy, p) : null;
     const q = pc && p ? [pc.x, p[1], pc.z] : p;
@@ -1818,6 +1948,13 @@ export async function startApp(canvas, hooks = {}) {
   const unAction = onAction((a) => {
     // Photo mode first: while it is open it takes the view actions and the rest wait.
     if (photo.action(a)) return;
+    // A zone (src/world/zones): mid-fade, taps and walking wait; down in one, a tap walks its floor
+    // and opens its own cards, and Go up climbs back to the island.
+    if (zones.busy() && (a.type === 'look.tap' || a.type.startsWith('walk.'))) return;
+    if (zones.active() && walk.below) {
+      if (a.type === 'look.tap') { zoneTap(a.x, a.y); return; }
+      if (a.type === 'walk.up') { zones.back(); return; }
+    }
     // Below (the walker): a drag looks around you, a zoom stays on you, a tap walks there, and the
     // shaping tools are put away until you go up.
     if (walk.below) {
@@ -2281,11 +2418,14 @@ export async function startApp(canvas, hooks = {}) {
       near.falls = fallsNear(falls, camera.target[0], camera.target[1], camera.target[2], soundRecipe.falls);
     }
     const frogs = world.state?.creatures?.frogs?.frogs ?? [];
+    // Down in a zone: its own sound bed (the island's beds quiet, its own water near you).
+    const zs = zones.zone()?.sound?.() ?? null;
     updateStore('sound', () => ({
       displayT: display, season: season.index, seasonPhase: season.phase,
-      weather: { cloud: weather.cloud, rain: weather.rain, mist: weather.mist, wind: weatherAt(world.state?.weather, display, seasonsRecipe).wind },
+      weather: zs ? { cloud: 0, rain: 0, mist: 0, wind: 0 } : { cloud: weather.cloud, rain: weather.rain, mist: weather.mist, wind: weatherAt(world.state?.weather, display, seasonsRecipe).wind },
+      under: zs?.under ?? 0,
       tidePhase: tideState(display / clock.SECONDS_PER_HOUR, tideP).phase01,
-      eye: [...camera.eye], target: [...camera.target], near,
+      eye: [...camera.eye], target: [...camera.target], near: zs?.near ?? near,
       residents: frogs.length ? ['frog'] : [],
       // For the music (doc 24): the frogs own dusk while they call; a time preview starts no piece.
       worldT: clock.worldT(), sunAltDeg: (day.sm.sunAlt * 180) / Math.PI,
@@ -2323,7 +2463,19 @@ export async function startApp(canvas, hooks = {}) {
     camera.setViewport(cssW, cssH);
     walkControls.update(realDt);
     walk.update(realDt);
-    arriveForCard();
+    zones.tick(realDt);
+    const zoneNow = zones.zone();
+    zoneGround = zoneNow ? (x, z) => springCave.floor(x, z) : null;
+    camera.setFloor(zoneNow ? -Infinity : 0);
+    camera.setRoom(zoneNow?.viewRoom ? zoneNow.viewRoom(camera.target, camera.eye) : Infinity);
+    // The eye adapts to a zone's dark, but not all the way (spring-cave.json light.exposureBiasEV).
+    exposure.setBias(zoneNow ? -(caveRecipe.light.exposureBiasEV ?? 0) : 0);
+    if (zoneCardOnArrival && !walk.busy()) {
+      const c = zoneCardOnArrival;
+      zoneCardOnArrival = null;
+      if (zoneNow) updateStore('identify', () => ({ ...c.card, x: c.x, y: c.y, at: performance.now() }));
+    }
+    if (!zoneNow) arriveForCard();
     gather.update();
     photo.update(realDt);
     camera.update(realDt);
@@ -2383,6 +2535,19 @@ export async function startApp(canvas, hooks = {}) {
     const ev100 = exposure.ev100(realDt) - (look.exposureComp ?? 0) - photo.ev();
     if (frameIndex % 15 === 0) updateStore('render', (r) => ({ ...(r ?? {}), ev100 }));
 
+    // Down in a zone, its own light: the cave's uniforms, its fill as the lighting group's sky, and
+    // the walker lit from the hole as the frame's sun (no moon, no shadows down here).
+    const zl = zoneNow?.light ? zoneNow.light({ sunDir: day.sm.sunDir, sunIlluminance: day.sunIlluminance, cloud: day.weather.cloud, time: t.animT }) : null;
+    if (zl) {
+      cavePass.setUniforms(zl.uniforms);
+      const b = zl.uniforms.slice(20, 23);
+      caveSHData.fill(0);
+      for (let c = 0; c < 3; c++) { caveSHData[c] = (b[c] * 0.7) / 0.282095; caveSHData[4 + c] = (b[c] * 0.3) / 0.488603; }
+      gpu.device.queue.writeBuffer(caveSH, 0, caveSHData);
+      // No sky haze down here: an aerial reach far past the cave leaves every distance in it clear.
+      caveLighting.write({ shadow: { ...shadowPass.state, strength: 0 }, weather: { cloud: 0, rain: 0, mist: 0, wet: 0 },
+        aerial: { maxDistance: 1e7, slices: atmosphere.aerialSlices }, eye: camera.eye, target: camera.target, dt: realDt });
+    }
     graph.writeFrameUniforms(uniforms.pack({
       view: camera.view, proj: camera.proj, viewProj: camera.viewProj, invViewProj: camera.invViewProj,
       prevViewProj, cameraPos: camera.eye, near: camera.near,
@@ -2394,8 +2559,8 @@ export async function startApp(canvas, hooks = {}) {
       seasonPhase: season.phase,
       moonPhase: day.sm.moonPhase,
       ev100,
-      sunDir: day.sm.sunDir, sunIlluminance: day.sunIlluminance,
-      moonDir: day.sm.moonDir, moonIlluminance: day.moonIlluminance,
+      sunDir: zl ? zl.sunDir : day.sm.sunDir, sunIlluminance: zl ? zl.sunIlluminance : day.sunIlluminance,
+      moonDir: day.sm.moonDir, moonIlluminance: zl ? [0, 0, 0] : day.moonIlluminance,
       tierFlags: tier === 'ultra' || tier === 'high' ? 2 : tier === 'medium' ? 1 : 0,
       frameIndex,
     }));
@@ -2406,6 +2571,7 @@ export async function startApp(canvas, hooks = {}) {
     lighting.write({
       shadow: shadowPass.state, weather: day.weather,
       aerial: { maxDistance: atmosphere.aerialMaxDistance, slices: atmosphere.aerialSlices },
+      eye: camera.eye, target: camera.target, dt: realDt,
     });
 
     /** @type {import('./sim/live-sim.js').FrameInfo} */
@@ -2418,7 +2584,8 @@ export async function startApp(canvas, hooks = {}) {
     };
     grassPass.update(bladeFrame);
     // No blade grows through a loose stone (src/world/pieces).
-    const clears = pieces.clears(camera.target);
+    // And none through the clay furnace's stones.
+    const clears = [...pieces.clears(camera.target), ...camp.stations.clears(camera.target)].sort((a, b) => a.d - b.d);
     grassPass.setClears(clears);
     rushPass.setClears(clears);
     // Grass and rushes bend away from the walker's feet and body (W6).
@@ -2575,6 +2742,8 @@ export async function startApp(canvas, hooks = {}) {
     lift,
     /** Autumn's fungi and webs (counts() for tools). */
     autumn,
+    /** Zones (src/world/zones) and the spring's cave (src/world/spring), for tools and testing. */
+    zones, springCave,
     /** The walker: the walk grid, your feet, Go down and Go up (tools and testing). */
     walk,
     /** The walker's kit (src/world/kit): the Walker page reads and wears through it. */

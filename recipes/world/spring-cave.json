@@ -1,0 +1,97 @@
+{
+  "type": "zone",
+  "version": 1,
+  "id": "spring-cave",
+  "note": "The underground spring (the spring-ore plan, O3; src/world/spring): the island's first zone, the small cave around the pool that feeds the spring, under the hole where the ground gave way above it. Its shape is a seeded field (src/world/spring/cave-field.js) meshed by surface nets (src/world/mesh/surface-nets.js), lit by the shaft from the hole and drawn by src/render/passes/cave.js. Loaded through the zone system (src/world/zones, docs/26-zones.md).",
+
+  "seed": 20261031,
+  "depthM": 4.2,
+  "depthNote": "How far below the island's ground at the hole the cave's floor lies (m). The cave sits right under the hole, in the island's own meters.",
+
+  "shape": {
+    "centre": [-0.7, 0.2], "radiusM": [3.0, 2.4], "wobbleM": 0.45, "wobbleLobes": 5,
+    "floorNoiseM": 0.12, "floorRiseM": 0.55, "ceilingM": 2.3, "domeM": 0.9,
+    "pool": { "at": [1.25, 0.85], "radiusM": 1.0, "depthM": 0.55, "levelM": 0.04 },
+    "shaft": { "radiusM": 0.42, "flareM": 0.25 },
+    "wallNoiseM": 0.1, "wallNoiseScale": 1.6, "fineNoiseM": 0.045, "fineNoiseScale": 5.5, "blendM": 0.35,
+    "dripstone": { "hanging": 9, "rising": 5, "radiusM": [0.06, 0.16], "lengthM": [0.35, 0.9], "clearM": 0.75 },
+    "cellM": 0.08, "boundsM": [-4.2, -0.8, -3.6, 4.2, 5.0, 3.6]
+  },
+  "shapeNote": "In the cave's own frame, meters from the hole's axis (x, z), y up from the cave's floor level. centre: the chamber's middle, set off from the hole so the light falls near the pool; radiusM: its half widths along x and z, wobbled by wobbleM over wobbleLobes seeded lobes; floorNoiseM: the floor's bumps; floorRiseM: how far it rises into the walls; ceilingM: the ceiling's height at the walls and domeM more at the middle. pool: its middle, radius, how deep the basin is and the water's level over the floor. shaft: the round chimney from the ceiling up to the hole, flaring flareM wider where it meets the ceiling. wallNoiseM, wallNoiseScale: the seeded 3D noise that wears the rock, and fineNoiseM, fineNoiseScale its finer grain; dripstone: hanging stalactites from the roof and rising stalagmites from the floor (radiusM at the root, lengthM long, seeded), none within clearM of the rope, the hole's light or the pool; blendM: the smooth corners where floor, wall and ceiling meet. cellM: the mesher's sample spacing; boundsM: the sampled box [x0, y0, z0, x1, y1, z1].",
+
+  "view": { "fadeM": 0.7, "throughM": 0.45, "arriveM": 0.85, "arriveTurnDeg": 25, "camera": { "distanceM": [1.4, 3.0], "startM": 2.4, "pitchDeg": [-4, 38], "startPitchDeg": 16, "lookHeightM": 1.0, "minEyeHeightM": 0.35, "orbitDegPerPx": 0.1, "turnHalfLifeS": 0.16 } },
+  "viewNote": "arriveM: you come down the rope and stand this far out from its foot toward the pool; arriveTurnDeg: the view turned this far off straight behind you, so the rope is not down the middle of it and the pool and the pan are in sight (Matt, October 31, 2026). Matt, October 31, 2026: the cave is seen from inside, enclosed. The view stays down in it behind your shoulder (camera: the view below in here, the fields of walker.json camera), kept out of the rock; the rock between the view and you fades out (within fadeM of the line from the eye to you, softly dithered), so the roof and walls never hide you; the view may sit up to throughM inside the rock for that (beyond it, it comes closer).",
+  "walk": { "cellM": 0.2, "wallM": 0.35, "wadeM": 0.12 },
+  "walkNote": "The walker's ground below: the floor in cells of cellM, closed within wallM of the walls; the pool is water, waded only where under wadeM deep (the walker's own rules decide the rest).",
+
+  "light": {
+    "skyShare": 0.25, "cloudCut": 0.75, "holeRadiusM": 0.4, "bounce": 0.35, "fill": 0.0015, "minNits": 0.004, "exposureBiasEV": 2.0,
+    "beam": { "nits": 6, "scatter": 0.05, "spread": 1.25 },
+    "figure": { "share": 1.0, "ambientShare": 1.0 }
+  },
+  "lightNote": "Physical light, painted last (the look rule). The hole is a disc of sky, holeRadiusM across its top: its radiance is the outside light falling on level ground (the sun's, plus skyShare more for the sky, less cloudCut of it under cloud) over pi, and it lights what can see it past the shaft's rim, falling off as the inverse square. The sun itself shines straight down the shaft only when it stands high enough to pass the rim, a bright moving patch. bounce: the share of the light that comes in that is bounced round the cave (its albedo carries it on), the soft fill everywhere; fill (Matt, October 31, 2026: fake light is fine for ambience): a soft extra fill everywhere, this share of the outside light, so the cave reads in the day and still dims at dusk and goes dark at night. minNits keeps the darkest corners from black. exposureBiasEV: the eye adapts to the dark, but not all the way: the picture stays this much darker than the meter asks, so the cave reads as a cave and the shaft of light is not blown out. beam: the dust in the shaft scattering the light toward you (scatter per meter) at nits per 1000 lux, the cone spread times wider at the floor than at the hole. figure: how the walker is lit (the frame's sun is the light from the hole on it, ambientShare of the bounce as its fill).",
+
+  "look": {
+    "rock": [0.16, 0.15, 0.13], "rockWet": [0.07, 0.07, 0.065], "floor": [0.12, 0.11, 0.095], "wetNearM": 0.6,
+    "roughness": [0.85, 0.3], "pan": [0.2, 0.19, 0.17], "panRim": [0.36, 0.17, 0.07], "rope": [0.32, 0.25, 0.16],
+    "water": { "absorption": [0.42, 0.12, 0.09], "f0": 0.02, "ripple": 0.04, "drips": 3, "dripS": 4.5, "tint": [0.02, 0.035, 0.04], "glow": [0.35, 0.75, 0.8], "glowNits": 0.7 }
+  },
+  "lookNote": "Linear albedos (the palette paints them at the tonemap): rock, the walls; rockWet, wet rock by the pool and under the drips (within wetNearM of the water), smoother (roughness dry to wet); floor; pan, the old keeper's iron pan, light enough to read in the dark (Matt, October 31, 2026: it read as a hole); panRim, the rust on its lip and riffles; rope, the old rope hanging from the hole. water: absorption per meter (rgb, red goes first), f0 its reflectance head on, ripple the ripples' slope, drips seeded spots where water drips from the ceiling every dripS seconds, tint the light the water itself scatters; glow, glowNits: a soft light of the pool's own (Matt, October 31, 2026: illuminate it slightly), teal, strongest over the deep middle and on the ripples, dimmer at night.",
+
+  "pan": {
+    "aroundDeg": 55, "fromPoolM": 0.4, "standM": 0.12, "radiusM": 0.26, "rimM": 0.08, "lean": { "angle": 1.05, "stoneM": 0.34, "stoneBackM": 0.2, "tapM": 0.25 }, "panS": 5.5, "perDay": 3, "settleH": 6, "holdOutM": 0.32,
+    "finds": { "iron-ore": 46, "copper-ore": 12, "gravel": 14, "ochre": 9, "mica": 6, "keepsake": 10, "shrimp": 2 },
+    "firstFind": "iron-ore",
+    "copperAfter": 2,
+    "keepsakes": { "crystal": 4, "crinoid": 3, "garnet": 2, "pearl": 0.8, "gold": 0.2 },
+    "pearlPerSeason": 1,
+    "goldOnce": true,
+    "keeper": [{ "id": "thimble", "at": 12 }, { "id": "button", "at": 24 }, { "id": "key", "at": 36 }],
+    "shrimpS": 2.8
+  },
+  "panFindsNote": "What the pan turns up (Matt, October 31, 2026: all four groups; plan page 'What the pan turns up'). finds: one thing a pan, by weight: the ores; gravel (nothing kept); ochre and mica, useful earths into the pack; a keepsake for the shelf (keepsakes: their weights, a cave pearl at most pearlPerSeason a season, the fleck of gold once ever, goldOnce); the well shrimp, seen in the pan and tipped back (shrimpS seconds in the pan), a journal find. keeper: the old keeper's three lost things, not random: each comes up on the pan with that number ever (at), in order, the iron key last (it opens a box in the sea cave, later, doc 16).",
+  "panNote": "The old keeper's pan (O3): a shallow iron pan radiusM across with a rimM rim, leaning on a flat stone fromPoolM from the water's edge, aroundDeg round the pool from the side the rope is on, so it is ahead of you in view when you come down (Matt, October 31, 2026: no one could find it); lean: how far it tips back (angle, radians) onto its stone (stoneM across, stoneBackM behind it), its bowl toward the rope's foot; tapM: how far past its rim a tap or the hover still finds it. Tapping the pool with no pan yet takes it up and pans; standM: you stand this far out from the water's edge to pan, on the pan's side. Pan at the pool is a calm kneel of panS real seconds, no minigame. perDay pans a game day; after the last, the pool needs settleH game hours before it gives again (counted from the game day's start after that). finds: weights for what a pan leaves behind (iron ore, the black sand, most often; copper ore, the green-flecked pebbles, more rarely; gravel, nothing to keep). The first pan ever is always iron ore (firstFind), and copper can come from the copperAfter-th pan on. Every pan is seeded by the island, the game day and the pan's number that day, so time away never changes it.",
+
+  "stones": { "count": 34, "sizeM": [0.07, 0.26], "lump": 0.22, "albedo": [0.13, 0.125, 0.11], "seed": 5521 },
+  "stonesNote": "Loose stones on the floor: gathered along the walls' foot and round the pool's edge (seeded), lumpy (lump), sizeM across, never on the rope's foot, the pan or the way from the rope to the pool.",
+  "shrimp": { "lengthM": 0.03, "color": [0.7, 0.68, 0.62] },
+  "shrimpNote": "The well shrimp in the pan (the pan finds): drawn at the findable scale, about 3 times its real 1 cm, pale and eyeless, curling and flexing until you tip it back (pan.shrimpS seconds).",
+  "rope": { "radiusM": 0.018, "at": [-0.5, -0.4], "sway": 0.03, "tapM": 0.22 },
+  "ropeNote": "The old rope down from the hole (radiusM thick), its foot at `at` (m from the hole's axis), swaying a little. Its card offers Climb up; a tap anywhere within tapM of the rope picks it (Matt, October 31, 2026: it was hard to click, and too near the pool and the pan).",
+
+  "sound": { "waterSlow": 0.85, "under": 1 },
+  "soundNote": "The cave's sound bed (recipes/audio/ambience.json): the island's beds fall away underground (under) and the trickle plays as slow water near you (waterSlow).",
+
+  "words": {
+    "name": "The spring's pool",
+    "pool": "Clear, cold water, still but for the drips. It rises here and finds its way out to the spring.",
+    "panName": "The old keeper's pan",
+    "pan": "A shallow iron pan, rusted at the rim, left leaning on a stone by the water. Someone panned here.",
+    "ropeName": "An old rope",
+    "rope": "A rope hangs down from the light, knotted for hands. It holds.",
+    "panAct": "Pan the pool",
+    "takePan": "Take the pan",
+    "tookPan": "The old keeper's pan. It hangs on your pack now. Pan the pool from its edge.",
+    "needPan": "A pan first. There is one lying by the water.",
+    "poolNoPan": "An old pan leans on a stone by the water.",
+    "climbUp": "Climb up",
+    "panned": {
+      "iron-ore": "Swirl, tip, swirl. Black sand stays in the bottom of the pan, heavy and fine. Into the pack.",
+      "copper-ore": "Among the gravel, a few small pebbles flecked with green. Copper. Into the pack.",
+      "gravel": "Only gravel this time. You tip it back.",
+      "ochre": "Swirl, tip, swirl. Lumps of red and yellow earth stay behind, staining the pan. Ochre. Into the pack.",
+      "mica": "Thin bright sheets wink in the gravel. Mica. You lift them out, into the pack.",
+      "shrimp": "Something tiny and pale curls in the last of the water: a shrimp with no eyes. You tip it gently back into the pool."
+    },
+    "keepsakeName": "In the bottom of the pan",
+    "keepsakeLine": "Something to keep, left behind when the gravel washed away.",
+    "keeperName": "The old keeper's",
+    "keeperLine": "Something of the old keeper's, dropped into the spring long ago.",
+    "settled": "The pool is cloudy from the panning. It wants time to settle. Tomorrow.",
+    "full": "The pack is full.",
+    "first": "Swirl, tip, swirl. Black sand stays in the bottom of the pan. Heavy. Iron, I think.",
+    "below": "Down the rope into the cool. A small cave around a pool, lit by the light from the hole.",
+    "up": "Up the rope and out into the air.",
+    "woke": "You climbed back up into the light before you rested."
+  }
+}

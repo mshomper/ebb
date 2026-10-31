@@ -74,14 +74,14 @@ Once a year, roughly, a real storm comes. F08 and the weather record already hav
 - **Beat 2, the hunt.** The glow fades by morning, but a thread of steam rises from where it fell. Finding it means walking there.
 - **What stays:**
   - A small crater, a meter or two across. The next rain fills it, and it becomes a little pond with its own life.
-  - **Star-iron**, a lump of meteoric iron. It is the only metal on the island. It can stay as a keepsake on the shelf, or become the blade of the best weapon in F16. That choice is the player's.
+  - **Star-iron**, a lump of meteoric iron. It stays the island's rare, special metal (Matt, October 30, 2026): ore panned at the underground spring gives plain copper and iron for nails and tools, but star-iron alone becomes the blade of the best weapon in F16. It can stay as a keepsake on the shelf instead. That choice is the player's.
 
 ### The cairn builder
 
 A mystery told across weeks.
 
 - **Trigger.** The cave mouth exists (F16), or else the island's second spring.
-- **Beats.** Every few game days a new cairn of stacked stones stands somewhere on the island at dawn. No one is ever seen building them, and they never appear while the walker watches. Each one leans toward the next, and together they form a trail across the island that ends at the cave's rubble passage (F16), or at the old keeper's cache (F13) if there is no cave yet.
+- **Beats.** Every few game days a new cairn of stacked stones stands somewhere on the island at dawn. No one is ever seen building them, and they never appear while the walker watches. Each one leans toward the next, and together they form a trail across the island that ends on the rise just above the spring's head (the spring-ore plan, built October 31, 2026). The last letter ends "Dig above the spring, where the water starts. Go gently." A worn mark shows there; the first spadeful gives way into a hole that stays, and below it is the underground spring (docs/26-zones.md). The sea cave's rubble passage (F16) can take the trail's place later.
 - **The choice.** The walker can add a stone to any cairn. If they do, the next cairn answers with one stone more. If they knock one down, it stands again two mornings later, a little crooked.
 - **What stays.** The cairns, which slowly gather moss. At the end, a letter in the old keeper's hand. Who builds them is never said; see the open questions.
 
@@ -166,7 +166,7 @@ The whale passing close on a calm evening. A total eclipse. A swarm of jellyfish
 - Which comes first? The great storm reuses the most (weather, the strand, logs, the camp). The wreck is the most memorable.
 - Who builds the cairns? Never answered, or answered at the very end (an otter that stacks stones, the bear, the old keeper)?
 - Should the passing boat's letters ever become a story with an end, or keep coming forever?
-- Should the falling star's star-iron be the only metal on the island, as here, which makes it precious?
+- ~~Should the falling star's star-iron be the only metal on the island?~~ Settled October 30, 2026: the spring gives plain copper and iron; star-iron stays the special metal.
 - Is the new bank too big a change to the island's shape to happen on its own?
 
 ## Depends on / feeds into

@@ -73,10 +73,12 @@ export function createLanterns(o) {
   const offs = [subscribe('pieces', publishRoom), subscribe('pack', publishRoom), subscribe('camp', publishRoom)];
   publishRoom();
 
-  /** Stand a lantern at a point (the pouch card, or the test link); its record, or null. @param {number} x @param {number} z */
-  function standAt(x, z) {
+  /** The lantern pouch the pack holds, a mica one first (the pan finds), or null. */
+  const pouchKind = () => (o.pack.has('mica-lantern', 1) ? 'mica-lantern' : o.pack.has('post-lantern', 1) ? 'post-lantern' : null);
+  /** Stand a lantern at a point (the pouch card, or the test link); its record, or null. @param {number} x @param {number} z @param {boolean} [mica] */
+  function standAt(x, z, mica = false) {
     const s = get('pieces');
-    const p = makeLantern(piecesSeed, s.nextId, Math.round(x * 100) / 100, Math.round(z * 100) / 100, hourIndex(), L);
+    const p = makeLantern(piecesSeed, s.nextId, Math.round(x * 100) / 100, Math.round(z * 100) / 100, hourIndex(), L, mica);
     update('pieces', () => ({ ...s, list: [...s.list, p], nextId: s.nextId + 1 }));
     emitDeferred('lantern:set', { id: p.id, x: p.x, z: p.z });
     return p;
@@ -84,12 +86,13 @@ export function createLanterns(o) {
 
   /** Set it here: kneel and stand the lantern in front of you; the line to show. */
   function setHere() {
-    if (!o.walk.below || !o.pack.has('post-lantern', 1)) return '';
+    const kind = pouchKind();
+    if (!o.walk.below || !kind) return '';
     if (list().length >= L.cap) return W.full;
     const p = o.walk.feedPoint(L.setAheadM, L.setTurnDeg, (/** @type {number} */ x, /** @type {number} */ z) => may(x, z), true);
     if (!p || !may(p[0], p[2])) return W.where;
-    if (o.pack.take('post-lantern', 1) < 1) return '';
-    standAt(p[0], p[2]);
+    if (o.pack.take(kind, 1) < 1) return '';
+    standAt(p[0], p[2], kind === 'mica-lantern');
     return W.set;
   }
 
@@ -98,9 +101,10 @@ export function createLanterns(o) {
     const p = list().find((q) => q.id === id), you = o.walk.below ? o.walk.you?.() : null;
     if (!p || !you) return;
     if (Math.hypot(you[0] - p.x, you[2] - p.z) > L.reachM) { emitDeferred('island:notice', { text: W.far, showS: 5 }); return; }
-    if (!o.pack.room('post-lantern')) { emitDeferred('island:notice', { text: W.noRoom, showS: 5 }); return; }
+    const kind = p.mica ? 'mica-lantern' : 'post-lantern';
+    if (!o.pack.room(kind)) { emitDeferred('island:notice', { text: W.noRoom, showS: 5 }); return; }
     o.walk.gesture('takeUp', { x: p.x, z: p.z });
-    o.pack.add('post-lantern', 1);
+    o.pack.add(kind, 1);
     update('pieces', (s) => ({ ...s, list: s.list.filter((/** @type {any} */ q) => q.id !== id) }));
     update('identify', () => null);
     emitDeferred('lantern:taken', { id });
@@ -122,7 +126,7 @@ export function createLanterns(o) {
       else if (a.type === 'lantern.lift') lift(a.id);
     }),
     registerCardAction({ id: 'lanternset', icon: 'setdown', order: 11, main: true, label: W.setHere, item: () => 'post-lantern', chip: 'setdown',
-      when: (c) => c?.sp === 'pouch' && c.kindId === 'post-lantern' && !!get('walk')?.below, action: () => ({ type: 'lantern.set' }) }),
+      when: (c) => c?.sp === 'pouch' && (c.kindId === 'post-lantern' || c.kindId === 'mica-lantern') && !!get('walk')?.below, action: () => ({ type: 'lantern.set' }) }),
     registerCardAction({ id: 'lanternlift', icon: 'carry', order: 12, label: W.lift,
       when: (c) => !!c?.lantern && !c.carrying, action: (c) => ({ type: 'lantern.lift', id: c.lantern }) }),
     registerCardAction({ id: 'lanterntakeup', icon: 'takeup', order: 10, main: true, label: W.takeUp, item: () => 'post-lantern', chip: 'pack',
@@ -154,7 +158,10 @@ export function createLanterns(o) {
       const t = performance.now() / 1000, F = L.light;
       return list().map((p, i) => {
         const at = standing(p).glass;
-        return { x: at[0], y: at[1], z: at[2], rangeM: F.rangeM, cd: F.cd * g * flicker(t, F.flicker, F.flickerHz, 5 + i), rgb };
+        // Mica in its holes (the pan finds): brighter, steadier, warmer (pieces.json lantern.mica).
+        const M = p.mica ? L.mica : null;
+        return { key: `lantern:${p.id ?? i}`, x: at[0], y: at[1], z: at[2], rangeM: F.rangeM, cd: F.cd * g * (M?.cd ?? 1) * flicker(t, F.flicker * (M?.flicker ?? 1), F.flickerHz, 5 + i),
+          rgb: M ? [rgb[0] * M.rgb[0], rgb[1] * M.rgb[1], rgb[2] * M.rgb[2]] : rgb };
       });
     },
     /** The card a tap on a lantern opens, or null. @param {number} x @param {number} z */

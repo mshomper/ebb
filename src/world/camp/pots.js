@@ -22,6 +22,8 @@ export function cleanPieceFields(s, r) {
   if (s.kind === 'hearth-stones') r.pot = typeof s.pot === 'string' ? s.pot : null;
   if (s.water !== undefined) r.water = WATERS.includes(s.water) ? s.water : null;
   if (s.kind === 'workbench') r.shaped = Array.isArray(s.shaped) ? s.shaped.filter((/** @type {any} */ k) => typeof k === 'string') : [];
+  // Fired with ochre slip (the pan finds): a warm red pot.
+  if (s.slip === true) r.slip = true;
   return r;
 }
 
@@ -80,12 +82,12 @@ export function takeShaped(c, kind) {
  * A fired piece to its place: a pot or the cup into its own slot at the ring's side (the first pot
  * fired onto the empty hearth), with its seed. The same camp if it already stands.
  * @param {import('./model.js').Camp} c @param {string} kind @param {number} hour @param {number} seed
- * @param {HearthRecipe} H @returns {import('./model.js').Camp}
+ * @param {HearthRecipe} H @param {boolean} [slip] fired with ochre slip (the pan finds) @returns {import('./model.js').Camp}
  */
-export function placeFired(c, kind, hour, seed, H) {
+export function placeFired(c, kind, hour, seed, H, slip = false) {
   const slot = H.slots[kind];
   if (!slot || pieceOf(c, kind)) return c;
-  let out = { ...c, slots: [...c.slots, { slot, kind, seed: seed >>> 0, placedHour: hour, ...(H.pots.includes(kind) ? { water: null } : {}) }] };
+  let out = { ...c, slots: [...c.slots, { slot, kind, seed: seed >>> 0, placedHour: hour, ...(H.pots.includes(kind) ? { water: null } : {}), ...(slip ? { slip: true } : {}) }] };
   if (H.pots.includes(kind) && hearthBuilt(out) && !potOnHearth(out)) out = patch(out, 'hearth', { pot: kind });
   return out;
 }

@@ -36,6 +36,7 @@ import {
  * @property {'clear'|'cloud'|'rain'|'mist'} weather
  * @property {number} camHeight    meters above the camera target
  * @property {number} life         0..1
+ * @property {number} [under]      1 underground (the spring's cave): the island's beds fall away
  * @property {number} [frost]      0..1
  * @property {string[]} [residents]   settled species ids
  * @property {'dry'|'wet'|'frost'} [groundState]
@@ -235,6 +236,8 @@ export function createAmbience(mixer, recipe, procRecipe, seed, opts = {}) {
       mist: clamp01(s.mist ?? (s.weather === 'mist' ? 1 : 0)),
       frost: clamp01(s.frost ?? 0),
       life: clamp01(s.life ?? 0),
+      // 1 underground (a zone below the island: the spring's cave): the island's beds fall away, the trickle stays.
+      under: clamp01(s.under ?? 0),
       // The loudest waterfall at the camera target (0..1), which dips the stream beds under it.
       fallLoud: clamp01(fallsLoudness(s.falls ?? [], S.falls)),
       ...near,
@@ -300,7 +303,8 @@ export function createAmbience(mixer, recipe, procRecipe, seed, opts = {}) {
    * @param {number} dtS seconds since the last update
    */
   function scheduleOneShots(dtS) {
-    const density = value(O.density, inputs, blend) * (1 - S.mist.oneShotCut * inputs.mist);
+    // Underground the island's small sounds (drops on reeds, frost ticks) are not heard.
+    const density = value(O.density, inputs, blend) * (1 - S.mist.oneShotCut * inputs.mist) * (1 - (inputs.under ?? 0));
     const now = ctx.currentTime;
     let lastAny = -1e9;
     for (const pl of pools) lastAny = Math.max(lastAny, pl.last);

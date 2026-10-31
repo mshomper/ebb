@@ -4,10 +4,16 @@
 // src/shaders/lighting-bindings.wgsl and LightUniforms in src/shaders/common.wgsl.
 
 import { makeBuffer } from '../core/gpu.js';
+import { createLightPicker } from './light-pick.js';
 
-export const LIGHT_UNIFORM_BYTES = 400;
-/** The most small lights (the camp's fire and lantern, later fireflies' clusters) the shaders loop over. */
-export const MAX_POINT_LIGHTS = 4;
+export const LIGHT_UNIFORM_BYTES = 528;
+/**
+ * The most small lights the shaders loop over (the camp's fire and lanterns, the furnace, the
+ * passing boat, later fireflies' clusters); MAX_POINT_LIGHTS in common.wgsl must match. Which are
+ * drawn, when there are more, is chosen each frame by importance to the view (light-pick.js), and
+ * recipes/world/small-lights.json may ask for fewer.
+ */
+export const MAX_POINT_LIGHTS = 8;
 
 /** @param {GPUDevice} device */
 export function createLightingLayout(device) {
@@ -31,9 +37,13 @@ export function createLightingLayout(device) {
  * @param {GPUDevice} device
  * @param {{ transmittance: GPUTexture, aerial: GPUTexture, sh: GPUBuffer }} atmosphere
  * @param {{ view: GPUTextureView, sampler: GPUSampler }} shadow
+ * @param {GPUBindGroupLayout} [sharedLayout] another lighting's layout to build on (a zone's own light, src/world/zones: the
+ *   same pipelines take either group)
+ * @param {import('./light-pick.js').PickRecipe} [pickRecipe] recipes/world/small-lights.json: how many small lights,
+ *   how they are chosen and how fast they fade; a lighting of its own (a zone's) keeps its own list and fades
  */
-export function createLighting(device, atmosphere, shadow) {
-  const layout = createLightingLayout(device);
+export function createLighting(device, atmosphere, shadow, sharedLayout, pickRecipe) {
+  const layout = sharedLayout ?? createLightingLayout(device);
   const buffer = makeBuffer(device, { label: 'light-uniforms', size: LIGHT_UNIFORM_BYTES, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
   const lutSampler = device.createSampler({ label: 'lut-linear', magFilter: 'linear', minFilter: 'linear', addressModeU: 'clamp-to-edge', addressModeV: 'clamp-to-edge', addressModeW: 'clamp-to-edge' });
   /** @param {{ view: GPUTextureView, sampler: GPUSampler }} s */
@@ -56,9 +66,11 @@ export function createLighting(device, atmosphere, shadow) {
   /**
    * @param {{ shadow: import('./passes/shadow.js').ShadowPass['state'],
    *   weather: { cloud: number, rain: number, mist: number, wet: number },
-   *   aerial: { maxDistance: number, slices: number } }} v
+   *   aerial: { maxDistance: number, slices: number }, eye?: ArrayLike<number>, target?: ArrayLike<number>, dt?: number }} v
+   *   eye, target, dt: the view and the frame's real seconds, for choosing the small lights (light-pick.js)
    */
   function write(v) {
+    points = picker.pick(wanted, v.eye ?? [0, 0, 0], v.target ?? v.eye ?? [0, 0, 0], v.dt ?? 0);
     for (let c = 0; c < 3; c++) data.set(v.shadow.viewProj[c], c * 16);
     data[48] = v.shadow.splits[0]; data[49] = v.shadow.splits[1]; data[50] = v.shadow.splits[2]; data[51] = v.shadow.count;
     data[52] = v.shadow.dir[0]; data[53] = v.shadow.dir[1]; data[54] = v.shadow.dir[2]; data[55] = v.shadow.strength;
@@ -70,15 +82,20 @@ export function createLighting(device, atmosphere, shadow) {
     device.queue.writeBuffer(buffer, 0, data);
   }
 
-  /** @type {PointLight[]} */ let points = [];
+  /** The small lights asked for (setPoints), and the ones drawn this frame (chosen and faded at write). @type {PointLight[]} */
+  let wanted = [], points = [];
+  const picker = createLightPicker(pickRecipe ?? { max: MAX_POINT_LIGHTS, fadeS: 0.3, viewReachM: 25 }, MAX_POINT_LIGHTS);
 
   return {
     layout, write,
     /**
-     * The small lights this frame (doc 06, Lanterns and small lights), at most MAX_POINT_LIGHTS;
-     * written with the rest at the next write. @param {PointLight[]} list
+     * The small lights this frame (doc 06, Lanterns and small lights), as many as there are, each
+     * with a key; the next write draws the most important MAX_POINT_LIGHTS, fading them in and out.
+     * @param {PointLight[]} list
      */
-    setPoints(list) { points = list.filter((p) => p.cd > 0 && p.rangeM > 0).slice(0, MAX_POINT_LIGHTS); },
+    setPoints(list) { wanted = list; },
+    /** The small lights drawn at the last write (tests and tools). */
+    get drawn() { return points; },
     /** The bind group; the frame graph reads it each frame, so a new shadow map takes effect at once. */
     get group() { return group; },
     /** A new shadow map (a quality tier with another map size, S8d-1). @param {{ view: GPUTextureView, sampler: GPUSampler }} s */
@@ -88,6 +105,7 @@ export function createLighting(device, atmosphere, shadow) {
 
 /** @typedef {ReturnType<typeof createLighting>} Lighting */
 /**
- * @typedef {{ x: number, y: number, z: number, rangeM: number, cd: number, rgb: ArrayLike<number> }} PointLight
- *   cd: luminous intensity (candela, flicker included); rgb: its colour, linear with luminance 1
+ * @typedef {{ x: number, y: number, z: number, rangeM: number, cd: number, rgb: ArrayLike<number>, key?: string }} PointLight
+ *   cd: luminous intensity (candela, flicker included); rgb: its colour, linear with luminance 1; key: which light it
+ *   is (camp-fire, lantern:<id>, ...), so its fade is kept as the chosen set changes
  */

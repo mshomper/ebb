@@ -64,6 +64,15 @@ Technical notes on the order:
 - **Particles** attach depth as `depthReadOnly` and sample the same depth texture for soft edges, which WebGPU allows for read-only depth.
 - **Auto-exposure** reads this frame's HDR and produces the exposure for the next frame. The one-frame lag is invisible because adaptation is slow on purpose.
 
+### Zones (doc 26)
+
+While you are in a zone (the spring's cave), only its own passes run, with the walker's figure and
+the post passes; every island pass is off (`src/app.js` wraps their `enabled`). The zone's first pass
+clears the targets itself (`src/render/passes/cave.js`). Group 1 is then a second lighting group built
+on the island's layout (`createLighting(..., sharedLayout)`): its sky term is the zone's fill, its
+shadows off and its aerial reach far past the zone, so lit pipelines such as the figure's take it
+unchanged. The frame's sun is the zone's light on the walker.
+
 ## Data and interfaces
 
 ### Render targets (internal resolution unless noted)

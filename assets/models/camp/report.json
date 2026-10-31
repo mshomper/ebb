@@ -954,6 +954,27 @@
    ]
   }
  },
+ "clay-furnace": {
+  "source": "clay-furnace.glb",
+  "file": "clay-furnace.glb",
+  "bytes": 938392,
+  "sourceBytes": 4648204,
+  "trianglesBefore": 10220,
+  "triangles": 8000,
+  "maps": 1024,
+  "bounds": {
+   "min": [
+    -0.466,
+    0,
+    -0.443
+   ],
+   "max": [
+    0.466,
+    1,
+    0.443
+   ]
+  }
+ },
  "keepsake-shelf": {
   "source": "keepsake-shelf.glb",
   "file": "keepsake-shelf.glb",

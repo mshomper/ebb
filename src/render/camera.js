@@ -48,6 +48,8 @@ export function createOrbitCamera(r) {
   let viewH = 1;
   let sinceInput = Infinity;
   let worldRadius = r.worldRadius;
+  /** How far back the view may sit (setRoom), and the lowest the ground can be (the sea, 0; a zone's floor below it). */
+  let room = Infinity, floor0 = 0;
   /** @type {(x: number, z: number) => number} */
   let groundProbe = () => 0;
 
@@ -257,22 +259,24 @@ export function createOrbitCamera(r) {
     cur.yaw += (goal.yaw - cur.yaw) * ky;
     cur.pitch += (goal.pitch - cur.pitch) * (ground && turnHL && !focusing ? ky : k);
     cur.distance += (goal.distance - cur.distance) * k;
+    // A zone's walls (src/world/zones viewRoom): the view never sits further back than there is room.
+    cur.distance = Math.min(cur.distance, room);
     // Close-ups aim at the ground itself (or the height a focus asked for); otherwise the target
     // sits half way down, as it always has.
-    if (close && !ground) goal.target[1] = targetY ?? Math.max(groundProbe(goal.target[0], goal.target[2]), 0);
+    if (close && !ground) goal.target[1] = targetY ?? Math.max(groundProbe(goal.target[0], goal.target[2]), floor0);
     vec3.lerp(cur.target, goal.target, kd, cur.target);
 
     const h = groundProbe(cur.target[0], cur.target[2]);
     // Zoomed in (recipe `close`), the view eases from aiming half way down the slope to aiming at
     // the ground itself, and the eye may come down near it. Below, it aims at you.
     const near = nearness(cur.distance);
-    if (!close && !ground) cur.target[1] = heldY !== null ? cur.target[1] + (heldY - cur.target[1]) * kd : h * 0.5 + (Math.max(h, 0) - h * 0.5) * near;
+    if (!close && !ground) cur.target[1] = heldY !== null ? cur.target[1] + (heldY - cur.target[1]) * kd : h * 0.5 + (Math.max(h, floor0) - h * 0.5) * near;
     const eyeMin = ground?.minEyeHeight ?? close?.minEyeHeight ?? r.minEyeHeight + ((r.close?.minEyeHeight ?? r.minEyeHeight) - r.minEyeHeight) * near;
 
     let pitch = cur.pitch;
     for (let i = 0; i < 2; i++) {
       placeEye(pitch);
-      const floor = Math.max(groundProbe(eye[0], eye[2]), 0) + eyeMin;
+      const floor = Math.max(groundProbe(eye[0], eye[2]), floor0) + eyeMin;
       if (eye[1] >= floor) break;
       pitch = Math.asin(clamp((floor - cur.target[1]) / cur.distance, -1, 1));
       cur.pitch = Math.max(cur.pitch, pitch);
@@ -397,8 +401,14 @@ export function createOrbitCamera(r) {
       cur.distance = goal.distance = Math.max(p.distance, 0.05);
       fitted = true;
     },
+    /** Turn the view at once to look from this yaw (no glide): going into a zone, while the screen is dark. @param {number} yaw */
+    setYaw(yaw) { cur.yaw = goal.yaw = yaw; },
     /** @param {(x: number, z: number) => number} fn */
     setGroundProbe(fn) { groundProbe = fn; },
+    /** How far back the view may sit this frame (m; Infinity on the island): a zone's walls. @param {number} m */
+    setRoom(m) { room = Math.max(0.3, m); },
+    /** The lowest ground the view keeps above (m): the sea's level on the island, -Infinity in a zone below it. @param {number} y */
+    setFloor(y) { floor0 = y; },
     /**
      * Allow close-ups (the frog size preview), or null for the recipe's limits.
      * @param {{ minDistance: number, minEyeHeight: number } | null} limits

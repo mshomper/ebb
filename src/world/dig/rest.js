@@ -7,6 +7,7 @@
 // season only. Worms and clay are never thinned or budgeted. Pure.
 
 import { hash32 } from '../../core/rng.js';
+import { cleanPans } from '../spring/pan.js';
 import { DAYS_PER_SEASON } from '../../core/clock.js';
 import { HABITAT_CELLS } from '../growth/habitat.js';
 
@@ -97,11 +98,17 @@ export function cleanDig(v) {
   const cache = Number.isFinite(v.cache) && v.cache >= 0 ? v.cache : null;
   const sleepers = (Array.isArray(v.sleepers) ? v.sleepers : [])
     .filter((/** @type {any} */ s) => s && int(s.c) && s.c >= 0 && int(s.y) && s.y >= 0).map((/** @type {any} */ s) => ({ c: s.c, y: s.y }));
-  return { version: 1, events, firsts, cache, sleepers };
+  // Where the ground gave way above the spring (the spring-ore plan, O2), once per island.
+  // Its pans at the pool below (src/world/spring/pan.js), once there have been any.
+  const sp = v.spring && Number.isFinite(v.spring.hour) && Number.isFinite(v.spring.x) && Number.isFinite(v.spring.z)
+    ? { hour: v.spring.hour, x: v.spring.x, z: v.spring.z, ...(v.spring.pans ? { pans: cleanPans(v.spring.pans) } : {}) } : null;
+  return { version: 1, events, firsts, cache, sleepers, ...(sp ? { spring: sp } : {}) };
 }
 
 /**
- * @typedef {{ version: 1, events: DugEvent[], firsts: string[], cache: number | null, sleepers: { c: number, y: number }[] }} DigSection
+ * @typedef {{ version: 1, events: DugEvent[], firsts: string[], cache: number | null, sleepers: { c: number, y: number }[],
+ *   spring?: { hour: number, x: number, z: number, pans?: import('../spring/pan.js').PanCount } }} DigSection
+ *   spring: where and when the ground gave way above the spring (O2), once it has, and the pans at its pool (O3)
  */
 
 /** A new island's dig section. */

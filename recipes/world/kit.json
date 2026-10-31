@@ -37,7 +37,8 @@
     { "id": "knife", "name": "Gathering knife", "icon": "gathering-knife", "line": "A clean cut leaves a plant less bare, and it is ready again sooner." },
     { "id": "steel", "name": "Fire steel", "icon": "fire-steel", "line": "Steel and flint in a small pouch of their own. Three strikes, most evenings." },
     { "id": "sketchbook", "name": "Sketchbook", "icon": "sketchbook", "line": "Charcoal and a book of rough paper. The hand gets surer with every page." },
-    { "id": "net", "name": "Net", "icon": "net", "line": "A hand net on a short pole, for the shallows." }
+    { "id": "net", "name": "Net", "icon": "net", "line": "A hand net on a short pole, for the shallows." },
+    { "id": "pan", "name": "The old keeper's pan", "icon": "keepers-pan", "line": "A shallow iron pan, rusted at the rim. Swirl, tip, swirl, at the pool below the spring." }
   ],
   "words": {
     "title": "Keeper",

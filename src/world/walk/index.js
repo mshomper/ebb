@@ -11,6 +11,11 @@
 // The keeper's camp hooks (docs/future/13-keepers-camp.md 2.3): walk:arrived at the end of a walk,
 // act(name) for the evening's acts (walk:act-done when one ends), placeAt and downHere for the
 // director's own moves.
+// Zones (src/world/zones, docs/26-zones.md): enterZone swaps the walk grid, the ground and the water
+// for a place below the island (the spring's cave) and leaveZone puts the island's back. While in
+// one, you are not on the island: presence, the finds and the here-bar feel nobody (presenceNow,
+// you and aheadPoint are null), no prints are left, and spot() keeps the island spot you went down
+// from, so a save made below reloads you by the way down.
 // Writes the store slice `walk` { below, placed }. Numbers and words: recipes/world/walker.json.
 
 import { on, emitDeferred } from '../../core/events.js';
@@ -38,10 +43,16 @@ import { level as tideLevel, tideParams } from '../tide.js';
 export function createWalk(o) {
   const R = o.recipe, { terrain, water, camera } = o;
   /** The land alone (terrain), and the ground you stand on: the land, or a stone or slab over it. */
-  const rawGround = (/** @type {number} */ x, /** @type {number} */ z) => terrain.sampleHeight(x, z);
-  const ground = (/** @type {number} */ x, /** @type {number} */ z) => Math.max(rawGround(x, z), o.footing ? o.footing(x, z) : -Infinity);
+  /**
+   * The zone you are in (enterZone), or null on the island: its ground and water, and the island's
+   * own walk grid, solids and spot, kept to put back. @type {{ id: string, ground: (x: number, z: number) => number,
+   *   water: (x: number, z: number) => number, island: any, islandGrid: any, camera: any } | null}
+   */
+  let zone = null;
+  const rawGround = (/** @type {number} */ x, /** @type {number} */ z) => (zone ? zone.ground(x, z) : terrain.sampleHeight(x, z));
+  const ground = (/** @type {number} */ x, /** @type {number} */ z) => (zone ? zone.ground(x, z) : Math.max(rawGround(x, z), o.footing ? o.footing(x, z) : -Infinity));
   const b = terrain.openBounds();
-  let grid = createWalkGrid({ ground: rawGround, footing: o.footing, minX: b.openMin[0], minZ: b.openMin[1], maxX: b.openMax[0], maxZ: b.openMax[1],
+  let grid = createWalkGrid({ ground: (x, z) => terrain.sampleHeight(x, z), footing: o.footing, minX: b.openMin[0], minZ: b.openMin[1], maxX: b.openMax[0], maxZ: b.openMax[1],
     cellM: R.grid.cellM, maxSlopeDeg: R.grid.maxSlopeDeg });
   const tideP = tideParams(o.tide);
   /**
@@ -50,6 +61,7 @@ export function createWalk(o) {
    */
   const depth = (/** @type {number} */ k) => {
     const [x, z] = grid.center(k);
+    if (zone) return zone.water(x, z);
     const live = water.sim.live ? rawGround(x, z) + water.sampleLive(x, z).depth - grid.height[k] : 0;
     return Math.max(0, water.tide - grid.height[k], live);
   };
@@ -58,8 +70,10 @@ export function createWalk(o) {
     for (const c of o.creatures()) best = Math.min(best, Math.hypot(c.x - x, c.z - z));
     return best;
   };
-  // Solid things you cannot walk through (solids.js): set by the game as they come and go.
+  // Solid things you cannot walk through (solids.js): set by the game as they come and go. Below,
+  // in a zone, the island's are kept aside (islandSolids) and put back on the way up.
   const solids = createSolids(R.solids.bodyM);
+  /** @type {import('./solids.js').Solid[]} */ let islandSolids = [];
   // A tea's boon lifts every pace (P2e; the store slice boonLift, 1 without one).
   const walker = createWalker(R, { get grid() { return grid; }, depth, ground, nearest, solids, paceK: () => get('boonLift')?.walk ?? 1 });
 
@@ -149,7 +163,7 @@ export function createWalk(o) {
    * water (walled in by terraces, or left on a new cliff face), steps out to the nearest that does.
    */
   function keepFree() {
-    if (!walker.placed) return;
+    if (!walker.placed || zone) return;
     const land = mainland(grid, lowRules());
     if (land.joined(grid.cellAt(walker.x, walker.z))) return;
     const k = nearestJoined(grid, land, walker.x, walker.z, (c) => isOpen(grid, walker.rules, c));
@@ -160,12 +174,12 @@ export function createWalk(o) {
   // Every stroke (and undo) changes the ground: re-read that part of the grid, and make sure the
   // figure isn't walled in.
   const offStroke = on('terrain:stroke-ended', (/** @type {{ rect: { x0: number, z0: number, x1: number, z1: number } }} */ p) => {
-    grid.refresh(p.rect.x0, p.rect.z0, p.rect.x1, p.rect.z1);
+    (zone ? zone.islandGrid : grid).refresh(p.rect.x0, p.rect.z0, p.rect.x1, p.rect.z1);
     keepFree();
   });
   // A stepping stone or slab put down, moved or taken away: the same, over the ground it covers.
   const offFooting = on('pieces:footing-changed', (/** @type {{ rect: { x0: number, z0: number, x1: number, z1: number } }} */ p) => {
-    grid.refresh(p.rect.x0, p.rect.z0, p.rect.x1, p.rect.z1);
+    (zone ? zone.islandGrid : grid).refresh(p.rect.x0, p.rect.z0, p.rect.x1, p.rect.z1);
     keepFree();
   });
 
@@ -317,7 +331,7 @@ export function createWalk(o) {
      * @param {number} aheadM @returns {number[] | null}
      */
     aheadPoint(aheadM) {
-      if (!below || !walker.placed) return null;
+      if (!below || !walker.placed || zone) return null;
       const x = walker.x + Math.sin(walker.yaw) * aheadM, z = walker.z + Math.cos(walker.yaw) * aheadM;
       return [x, ground(x, z), z];
     },
@@ -393,6 +407,8 @@ export function createWalk(o) {
      * and steering slides along them. @param {import('./solids.js').Solid[]} list
      */
     setSolids(list) {
+      islandSolids = list;
+      if (zone) return;
       solids.set(list);
       solids.mark(grid);
     },
@@ -462,7 +478,7 @@ export function createWalk(o) {
      * @returns {import('../creatures/presence.js').WalkerNow | null}
      */
     presenceNow() {
-      if (!below || !walker.placed) return null;
+      if (!below || !walker.placed || zone) return null;
       const e = camera.eye, t = camera.target;
       const gx = t[0] - e[0], gz = t[2] - e[2], l = Math.hypot(gx, gz);
       return { x: walker.x, y: walker.y, z: walker.z, speed: walker.speed, posture: walker.posture, gaze: l > 1e-6 ? [gx / l, gz / l] : null };
@@ -470,7 +486,7 @@ export function createWalk(o) {
 
     /** Where you are felt on foot (finds, food, finding by watching), or null while you are above. */
     you() {
-      return below && walker.placed ? [walker.x, walker.y + (H[walker.posture] ?? H.stand), walker.z] : null;
+      return below && walker.placed && !zone ? [walker.x, walker.y + (H[walker.posture] ?? H.stand), walker.z] : null;
     },
 
     /**
@@ -490,8 +506,57 @@ export function createWalk(o) {
      * @returns {{ x: number, z: number, yaw: number, posture: 'stand' | 'kneel' | 'sit' } | null}
      */
     spot() {
+      if (zone) return zone.island;
       return walker.placed ? { x: walker.x, z: walker.z, yaw: walker.yaw, posture: walker.posture } : null;
     },
+
+    /**
+     * Into a zone (src/world/zones): its ground and water become the walk's, a walk grid over its
+     * bounds, no island solids, and you stand at `at`, below, the view behind you. The island's spot
+     * and grid are kept for leaveZone. False if there is nowhere to stand there.
+     * @param {{ id: string, ground: (x: number, z: number) => number, water: (x: number, z: number) => number,
+     *   bounds: number[], cellM: number, at: { x: number, z: number, yaw: number, viewYaw?: number }, camera?: any }} z bounds [x0, z0, x1, z1] (m);
+     *   camera: the zone's own view below (walker.json camera's fields), else the walker's
+     */
+    enterZone(z) {
+      if (zone) return false;
+      const island = walker.placed ? { x: walker.x, z: walker.z, yaw: walker.yaw, posture: walker.posture } : null;
+      zone = { id: z.id, ground: z.ground, water: z.water, island, islandGrid: grid, camera: z.camera ?? null };
+      walker.stop();
+      acting = null;
+      standAt = 0;
+      grid = createWalkGrid({ ground: z.ground, minX: z.bounds[0], minZ: z.bounds[1], maxX: z.bounds[2], maxZ: z.bounds[3], cellM: z.cellM, maxSlopeDeg: R.grid.maxSlopeDeg });
+      solids.set([]);
+      if (!walker.place(z.at.x, z.at.z, z.at.yaw, R.grid.snapM * 3)) { this.leaveZone(island); return false; }
+      figure?.motion.place('stand');
+      if (!below) { below = true; figure?.motion.arrive(); }
+      camera.setGround(zone.camera ?? R.camera, head());
+      // The view behind you, looking the way you face (into the cave, not at the wall behind the rope).
+      camera.setYaw(z.at.viewYaw ?? z.at.yaw + Math.PI);
+      publish();
+      return true;
+    },
+
+    /**
+     * Back up out of the zone: the island's ground, grid and solids again, standing at `at` (by the
+     * way down), below. @param {{ x: number, z: number, yaw: number } | null} at
+     */
+    leaveZone(at) {
+      if (!zone) return;
+      grid = zone.islandGrid;
+      const back = at ?? zone.island;
+      zone = null;
+      walker.stop();
+      solids.set(islandSolids);
+      solids.mark(grid);
+      if (back) walker.place(back.x, back.z, back.yaw, R.grid.snapM * 3);
+      figure?.motion.place('stand');
+      if (below) camera.setGround(R.camera, head());
+      publish();
+    },
+
+    /** The zone you are in, or null on the island. */
+    get zone() { return zone?.id ?? null; },
 
     /**
      * Put your figure back where the save left it (above, so it is seen from the diorama). Ignores a
@@ -577,7 +642,8 @@ export function createWalk(o) {
       }
       // Prints age with game time; the tide takes the ones it covers.
       const hours = o.hours();
-      const live = prints.update(hours, water.tide);
+      // No prints below the island (a zone's floor is not the island's sand).
+      const live = zone ? [] : prints.update(hours, water.tide);
       printsPass.setPrints(live.map((p) => ({ x: p.x, z: p.z, yaw: p.yaw, side: p.side, strength: prints.strength(p, hours), corners: printCorners.get(p) ?? [p.y, p.y, p.y, p.y] })), FP.soleM);
       if (!figure) return;
       const e = camera.eye, t = camera.target;
@@ -590,7 +656,7 @@ export function createWalk(o) {
         posture: walker.posture, below, sleepy: hour < 6 || hour > 21,
       });
       for (const f of falls) {
-        const p = prints.step(f, hours);
+        const p = zone ? null : prints.step(f, hours);
         if (p) printCorners.set(p, corners(p));
         steps.push({ x: f.x, z: f.z, t: walkT });
         emitDeferred('walk:footfall', f);

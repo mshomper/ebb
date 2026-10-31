@@ -13,8 +13,8 @@ const u01 = (seed, ...k) => (hash32(seed, ...k) >>> 8) / 16777216;
 
 /**
  * Plan the trail: from `from` (the camp pad, or the island's middle), out along the longest line of
- * dry land (of `dirs` directions, ties by seed), or toward `end` when one is given (the old keeper's
- * cache); `count` points, the first startM out, evenly spaced to just short of the shore (or the
+ * dry land (of `dirs` directions, ties by seed), or toward `end` when one is given (the rise above
+ * the spring's head, where the way down is: the spring-ore plan, O2), the last cairn on it; `count` points, the first startM out, evenly spaced to just short of the shore (or the
  * end), each nudged onto dry land at least landM up if it fell in water. Returns [x, z] rounded to
  * centimetres, or null when there is no land to run on.
  * @param {{ x: number, z: number }} from @param {(x: number, z: number) => number} ground land height (the sea is 0)
@@ -54,7 +54,8 @@ export function planTrail(from, ground, T, seed, end = null, dirs = 24) {
   /** @type {[number, number][]} */ const out = [];
   for (let i = 0; i < n; i++) {
     // A little to one side and the other, so the trail wanders.
-    const side = (u01(seed, 10, i) - 0.5) * Math.min(4, gap * 0.5);
+    // The last stands on the end itself when there is one (the way down above the spring, O2).
+    const side = end && i === n - 1 ? 0 : (u01(seed, 10, i) - 0.5) * Math.min(4, gap * 0.5);
     let x = from.x + dx * (T.startM + gap * i) - dz * side, z = from.z + dz * (T.startM + gap * i) + dx * side;
     if (!dry(x, z)) {
       // Nudged onto the nearest dry ground within 4 m.

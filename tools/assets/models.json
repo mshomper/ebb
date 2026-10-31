@@ -19,6 +19,7 @@
     { "source": "Ebb_stone_single.obj", "out": "stone", "along": "longest", "sizeM": 0.15, "yawDeg": 0, "triangles": 5000, "maps": 512, "subdivide": 1, "restFlat": true, "paint": { "from": "Ebb_Stones.glb", "style": "stone" } },
     { "source": "stone_workbench.glb", "out": "workbench", "along": "longest", "sizeM": 1.0, "yawDeg": 0, "triangles": 8000, "maps": 1024 },
     { "source": "apothecary_bench.glb", "out": "apothecary-bench", "along": "longest", "sizeM": 1.1, "yawDeg": 0, "triangles": 10000, "maps": 1024 },
+    { "source": "clay-furnace.glb", "out": "clay-furnace", "along": "height", "sizeM": 1.0, "yawDeg": 0, "triangles": 8000, "maps": 1024 },
     { "source": "keepsake-shelf.glb", "out": "keepsake-shelf", "along": "height", "sizeM": 1.31, "yawDeg": 0, "triangles": 12000, "maps": 1024 },
     { "source": "Ebb_Mortar.glb", "out": "mortar", "along": "longest", "sizeM": 0.2, "yawDeg": 0, "triangles": 3000, "maps": 512 },
     { "source": "Ebb_Pestle.glb", "out": "pestle", "along": "longest", "sizeM": 0.18, "yawDeg": 0, "triangles": 1500, "maps": 512 },

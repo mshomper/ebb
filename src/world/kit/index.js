@@ -47,6 +47,8 @@ export function createKit(o) {
       steel: true,
       sketchbook: (get('sketchbook')?.made ?? 0) > 0,
       net: !!get('unlocks')?.nets?.general,
+      // The old keeper's pan, taken from beside the spring's pool (src/world/spring).
+      pan: (get('cook')?.tools ?? []).includes('keepers-pan'),
     };
     return R.belt.map((/** @type {any} */ t) => ({ id: t.id, owned: !!(/** @type {any} */ (has))[t.id] }));
   }
