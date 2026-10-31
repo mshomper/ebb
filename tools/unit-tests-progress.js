@@ -17,7 +17,7 @@ const text = async (p) => {
 export function addProgressTests(test, assert, eq) {
   test(G, 'docs/progress.md is a closed archive: no row added or taken away', async () => {
     const lines = (await text('docs/progress.md')).split('\n').filter((l) => l.startsWith('|'));
-    eq(lines.length, ARCHIVE_LINES, 'table lines (a new row belongs in its own file under docs/progress/)');
+    eq(lines.length, ARCHIVE_LINES, 'table lines (a new row belongs in its own file under docs/progress/: node tools/progress-move.mjs moves it)');
     return `${lines.length - 2} rows`;
   });
 
