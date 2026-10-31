@@ -50,6 +50,7 @@ export const PARALLEL = {
   assets: () => import('./unit-tests-assets.js').then((m) => m.addAssetTests),
   campLock: () => import('./unit-tests-camp-lock.js').then((m) => m.addCampLockTests),
   campGround: () => import('./unit-tests-camp-ground.js').then((m) => m.addCampGroundTests),
+  campLayout: () => import('./unit-tests-camp-layout.js').then((m) => m.addCampLayoutTests),
   campPieces: () => import('./unit-tests-camp-pieces.js').then((m) => m.addCampPieceTests),
   shoreSand: () => import('./unit-tests-shore-sand.js').then((m) => m.addShoreSandTests),
   campEdge: () => import('./unit-tests-camp-edge.js').then((m) => m.addCampEdgeTests),
@@ -88,6 +89,7 @@ export const PARALLEL = {
   teas: () => import('./unit-tests-teas.js').then((m) => m.addTeasTests),
   hints: () => import('./unit-tests-hints.js').then((m) => m.addHintsTests),
   keeper: () => import('./unit-tests-keeper.js').then((m) => m.addKeeperTests),
+  lantern: () => import('./unit-tests-lantern.js').then((m) => m.addLanternTests),
   photo: () => import('./unit-tests-photo.js').then((m) => m.addPhotoTests),
   // The audio tests that need no Web Audio (workers have none). The two that render sound through
   // an OfflineAudioContext (pond and keepsake sounds) stay on tools/unit-tests-audio.html, which

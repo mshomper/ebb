@@ -123,7 +123,7 @@ startApp(canvas, { onDeviceLost: (rebuilding) => showRebuildingNote(rebuilding),
         finds: /** @type {any} */ (r).finds ?? null, keepsakes: /** @type {any} */ (r).keepsakes ?? null, pieces: /** @type {any} */ (r).pieces ?? null, lift: /** @type {any} */ (r).lift ?? null, nets: /** @type {any} */ (r).nets ?? null, shore: /** @type {any} */ (r).shorePresence ?? null,
         schools: /** @type {any} */ (r).schools ?? [], gather: /** @type {any} */ (r).gather ?? null, piles: /** @type {any} */ (r).piles ?? null,
         camp: /** @type {any} */ (r).camp ?? null, hen: /** @type {any} */ (r).hen ?? null, stores: /** @type {any} */ (r).stores ?? null, dig: /** @type {any} */ (r).dig ?? null,
-        perch: /** @type {any} */ (r).perchSticks ?? null, setpieces: [/** @type {any} */ (r).cairns, /** @type {any} */ (r).passingBoat].filter(Boolean) });
+        perch: /** @type {any} */ (r).perchSticks ?? null, lanterns: /** @type {any} */ (r).lanterns ?? null, setpieces: [/** @type {any} */ (r).cairns, /** @type {any} */ (r).passingBoat].filter(Boolean) });
       // One click below walks and uses: the app reads what a point holds from the journal's cards.
       /** @type {any} */ (r).setCards?.(journal.cardAt, words.species);
       mountIslandNotes(document.body, words, naturalist);

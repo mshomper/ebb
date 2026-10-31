@@ -3,8 +3,10 @@
 // cell, where a cell is open if it is not too steep and the water over it right now is shallower
 // than knee deep; a step between neighbours may climb at most maxStepM (a cliff face is more), and
 // a diagonal needs both cells beside it open, so the walker never cuts a corner. Wading costs more
-// than dry ground, so the way goes round a pond when it can. The cell path is then pulled straight
-// where a straight line stays open, so the figure walks in long lines, not along the grid.
+// than dry ground, so the way goes round a pond when it can, and a stepping stone's cell less (B2
+// W7), so a stone crossing is taken when there is one. The cell path is then pulled straight where
+// a straight line stays open and no wetter than the way found, so the figure walks in long lines,
+// not along the grid, and never leaves the stones to wade beside them.
 // Pure: safe to import from tools pages and tests.
 
 /** @typedef {import('./grid.js').WalkGrid} WalkGrid */
@@ -14,6 +16,9 @@
  * @property {(k: number) => number} depth water over a cell right now (m)
  * @property {number} wadeM water must be shallower than this to walk through
  * @property {number} wadeCost extra cost of wading, at wadeM deep (1 doubles the cost)
+ * @property {number} [wadeEnterCost] extra cost of any cell of water deeper than dryM (a share of a dry cell's)
+ * @property {number} [dryM] water no deeper than this counts as dry ground
+ * @property {number} [footCost] a stepping stone's or slab's cell costs this share of a dry one
  * @property {number} maxStepM the most the ground may climb or drop between two neighbours
  * @property {number} snapM a goal you can't stand on moves to the nearest open cell within this
  */
@@ -67,8 +72,9 @@ export function nearestOpen(g, r, x, z, reachM) {
  * once sampled the line every quarter metre, which missed a cell the line only clipped at a corner,
  * so a straight leg over pond stones could cut through the deep water beside them (F10).
  * @param {WalkGrid} g @param {WalkRules} r @param {[number, number]} a @param {[number, number]} b
+ * @param {number} [maxWet] no cell on the line deeper than this (pulling a path straight)
  */
-export function lineOpen(g, r, a, b) {
+export function lineOpen(g, r, a, b, maxWet = Infinity) {
   const c = g.cellM, dx = b[0] - a[0], dz = b[1] - a[1];
   let i = Math.floor((a[0] - g.minX) / c), j = Math.floor((a[1] - g.minZ) / c);
   const iEnd = Math.floor((b[0] - g.minX) / c), jEnd = Math.floor((b[1] - g.minZ) / c);
@@ -79,7 +85,7 @@ export function lineOpen(g, r, a, b) {
   const idx = (/** @type {number} */ ci, /** @type {number} */ cj) => (ci < 0 || cj < 0 || ci >= g.w || cj >= g.h ? -1 : cj * g.w + ci);
   let prev = idx(i, j);
   /** Step into a cell from prev: open, and no climb or drop past the step limit. @param {number} k */
-  const ok = (k) => isOpen(g, r, k) && (prev < 0 || Math.abs(g.height[k] - g.height[prev]) <= r.maxStepM);
+  const ok = (k) => isOpen(g, r, k) && (prev < 0 || Math.abs(g.height[k] - g.height[prev]) <= r.maxStepM) && (maxWet === Infinity || r.depth(k) <= maxWet);
   const EPS = 1e-9;
   for (let guard = 0; (i !== iEnd || j !== jEnd) && guard < g.w + g.h + 4; guard++) {
     if (Math.min(tx, tz) > 1 + EPS) break;
@@ -129,9 +135,12 @@ function search(g, r, start, goal) {
   const deep = (/** @type {number} */ k) => (Number.isNaN(depth[k]) ? (depth[k] = r.depth(k)) : depth[k]);
   const open = (/** @type {number} */ k) => !g.steep[k] && !g.blocked?.[k] && deep(k) < r.wadeM;
   const gi = goal % g.w, gj = Math.floor(goal / g.w);
+  // A stone's cell costs less than dry ground, so the guess is scaled by that share to stay a lower bound.
+  const foot = r.footCost ?? 1, dryM = r.dryM ?? 0, enter = r.wadeEnterCost ?? 0;
+  const least = g.cellM * Math.min(1, foot);
   const guess = (/** @type {number} */ k) => {
     const dx = Math.abs((k % g.w) - gi), dz = Math.abs(Math.floor(k / g.w) - gj);
-    return (Math.max(dx, dz) + (SQRT2 - 1) * Math.min(dx, dz)) * g.cellM;
+    return (Math.max(dx, dz) + (SQRT2 - 1) * Math.min(dx, dz)) * least;
   };
   const heap = createHeap();
   cost[start] = 0;
@@ -150,7 +159,8 @@ function search(g, r, start, goal) {
       const diag = di !== 0 && dj !== 0;
       if (diag && (!open(j * g.w + ni) || !open(nj * g.w + i))) continue;
       if (Math.abs(g.height[nk] - g.height[k]) > r.maxStepM * (diag ? SQRT2 : 1)) continue;
-      const step = g.cellM * (diag ? SQRT2 : 1) * (1 + (r.wadeCost * deep(nk)) / r.wadeM);
+      const d = deep(nk);
+      const step = g.cellM * (diag ? SQRT2 : 1) * (g.footing?.[nk] ? foot : 1) * (1 + (d > dryM ? enter : 0) + (r.wadeCost * d) / r.wadeM);
       const c = cost[k] + step;
       if (c < cost[nk]) {
         cost[nk] = c;
@@ -166,16 +176,21 @@ function search(g, r, start, goal) {
 }
 
 /**
- * Pull a cell path straight: from each point, jump to the furthest later point in a clear line.
+ * Pull a cell path straight: from each point, jump to the furthest later point in a clear line that
+ * is no wetter than the cells it skips (B2 W7: a way over stepping stones is not pulled off them
+ * into the shallows beside them).
  * @param {WalkGrid} g @param {WalkRules} r @param {[number, number][]} pts
  */
 function pull(g, r, pts) {
   /** @type {[number, number][]} */
   const out = [pts[0]];
+  const wet = pts.map((p) => { const k = g.cellAt(p[0], p[1]); return k >= 0 ? r.depth(k) : 0; });
   let i = 0;
   while (i < pts.length - 1) {
     let j = pts.length - 1;
-    while (j > i + 1 && !lineOpen(g, r, pts[i], pts[j])) j--;
+    /** The wettest the found way gets from i to j, and a little over (the line may clip a cell's edge). @param {number} j */
+    const most = (j) => { let m = 0; for (let q = i; q <= j; q++) m = Math.max(m, wet[q]); return m + 0.01; };
+    while (j > i + 1 && !lineOpen(g, r, pts[i], pts[j], most(j))) j--;
     out.push(pts[j]);
     i = j;
   }

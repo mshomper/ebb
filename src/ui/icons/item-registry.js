@@ -39,6 +39,8 @@ export const POUCH_KINDS = /** @type {[string, string, string, string, number][]
   ['woven-twigs', 'woven-twigs', 'Woven twigs', 'T1', 2],
   // Fired bowls carry in a pouch (S5), one a handful, in the made bowl's glyph.
   ['bowl', 'bowl', 'Clay bowls', 'T2', 2],
+  // The lantern (B2 L1): its fired pot, then the made lantern, each carried in a pouch.
+  ['lantern-pot', 'lantern-pot', 'Lantern pot', 'T3', 3], ['post-lantern', 'post-lantern', 'Lantern', 'T3', 3],
   // P2h: the made leaf pack rides in a pouch until it is set out, and wears its treat glyph.
   ['leaf-pack', 'leaf-pack', 'Leaf pack', 'T2', 2],
   // The turtles' made treat (October 27, 2026), in its treat glyph.

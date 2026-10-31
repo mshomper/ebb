@@ -109,6 +109,29 @@
       "near": "That is too near another raft or stone. Try a little further out."
     }
   },
+  "lanternNote": "The lantern (B2 L1, Matt, October 30, 2026; src/world/pieces/lantern.js and lantern-live.js): a placed piece of kind 'lantern', the shaper's trail's gift for a pond of your own with no fish, made at the workbench (cook.json post-lantern) and set down from its pouch's card (Set it here, on foot: setAheadM in front of you, turning up to setTurnDeg from the view to find a spot, on dry land off the camp ground, at least apartM from another). It stays where it is set and lights itself every dusk, with no fuel and nothing to tend, whether you are near or away: from litAtSunDeg of sun altitude it brightens, full by fullAtSunDeg, and goes out the same way at dawn (worked out from the clock, never saved). cap: how many lanterns the island holds, counting any in the pack or still being made (one now; three once M3's paths come). sizeM: its footprint (the grass clear and the carry ring). post: a stick post heightM above the ground and sinkM into it, radiusM at the foot thinning to topRadiusM, a rush tie bandM wide at bandAtM of its height; pot: the clay housing sitting on its top, radiusM round its widest and heightM tall, pierced by rows rows of holes (holeM across) the light shows through, a lid knob knobM; each drawn in one colour (srgb, rough; the props pass, src/render/passes/props.js); the post leans up to leanDeg by its seed. light: its point light at the pot's middle (lightK kelvin, cd candela, reaching rangeM, flicker share at flickerHz; doc 06 Lanterns and small lights), drawn among the small lights after the camp's own; glass: the glow seen through its holes (nits, m across; camp-fx.wgsl, as the hand lantern's glass), drawn nearShare of the pot's radius toward the eye so the pot does not hide it, and moths circle it after dark. tapM: how near a tap must land for its card; reachM: within this of it on foot, Take up puts it back in the pack. words: its card and the pouch card's calm lines.",
+  "lantern": {
+    "cap": 1, "sizeM": 0.24, "setAheadM": 0.7, "setTurnDeg": 70, "apartM": 1.0, "tapM": 0.32, "reachM": 1.6,
+    "post": { "heightM": 0.72, "sinkM": 0.08, "radiusM": 0.03, "topRadiusM": 0.022, "bandM": 0.035, "bandAtM": 0.55, "leanDeg": 2.5, "srgb": [112, 88, 62], "rough": 0.88 },
+    "band": { "srgb": [150, 128, 74], "rough": 0.9 },
+    "pot": { "radiusM": 0.075, "heightM": 0.15, "rows": 3, "holeM": 0.016, "knobM": 0.022, "srgb": [168, 104, 70], "rough": 0.92, "holeSrgb": [40, 26, 18] },
+    "light": { "lightK": 2200, "cd": 8, "rangeM": 4.5, "flicker": 0.06, "flickerHz": 2.6, "litAtSunDeg": 2, "fullAtSunDeg": -3 },
+    "glass": { "nits": 320, "m": 0.05, "nearShare": 1.1 },
+    "words": {
+      "name": "Lantern",
+      "lit": "A clay lantern on its post, lit for the night. It needs nothing from you.",
+      "dark": "A clay lantern on its post. It wakes by itself at dusk.",
+      "setHere": "Set it here",
+      "set": "Set down. It will light itself at dusk.",
+      "where": "Not here. A lantern stands on dry ground, away from the camp and from another lantern.",
+      "full": "The island has all the lanterns it can keep for now.",
+      "lift": "Lift",
+      "takeUp": "Take up",
+      "far": "Go a little closer to take it up.",
+      "noRoom": "No room in the pack for the lantern.",
+      "moved": "Set down here. It lights itself at dusk, wherever it stands."
+    }
+  },
   "stepsNote":"Steps (doc 13, the shaper's trail; src/world/pieces/steps.js): a flight cut between two levels of ground, dragged from one to the other. widthM: how wide a flight is (wide enough that the walker's half-metre grid always finds a level way up its middle). Every rise is at most maxRiseM and every tread at least minTreadM and at most maxTreadM, and the whole flight rises no steeper than maxPitch (rise over run), so the walker can always climb it; a drag shorter than that asks for more. minDropM: the least difference in level worth a step. landM: how far the flight runs on past each end at that end's level, so it meets the ground. cap: how many flights an island holds. rockShare: how far toward rock the flight's cells and the sheer walls beside it (any drop over faceDropM to a neighbour) are painted. slab: perTread slabs side by side on each tread, filling fill of their share (the rest is the gaps between them), turned up to yawJitterDeg off square, their tops riseM over the tread, with a skirt skirtUnits deep (lengths; short, since a flight can stand out from the slope). words: the Steps mode's calm lines.",
   "steps": {
     "widthM": 1.6, "maxRiseM": 0.22, "minTreadM": 0.5, "maxTreadM": 1.0, "maxPitch": 0.6, "minDropM": 0.2,

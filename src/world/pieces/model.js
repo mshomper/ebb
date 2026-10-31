@@ -33,7 +33,7 @@ import { cleanHoleFields } from '../dig/holes.js';
 // that module, never by the stone pass.
 
 /**
- * @typedef {{ id: string, kind: 'stone' | 'log' | 'stepping' | 'steps' | 'raft' | 'pile' | 'perch', x: number, z: number, yaw: number, seed: number, size: number, length?: number,
+ * @typedef {{ id: string, kind: 'stone' | 'log' | 'stepping' | 'steps' | 'raft' | 'pile' | 'perch' | 'lantern', x: number, z: number, yaw: number, seed: number, size: number, length?: number,
  *   rise?: number, run?: string, x2?: number, z2?: number, top?: number, bottom?: number, risers?: number, placedHour: number,
  *   holds?: string, handfuls?: number, slot?: string }} Piece
  *   length: a log's length (m); rise, run: a pond stone's; x2, z2, top, bottom, risers: a flight's (yaw 0);
@@ -43,7 +43,7 @@ import { cleanHoleFields } from '../dig/holes.js';
  */
 
 /** Kinds of piece this build knows. */
-export const PIECE_KINDS = ['stone', 'log', 'stepping', 'steps', 'raft', 'pile', 'hole', 'perch'];
+export const PIECE_KINDS = ['stone', 'log', 'stepping', 'steps', 'raft', 'pile', 'hole', 'perch', 'lantern'];
 /** The most handfuls a pile holds (recipes/world/pack.json piles.handfuls). */
 export const PILE_HANDFULS = 12;
 

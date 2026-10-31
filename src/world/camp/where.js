@@ -5,7 +5,7 @@
 // (layout.js) and the terrain's height; changes nothing.
 
 import { get } from '../../core/store.js';
-import { padToWorld } from './layout.js';
+import { padToWorld, slotPlaced } from './layout.js';
 
 /** @param {{ terrain: { sampleHeight: (x: number, z: number) => number } }} o */
 export function createWhere(o) {
@@ -14,10 +14,14 @@ export function createWhere(o) {
   /** A slot's ground point and the yaw that turns a model's +z seaward. @param {string} id */
   function slotAt(id) {
     const pad = padNow();
-    const s = pad?.camp?.slots?.find((/** @type {any} */ q) => q.id === id);
-    if (!pad || !s) return null;
+    const def = pad?.camp?.slots?.find((/** @type {any} */ q) => q.id === id);
+    if (!pad || !def) return null;
+    // A rim slot stands where it was placed (its record's u, v; the nest box).
+    const s = slotPlaced(def, get('camp')?.slots?.find((/** @type {any} */ q) => q.slot === id));
     const [x, z] = padToWorld(pad, s.u, s.v);
-    return { x, z, y: o.terrain.sampleHeight(x, z), yaw: Math.atan2(pad.fx, pad.fz), slot: s };
+    // Turned inward (the keepsake shelf): its +z toward the pad's middle.
+    const yaw = s.yaw === 'inward' ? Math.atan2(pad.x - x, pad.z - z) : Math.atan2(pad.fx, pad.fz);
+    return { x, z, y: o.terrain.sampleHeight(x, z), yaw, slot: s };
   }
   /** Where you kneel at the tent's flap, facing the sea (the evening's flapSpot). */
   function flapAt() {

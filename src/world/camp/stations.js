@@ -33,6 +33,7 @@ import { layWork } from './work.js';
 import { shapedOn, addShaped, takeShaped, setHearth } from './pots.js';
 import { pileWord, rackWord } from '../pack/piles.js';
 import { campCardAt } from './cards.js';
+import { rimSpot } from './layout.js';
 
 /** The keeps that open in the workspace's store mode, and the slot each stands in. */
 const KEEPS = /** @type {Record<string, string>} */ ({ store: 'store', rack: 'rack' });
@@ -40,7 +41,8 @@ const KEEPS = /** @type {Record<string, string>} */ ({ store: 'store', rack: 'ra
 /**
  * @param {import('./cards.js').CampKit & { o: any, cook: any, change: (fn: (c: import('./model.js').Camp) => import('./model.js').Camp) => void,
  *   campSeed: number, frame: { addProps: (f: () => any[]) => void } }} k
- *   cook: recipes/world/cook.json; o.pack, o.piles: the pack and the camp's piles
+ *   cook: recipes/world/cook.json; o.pack, o.piles: the pack and the camp's piles; o.rimToward(slot): the world
+ *   point a rim slot is placed toward (the hen's home bushes for the nest box), or null
  */
 export function createStations(k) {
   const C = k.cook, W = C.words, R = k.R, S = R.stations;
@@ -85,8 +87,13 @@ export function createStations(k) {
     const b = benchAt(id);
     return b ? { x: b.x, z: b.z, stand: b.stand, reachM: S.reachM } : null;
   }
-  /** What making reads: which slots are built, a kind's pack group. @type {import('./making.js').MakeCtx} */
-  const ctx = { filled: built, groupOf: (kind) => o.pack?.kinds?.groupOf?.(kind) ?? null };
+  /**
+   * What making reads: which slots are built, a kind's pack group, and a gift given with room for
+   * another (the lantern, B2 L1: unlocks.lantern, and the store slice makeRoom from lantern-live.js).
+   * @type {import('./making.js').MakeCtx}
+   */
+  const ctx = { filled: built, groupOf: (kind) => o.pack?.kinds?.groupOf?.(kind) ?? null,
+    unlocked: (key) => !!get('unlocks')?.[key] && get('makeRoom')?.[key] !== false };
 
   // ---- where handfuls come from: the pack, then the piles, then the hamper ----
 
@@ -163,7 +170,11 @@ export function createStations(k) {
       k.change((c) => ({ ...c, slots: c.slots.map((s) => (s.slot === m.slot ? { ...s, stack: 2 } : s)) }));
     } else {
       if (built(m.slot)) return;
-      k.change((c) => ({ ...c, slots: [...c.slots, slotRecord(m.slot, id, hour)] }));
+      // A rim slot (the nest box) takes its place now: on the pad's rim toward the hen's bushes, kept
+      // on its record so it stays put as they grow; with no bushes, its own place (the home corner).
+      const pad = k.where.padNow(), def = pad?.camp?.slots?.find((/** @type {any} */ q) => q.id === m.slot);
+      const rim = def?.rim && pad ? rimSpot(pad, def, o.rimToward?.(m.slot) ?? null) : null;
+      k.change((c) => ({ ...c, slots: [...c.slots, { ...slotRecord(m.slot, id, hour), ...(rim ?? {}) }] }));
     }
     changeCook((s) => recordMade(s, id, hour));
     emitDeferred('camp:placed', { slot: m.slot, kind: id });
