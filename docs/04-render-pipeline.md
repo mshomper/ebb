@@ -67,7 +67,7 @@ Technical notes on the order:
 ### Zones (doc 26)
 
 While you are in a zone (the spring's cave), only its own passes run, with the walker's figure and
-the post passes; every island pass is off (`src/app.js` wraps their `enabled`). The zone's first pass
+the post passes; every island pass is off (`src/app/graph.js` wraps their `enabled`). The zone's first pass
 clears the targets itself (`src/render/passes/cave.js`). Group 1 is then a second lighting group built
 on the island's layout (`createLighting(..., sharedLayout)`): its sky term is the zone's fill, its
 shadows off and its aerial reach far past the zone, so lit pipelines such as the figure's take it

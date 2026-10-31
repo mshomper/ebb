@@ -1,15 +1,20 @@
 {
  "checker": "typescript@5.9.3",
- "total": 396,
+ "total": 391,
  "byFile": {
   "src/app.js": {
-   "TS2322": 2,
+   "TS2322": 1
+  },
+  "src/app/actions.js": {
    "TS2339": 11,
-   "TS2345": 4,
-   "TS2353": 2,
-   "TS2367": 14,
-   "TS2678": 3,
-   "TS2739": 1
+   "TS2367": 15,
+   "TS2678": 3
+  },
+  "src/app/camp.js": {
+   "TS2353": 1
+  },
+  "src/app/test-links.js": {
+   "TS2322": 1
   },
   "src/audio/keepsake-sounds.js": {
    "TS2367": 1

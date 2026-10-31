@@ -27,6 +27,9 @@ World systems never draw and never touch the page. Renderers never change the wo
 index.html
 src/
   main.js                 boot, feature detect, quality tier pick, frame loop
+  app.js                  startApp: runs the start-up files below in order, gives back the app
+  app/    systems.js (the start-up order) context.js api.js recipes.js lights.js passes.js
+          one start-up file per system (boot, world, camp, hen, fishing, ...), test-links.js
   core/   gpu.js clock.js rng.js events.js store.js workers.js recipes.js
   world/  terrain/ water/ tide.js growth/ structures/ creatures/ ecology/
           weather.js seasons.js expansion.js
@@ -113,6 +116,8 @@ Time: 1 game day = 24 real minutes at 1x, so 1 real minute = 1 game hour while w
 | Path | Owns | Key exports |
 |---|---|---|
 | `src/main.js` | boot, feature detection, tier pick, frame loop | none (entry) |
+| `src/app.js` | starts the island on a canvas: runs `src/app/systems.js` in order on one start-up context, stops it, rebuilds after a lost device | `startApp(canvas, hooks)` |
+| `src/app/` | one start-up file per system (it makes the system, adds it to the live sim, wires its events and store slices); the start-up order (`systems.js`); the base recipes (`recipes.js`), the small lights that join the camp's (`lights.js`), the frame graph's passes in draw order (`passes.js`); the test links (`test-links.js`, `test-links-camp.js`); what `startApp` gives back (`api.js`) | each file's `start(ctx)` (some have a second step, such as `hen.props`) |
 | `core/gpu.js` | adapter, device, canvas context, shader loading, device-lost recovery | `initGpu()`, `loadShader(name)`, `makeBuffer()`, `makeTexture()`, `onDeviceLost(fn)` |
 | `core/clock.js` | world time, animation time, display time, time flow | `advance(realDt)`, `hourIndex()`, `dayFraction()`, `season()`, `display()`, `setFlow()` (doc 02) |
 | `core/rng.js` | seeded streams, counter-based hashing, deterministic math | `subSeed(world, 'growth')`, `hash32(...ints)`, `stream(seed, ...keys)`, `det.exp/log/sin/cos/pow` |
@@ -138,6 +143,28 @@ Time: 1 game day = 24 real minutes at 1x, so 1 real minute = 1 game hour while w
 | `audio/` | mixer, ambience, voices | doc 17 |
 | `save/` | autosave, `.ebb` world file, migrations | doc 18 |
 | `src/vendor/` | third-party code and fonts with licenses | `wgpu-matrix`, Nunito, Fraunces, later a glTF loader |
+
+### Adding a system's start-up file
+
+`src/app.js` was one 2,900-line function that every creature, tool and set piece edited (T4, October 31, 2026). It now starts the island from one small file per system under `src/app/`, so a branch adding a system touches its own file and one line in a list.
+
+```mermaid
+flowchart LR
+  app[src/app.js startApp] -->|for each step, in order| list[src/app/systems.js]
+  list --> boot[boot.js] --> world[world.js] --> dots[...] --> camp[camp.js] --> fishing[fishing.js] --> frame[frame.js] --> save[save.js]
+  boot & world & camp & fishing & frame -.->|read and add| ctx[(start-up context ctx)]
+  app --> api[api.js: what startApp gives back]
+```
+
+To add one (a new creature, tool or set piece):
+
+1. **Write `src/app/<id>.js`** with `export async function start(ctx)` (or a plain function if it awaits nothing). Read what it needs from the context at the top (`const { world, terrain, sim, camera } = ctx;`), make the system, `sim.addSystem(it)`, wire its events and store slices, and put what others need on the context at the end (`Object.assign(ctx, { seals })`). Look at `src/app/hen.js` or `fishing.js`. Keep it to the one system; under about 600 lines.
+2. **Add one line to `SYSTEMS` in `src/app/systems.js`**, after every system it reads. Order matters: the live sim ticks systems in the order they were added, and a file can only read what an earlier one made. To call a system made later, read it when the callback runs, never at start-up: `() => ctx.sowing.putAway()`.
+3. **If it draws**, add its pass to `src/app/passes.js` in its place in the draw order (and to `zonePasses` if it draws down in a zone). **If it lights something**, add a line to `src/app/lights.js`. **If several systems read a new recipe from the start**, add it to `src/app/recipes.js`; a recipe only it reads loads in its own file.
+4. **Its test links** (`?seals=N`, standing you by it, filling the pack) go in `src/app/test-links.js` as their own step, listed in `systems.js` just after the system. A test link that only changes one argument or its recipe stays one line in its own file.
+5. **If the journal, the UI or a tool page needs it**, add it to what `startApp` gives back in `src/app/api.js`; **if the player acts on it**, its action goes in `src/app/actions.js`.
+
+A few names change after start-up and are always read from `ctx`, never kept in a local: the tier and its settings, the canvas size, the input state, the zone's floor, and the systems the camp and the hen are wired to after they are made. `src/app/context.js` lists them.
 
 ### System contract
 
