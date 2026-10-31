@@ -42,7 +42,7 @@ const RING_S = 1.6;
 /**
  * @param {{ recipe: any, water: any, terrain: any, walk: any, pack: any, shore: () => any, worldSeed: number, seed: number,
  *   now: () => import('./bite.js').Now, nowH: () => number,
- *   passRecipe: any, propsRecipe: any, shadowBias?: any, test?: string | null }} o
+ *   passRecipe: any, propsRecipe: any, shadowBias?: any, test?: string | null, camera?: any }} o
  *   recipe: fishing.json; shore: the shore zones now (water/shore-live.js zones()); seed: subSeed(world seed, 'fishing');
  *   now: the conditions now for a bite; test: the ?fishing link's value (null without it)
  */
@@ -373,7 +373,8 @@ export function createFishing(o) {
       props.setProps(list);
       if (cast?.stage === 'ease' && cast.mesh && rod) {
         const fl = floatAt(cast, rod.tip), yaw = Math.atan2(cast.S[0] - cast.p[0], cast.S[1] - cast.p[2]);
-        pass.setBeings([{ x: fl[0], y: o.water.tide - 0.04, z: fl[2], yaw, size: 1, mesh: 'hooked', bones: swimBones(clock, cast.n.lengthM, 2) }]);
+        // Breaking the surface as it comes, drawn at the findable scale (about twice real, docs 11).
+        pass.setBeings([{ x: fl[0], y: o.water.tide + 0.01, z: fl[2], yaw, size: L.hookedScale, mesh: 'hooked', bones: swimBones(clock, cast.n.lengthM, 2) }]);
       } else pass.setBeings([]);
       if ((f.realDt && (clock % 0.5) < dt) || !cast) publish();
     },
@@ -474,6 +475,16 @@ export function createFishing(o) {
   if (testWaits) {
     /** @type {any} */ (globalThis).ebbFishing = {
       ...api, now: () => cast, state, me: () => o.walk.spot(),
+      /** Look at the walker and the float from the land side (screenshots). @param {number} [dist] @param {number} [pitch] */
+      look(dist = 9, pitch = 22) {
+        const me = o.walk.spot();
+        if (!me || !cast || !o.camera) return false;
+        const mx = (me.x + cast.p[0]) / 2, mz = (me.z + cast.p[2]) / 2;
+        // Looking out from behind you toward the float: forward along the ground is (-sin yaw, -cos yaw).
+        const yaw = Math.atan2(-(cast.p[0] - me.x), -(cast.p[2] - me.z));
+        o.camera.setPose({ target: [mx, o.terrain.sampleHeight(me.x, me.z), mz], yaw, pitch: (pitch * Math.PI) / 180, distance: dist });
+        return true;
+      },
       /** The cast check and the water d meters ahead of you, for each d. @param {number[]} ds */
       probe(ds) {
         const me = o.walk.spot();

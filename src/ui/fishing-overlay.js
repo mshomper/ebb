@@ -26,7 +26,7 @@ export function mountFishingOverlay(parent) {
       if (v.line) {
         let d = '', ok = true;
         v.line.forEach((p, i) => { const q = P(p[0], p[1], p[2]); if (q.behind) ok = false; d += `${i ? 'L' : 'M'}${q.x.toFixed(1)} ${q.y.toFixed(1)}`; });
-        if (ok) out += `<path d="${d}" fill="none" stroke="rgba(28,30,26,0.72)" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>`;
+        if (ok) out += `<path d="${d}" fill="none" stroke="rgba(28,30,26,0.8)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>`;
       }
       for (const g of v.rings) {
         for (const lag of [0, 0.25]) {

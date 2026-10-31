@@ -8,6 +8,7 @@
 // yet). The waits are seeded too, so nothing here is random. Pure.
 
 import { hash32 } from '../../core/rng.js';
+import { allFish } from './roster.js';
 
 /** @param {number} h */
 const u01 = (h) => (h >>> 8) / 16777216;
@@ -84,15 +85,17 @@ export const missWaitS = (seed, cast, dips, FR) => FR.bite.missS[0] + (FR.bite.m
 
 /**
  * Many bites over a run of casts as one hash (tools/determinism.html: the page and a worker must
- * agree). Worker job. @param {{ seed: number, casts: number, worldSeed: number, FR: any, fish: any[] }} a
+ * agree), the island's fish rostered where it runs unless given. Worker job.
+ * @param {{ seed: number, casts: number, worldSeed: number, FR: any, fish?: any[] }} a
  */
 export function bitesJob(a) {
+  const fish = a.fish ?? allFish(a.worldSeed, a.FR);
   let hash = 0x811c9dc5;
   const seasons = ['spring', 'summer', 'autumn', 'winter'];
   for (let c = 0; c < a.casts; c++) {
     const now = { hourOfDay: (c * 7) % 24, season: seasons[c % 4], rain: (c % 5) / 5, mist: (c % 3) / 3, cloud: (c % 4) / 4, wind: (c % 6) / 6,
       yRain: (c % 7) / 7, yWind: (c % 9) / 9, tideLevel: ((c % 11) - 5) / 8, tideAmp: 0.6, sign: null };
-    const b = biteOf({ seed: a.seed, cast: c, water: a.FR.waters.order[c % 5], now, bait: c % 2 ? 'worms' : 'bigworms' }, a.fish, a.FR);
+    const b = biteOf({ seed: a.seed, cast: c, water: a.FR.waters.order[c % 5], now, bait: c % 2 ? 'worms' : 'bigworms' }, fish, a.FR);
     const s = JSON.stringify(b ? [b.id, b.seed, Math.round(b.waitS * 1000)] : null);
     for (let i = 0; i < s.length; i++) hash = Math.imul(hash ^ s.charCodeAt(i), 16777619) >>> 0;
   }

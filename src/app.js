@@ -1006,7 +1006,7 @@ export async function startApp(canvas, hooks = {}) {
       return { hourOfDay: (t / clock.SECONDS_PER_HOUR) % 24, season: ['spring', 'summer', 'autumn', 'winter'][clock.seasonOf(t).index], rain: w.rain ?? 0, mist: w.mist ?? 0,
         cloud: w.cloud ?? 0, wind: w.wind ?? 0, yRain: y?.rainAmount ?? 0, yWind: y?.windStrength ?? 0, tideLevel: ts.level, tideAmp: ts.amp, sign: null };
     },
-    passRecipe: findsRecipe, propsRecipe: campRecipe.props, shadowBias: shadowPass.bias, test: fishingTest });
+    passRecipe: findsRecipe, propsRecipe: campRecipe.props, shadowBias: shadowPass.bias, test: fishingTest, camera });
   sim.addSystem(fishing);
   if (fishingTest !== null && !back) {
     pack.add('worms', fishingRecipe.test.worms);
