@@ -81,6 +81,7 @@ export const TEST_FILES = {
   'pond-sound': 'web-audio',
   'pond-spring': '',
   'pondlife': '',
+  'progress': '',
   'quality': '',
   'reveal': '',
   'rigs-spring': '',

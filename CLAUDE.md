@@ -96,7 +96,7 @@ The twin of the list above (Matt, October 30, 2026), for every set piece (`recip
 - For anything numeric (simulation stability, frame time, catch-up determinism), add or extend a page in `tools/` that shows the result visually and can be run locally.
 - Determinism check: the same seed and the same edits must produce the same world after catch-up. `tools/determinism.html` compares two runs.
 - Run only what a change reaches while working: `node tools/affected-tests.mjs` prints the test groups (and a `tools/unit-tests.html?groups=...` link) for what the branch changed. Run the full suite (`tools/unit-tests.html`, no parameters) once at handoff, before reporting ready. Open `tools/determinism.html` only when the script says so.
-- Progress: every feature branch adds one row at the end of the table in `docs/progress.md`. Never add progress rows to `README.md`, which keeps only a short status.
+- Progress: every feature branch adds its own file, `docs/progress/<date>-<branch>.md` (the format is in `docs/progress/README.md`). The table in `docs/progress.md` is a closed archive; never edit it. Never add progress rows to `README.md`, which keeps only a short status.
 
 ## Current target
 
