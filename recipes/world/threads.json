@@ -38,10 +38,16 @@
         { "id": "added", "test": "cairnAdded", "text": "I added a stone to one. The next morning's cairn had one more than the last. Someone is answering." },
         { "id": "four", "test": "cairn4", "text": "Four now, in a line across the island. They're heading somewhere." },
         { "id": "last", "test": "cairn7", "text": "The last cairn. Something pale is tucked under its top stone." },
-        { "id": "letter", "test": "cairnsLetter", "text": "A letter under the last stone, from the keeper before me. Leave the cairns standing, it says. I will." }
+        { "id": "letter", "test": "cairnsLetter", "text": "A letter under the last stone, from the keeper before me. Leave the cairns standing, it says. I will. And dig above the spring, where the water starts, gently." },
+        { "id": "fell", "test": "cairnsFell", "text": "I dug above the spring and the ground gave way under the spade. A hole, and cool air coming up out of the dark." },
+        { "id": "below", "test": "cairnsBelow", "text": "I climbed down. A small cave around a pool, and the light from the hole falling into it. That pool is where the spring comes from." },
+        { "id": "pan", "test": "cairnsPanned", "text": "An old pan by the pool, the keeper's. I swirled the gravel and black sand stayed in the bottom. Iron, I think." },
+        { "id": "thimble", "test": "cairnsThimble", "text": "A copper thimble in the pan, green in its dimples. The old keeper must have mended down here by the water." },
+        { "id": "button", "test": "cairnsButton", "text": "A bone button, the same as the ones on my coat. Was this coat theirs?" },
+        { "id": "key", "test": "cairnsKey", "text": "A small iron key, the last thing in the pool. It fits nothing on the island. Not yet." }
       ],
       "pencil": "They seem to be heading somewhere.",
-      "end": ["cairnsLetter"]
+      "end": ["cairnsPanned"]
     },
     {
       "id": "boat",
@@ -90,6 +96,12 @@
     "cairn4": [{ "flag": "setpiece:cairns:4" }],
     "cairn7": [{ "flag": "setpiece:cairns:7" }],
     "cairnsLetter": [{ "flag": "keeper:cairns-letter" }],
+    "cairnsFell": [{ "flag": "setpiece:cairns:fell" }],
+    "cairnsBelow": [{ "flag": "setpiece:cairns:below" }],
+    "cairnsPanned": [{ "flag": "setpiece:cairns:panned" }],
+    "cairnsThimble": [{ "flag": "setpiece:cairns:thimble" }],
+    "cairnsButton": [{ "flag": "setpiece:cairns:button" }],
+    "cairnsKey": [{ "flag": "setpiece:cairns:key" }],
     "boatSeen": [{ "flag": "setpiece:boat:seen" }],
     "boatGone": [{ "flag": "keeper:boat" }],
     "boatParcel": [{ "flag": "setpiece:boat:parcel" }],

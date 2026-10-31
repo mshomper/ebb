@@ -24,10 +24,11 @@ const u01 = (h) => (h >>> 8) / 16777216;
  * A new lantern record, seeded from the island's piece seed and its number.
  * @param {number} piecesSeed subSeed(worldSeed, 'pieces') @param {number} n its number (the id is p<n>)
  * @param {number} x @param {number} z @param {number} hour @param {any} L pieces.json lantern
+ * @param {boolean} [mica] mica set in its holes (the pan finds): a warmer, steadier light
  */
-export function makeLantern(piecesSeed, n, x, z, hour, L) {
+export function makeLantern(piecesSeed, n, x, z, hour, L, mica = false) {
   const seed = hash32(piecesSeed, n, 0x1a7) >>> 0;
-  return { id: `p${n}`, kind: /** @type {'lantern'} */ ('lantern'), x, z, yaw: u01(hash32(seed, 1)) * TAU, seed, size: L.sizeM, placedHour: hour };
+  return { id: `p${n}`, kind: /** @type {'lantern'} */ ('lantern'), x, z, yaw: u01(hash32(seed, 1)) * TAU, seed, size: L.sizeM, placedHour: hour, ...(mica ? { mica: true } : {}) };
 }
 
 /**
@@ -77,7 +78,7 @@ export function mayStand(at, x, z, L) {
  */
 export function lanternsOwned(o) {
   let n = o.standing;
-  for (const [kind, h] of o.pouches) if (kind === 'post-lantern' || kind === 'lantern-pot') n += h;
+  for (const [kind, h] of o.pouches) if (kind === 'post-lantern' || kind === 'mica-lantern' || kind === 'lantern-pot') n += h;
   n += o.shaped.filter((k) => k === 'lantern-pot').length;
   n += o.work.filter((w) => w.id === 'fire-lantern-pot').length;
   return n;

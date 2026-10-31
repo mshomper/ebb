@@ -339,3 +339,6 @@ $('az').addEventListener('change', (e) => { state.az = Number(/** @type {HTMLInp
 $('az').addEventListener('input', (e) => { $('az-out').textContent = `${/** @type {HTMLInputElement} */ (e.target).value} deg`; });
 
 draw();
+
+// A module (the page loads it with type="module"), not a script sharing names with the others.
+export {};

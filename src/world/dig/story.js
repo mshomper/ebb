@@ -155,3 +155,64 @@ export function stoneShown(firsts, bank, S) {
   if (firsts.includes('stone:shown')) return true;
   return (S.cacheAfter ?? []).every((/** @type {string} */ l) => firsts.includes(`layer:${l}`) || (l === 'clay' && !bank));
 }
+
+/**
+ * Where the old keeper's way down lies (the spring-ore plan, O2): on the rise just above the
+ * spring's head, where the water starts. From the first spring, aboveM uphill toward the rise's
+ * middle (the spring sits on its flank), then the nearest point in rings stepM apart, out to
+ * searchM, on soil above the tide, level across rM (the spring's own outcrop of rock is never it).
+ * Placed from the island's base land, like the hearths and the marked stone, so every copy of an
+ * island has the same one; null on an island with no spring. Pure.
+ * @param {any} land the land recipe @param {number} terrainSeed subSeed(worldSeed, 'terrain')
+ * @param {any} R recipes/world/dig.json story (its `spring` block, and the ground rules)
+ * @returns {Spot | null}
+ */
+export function springSpot(land, terrainSeed, R) {
+  const SP = R.spring;
+  if (!SP || !land?.story) return null;
+  const lm = landmarks(land, terrainSeed), s = lm.spring;
+  if (!s) return null;
+  const base = baseSampler(land, terrainSeed);
+  const dx = lm.rise.x - s.x, dz = lm.rise.z - s.z, l = Math.hypot(dx, dz) || 1;
+  const from = { x: s.x + (dx / l) * SP.aboveM, z: s.z + (dz / l) * SP.aboveM };
+  /** Soil above the tide, level across rM, uphill of the spring. @param {number} x @param {number} z */
+  const ok = (x, z) => {
+    const g = base(x, z);
+    if (g[0] < R.minHeightM || g[1] + g[4] < R.soilMin || g[3] > R.rockMax) return false;
+    for (const [ox, oz] of [[SP.rM, 0], [-SP.rM, 0], [0, SP.rM], [0, -SP.rM]]) {
+      const e = base(x + ox, z + oz);
+      if (Math.abs(e[0] - g[0]) / SP.rM > SP.maxSlope) return false;
+    }
+    return base(x, z)[0] >= base(s.x, s.z)[0];
+  };
+  const round = (/** @type {number} */ v) => Math.round(v * 100) / 100;
+  if (ok(from.x, from.z)) return { x: round(from.x), z: round(from.z) };
+  for (let r = SP.stepM; r <= SP.searchM + 1e-6; r += SP.stepM) {
+    const k = Math.max(8, Math.round((det.PI * 2 * r) / SP.stepM));
+    for (let i = 0; i < k; i++) {
+      const a = (i / k) * det.PI * 2, x = from.x + det.cos(a) * r, z = from.z + det.sin(a) * r;
+      if (ok(x, z)) return { x: round(x), z: round(z) };
+    }
+  }
+  return { x: round(from.x), z: round(from.z) };
+}
+
+/**
+ * Where the cairn trail ends (O2): trailBackM short of the way down, on the line back toward the
+ * trail's start, so the last cairn stands just below the worn mark and never on it.
+ * @param {Spot} spot @param {{ x: number, z: number }} start @param {number} backM @returns {Spot}
+ */
+export function trailEndFor(spot, start, backM) {
+  const dx = start.x - spot.x, dz = start.z - spot.z, l = Math.hypot(dx, dz) || 1;
+  return { x: Math.round((spot.x + (dx / l) * backM) * 100) / 100, z: Math.round((spot.z + (dz / l) * backM) * 100) / 100 };
+}
+
+/**
+ * Does this dig open the way down? A first-layer dig within digM of the worn mark, once the cairns'
+ * letter has sent you there, while the ground has not given way yet (once per island: dig.spring).
+ * @param {number} depth the layer this dig reaches @param {number} x @param {number} z
+ * @param {Spot | null} spot @param {boolean} sent the cairns letter read @param {any} done dig.spring
+ * @param {any} SP dig.json story.spring
+ */
+export const caveInDue = (depth, x, z, spot, sent, done, SP) => depth === 1 && !!spot && sent && !done
+  && (spot.x - x) ** 2 + (spot.z - z) ** 2 <= SP.digM * SP.digM;

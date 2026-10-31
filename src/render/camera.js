@@ -48,6 +48,8 @@ export function createOrbitCamera(r) {
   let viewH = 1;
   let sinceInput = Infinity;
   let worldRadius = r.worldRadius;
+  /** How far back the view may sit (setRoom), and the lowest the ground can be (the sea, 0; a zone's floor below it). */
+  let room = Infinity, floor0 = 0;
   /** @type {(x: number, z: number) => number} */
   let groundProbe = () => 0;
 
@@ -81,6 +83,8 @@ export function createOrbitCamera(r) {
   let close = null;
   /** A focus's exact target height (m), kept until the next pan. @type {number | null} */
   let targetY = null;
+  /** A focus's own target height, held above until the next input (the keepsake shelf's look), or null. @type {number | null} */
+  let heldY = null;
   /**
    * The low view below (doc 23, the walker): while set, the camera follows you from behind and
    * close (`follow` each frame), with its own zoom and look limits and no panning; null above.
@@ -118,20 +122,28 @@ export function createOrbitCamera(r) {
   function touched() {
     sinceInput = 0;
     focusing = false;
+    heldY = null;
   }
 
   /**
    * Glide to look at a ground point from a set distance and pitch (the journal's Show me).
    * @param {number} x @param {number} z world meters @param {number} distance meters @param {number} pitchDeg
    * @param {number} [y] the target's height (m); left out, it follows the ground
+   * @param {number} [yaw] the view's turn as well (radians; the keepsake shelf, seen from its front),
+   *   the short way round; left out, the view keeps its turn
+   * @param {boolean} [holdY] above, aim at height y itself until the next input, instead of half way
+   *   down the slope (the keepsake shelf, looked at from its front)
    */
-  function focus(x, z, distance, pitchDeg, y) {
+  function focus(x, z, distance, pitchDeg, y, yaw, holdY = false) {
     goal.target[0] = x;
     goal.target[2] = z;
     targetY = y ?? null;
+    heldY = holdY && Number.isFinite(y) ? /** @type {number} */ (y) : null;
+    if (heldY !== null) goal.target[1] = heldY;
     clampTarget();
     goal.distance = clamp(distance, minSoft(), maxSoft());
     goal.pitch = clamp(pitchDeg * DEG, ...pitchSoft());
+    if (Number.isFinite(yaw)) goal.yaw = cur.yaw + Math.atan2(Math.sin(/** @type {number} */ (yaw) - cur.yaw), Math.cos(/** @type {number} */ (yaw) - cur.yaw));
     focusing = true;
     focusHalfLife = r.halfLifeFocus ?? 0.5;
   }
@@ -247,22 +259,24 @@ export function createOrbitCamera(r) {
     cur.yaw += (goal.yaw - cur.yaw) * ky;
     cur.pitch += (goal.pitch - cur.pitch) * (ground && turnHL && !focusing ? ky : k);
     cur.distance += (goal.distance - cur.distance) * k;
+    // A zone's walls (src/world/zones viewRoom): the view never sits further back than there is room.
+    cur.distance = Math.min(cur.distance, room);
     // Close-ups aim at the ground itself (or the height a focus asked for); otherwise the target
     // sits half way down, as it always has.
-    if (close && !ground) goal.target[1] = targetY ?? Math.max(groundProbe(goal.target[0], goal.target[2]), 0);
+    if (close && !ground) goal.target[1] = targetY ?? Math.max(groundProbe(goal.target[0], goal.target[2]), floor0);
     vec3.lerp(cur.target, goal.target, kd, cur.target);
 
     const h = groundProbe(cur.target[0], cur.target[2]);
     // Zoomed in (recipe `close`), the view eases from aiming half way down the slope to aiming at
     // the ground itself, and the eye may come down near it. Below, it aims at you.
     const near = nearness(cur.distance);
-    if (!close && !ground) cur.target[1] = h * 0.5 + (Math.max(h, 0) - h * 0.5) * near;
+    if (!close && !ground) cur.target[1] = heldY !== null ? cur.target[1] + (heldY - cur.target[1]) * kd : h * 0.5 + (Math.max(h, floor0) - h * 0.5) * near;
     const eyeMin = ground?.minEyeHeight ?? close?.minEyeHeight ?? r.minEyeHeight + ((r.close?.minEyeHeight ?? r.minEyeHeight) - r.minEyeHeight) * near;
 
     let pitch = cur.pitch;
     for (let i = 0; i < 2; i++) {
       placeEye(pitch);
-      const floor = Math.max(groundProbe(eye[0], eye[2]), 0) + eyeMin;
+      const floor = Math.max(groundProbe(eye[0], eye[2]), floor0) + eyeMin;
       if (eye[1] >= floor) break;
       pitch = Math.asin(clamp((floor - cur.target[1]) / cur.distance, -1, 1));
       cur.pitch = Math.max(cur.pitch, pitch);
@@ -361,6 +375,7 @@ export function createOrbitCamera(r) {
       }
       vec3.set(at[0], at[1], at[2], goal.target);
       targetY = g ? at[1] : null;
+      heldY = null;
       clampTarget();
       focusing = true;
       focusHalfLife = r.halfLifeGoDown ?? r.halfLifeFocus ?? 0.5;
@@ -388,6 +403,10 @@ export function createOrbitCamera(r) {
     },
     /** @param {(x: number, z: number) => number} fn */
     setGroundProbe(fn) { groundProbe = fn; },
+    /** How far back the view may sit this frame (m; Infinity on the island): a zone's walls. @param {number} m */
+    setRoom(m) { room = Math.max(0.3, m); },
+    /** The lowest ground the view keeps above (m): the sea's level on the island, -Infinity in a zone below it. @param {number} y */
+    setFloor(y) { floor0 = y; },
     /**
      * Allow close-ups (the frog size preview), or null for the recipe's limits.
      * @param {{ minDistance: number, minEyeHeight: number } | null} limits

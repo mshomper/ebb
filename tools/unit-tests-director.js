@@ -23,7 +23,7 @@ const sun = (t) => 60 * Math.sin(Math.PI * (((t % DAY) / 3600 - 6) / 12));
  */
 export function addDirectorTests(test, assert, eq) {
   const load = async () => {
-    // The browser fetches the recipe; Node (tools/run-audio-tests.mjs) reads it from disk.
+    // The browser fetches the recipe; Node (tools/run-tests.mjs) reads it from disk.
     const j = async (/** @type {string} */ p) => {
       const url = new URL(`../${p}`, import.meta.url);
       if (url.protocol === 'file:') { const fs = await import('node:fs/promises'); return JSON.parse(await fs.readFile(url, 'utf8')); }

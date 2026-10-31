@@ -92,7 +92,7 @@ export function cleanPieces(v) {
     else if (r.kind === 'stepping') list.push({ id: r.id, kind: r.kind, x: r.x, z: r.z, yaw: r.yaw, seed: r.seed >>> 0, size: r.size, rise: r.rise, run: r.run, placedHour: hour });
     else if (r.kind === 'steps') list.push({ id: r.id, kind: r.kind, x: r.x, z: r.z, x2: r.x2, z2: r.z2, yaw: r.yaw, size: r.size, top: r.top, bottom: r.bottom, risers: r.risers, seed: r.seed >>> 0, placedHour: hour });
     else list.push({ id: r.id, kind: r.kind, x: r.x, z: r.z, yaw: r.yaw, seed: r.seed >>> 0, size: r.size,
-      ...(r.kind === 'log' ? { length: r.length } : {}), placedHour: hour });
+      ...(r.kind === 'log' ? { length: r.length } : {}), placedHour: hour, ...(r.kind === 'lantern' && r.mica === true ? { mica: true } : {}) });
   }
   const after = list.reduce((m, r) => Math.max(m, idNumber(r.id) + 1), 1);
   return { version: 1, list, nextId: Math.max(Number.isInteger(v.nextId) ? v.nextId : 1, after), arrived: !!v.arrived };

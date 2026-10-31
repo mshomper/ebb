@@ -61,6 +61,7 @@ flowchart TD
 | 23-presence | How creatures read the player: presence sources, comfort rings, trust and wariness, the walker (Sit replaces the seat) and camp |
 | [24-music](24-music.md) | The music: the director's day, the four tides, the composer that grows new pieces, the piano and support kit, hearted pieces |
 | [25-soundscape-seasons](25-soundscape-seasons.md) | The island's sounds through the seasons: beds, small sounds, frogs and midges, weather, the reveal |
+| [26-zones](26-zones.md) | Places off the island (the spring's cave first, later the sea cave and the Hollow): the fade, the swap, and the island simulating on behind it |
 
 ## Future features
 

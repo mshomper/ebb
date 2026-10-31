@@ -16,6 +16,7 @@
     { "id": "herbs", "text": "Some of what you've picked will brew. A tea pot, shaped from clay at the workbench and fired overnight, makes a tea that helps for a while.", "done": "brewed", "when": "pickedHerb" },
     { "id": "treats", "text": "A creature here has begun to know you. Something it likes to eat, set out from that pouch's card on your bar, helps the friendship along.", "done": "gaveTreat", "when": "knowsYou", "showMe": ["frogs", "turtles", "minnows", "hens"] },
     { "id": "stone", "text": "Past the camp there's a flat stone with a sign scratched into it. Someone left it there on purpose. Dig beside it.", "done": "foundCache", "when": "stoneShown" },
+    { "id": "spring", "text": "The old keeper's letter said to dig above the spring, where the water starts. Up the rise from the spring's stones there is a small worn mark. Dig beside it, gently.", "done": "springFell", "when": "cairnsRead" },
     { "id": "gift", "text": "Gifts wait on your gift spot, on your bar when you're on foot. Pick one there and set it where it would do well.", "done": "usedGiftSpot", "when": "giftCame" }
   ],
   "tests": {
@@ -34,6 +35,8 @@
     "giftCame": [{ "flag": "did:gifted" }],
     "stoneShown": [{ "flag": "dig:marked-stone" }],
     "foundCache": [{ "flag": "dig:cache" }],
+    "cairnsRead": [{ "flag": "keeper:cairns-letter" }],
+    "springFell": [{ "flag": "setpiece:cairns:fell" }],
     "usedGiftSpot": [{ "flag": "did:gift-spot" }]
   },
   "record": {

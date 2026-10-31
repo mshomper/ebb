@@ -110,6 +110,8 @@ export function createSoundState(recipe, seed, sunAltDeg, seasonEdge) {
         frost,
         camHeight: Math.max(0.3, eye[1] - tg[1]),
         life: 0,
+        // Underground (a zone below the island, src/world/zones): the island's beds go quiet.
+        under: s.under ?? 0,
         residents: s.residents,
         sunriseH: sun.sunrise,
         sunsetH: sun.sunset,

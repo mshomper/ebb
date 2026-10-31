@@ -821,3 +821,6 @@ for (const el of /** @type {NodeListOf<HTMLInputElement>} */ (document.querySele
 }
 
 boot();
+
+// A module (the page loads it with type="module"), not a script sharing names with the others.
+export {};

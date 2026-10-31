@@ -35,3 +35,7 @@ Two models from Poly Haven under CC0 (no credit needed; listed here so the sourc
 
 - **Willow basket:** "Wicker Basket 02" by Kuutti Siitonen, https://polyhaven.com/a/wicker_basket_02, CC0. Its lid moved from beside the basket onto it, simplified to 8,000 triangles, scaled to 0.30 m tall. Files: `willow-basket.glb`
 - **Larger pot:** "Ceramic Pot" by Aron Łyczek, https://polyhaven.com/a/ceramic_pot, CC0. Scaled to 0.40 m along its longest side. Files: `larger-pot.glb`
+
+## Keepsake shelf: made for ebb
+
+The keepsake shelf (`keepsake-shelf.glb`) was made for ebb from its own spec (driftwood planks, rush lashing and a letter tin, generated in code by a session's `make_shelf.py`, October 30, 2026) and needs no credit. Its sixteen keepsake spots, the letter tin and the view it is looked at from are empties in the source; the web copy drops them, so their places are kept in `recipes/world/camp.json` (`shelf`). Thinned to 12,000 triangles, maps resized to 1024 px WebP, 1.31 m tall.

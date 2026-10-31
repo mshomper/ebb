@@ -1,0 +1,9 @@
+{
+  "type": "zones",
+  "version": 1,
+  "note": "Going to a zone and back (docs/26-zones.md; src/world/zones): the screen fades to black over fadeS real seconds, stays black holdS while what is drawn, simulated and walkable swaps to the zone's own (its scene, light and sound bed), then fades back in over fadeS. Coming back is the same the other way. The island keeps simulating the whole time; nothing about it pauses. color: the dark the screen fades through (sRGB). list: the zones and their recipes.",
+  "fadeS": 0.7,
+  "holdS": 0.35,
+  "color": "#05070a",
+  "list": { "spring-cave": "world/spring-cave" }
+}

@@ -115,7 +115,7 @@ export function createCampFrame(k) {
       if (dark) {
         lanternGlass = [at[0], at[1] + 0.15, at[2]];
         const L = R.lantern;
-        lights.push({ x: lanternGlass[0], y: lanternGlass[1], z: lanternGlass[2], rangeM: L.rangeM, cd: L.cd * flicker(time, L.flicker, L.flickerHz, 2), rgb: lanternRgb });
+        lights.push({ key: 'camp-lantern', x: lanternGlass[0], y: lanternGlass[1], z: lanternGlass[2], rangeM: L.rangeM, cd: L.cd * flicker(time, L.flicker, L.flickerHz, 2), rgb: lanternRgb });
       }
     }
     let flame = 0, smoke = 0, embers = 0;
@@ -146,10 +146,10 @@ export function createCampFrame(k) {
         // a handful fed catches, then surges (fire-look.js). The flame and its smoke are the fire
         // sim's (camp-fire.js); the puffs are only the embers' now.
         flame = (rainy ? F.rainFlame : 1) * shown.light;
-        lights.push({ x: r.x, y: r.y + F.heightM, z: r.z, rangeM: F.rangeM, cd: F.cd * flame * flicker(time, F.flicker, F.flickerHz, 1), rgb: fireRgb });
+        lights.push({ key: 'camp-fire', x: r.x, y: r.y + F.heightM, z: r.z, rangeM: F.rangeM, cd: F.cd * flame * flicker(time, F.flicker, F.flickerHz, 1), rgb: fireRgb });
       } else if (word === 'embers') {
         smoke = R.smoke.embersShare * (rainy ? R.smoke.rainThick : 1);
-        lights.push({ x: r.x, y: r.y + 0.3, z: r.z, rangeM: F.rangeM * 0.5, cd: F.emberCd * flicker(time, 0.2, 0.4, 3), rgb: emberRgb });
+        lights.push({ key: 'camp-embers', x: r.x, y: r.y + 0.3, z: r.z, rangeM: F.rangeM * 0.5, cd: F.emberCd * flicker(time, 0.2, 0.4, 3), rgb: emberRgb });
       }
     }
     // Rain on a burning fire: a hiss as it drops low (once as the rain sets in).

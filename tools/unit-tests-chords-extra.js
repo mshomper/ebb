@@ -1,6 +1,6 @@
 // @ts-check
 // Extra chord tests (doc 24): chordTones and pitchClasses from src/audio/music/chords.js.
-// Run on tools/unit-tests-audio.html, and in Node with tools/run-audio-tests.mjs.
+// Run on tools/unit-tests-audio.html, and in Node with tools/run-tests.mjs.
 
 import { parseChord, chordTones, pitchClasses } from '../src/audio/music/chords.js';
 

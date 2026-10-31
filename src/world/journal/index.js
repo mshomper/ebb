@@ -454,6 +454,10 @@ export function createJournal(opts) {
       select(p.point ? cardAt(p.point[0], p.point[2], p.point[1]) : null, p.x, p.y)),
     // A Lift on foot (L3a): its notes, its finds, and its card.
     on('piece:lifted', lifted),
+    // A well shrimp in the old keeper's pan (src/world/spring, the pan finds): the first is a find.
+    on('spring:panned', (/** @type {{ find: string }} */ p) => {
+      if (p.find === 'shrimp' && words.species.wellshrimp && !journal.species.wellshrimp?.ever) commit(foundFind(journal, 'wellshrimp', { state: world.state, hour: hourIndex(), words }));
+    }),
     // A living catch let go from a net's haul (src/world/nets): the first of each kind is a find.
     on('net:released', (/** @type {{ page: string }} */ p) => {
       if (words.species[p.page]?.kind === 'find' && !journal.species[p.page]?.ever) {

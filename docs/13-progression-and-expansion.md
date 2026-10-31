@@ -124,6 +124,19 @@ flowchart LR
 
 A gift only helps: every creature can still come without it (turtles bask on a stone before any log; fireflies find litter under any tree), so no gift becomes a lock and order never matters.
 
+### The underground spring and the first metal (built October 31, 2026)
+
+The cairns' trail ends above the spring's head; the letter sends the player to dig there gently; the
+ground gives way into a hole that stays; below it is the island's first zone, a small cave round the
+pool that feeds the spring (`docs/26-zones.md`). The old keeper's pan by the pool turns up iron ore
+(black sand) often and copper ore rarely, a few pans a game day. A clay furnace at camp (deep clay,
+deep clay, sand, marram; it dries a night) smelts ore with willow charcoal overnight into iron or
+copper, and draws a lump of either into nails. Twisted sticks (sticks, sticks) and nails make
+planks, kept for the dock where the boat will land. Star-iron stays the special metal (F14). The pan
+also turns up ochre (an ochre slip that fires a pot red, the first colour on a pot), mica (a mica
+lantern with a warmer, steadier light), keepsakes, the old keeper's three lost things in order, and
+the well shrimp (Matt, October 31, 2026).
+
 ### The year, season by season (agreed with Matt, October 20, 2026)
 
 Before this, almost everything a new island offered landed in its first spring, and summer, autumn and winter brought little new. Now **each season is a chapter**:

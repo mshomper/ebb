@@ -55,7 +55,8 @@ The quiet half of the cave, with no enemies.
 - **The rubble** is cleared with the shovel (P2c digging), a stretch per visit, so getting through takes several trips. Each stretch turns up something: old bones, a bead, a fossil.
 - **Behind it** are hand-made chambers that never change: a dripstone gallery, an underground lake crossed on the reed raft, and a wall of old soot marks with the earlier keeper's letter (F13 section 10).
 - **The bear's den** is the last chamber. A brown bear comes to the island late in the game, once the woodland can feed it, and winters here. Finding it asleep is the quiet climax: you lower the lantern and leave. Its trust grows by being left alone. It is never an enemy.
-- The cairn builder (F14) can lead here.
+- **A locked box** somewhere in the hand-made chambers, opened by the small iron key the old keeper lost in the spring's pool (the pan finds, Matt, October 31, 2026). What is in it is not decided yet.
+- The cairn builder (F14) can lead here. Since October 31, 2026 its trail ends above the underground spring instead (the spring-ore plan); the sea cave is entered through the same zone system (`docs/26-zones.md`): a fade, its own scene, light, sound and walk grid, and the island simulating on behind it.
 
 ### The arch
 

@@ -2,3 +2,7 @@
 renders/
 # Build-time tools for the web model copies (tools/assets); installed with npm, never committed.
 tools/assets/node_modules/
+# Test timings for tools/run-tests.mjs (longest first); per machine, never committed.
+tools/.test-times.json
+# The TypeScript checker for tools/typecheck.mjs, installed once by it; never committed.
+tools/.tsc/

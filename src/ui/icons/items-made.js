@@ -119,6 +119,11 @@ export const MADE = {
   'gift-stone': ['made', `${both('d="M3.6 19.4C4 16.6 6.6 15.4 12 15.4S20 16.6 20.4 19.4Z"')}
     <path ${A2} d="M7.4 15C7.8 11.4 10 8.8 13 7.8C12.6 11.2 10.4 13.8 7.4 15Z"/><path d="M7.4 15C7.8 11.4 10 8.8 13 7.8C12.6 11.2 10.4 13.8 7.4 15ZM6.6 16L12.2 9.4"/>
     <ellipse cx="16.2" cy="13.8" rx="2.2" ry="1.5"/>${BASE}`],
+  // Keepsake shelf: a little standing shelf of two boards, a bottle on the top one, a shell below.
+  'keepsake-shelf': ['made', `<path d="M5 3.4V20.6M19 3.4V20.6M3.8 11.2H20.2M3.8 18.4H20.2"/>
+    ${both('d="M9 10.8V7.6C9 6.8 9.6 6.4 10 6.2V4.8H11.2V6.2C11.6 6.4 12.2 6.8 12.2 7.6V10.8Z"')}
+    <path ${A2} d="M13.6 18C13.6 15.8 14.8 14.4 16.2 14.4S18 15.4 18 16.4C18 17.4 17.4 18 16.6 18Z"/><path d="M13.6 18C13.6 15.8 14.8 14.4 16.2 14.4S18 15.4 18 16.4C18 17.4 17.4 18 16.6 18Z"/>
+    <ellipse cx="9.2" cy="17.4" rx="2" ry="0.9"/>`],
   // Bird-bath stone: a hollowed stone holding water, a small bird on its rim.
   'bird-bath': ['made', `${both('d="M3.4 14.2C3.4 18 7 20 12 20S20.6 18 20.6 14.2Z"')}<path d="M3.4 14.2C5.4 12.6 18.6 12.6 20.6 14.2M7 14.4C9.4 15.2 14.6 15.2 17 14.4"/>
     <path ${A2} d="M14.4 12.4C14.2 10.4 15.4 9 17 9.2L18.8 8L18.6 9.8C19.4 10.6 19 12 17.8 12.4Z"/><path d="M14.4 12.4C14.2 10.4 15.4 9 17 9.2L18.8 8L18.6 9.8C19.4 10.6 19 12 17.8 12.4Z"/>`],

@@ -1316,6 +1316,39 @@ const ICONS = {
     <path d="M3.6 12.4H20.4C20.4 17 16.6 20.4 12 20.4S3.6 17 3.6 12.4Z"/>
     <path d="M10.8 13.6L15.6 3.8C16 3 17.4 3.6 17.1 4.4L13 14.2"/>
     <path d="M7 15.2C8.4 16.2 9.8 16.6 11.2 16.6"/>`,
+  // Smelt: a clay chimney narrowing up, a flame in its arch, a wisp leaving the top (the furnace's Smelt).
+  smelt: `
+    <path ${ACCENT} d="M10.4 20.4V17.8C10.4 16.6 11.1 15.8 12 15.8S13.6 16.6 13.6 17.8V20.4Z"/>
+    <path d="M6 20.4L8 7.4C8.2 6.6 9.2 6 12 6S15.8 6.6 16 7.4L18 20.4Z"/>
+    <path d="M10.4 20.4V17.8C10.4 16.6 11.1 15.8 12 15.8S13.6 16.6 13.6 17.8V20.4M3.5 20.4H20.5"/>
+    <path d="M12 4.4C11 3.4 12.6 2.6 11.8 1.6"/>`,
+  // Draw out: a hammer over a nail drawn long on a small anvil stone (the furnace's nails).
+  draw: `
+    <path ${ACCENT} d="M4 20.4C4.4 17.8 6.6 16.6 9 16.6H15C17.4 16.6 19.6 17.8 20 20.4Z"/>
+    <path d="M4 20.4C4.4 17.8 6.6 16.6 9 16.6H15C17.4 16.6 19.6 17.8 20 20.4ZM7 14.6H17"/>
+    <path d="M13.4 3.4L18.6 8.6M16 6L8.4 13.6"/>`,
+  // Pan: a shallow pan tipped over water, a few grains settled in its well (the spring pool, Pan).
+  pan: `
+    <path ${ACCENT} d="M3.6 10.6C3.6 8.8 7.4 7.6 12 7.6S20.4 8.8 20.4 10.6C20.4 13.8 16.6 16 12 16S3.6 13.8 3.6 10.6Z"/>
+    <path d="M3.6 10.6C3.6 8.8 7.4 7.6 12 7.6S20.4 8.8 20.4 10.6C20.4 13.8 16.6 16 12 16S3.6 13.8 3.6 10.6Z"/>
+    <path d="M2.5 19.6C4.4 18.4 6.2 18.4 8 19.6S11.6 20.8 13.4 19.6S17.2 18.4 21.5 19.4"/>
+    <circle cx="11" cy="11.6" r=".6" fill="currentColor" stroke="none"/><circle cx="13" cy="12" r=".6" fill="currentColor" stroke="none"/>`,
+  // The well shrimp (the pan finds): a pale, eyeless groundwater shrimp, curled on its side, its feelers long.
+  wellshrimp: `
+    <path ${ACCENT} d="M5 14.6C5 9.6 9 6.4 13.6 6.8C17.6 7.2 19.8 10.4 19.4 13.6C17.6 12.2 15.6 11.6 13.6 12.2C11.4 12.8 10.4 15 11 17.6C8.4 18.4 5 17.6 5 14.6Z"/>
+    <path d="M5 14.6C5 9.6 9 6.4 13.6 6.8C17.6 7.2 19.8 10.4 19.4 13.6C17.6 12.2 15.6 11.6 13.6 12.2C11.4 12.8 10.4 15 11 17.6C8.4 18.4 5 17.6 5 14.6Z"/>
+    <path d="M8.4 9.4L9.8 11.4M11.4 7.6L12.2 10M14.6 7.2L14.6 9.8M11 17.6L9.6 20.2M11 17.6L12.8 20M19.4 13.6C20.8 11.2 21.6 8.4 21.4 4.6M19.4 13.6C21.2 13 22 11.4 22 9.8"/>`,
+  // Climb down: a dark hole in the ground, a rope ladder hanging into it, an arrow going down.
+  climbdown: `
+    <path ${ACCENT} d="M3 16.6C3 14.6 7 13.2 12 13.2S21 14.6 21 16.6S17 20 12 20S3 18.6 3 16.6Z"/>
+    <path d="M3 16.6C3 14.6 7 13.2 12 13.2S21 14.6 21 16.6S17 20 12 20S3 18.6 3 16.6Z"/>
+    <path d="M9.6 3.6V17.6M14.4 3.6V17.6M9.6 7H14.4M9.6 10.4H14.4M9.6 13.8H14.4"/>
+    <path d="M18.4 4V10.4M16.6 8.6L18.4 10.4L20.2 8.6"/>`,
+  // Climb up: the rope ladder rising into a round of daylight, an arrow going up.
+  climbup: `
+    <circle ${ACCENT} cx="12" cy="6" r="4.2"/><circle cx="12" cy="6" r="4.2"/>
+    <path d="M9.6 9.4V20.6M14.4 9.4V20.6M9.6 12.4H14.4M9.6 15.6H14.4M9.6 18.8H14.4"/>
+    <path d="M18.4 20V13.6M16.6 15.4L18.4 13.6L20.2 15.4"/>`,
   // Brew: a round tea pot with its spout and lid, two curls of steam rising off it (the tea pot's Brew, P2e).
   brew: `
     <path ${ACCENT} d="M5.4 14.6C5.4 11.6 8.2 9.8 11.6 9.8S17.8 11.6 17.8 14.6C17.8 18 15.4 20.4 11.6 20.4S5.4 18 5.4 14.6Z"/>

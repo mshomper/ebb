@@ -19,7 +19,12 @@
 //
 // Publishes the store slice `stationView` (what the workspace draws), keeps `cook` (the save's cook
 // section). Actions: camp.build { id }, station.lay { kind }, station.unlay { i }, station.act,
-// keep.takeUp { i }. Events: camp:placed { slot, kind }, camp:made { make, station, hour, first }.
+// keep.takeUp { i }, furnace.take. Events: camp:placed { slot, kind }, camp:made { make, station, hour, first },
+// camp:furnace-taken { gives, make, hour }.
+//
+// The clay furnace (the spring-ore plan) is a build too, in the work corner: it dries a night, then
+// Smelt lays ore and charcoal in to burn through the night (out 'smelt', furnace.js) and Draw out
+// turns a lump of metal into nails at once; the metal is taken up from its card in the morning.
 
 import { emit, emitDeferred } from '../../core/events.js';
 import { get, update, subscribe } from '../../core/store.js';
@@ -34,6 +39,7 @@ import { shapedOn, addShaped, takeShaped, setHearth } from './pots.js';
 import { pileWord, rackWord } from '../pack/piles.js';
 import { campCardAt } from './cards.js';
 import { rimSpot } from './layout.js';
+import { furnaceState, layLoad, cleanLoad } from './furnace.js';
 
 /** The keeps that open in the workspace's store mode, and the slot each stands in. */
 const KEEPS = /** @type {Record<string, string>} */ ({ store: 'store', rack: 'rack' });
@@ -68,6 +74,10 @@ export function createStations(k) {
   const built = (/** @type {string} */ id) => !!inSlot(k.camp(), id);
   /** Room at the fire for another piece overnight (cook.json work.max). */
   const workRoom = () => k.camp().work.length < (C.work?.max ?? 2);
+  /** The clay furnace now (furnace.js): its slot record and what it is doing. */
+  const FR = C.furnace ?? { readyHour: 7, minH: 8, dryMinH: 8 };
+  const furnaceRec = () => inSlot(k.camp(), 'furnace');
+  const furnaceNow = () => furnaceState(furnaceRec(), k.hourNow(), FR);
   const keeps = createKeeps({ R, P, camp: k.camp, change: k.change, where: k.where, hourNow: k.hourNow, benchAt, piles: o.piles });
 
   /** A keep's place: its slot, and where you stand (on the ring's side of it). @param {string} id */
@@ -256,7 +266,7 @@ export function createStations(k) {
       laid: open.laid.map((kind, i) => ({ kind, name: nameOf(kind), used: L.have[i] >= 0 })),
       outlines: open.laid.length < spots ? L.missing.slice(0, spots - open.laid.length) : [],
       action: { ...actionOf(id, L.make), ready: L.complete && makeT < 0, make: L.make },
-      line: open.line ?? (makeT >= 0 ? null : W.laid), working: makeT >= 0,
+      line: open.line ?? (makeT >= 0 ? null : id === 'furnace' && furnaceNow() !== 'empty' ? W.furnace?.[furnaceNow()] ?? W.laid : W.laid), working: makeT >= 0,
       pack: packKinds, piles: row(pilesHolds()), store, bench, packName: W.pack, pilesName: W.piles, storeName: W.hamper, at: stationAt(id),
       benchName: id === 'workbench' ? W.benchWaiting : W.onBench, benchToFire: id === 'workbench', benchLine: id === 'workbench' && bench.length ? W.benchToFire : null,
     };
@@ -304,6 +314,8 @@ export function createStations(k) {
     if (C.makes[L.make].out === 'work' && !workRoom()) { open.line = W.workFull; publish(); return; }
     // A shaped piece needs room on the workbench to wait for the fire (S5).
     if (C.makes[L.make].out === 'shaped' && !benchRoom()) { open.line = W.benchFull; publish(); return; }
+    const fw = furnaceWait(L.make);
+    if (fw) { open.line = fw; publish(); return; }
     const at = stationAt(open.id);
     if (at) o.walk.kneelToward(at.x, at.z, makeS(), 'make');
     makeT = 0;
@@ -320,6 +332,8 @@ export function createStations(k) {
     if (m.out === 'rack' && !keeps.rack.room(laid[0])) { open.line = W.rackFull; publish(); return; }
     if (m.out === 'work' && !workRoom()) { open.line = W.workFull; publish(); return; }
     if (m.out === 'shaped' && !benchRoom()) { open.line = W.benchFull; publish(); return; }
+    const fw = furnaceWait(id);
+    if (fw) { open.line = fw; publish(); return; }
     takePlan(plan);
     const first = cookNow().made[id] === undefined;
     // A make that stands in a camp slot (the rack, the mortar, the hamper) or stacks on one.
@@ -341,10 +355,45 @@ export function createStations(k) {
     if (m.out === 'carrier') o.pack?.addCarrier?.(id);
     // A piece for the night's fire goes on the overnight work list (work.js): willow charcoal.
     if (m.out === 'work') k.change((c) => ({ ...c, work: layWork(c.work, { id, needH: m.needH ?? 8, gives: m.gives ?? id, count: m.count ?? 1 }, hour) }));
+    // Ore and charcoal in at the furnace's top, to burn through the night (furnace.js).
+    if (m.out === 'smelt') k.change((c) => ({ ...c, slots: c.slots.map((q) => (q.slot === 'furnace' ? { ...q, load: layLoad(id, { gives: m.gives ?? id, count: m.count }, hour) } : q)) }));
     emitDeferred('camp:made', { make: id, station: open.id, hour, first });
     if (!open) return;
     open.laid = [];
     open.line = W.made?.[id] ?? null;
+    publish();
+  }
+
+  /**
+   * Why the furnace cannot take a make now, or null: it is still drying (every make there wants its
+   * heat), or a load is already in (one at a time). @param {string} id
+   */
+  function furnaceWait(id) {
+    const m = C.makes[id];
+    if (m?.at !== 'furnace') return null;
+    const st = furnaceNow();
+    if (st === 'drying') return W.furnace?.notDry ?? null;
+    if (m.out === 'smelt' && (st === 'burning' || st === 'done')) return W.furnace?.full ?? null;
+    return null;
+  }
+
+  /** The morning's metal taken up from behind the arch: into the pack, or a small heap at your feet. */
+  function furnaceTake() {
+    const rec = furnaceRec(), load = rec ? cleanLoad(rec.load) : null, at = benchAt('furnace');
+    if (!load || furnaceNow() !== 'done' || !at) return;
+    o.walk.kneelToward(at.x, at.z, 1.2, 'gather');
+    k.change((c) => ({ ...c, slots: c.slots.map((q) => {
+      if (q.slot !== 'furnace') return q;
+      const next = { ...q };
+      delete next.load;
+      return next;
+    }) }));
+    if (o.pack?.room(load.gives)) o.pack.add(load.gives, load.count);
+    else o.pack?.heapHere?.(load.gives, load.count);
+    emitDeferred('camp:furnace-taken', { gives: load.gives, make: load.id, hour: k.hourNow() });
+    emit('island:notice', { text: W.furnaceTook?.[load.gives] ?? '', showS: 5 });
+    const card = get('identify');
+    if (card?.station === 'furnace') update('identify', () => ({ ...card, text: `${W.furnace?.line ?? ''} ${W.furnace?.empty ?? ''}`.trim(), furnaceDone: false, at: performance.now() }));
     publish();
   }
 
@@ -396,9 +445,12 @@ export function createStations(k) {
       else if (a.type === 'station.act') act();
       else if (a.type === 'keep.takeUp') keepTakeUp(a.i);
       else if (a.type === 'shaped.toFire') toFire(a.kind);
+      else if (a.type === 'furnace.take') furnaceTake();
     }),
     registerCardAction({ id: 'shapedtofire', icon: 'fire', order: 4, main: true, label: W.toFire ?? 'Lay it at the fire',
       when: (c) => c?.camp === 'shaped' && !!c.canFire, action: (c) => ({ type: 'shaped.toFire', kind: c.kind }) }),
+    registerCardAction({ id: 'furnacetake', icon: 'takeup', order: 4, main: true, label: (c) => W.furnaceTakes?.[c?.furnaceGives] ?? W.takeUp,
+      when: (c) => c?.station === 'furnace' && !!c.furnaceDone, action: () => ({ type: 'furnace.take' }) }),
     registerCardAction({ id: 'campbuild', icon: 'build', order: 5, main: true, label: (c) => slotWords(c?.build ?? '').build ?? W.build,
       when: (c) => c?.camp === 'benchSlot' && !!c.canBuild, action: (c) => ({ type: 'camp.build', id: c.build }) }),
   ];
@@ -447,7 +499,11 @@ export function createStations(k) {
         const bx = dx * c - dz * s, bz = dx * s + dz * c;
         if (Math.abs(bx) > (at.slot.w ?? 1) / 2 + 0.15 || Math.abs(bz) > (at.slot.d ?? 0.6) / 2 + 0.15) continue;
         if (built(/** @type {any} */ (b).slot)) {
-          return { ...base, sp: `camp:${id}`, camp: 'station', station: id, name: W[id]?.name ?? id, icon: S[id]?.action ?? 'make', text: W[id]?.line ?? '', wx: at.stand.x, wz: at.stand.z, r: 0.3 };
+          // The furnace's card says what it is doing; in the morning, Take up the metal.
+          const st = id === 'furnace' ? furnaceNow() : null, load = st === 'done' ? cleanLoad(furnaceRec()?.load) : null;
+          return { ...base, sp: `camp:${id}`, camp: 'station', station: id, name: W[id]?.name ?? id, icon: S[id]?.action ?? 'make',
+            text: st ? `${W[id]?.line ?? ''} ${W.furnace?.[st] ?? ''}`.trim() : W[id]?.line ?? '', wx: at.stand.x, wz: at.stand.z, r: 0.3,
+            ...(st ? { furnaceDone: st === 'done', furnaceGives: load?.gives ?? null } : {}) };
         }
         const pb = /** @type {any} */ (b), c0 = k.camp();
         if (pb.afterRing && !ringLaid(c0)) continue;
@@ -471,13 +527,26 @@ export function createStations(k) {
       const at = open ? stationAt(open.id) : null;
       if (open && at && o.walk.distTo(at.stand.x, at.stand.z) > at.reachM + S.awayM && makeT < 0 && !k.player.busy()) dispatch({ type: 'ui.identify' });
     },
+    /**
+     * The furnace's light while a load burns: a small flickering glow just out of its arch (cook.json
+     * furnace.light, doorAt), for the camp's point lights. @param {number} time seconds
+     */
+    lights(time) {
+      const at = benchAt('furnace'), L = FR.light;
+      if (!at || !L || !built('furnace') || furnaceNow() !== 'burning') return [];
+      const d = FR.doorAt ?? [0, 0.1, 0.35], c = Math.cos(at.yaw), sn = Math.sin(at.yaw);
+      const fl = 1 - (L.flicker ?? 0) * (0.5 + 0.5 * Math.sin(time * 6.283 * (L.flickerHz ?? 0.7)) * Math.sin(time * 4.1 + 1.3));
+      return [{ key: 'furnace', x: at.x + d[0] * c + (d[2] + (L.outM ?? 0.1)) * sn, y: at.y + d[1] + (L.upM ?? 0.06), z: at.z - d[0] * sn + (d[2] + (L.outM ?? 0.1)) * c, rangeM: L.rangeM, cd: L.cd * fl, rgb: L.rgb }];
+    },
+    /** What the furnace is doing now (furnace.js furnaceState). */
+    furnaceNow,
     /** What the workspace shows now (tests). */
     view,
     benchAt,
     /** The hamper and the rack (the pack's set-down routing, tests). */
     keeps,
     /** Tests and the test links. */
-    debug: { build, buildNow, placeNow, lay, unlay, act, made, keepTakeUp, open: () => open },
+    debug: { build, buildNow, placeNow, lay, unlay, act, made, keepTakeUp, furnaceTake, open: () => open },
     dispose() { for (const off of offs) off(); },
   };
 }

@@ -9,7 +9,8 @@
 //     store and the heaps only while a pile is in them;
 //   pieces: loose stones (circles), kept logs and strand driftwood (rectangles along their length),
 //     the reed raft, a lantern's post; the piece being carried is left out;
-//   the boat at its mooring.
+//   the boat at its mooring;
+//   extra: the boulders round the way down above the spring (the dig's, once the ground has given way).
 // Stepping stones, Steps' slabs and holes stay open (footing, or small and filling in), and so do
 // small things you walk over (twigs, pebbles, shells, finds, low plants).
 
@@ -85,6 +86,7 @@ export function createSolidsLive(o) {
       ...(pad?.camp?.slots ? campSolids(get('camp'), pad.camp.slots, o.where.slotAt, o.benchAt, piled, o.rackYawDeg) : []),
       ...pieceSolids(pieces, get('carry')?.id ?? null, o.strand()),
       ...(b ? [{ x: b.x, z: b.z, yaw: b.yaw, hw: o.boatSize.beamM / 2, hd: o.boatSize.lengthM / 2, id: 'boat' }] : []),
+      ...(o.extra?.() ?? []),
     ];
     const next = JSON.stringify(list.map((s) => [s.id, +s.x.toFixed(2), +s.z.toFixed(2), +(s.yaw ?? 0).toFixed(2), s.r, s.hw, s.hd]));
     if (next !== key) { key = next; o.walk.setSolids(list); }

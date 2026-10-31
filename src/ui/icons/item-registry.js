@@ -16,6 +16,7 @@
 import { ICON_NAMES } from './icons.js';
 import { DYES } from './items-made.js';
 import { CAMP_ROWS } from './items-camp.js';
+import { METAL_POUCH_ROWS, METAL_MAKE_ROWS } from './items-metal.js';
 
 /**
  * @typedef {{ id: string, icon: string, name: string, tier: string, phase: number }} ItemRow
@@ -47,6 +48,8 @@ export const POUCH_KINDS = /** @type {[string, string, string, string, number][]
   ['lily-parcel', 'lily-parcel', 'Lily leaf parcel', 'T2', 2],
   // The hen's eggs and what comes of them (docs/future/15 slice 4); sea salt waits for the salt pans.
   ['egg', 'egg', 'Eggs', 'T3', 3], ['eggshells', 'eggshells', 'Eggshells', 'T3', 3], ['grit', 'grit', 'Eggshell grit', 'T3', 3], ['sea-salt', 'sea-salt', 'Sea salt', 'T2', 3],
+  // The underground spring (spring-ore plan): its ores, the furnace's metal, nails, and the dock's first parts.
+  ...METAL_POUCH_ROWS,
 ]).map(row);
 
 /** Plant parts, '<species>.<part>' (docs/future/13 sections 4.1 and 5.3). @type {ItemRow[]} */
@@ -95,6 +98,7 @@ export const MAKES = /** @type {[string, string, string, string, number][]} */ (
   ['satchel', 'satchel', 'Rush satchel', 'T2', 2], ['basket', 'basket', 'Willow basket', 'T2', 2], ['seed-balls', 'seed-balls', 'Seed balls', 'T2', 2], ['fill-pot', 'fill-pot', 'Fill the pot', 'T2', 2],
   ['keepers-blade', 'keepers-blade', "Keeper's blade", 'T2', 3], ['log-seat', 'log-seat', 'Log seat', 'T3', 3], ['driftwood-frame', 'driftwood-frame', 'Driftwood frame', 'T3', 3],
   ['clam-rake', 'clam-rake', 'Clam rake', 'T3', 3], ['net-stakes', 'net-stakes', 'Net stakes', 'T3', 3], ['mending-coil', 'mending-coil', 'Mending coil', 'T3', 3], ['gift-stone', 'gift-stone', 'Gift stone', 'T3', 3],
+  ['keepsake-shelf', 'keepsake-shelf', 'Keepsake shelf', 'T3', 3],
   ['dye-pot', 'dye-pot', 'Dye pot', 'T4', 4], ['clay-lamp', 'clay-lamp', 'Clay lamp', 'T4', 4], ['sealed-jar', 'sealed-jar', 'Sealed jar', 'T4', 4], ['candles', 'candles', 'Dipped candles', 'T4', 4],
   ['bird-bath', 'bird-bath', 'Bird-bath stone', 'T4', 4], ['bee-dish', 'bee-dish', 'Bee water dish', 'T4', 4], ['floats', 'floats', 'Driftwood floats', 'T4', 4],
   ['larger-pot', 'larger-pot', 'Larger pot', 'T5', 5], ['hedgehog-house', 'hedgehog-house', 'Hedgehog house', 'T5', 5], ['wind-chime', 'wind-chime', 'Shell wind chime', 'T5', 5],
@@ -102,6 +106,7 @@ export const MAKES = /** @type {[string, string, string, string, number][]} */ (
   // The fishing line (F17, October 31, 2026): a withy rod, rush cord and a gorse thorn hook.
   ['line', 'fishing-line', 'Fishing line', 'T3', 3],
   ...CAMP_ROWS,
+  ...METAL_MAKE_ROWS,
 ]).map(row);
 
 /** Treats and offerings (docs/future/13 section 8). @type {ItemRow[]} */
