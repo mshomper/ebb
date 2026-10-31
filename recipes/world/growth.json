@@ -6,7 +6,7 @@
   "grass": { "ratePerH": 0.04, "saltFrom": 0.35, "saltFull": 0.75, "yieldToCover": 0.85,
              "habitat": { "soil": [0.5, 1, 0.35], "slopeDeg": [0, 35, 10] } },
   "maxPlants": 4000,
-  "species": ["reeds", "lilies", "iris", "thrift", "marigold", "campion", "willow", "gorse", "pondweed", "watermint", "meadowsweet", "nettle", "chamomile", "marram"],
+  "species": ["reeds", "lilies", "iris", "thrift", "marigold", "campion", "willow", "gorse", "pondweed", "watermint", "meadowsweet", "nettle", "chamomile", "marram", "harebell", "trefoil", "thyme", "clover", "bedstraw"],
   "testSets": { "herbs": ["watermint", "meadowsweet", "nettle", "chamomile"], "fibres": ["marram"] },
   "cover": ["rushes"],
   "starters": ["reeds", "lilies"],

@@ -164,8 +164,8 @@ export function createIslet(o) {
       const key = `${n}:${c.sp}`;
       if (planted.includes(key) || !hasPlant(c.sp)) return;
       const r = stream(o.seed, 77, n);
-      // Spots across it, the first its habitat suits (most of these want the salt or sand near its
-      // shore; gorse the dry middle), then the rest of the clump round it.
+      // Spots across it, the first its habitat suits (thyme and trefoil find the open sand, clover
+      // and bedstraw the grassy patches), then the rest of the clump round it.
       for (let t = 0; t < S.tries; t++) {
         const a = r.range(-1, 1) * L.A, b = r.range(-1, 1) * L.B;
         const x = L.x + a * L.tx + b * L.ux, z = L.z + a * L.tz + b * L.uz;

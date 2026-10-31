@@ -1,0 +1,177 @@
+{
+  "type": "flora",
+  "id": "clover",
+  "name": "Red clover",
+  "schema": 1,
+  "version": 1,
+  "seed": 8461,
+  "tags": [
+    "tier2",
+    "machair"
+  ],
+  "generator": "blades",
+  "layer": "individual",
+  "draw": "thrift",
+  "plantTool": false,
+  "note": "Red clover, Trifolium pratense: leaves of three leaflets with a pale chevron, round pink-purple heads all summer (more purple and lower than sea thrift's pale pink balls, so the two read apart). The bumblebees' plant; it takes on the islet's grassier patches. A machair plant of the meadow islet (B3a, Matt's pick of October 31, 2026; recipes/land/meadow-islet.json starters): it comes to the island only with the islet, planted on its sandy turf when it rises, and spreads from there by seed. Not in the volunteers' order and not offered by the Plant tool (plantTool false), so it stays the islet's own. Drawn with the thrift shader (draw: thrift; flora-thrift.wgsl): its keys are the thrift's (see chamomile.json's note for head forms). drawScale: drawn this many times real size, so it can be found (the shape numbers already include it). habitat: shoreM is height above mean sea level; sand the painted sand share (the islet is mostly sand with sparse grassy patches).",
+  "index": 17,
+  "drawScale": 1.5,
+  "shape": {
+    "bladesPerCushion": [
+      20,
+      60
+    ],
+    "cushionRadius": 0.16,
+    "cushionHeight": 0.09,
+    "bladeWidth": 0.016,
+    "flowersPerCushion": [
+      3,
+      10
+    ],
+    "stalkHeight": 0.12,
+    "stalkWidth": 0.003,
+    "headRadius": 0.034
+  },
+  "crown": {
+    "albedo": [
+      0.11,
+      0.09,
+      0.05
+    ],
+    "heightShare": 0.5
+  },
+  "habitat": {
+    "sand": [
+      0,
+      0.5,
+      0.2
+    ],
+    "moisture": [
+      0.05,
+      0.6,
+      0.15
+    ],
+    "salt": [
+      0,
+      0.35,
+      0.15
+    ],
+    "shoreM": [
+      0.9,
+      8,
+      0.3
+    ],
+    "waterDepthM": [
+      0,
+      0,
+      0.02
+    ],
+    "slopeDeg": [
+      0,
+      25,
+      10
+    ]
+  },
+  "growth": {
+    "ratePerH": 0.04,
+    "seasonRate": [
+      1,
+      0.8,
+      0.45,
+      0
+    ],
+    "floor": 0.5,
+    "stages": {
+      "sproutH": 4,
+      "youngSize": 0.25,
+      "matureSize": 0.7
+    },
+    "lowSuit": 0.15,
+    "lowHours": 48,
+    "shrinkPerH": 0.004,
+    "seedDieHours": 24,
+    "drownDepthM": 0.03,
+    "drownHours": 48
+  },
+  "flowering": [
+    0.8,
+    2.4
+  ],
+  "dormant": [
+    3.05,
+    3.95
+  ],
+  "phenology": {
+    "jitterDays": 2,
+    "note": "each plant keeps its own calendar, offset from the species by up to jitterDays game days either way (hash of the plant id; src/world/growth/phenology.js)"
+  },
+  "spread": {
+    "kind": "seed",
+    "everyH": 48,
+    "distanceM": [
+      0.5,
+      2.0
+    ],
+    "minSuit": 0.6,
+    "minSpacingM": 0.45,
+    "maxCount": 30
+  },
+  "starter": {
+    "count": 3,
+    "minSuit": 0.8,
+    "spacingM": 1.5
+  },
+  "season": {
+    "albedo": {
+      "spring": [
+        0.07,
+        0.14,
+        0.05
+      ],
+      "summer": [
+        0.07,
+        0.13,
+        0.05
+      ],
+      "autumn": [
+        0.08,
+        0.11,
+        0.05
+      ],
+      "winter": [
+        0.08,
+        0.09,
+        0.05
+      ]
+    },
+    "flower": [
+      0.5,
+      0.13,
+      0.4
+    ],
+    "stalk": [
+      0.08,
+      0.11,
+      0.05
+    ]
+  },
+  "outputs": {
+    "cover": {
+      "clover": 1
+    }
+  },
+  "wind": {
+    "sway": 0.3
+  },
+  "look": {
+    "sproutM": 0.03,
+    "seedBlades": 6,
+    "heightVar": 0.3,
+    "radiusMin": 0.35,
+    "gustM": 6,
+    "gustSpeed": 2.5,
+    "rootShade": 0.45,
+    "wetDarken": 0.8,
+    "pixelWidth": 1.0
+  }
+}
