@@ -6,6 +6,8 @@
 // the spot and flicks the seed (the `sow` gesture), which flies on a dotted line and lands with a
 // puff of soil or a splash. A gift is placed the same way (pondweed, or a reed raft that is simply
 // there on the pond). The net is different: a click walks you to the spot, and you kneel and set it.
+// The fishing line with a worm (F17, src/world/fishing) is like the net: a click on the sea walks you
+// to the water's edge, and you cast.
 // A click on a spot that will not do changes nothing. Esc, Go up or the item again puts it away.
 //
 // The planting is the world's (growth.plant through the plant tool), so live play and catch-up see
@@ -22,7 +24,7 @@ import { stoneWaiting } from '../camp/gifts.js';
  */
 
 /**
- * @param {{ recipe: any, plantTool: any, pieces: any, nets: any, walk: any, ground: (x: number, z: number) => number,
+ * @param {{ recipe: any, plantTool: any, pieces: any, nets: any, fishing?: any, walk: any, ground: (x: number, z: number) => number,
  *   depth: (x: number, z: number) => number, worldChanged: () => void, planting: ReturnType<typeof import('./planting.js').createPlanting> }} o
  *   recipe: recipes/world/sowing.json; plantTool: src/world/growth/plant-tool.js; depth: water over a
  *   spot now (m); worldChanged: the world state moved on (a seed went in); planting: what the pack
@@ -40,7 +42,8 @@ export function createSowing(o) {
   /** What the tin, the gift spot and the net hold now: the tin with what the pack holds to plant (P2g). */
   function items() {
     const u = get('unlocks');
-    return { tin: tinItems(R, get('packView')?.pouches ?? []), gifts: giftItems(R, u, stoneWaiting(get('camp'), R)), net: !!u?.nets?.general && !!o.nets.nets().length };
+    return { tin: tinItems(R, get('packView')?.pouches ?? []), gifts: giftItems(R, u, stoneWaiting(get('camp'), R)), net: !!u?.nets?.general && !!o.nets.nets().length,
+      line: o.fishing?.baitItems() ?? [] };
   }
   /** The item in hand as it is now, or null (a gift with none left is gone from the hand). */
   function held() {
@@ -48,6 +51,7 @@ export function createSowing(o) {
     if (!h) return null;
     const it = items();
     if (h.kind === 'net') return it.net ? { kind: 'net', id: 'net' } : null;
+    if (h.kind === 'line') return it.line.find((/** @type {any} */ i) => i.id === h.id) ?? null;
     return [...it.tin, ...it.gifts].find((i) => samePick(i, h)) ?? null;
   }
   const say = (/** @type {string} */ text, showS = R.words.noticeS ?? 5) => { if (text) emitDeferred('island:notice', { text, showS }); };
@@ -55,6 +59,7 @@ export function createSowing(o) {
   /** Would the item in hand take at a ground point? @param {any} item @param {number[]} p */
   function check(item, p) {
     if (item.kind === 'net') return o.nets.check(p);
+    if (item.kind === 'line') return o.fishing.check(p);
     if (item.kind === 'gift' && item.place === 'raft') return o.pieces.raftCheck(p);
     // What the pack holds (P2g): saved seed, a seed ball, a clump, a withy.
     if (item.from) return o.planting.check(item, p);
@@ -65,7 +70,8 @@ export function createSowing(o) {
   function ringAt(item, p) {
     const c = check(item, p);
     const d = o.depth(p[0], p[2]);
-    return { x: p[0], y: p[1] + Math.max(0, d), z: p[2], r: R.ring.radiusM, ok: !!c.ok, message: c.ok ? '' : c.message ?? '', flashAt: ring?.flashAt ?? -1e9 };
+    const y = item.kind === 'line' ? o.fishing.surfaceY(p) : p[1] + Math.max(0, d);
+    return { x: p[0], y, z: p[2], r: R.ring.radiusM, ok: !!c.ok, message: c.ok ? '' : c.message ?? '', flashAt: ring?.flashAt ?? -1e9 };
   }
 
   /** The seed leaves the hand toward p (UI only). @param {number[]} p */
@@ -124,6 +130,11 @@ export function createSowing(o) {
       // Where a seed lands, and whether it took (the first evening's planting beat, src/world/intro).
       const landed = (/** @type {boolean} */ ok) => { if (item.species) emitDeferred('sow:landed', { species: item.species, x: p[0], z: p[2], ok }); };
       if (!ring.ok) { ring.flashAt = performance.now(); landed(false); return true; }
+      if (item.kind === 'line') {
+        // Out to the water's edge if need be, then the cast (src/world/fishing).
+        if (o.fishing.cast(sx, sy, p, item.id)) api.putAway();
+        return true;
+      }
       if (item.kind === 'net') {
         // The walker walks out to the spot, then kneels and sets it (update()).
         if (o.walk.tap(sx, sy, p, R.net.reachM)) { netTo = p; say(R.words.netWalk, 3); }
@@ -160,7 +171,7 @@ export function createSowing(o) {
       if (!item && get('hand')) api.putAway();
       if (item && pointer) {
         if (!ring || now - readAt >= 1000 / R.ring.checkHz) { readAt = now; ring = ringAt(item, pointer); }
-        else ring = { ...ring, x: pointer[0], y: pointer[1] + Math.max(0, o.depth(pointer[0], pointer[2])), z: pointer[2] };
+        else ring = { ...ring, x: pointer[0], y: item.kind === 'line' ? o.fishing.surfaceY(pointer) : pointer[1] + Math.max(0, o.depth(pointer[0], pointer[2])), z: pointer[2] };
       } else ring = null;
       tosses = tosses.filter((t) => now < t.at + (t.plan.s + Math.max(R.toss.fadeS, R.splash.s + R.splash.gapS * 3, R.puff.s)) * 1000);
       o.planting.update(now);

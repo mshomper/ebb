@@ -107,7 +107,7 @@ export function createPack(o) {
       keep(normalize(r.kind.endsWith('.clump') ? takeClump(r.pack, r.kind.slice(0, -6)).pack : r.pack, kinds, R));
       update('identify', () => null);
       emitDeferred('pack:emptied', { kind: r.kind, x: you?.[0] ?? 0, z: you?.[2] ?? 0 });
-      emitDeferred('island:notice', { text: r.kind === 'worms' ? W.worms : W.emptied, showS: 4 });
+      emitDeferred('island:notice', { text: r.kind === 'worms' || r.kind === 'bigworms' ? W.worms : W.emptied, showS: 4 });
     },
 
     /**

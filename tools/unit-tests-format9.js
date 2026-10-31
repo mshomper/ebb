@@ -19,7 +19,7 @@ const parts = (more = {}) => /** @type {any} */ ({ build: 't', seed: 1, island: 
 export function addFormat9Tests(test, assert, eq) {
   test(G, 'one step from 8 to 9 adds camp, pack, gather, dig, cook and dyes, empty (and the sketchbook, P2i)', () => {
     assert(FORMAT >= 9, 'this build writes format 9 or later (10 since planting on foot, tools/unit-tests-sowing.js)');
-    eq(SECTIONS9.join(), 'camp,pack,gather,dig,cook,dyes,sketchbook,kit,threads', 'the six sections of section 12.1, then the sketchbook (P2i), the kit (the Keeper book Kit page) and its threads');
+    eq(SECTIONS9.join(), 'camp,pack,gather,dig,cook,dyes,sketchbook,kit,threads,fishing', 'the six sections of section 12.1, then the sketchbook (P2i), the kit (the Keeper book Kit page), its threads and fishing (F17)');
     eq(MIGRATIONS.filter((m) => m.from === 8 && m.to === 9).length, 1, 'one step');
     const old = { meta: { worldT: 5 }, unlocks: { shells: true }, nets: { version: 1, nets: [], released: [], nextId: 1 } };
     const up = migrate(structuredClone(old), 8);
@@ -49,7 +49,8 @@ export function addFormat9Tests(test, assert, eq) {
       dig: { version: 1, events: [{ c: 4, d: 2, l: 1, k: 0 }], firsts: ['layer:topsoil'], cache: null, sleepers: [] }, cook: { version: 1, made: { workbench: 4 }, count: { workbench: 1 }, tools: [], found: ['tea'] }, dyes: { version: 1, tent: { color: 'ochre', depth: 1 } },
       sketchbook: { version: 1, made: 2, wear: 2, first: 5, subjects: { frogs: [{ stage: 1, hour: 5, season: 0, moment: null }, { stage: 0, hour: 6, season: 0, moment: 'dusk' }] } },
       kit: { version: 1, hat: 'own', lantern: null, hand: null, coat: 'own', carrier: 'satchel', owned: { hat: ['own'], lantern: ['hand'], hand: [], coat: ['own'], carrier: ['satchel'] } },
-      threads: { version: 1, lines: [{ id: 'cairns.one', h: 40 }, { id: 'cairns.two', h: 70 }], seen: 1 } };
+      threads: { version: 1, lines: [{ id: 'cairns.one', h: 40 }, { id: 'cairns.two', h: 70 }], seen: 1 },
+      fishing: { version: 1, sketched: { 'reef-1': { seed: 77, hour: 40, cm: 18 } }, glimpsed: { goby: 12 }, casts: 9 } };
     const { sections } = snapshot(parts(live));
     const back = /** @type {any} */ (restore(Object.fromEntries(sections)));
     for (const id of SECTIONS9) eq(JSON.stringify(back[id]), JSON.stringify(live[id]), `${id} comes back exactly`);

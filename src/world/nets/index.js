@@ -201,8 +201,10 @@ export function createNets(opts) {
       /** @type {HaulSlice | null} */ const h = get('haul');
       const c = h?.haul.living.find((l) => l.id === itemId);
       if (!h || !c || h.released.includes(itemId)) return;
-      update('nets', () => noteReleased(state(), { kind: c.n.kind, seed: c.n.seed, hour: h.hour, rarity: c.n.rarity }, distinctive(c.n)));
       update('haul', () => ({ ...h, released: [...h.released, itemId] }));
+      // A fish is a glimpse (docs/future/17): its place is pencilled in, its sketch waits for the line.
+      if (c.glimpse) { emitDeferred('fish:glimpsed', { kind: c.n.kind, hour: h.hour }); return; }
+      update('nets', () => noteReleased(state(), { kind: c.n.kind, seed: c.n.seed, hour: h.hour, rarity: c.n.rarity }, distinctive(c.n)));
       emitDeferred('net:released', { kind: c.n.kind, page: catchPage(c.n.kind, NR), seed: c.n.seed });
       emitDeferred('keepsake:sound', { name: 'leave', seed: c.n.seed });
     },

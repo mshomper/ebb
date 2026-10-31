@@ -1,0 +1,148 @@
+{
+  "type": "fishing",
+  "version": 1,
+  "note": "Fishing and the angler's chart (docs/future/17; src/world/fishing, the generator in src/world/nets/living/fish-*.js). line: the made line (cook.json makes.line, a belt tool): castM the farthest a cast reaches from where you stand, longCastM from a headland (standing at least headlandM above the water) or from a stepping stone over water; minDepthM the least live water where the float lands; edgeM how near the water's edge the walk stops; wadeM the deepest water you stand in to cast; rodM the rod; floatR the float (drawn at the findable scale); hookedScale how large the fish on the line is drawn as it comes in (the findable scale, docs 11). waters (src/world/fishing/waters.js): the five waters read where the float lands: deep past deepM below mean sea level; open past the tide band in at least openM; else kelp where at least kelpShare of the cells within kelpM are the shore's kelp or wrack zones, reef where at least rockShare of the shore cells within shoreM are rock, and sand otherwise. odds (bite.js): a species' weight in its water starts from its rarity's, times condition for each of its conditions that holds, times bait for the right worm; with none met it keeps its base weight, so a night fish can still bite at noon, just rarely. when: how each condition is read: night and dawn (dawn and dusk) as hours of the day, day (calm sunny days) as clear weather under calmWind in daylight, rain and mist above these, storm (after a storm, until F08's storms) as yesterday's rain above stormRain and wind above stormWind, low and high as the tide's level past tideShare of its amplitude below or above mean sea level, the seasons by name, sparkle a sign in the water nearby (F12 K8, not built: always none yet). bite: real seconds: the wait for the first dip (waitS), how long a dip lasts (dipS), the wait after a missed dip (missS), easing the fish in (easeS); a worm is used only by a fish eased in. roster (roster.js): ordinary species per water, seeded from the world seed; whenShare of them have one condition. named: the five net fish, fixed members of the shallow waters (their journal pages are the net's pages). rare: the twelve rare species, the same on every island; riddle and its order on the chart. gen: the generator's tables (tools/fish-lab.html): waters (body plans, hue ranges, saturation, lightness, patterns, tails, eye size, countershading, size in cm, iris), plans (the growth grid's numbers), rarity weights for an ordinary species, the grown patterns' Gray-Scott constants and grid sizes, names (adjective by pattern, noun by plan), phaseNames, baitLean (small, big shares by water; the rest take either), commonWhen and whenShare, morph chances (far rarer than the lab's 1 in 7) and giantSize, rarePlans and rareTypes. sketch: what the tray offers as finer (a morph, or this much longer than the sketched one). words: everything fishing says. test: the ?fishing links.",
+  "line": { "castM": 12, "longCastM": 20, "headlandM": 1.2, "minDepthM": 0.3, "edgeM": 0.7, "wadeM": 0.12, "rodM": 1.6, "floatR": 0.07, "hookedScale": 2.2, "standS": 1.0 },
+  "waters": {
+    "order": ["reef", "sand", "kelp", "open", "deep"],
+    "deepM": 2.6, "openM": 1.1, "kelpM": 3, "kelpShare": 0.22, "shoreM": 6, "rockShare": 0.42
+  },
+  "odds": { "rarity": { "common": 60, "uncommon": 28, "rare": 10, "veryRare": 2 }, "condition": 4, "bait": 2 },
+  "when": {
+    "night": [[21, 24], [0, 5]], "dawn": [[5, 8], [18, 21]], "calmWind": 0.35, "rain": 0.2, "mist": 0.3, "stormRain": 0.5, "stormWind": 0.55, "tideShare": 0.35
+  },
+  "bite": { "waitS": [6, 18], "dipS": 1.9, "missS": [3, 8], "easeS": 2.6, "testWaitS": [1.5, 3] },
+  "roster": { "counts": { "reef": 5, "sand": 5, "kelp": 4, "open": 4, "deep": 4 }, "whenShare": 0.4 },
+  "named": [
+    { "id": "sandeel", "page": "sandeel", "name": "Sand eel", "water": "sand", "seed": 31001, "rarity": "common", "bait": "small", "when": [],
+      "form": { "plan": "elongate", "hue": 190, "sat": 18, "light": 64, "h2": 200, "s2": 26, "l2": 34, "pattern": "plain", "tail": "forked", "counter": 0.9, "size": [8, 13] } },
+    { "id": "goby", "page": "goby", "name": "Sand goby", "water": "sand", "seed": 31002, "rarity": "common", "bait": "small", "when": [],
+      "form": { "plan": "fusiform", "hue": 36, "sat": 30, "light": 60, "h2": 30, "s2": 34, "l2": 34, "pattern": "speckle", "tail": "rounded", "size": [4.5, 7.5] } },
+    { "id": "plaice", "page": "plaice", "name": "Young plaice", "water": "sand", "seed": 31003, "rarity": "uncommon", "bait": "small", "when": ["low"],
+      "form": { "plan": "compressed", "hue": 32, "sat": 28, "light": 46, "h2": 22, "s2": 80, "l2": 50, "pattern": "spots", "tail": "rounded", "size": [6, 10] } },
+    { "id": "pipefish", "page": "pipefish", "name": "Pipefish", "water": "kelp", "seed": 31004, "rarity": "uncommon", "bait": "small", "when": [],
+      "form": { "plan": "elongate", "depth": 0.07, "hue": 52, "sat": 34, "light": 38, "h2": 48, "s2": 30, "l2": 58, "pattern": "bars", "tail": "rounded", "size": [12, 20] } },
+    { "id": "wrasse", "page": "wrasse", "name": "Ballan wrasse", "water": "reef", "seed": 31005, "rarity": "uncommon", "bait": "either", "when": [],
+      "form": { "plan": "fusiform", "depth": 0.34, "hue": 105, "sat": 38, "light": 32, "h2": 22, "s2": 50, "l2": 38, "pattern": "mottle", "tail": "rounded", "size": [8, 13] } }
+  ],
+  "rare": [
+    { "id": "reef-stonefish", "name": "Reef stonefish", "type": "stone", "water": "reef", "seed": 41001, "when": ["low"], "order": 1, "mark": "near",
+      "riddle": "Something would sit so still it looks like the reef itself, where the rocks show at the lowest tides." },
+    { "id": "lantern-angler", "name": "Lantern angler", "type": "angler", "water": "deep", "seed": 41002, "when": ["night"], "order": 2, "mark": "deep", "form": { "lure": [255, 228, 150] },
+      "riddle": "A small gold light would bob past the drop-off on any dark night." },
+    { "id": "glass-sprat", "name": "Glass sprat", "type": "ghost", "water": "open", "seed": 41003, "when": ["mist", "dawn"], "order": 3, "mark": "off",
+      "riddle": "Something as clear as the mist itself would rise offshore, if the morning came in white." },
+    { "id": "zebra-lionfish", "name": "Zebra lionfish", "type": "lion", "water": "reef", "seed": 41004, "when": ["night", "high"], "order": 4, "mark": "far", "form": { "sat": 15, "light": 16 },
+      "riddle": "Something in black and white would drift over the reef, if the tide came in high in the dark." },
+    { "id": "ember-lionfish", "name": "Ember dwarf lionfish", "type": "lion", "water": "reef", "seed": 41005, "when": ["dawn", "summer"], "order": 5, "mark": "far",
+      "form": { "spine": 0.55, "size": [9, 16], "hue": [18, 30], "h2": [30, 40], "l2": 80 },
+      "riddle": "Something small and ember-colored would leave the rocks at the two edges of a summer day." },
+    { "id": "firework-lionfish", "name": "Firework lionfish", "type": "lion", "water": "reef", "seed": 41006, "when": ["day", "summer"], "order": 6, "mark": "far",
+      "riddle": "Something dressed in stripes and plumes would hang beside the rocks, if summer stayed still and bright." },
+    { "id": "mossy-devilfish", "name": "Mossy devilfish", "type": "stone", "water": "reef", "seed": 41007, "when": ["rain", "low"], "order": 7, "mark": "near", "form": { "hue": [70, 95], "flat": true },
+      "riddle": "Something green and lumpy would stir in the pools, if rain fell on a low tide." },
+    { "id": "wraith-catfish", "name": "Wraith catfish", "type": "ghost", "water": "open", "seed": 41008, "when": ["night", "rain"], "order": 8, "mark": "off", "form": { "plan": "elongate", "eye": 0.8 },
+      "riddle": "Something you can see straight through would swim the open water, if night and rain came together." },
+    { "id": "rust-stonefish", "name": "Rust stonefish", "type": "stone", "water": "reef", "seed": 41009, "when": ["autumn", "low"], "order": 9, "mark": "near", "form": { "hue": [0, 14], "sat": 48 },
+      "riddle": "Something the color of fallen leaves would hide in the rocks on the low tides of autumn." },
+    { "id": "moon-glassfish", "name": "Moon glassfish", "type": "ghost", "water": "open", "seed": 41010, "when": ["night", "sparkle"], "order": 10, "mark": "off", "form": { "plan": "compressed", "hue": [260, 290] },
+      "riddle": "Something round and glassy would come up to the light, if the sea sparkled after dark." },
+    { "id": "whipline-angler", "name": "Whipline angler", "type": "angler", "water": "deep", "seed": 41011, "when": ["storm", "night"], "order": 11, "mark": "deep", "form": { "lure": [150, 240, 255], "whip": true },
+      "riddle": "A cold blue light on a long line would come up past the drop-off the night after a storm." },
+    { "id": "black-devil", "name": "Black devil", "type": "angler", "water": "deep", "seed": 41012, "when": ["winter", "storm"], "order": 12, "mark": "deep", "form": { "lure": [180, 255, 200], "gape": 1.3, "light": 10 },
+      "riddle": "Something with a green light and too many teeth would rise from the deep after a winter storm." }
+  ],
+  "gen": {
+    "waters": {
+      "reef": { "plans": ["compressed", "compressed", "fusiform", "globose"], "hues": [[0, 28], [40, 58], [190, 230], [280, 330]], "sat": [55, 80], "light": [48, 62], "pats": ["bars", "spots", "ocellus", "maze", "coral", "holes", "plain"], "tails": ["rounded", "truncate", "lunate"], "eye": [0.9, 1.1], "counter": [0.2, 0.5], "size": [8, 30], "iris": [45, 70, 55] },
+      "open": { "plans": ["fusiform", "fusiform", "elongate"], "hues": [[195, 225]], "sat": [18, 40], "light": [58, 70], "pats": ["plain", "stripes", "spots", "bars", "holes"], "tails": ["forked", "lunate"], "eye": [0.9, 1.05], "counter": [0.8, 1], "size": [25, 90], "iris": [210, 10, 82] },
+      "kelp": { "plans": ["fusiform", "elongate", "compressed"], "hues": [[55, 100], [20, 38]], "sat": [25, 45], "light": [36, 50], "pats": ["mottle", "maze", "worms", "stripes", "bars", "coral"], "tails": ["rounded", "truncate"], "eye": [0.95, 1.15], "counter": [0.3, 0.6], "size": [10, 45], "iris": [35, 60, 45] },
+      "sand": { "plans": ["fusiform", "elongate", "globose"], "hues": [[28, 48]], "sat": [18, 38], "light": [60, 74], "pats": ["speckle", "spots", "holes", "worms", "mottle"], "tails": ["truncate", "forked", "rounded"], "eye": [1, 1.2], "counter": [0.3, 0.6], "size": [8, 35], "iris": [40, 40, 72] },
+      "deep": { "plans": ["elongate", "fusiform", "globose"], "hues": [[225, 275], [345, 360]], "sat": [30, 55], "light": [16, 28], "pats": ["photophores", "photophores", "spots", "holes", "plain"], "tails": ["forked", "rounded"], "eye": [1.45, 1.9], "counter": [0.1, 0.3], "size": [10, 60], "iris": [195, 30, 40] }
+    },
+    "plans": {
+      "fusiform": { "depth": 0.26, "a": 0.85, "b": 1.4, "k": 0.88, "top": 1, "bot": 0.95 },
+      "compressed": { "depth": 0.5, "a": 0.8, "b": 1.15, "k": 0.9, "top": 1.05, "bot": 0.9 },
+      "elongate": { "depth": 0.12, "a": 0.55, "b": 0.7, "k": 0.9, "top": 1, "bot": 1 },
+      "globose": { "depth": 0.4, "a": 0.7, "b": 1.6, "k": 0.88, "top": 0.95, "bot": 1.1 }
+    },
+    "rarity": [["common", 60], ["uncommon", 28], ["rare", 10], ["veryRare", 2]],
+    "patterns": {
+      "rd": { "spots": { "F": 0.0367, "K": 0.0649 }, "maze": { "F": 0.029, "K": 0.057 }, "worms": { "F": 0.078, "K": 0.061 }, "coral": { "F": 0.0545, "K": 0.062 }, "holes": { "F": 0.039, "K": 0.058 } },
+      "rdIters": 1200, "rdGrid": 72, "drawnGrid": 90
+    },
+    "names": {
+      "adj": { "bars": ["Barred", "Banded", "Ribbon"], "spots": ["Spotted", "Freckled", "Dappled"], "maze": ["Marbled", "Scrawled", "Rippled"], "worms": ["Squiggled", "Scribbled", "Vermiculate"], "coral": ["Lace", "Fretted", "Coral"], "holes": ["Pocked", "Ringed", "Honeycomb"], "stripes": ["Striped", "Lined", "Thread"], "mottle": ["Mottled", "Kelp", "Shadow"], "speckle": ["Speckled", "Sand", "Pepper"], "ocellus": ["Eyespot", "Mirror", "Moon"], "photophores": ["Lantern", "Starlit", "Ember"], "plain": ["Silver", "Dusk", "Glass", "Tide", "Pale"] },
+      "noun": { "fusiform": ["darter", "shiner", "sprat", "runner", "tidefin"], "compressed": ["coinfish", "moonfin", "platefish", "leaffish", "dishfin"], "elongate": ["eel", "needlefish", "ribbonfish", "whipfin", "threadfish"], "globose": ["puff", "bobble", "pebblefish", "bunfish", "dumpling"] }
+    },
+    "phaseNames": ["Blush", "Sea-green", "Violet", "Amber", "Teal"],
+    "baitLean": { "sand": [0.6, 0.1], "kelp": [0.5, 0.2], "reef": [0.35, 0.35], "open": [0.15, 0.5], "deep": [0.05, 0.7] },
+    "commonWhen": ["dawn", "night", "rain", "mist", "low", "high", "summer", "autumn", "winter", "spring"],
+    "whenShare": 0.4,
+    "morph": { "leucistic": 0.004, "golden": 0.003, "melanistic": 0.004, "giant": 0.012, "giantSize": 1.5 },
+    "rarePlans": { "elongate": { "depth": 0.12, "a": 0.55, "b": 0.7, "k": 0.9 }, "compressed": { "depth": 0.42, "a": 0.8, "b": 1.15, "k": 0.9 } },
+    "rareTypes": { "ghost": { "water": "open" }, "lion": { "water": "reef" }, "stone": { "water": "reef" }, "angler": { "water": "deep" } }
+  },
+  "sketch": { "finerLength": 1.15 },
+  "chart": {
+    "title": "The angler's chart",
+    "aria": "The angler's chart: a hand-drawn sea chart of the island's waters that inks in as fish are sketched",
+    "most": "Most here take {bait}.",
+    "either": "These take either worm.",
+    "more": "More bite at {when}.",
+    "takes": "Takes {bait}.",
+    "notes": "Notes in the margin",
+    "notesNone": "Something is still to be written here.",
+    "tap": "Tap a fish or a numbered mark to read it.",
+    "glimpsed": "Something seen through the mesh of a net, not yet sketched."
+  },
+  "pages": {
+    "cardLine": "A fish of the {water}, sketched and let go.",
+    "place": "In the {water}; takes {bait}",
+    "when": ", more at {when}",
+    "and": "and",
+    "riddle": "Something lives in the {water} that a line might bring up close.",
+    "rareRiddle": "Something rare. The angler's chart may tell you where to look.",
+    "glimpsed": "Something slipped through your net in the {water}. A line might bring it up close.",
+    "foundLine": "You sketched your first {name} on {date}, and let it go.",
+    "found": "You sketched a {name} and let it go.",
+    "likes": "takes {bait}",
+    "scale": "about {cm} cm",
+    "field": {
+      "reef": "It keeps to the rocks off the reef, in and out of the weed.",
+      "sand": "It lies over the sand flats, the color of the sand it rests on.",
+      "kelp": "It threads through the kelp in the shallows, where the light is green.",
+      "open": "It swims the open water past the tide band, silver in the light.",
+      "deep": "It lives past the drop-off, where the water goes dark."
+    }
+  },
+  "words": {
+    "waters": { "reef": "Rocky reef", "sand": "Sand flats", "kelp": "Kelp shallows", "open": "Open water", "deep": "Deep water" },
+    "rarity": { "common": "Common", "uncommon": "Uncommon", "rare": "Rare", "veryRare": "Very rare" },
+    "morph": { "leucistic": "A pale one, almost white, with pink eyes.", "golden": "A golden one, bright as a new coin.", "melanistic": "A dark one, nearly black all over.", "giant": "A big one, far bigger than most of its kind." },
+    "bait": { "small": "the small red worm", "big": "the big dark worm", "either": "either worm" },
+    "baitItem": { "worms": "Small red worm", "bigworms": "Big dark worm" },
+    "when": { "night": "night", "dawn": "dawn and dusk", "day": "calm sunny days", "rain": "rain", "mist": "mist", "storm": "after a storm", "low": "low tide", "high": "high tide", "spring": "spring", "summer": "summer", "autumn": "autumn", "winter": "winter", "sparkle": "near a sparkle" },
+    "line": "Line",
+    "noWorms": "No worms in the pack. Dig in the topsoil for red worms, deeper for big dark ones.",
+    "refused": { "land": "Fish live in the sea. Try out over the water.", "fresh": "Only the sea holds fish. The ponds are for frogs.", "shallow": "Too shallow here. Cast further out.", "far": "Too far to cast from the shore. Try nearer, or from a headland or the stepping stones." },
+    "walk": "You walk down to the water's edge.",
+    "cast": "The float settles. Click when it dips.",
+    "dip": "The float dips.",
+    "missed": "It let go. The float bobs up again.",
+    "reeledIn": "You reel in the line.",
+    "baitGone": "The worm is gone. No more of that bait in the pack.",
+    "tray": "On the line",
+    "trayAfter": "from the {water}, {season} day {day}",
+    "first": "Sketched into your journal.",
+    "finer": "Finer than the one in your journal.",
+    "redraw": "Redraw the page",
+    "redrawn": "The page is redrawn.",
+    "letGo": "Let it go",
+    "close": "Close, and let it go",
+    "glimpse": "Through the mesh and away before you could sketch it.",
+    "glimpseNote": "A {name} passed the {water} at {time}.",
+    "times": ["night", "dawn", "morning", "midday", "afternoon", "dusk", "evening"]
+  },
+  "test": { "worms": 3, "bigworms": 3, "rareOdds": 600 }
+}

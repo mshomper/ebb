@@ -252,7 +252,7 @@ export function mountJournal(parent, live, buttonParent = parent) {
     const U = live.unread();
     const groups = livingList(L, words, c, (id) => {
       const d = live.describe(id);
-      return { id, known: d.known, name: d.known ? d.name : '' };
+      return { id, known: d.known, name: d.known ? d.name : '', pencil: !!d.hinted };
     }, (id) => j.species[id]?.first ?? -1, get('unlocks') ?? null);
     /** @param {string} attr @param {string} value @param {string} label @param {boolean} on */
     const pill = (attr, value, label, on) => `<button type="button" class="ebb-jl-chip" data-list-${attr}="${esc(value)}" aria-pressed="${on}">${esc(label)}</button>`;
@@ -270,7 +270,7 @@ export function mountJournal(parent, live, buttonParent = parent) {
         aria-label="${esc(`${g.label}: ${g.shut ? L.labels.open : L.labels.shut}`)}"><span class="ebb-jl-pill">${iconSvg(icon)}<span>${esc(g.label)}</span></span>${fresh}${iconSvg('chevron', 'ebb-jl-chev')}</button></h4>`;
       if (g.shut) return `<section class="ebb-jl-group is-${esc(g.tint)} is-shut">${head}</section>`;
       // Found small lives keep their row of marks (a one-page group such as Shells lists its items instead).
-      const marks = g.foundOnly && g.many && g.rows.length && words.smallLives?.marks ? marksHtml(g.rows) : '';
+      const marks = g.foundOnly && g.many && g.id !== 'fish' && g.rows.length && words.smallLives?.marks ? marksHtml(g.rows) : '';
       const inner = g.rows.length ? marks + listView(g.rows) + g.rows.map(itemsView).join('') : `<p class="ebb-journal__voice ebb-jlist__hint">${esc(g.hint ?? L.empty)}</p>`;
       return `<section class="ebb-jl-group is-${esc(g.tint)}">${head}${inner}</section>`;
     }).join('');

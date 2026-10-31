@@ -1,7 +1,7 @@
 {
   "type": "threads",
   "version": 1,
-  "note": "Threads (Matt, October 30, 2026; the Keeper book's Threads tab, src/ui/keeper-threads.js). Two parts. Things to try: every morning hint once shown (recipes/world/morning-hints.json and the journal's hint: flags), newest first, its Show me beside it, a done one pencilled out; hints not yet given stay hidden. Long threads: the big stories the island tells, each written by the keeper as it happens. threads: in order; each has an id, a title, a drawn icon (src/ui/icons/), lines and an optional pencil line and end. Each line has an id, a test by name (tests below, read by the morning hints' own test reader, src/world/hints/morning.js) and its words. A thread opens when its first line is written; a line is written, with the game date, the first time its test holds once the line before it has been written, and is kept in the save (the threads section, src/world/threads/model.js), so it never changes afterward. pencil: one soft line under an open thread's last line, never a target or a checklist. end: test names that must all hold for the thread to be finished (finished threads go under the Finished heading); a thread with no end stays open. pages: the thread opens the keeper's pages (src/ui/journal-keeper.js) from its page. Every set piece or story arc adds its thread here (CLAUDE.md, 'Adding a set piece'). Words are drafts in the keeper's voice for Matt to edit.",
+  "note": "Threads (Matt, October 30, 2026; the Keeper book's Threads tab, src/ui/keeper-threads.js). Two parts. Things to try: every morning hint once shown (recipes/world/morning-hints.json and the journal's hint: flags), newest first, its Show me beside it, a done one pencilled out; hints not yet given stay hidden. Long threads: the big stories the island tells, each written by the keeper as it happens. threads: in order; each has an id, a title, a drawn icon (src/ui/icons/), lines and an optional pencil line and end. Each line has an id, a test by name (tests below, read by the morning hints' own test reader, src/world/hints/morning.js) and its words. A thread opens when its first line is written; a line is written, with the game date, the first time its test holds once the line before it has been written, and is kept in the save (the threads section, src/world/threads/model.js), so it never changes afterward. pencil: one soft line under an open thread's last line, never a target or a checklist. end: test names that must all hold for the thread to be finished (finished threads go under the Finished heading); a thread with no end stays open. pages: the thread opens the keeper's pages (src/ui/journal-keeper.js) from its page. Every set piece or story arc adds its thread here (CLAUDE.md, 'Adding a set piece'). The angler's chart (docs/future/17) has its own, from the fishing:* flags src/world/fishing sets as the chart fills. Words are drafts in the keeper's voice for Matt to edit.",
   "words": {
     "title": "Threads",
     "try": "Things to try",
@@ -76,9 +76,17 @@
       ],
       "pencil": "There may be more of their pages on the island.",
       "end": ["cairnsLetter", "cacheRead"]
-    }
+    },
+    { "id": "angler", "title": "The angler's chart", "icon": "line", "lines": [
+      { "id": "made", "test": "lineMade", "text": "I made a fishing line: a willow withy, a twist of rush cord, a gorse thorn for a hook. Worms for bait." },
+      { "id": "first", "test": "fishFirst", "text": "My first fish on the line. I drew it on the shore and let it go. I started a chart of these waters to keep them." },
+      { "id": "riddle", "test": "fishRiddle", "text": "There is a riddle in the margin of my chart now, in my own hand, about a fish I have never seen." },
+      { "id": "water", "test": "fishWater", "text": "One stretch of water is all inked on the chart. I know what lives there now, and what it takes." },
+      { "id": "rare", "test": "fishRare", "text": "I caught one of the fish from the riddles. I drew it twice to be sure, and still let it go." },
+      { "id": "full", "test": "chartFull", "text": "Every fish of these waters is on the chart. I inked the frame and the title last." }
+    ], "pencil": "Every fish I sketch, the chart fills in a little.", "end": ["chartFull"] }
   ],
-  "tests": {
+  "tests": { "lineMade": [{"made": ["line"]}], "fishFirst": [{"flag": "fishing:sketch"}], "fishRiddle": [{"flag": "fishing:riddle:1"}], "fishWater": [{"prefix": "fishing:water:"}], "fishRare": [{"flag": "fishing:rare"}], "chartFull": [{"flag": "fishing:chart:full"}],
     "stoneShown": [{ "flag": "dig:marked-stone" }],
     "cacheFound": [{ "flag": "dig:cache" }],
     "cacheRead": [{ "flag": "keeper:cache-starter:read" }, { "flag": "keeper:cache-other:read" }],

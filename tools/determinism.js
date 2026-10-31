@@ -10,6 +10,7 @@ import { buildBase, hashBase, landmarks } from '../src/world/terrain/landform.js
 import { waterCellOf } from '../src/world/water/grid.js';
 import { buildSummary, hashSummary, WATER_CLASS } from '../src/world/water/summary.js';
 import { haulsJob } from '../src/world/nets/haul.js';
+import { bitesJob } from '../src/world/fishing/bite.js';
 import { gatherCheckJob } from '../src/world/gather/check.js';
 import { campCheckJob } from '../src/world/camp/check.js';
 import { digCheckJob } from '../src/world/dig/check.js';
@@ -296,6 +297,41 @@ function showHauls(h) {
     `<p class="muted">${h.main.living} living catches and ${h.main.keepsakes} keepsakes over 200 hauls of one net, at every depth, tide and season.</p>`;
 }
 
+const BITES_JOB = { module: './world/fishing/bite.js', fn: 'bitesJob' };
+
+/**
+ * Fishing (docs/future/17): 200 casts' bites, the island's fish rostered and rolled on the page and
+ * in a worker. A bite is pure, from the world seed and the cast count, so these must agree.
+ * @param {number} worldSeed
+ */
+async function runBites(worldSeed) {
+  const FR = await fetch('../recipes/world/fishing.json').then((r) => r.json());
+  const args = { seed: subSeed(worldSeed, 'fishing'), casts: 200, worldSeed, FR };
+  const main = bitesJob(args);
+  initWorkers({ size: 1 });
+  let worker;
+  try { worker = await run(BITES_JOB, args); } finally { dispose(); }
+  return { main, worker };
+}
+
+/** @param {Awaited<ReturnType<typeof runBites>>} h */
+function showBites(h) {
+  let card = document.getElementById('biteCard');
+  if (!card) {
+    card = document.createElement('div');
+    card.className = 'card';
+    card.id = 'biteCard';
+    /** @type {HTMLElement} */ (document.getElementById('haulCard') ?? $('chunks').closest('.card')).after(card);
+  }
+  const ok = h.main.hash === h.worker.hash;
+  card.innerHTML = '<h2>Fishing bites</h2>' +
+    `<div class="row total"><span class="label">200 casts</span>` +
+    `<span class="hash">${hex(h.main.hash)}<small>Main thread</small></span>` +
+    `<span class="hash">${hex(h.worker.hash)}<small>1 worker</small></span>` +
+    `<span class="v ${ok ? 'ok' : 'bad'}">${icon(ok)}${ok ? 'match' : 'differ'}</span></div>` +
+    '<p class="muted">Which fish bites on each of 200 casts, in all five waters, at every hour, weather, tide and season, with the island\'s own roster built on each side.</p>';
+}
+
 const GATHER_JOB = { module: './world/gather/check.js', fn: 'gatherCheckJob' };
 
 /**
@@ -517,6 +553,12 @@ async function build() {
     } catch (e) {
       console.error('[determinism] net hauls', e);
       $('detail').textContent += ` The net hauls failed: ${e instanceof Error ? e.message : String(e)}`;
+    }
+    try {
+      showBites(await runBites(worldSeed));
+    } catch (e) {
+      console.error('[determinism] fishing bites', e);
+      $('detail').textContent += ` The fishing bites failed: ${e instanceof Error ? e.message : String(e)}`;
     }
     try {
       showGather(await runGather(worldSeed));

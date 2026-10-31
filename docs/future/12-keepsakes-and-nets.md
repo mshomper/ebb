@@ -171,7 +171,8 @@ Cutting rushes for cord would thin that patch's cover share for a few days, then
 
 Always released: a nod to the conservation side of the game. Each is made from a seed like the keepsakes. Fish come from the creature body bake, shrimp and small crabs from the shell sweep and the finds' leg rig, and jellies from the stranded-jellyfish generator. Each gets a moment alive on the tray and a short journal page (an ink sketch traced from that very animal, a name, one note), then swims off. A first release of each kind counts as a find on the naturalist's line only (Matt, October 21, 2026). A distinctive one may be caught again and recognised ("The same wrasse as in spring"), but only while the code stays simple: the save keeps a short list of released seeds, and a later haul that rolls the same seed is the same animal. Kinds: a sand eel, a pipefish, a shrimp, a small flatfish, a moon jelly; at night in the light net, a comb jelly glowing; very rarely a young cuttlefish. Being handled gently could feed presence (doc 23), so the sea's creatures come to know you over time.
 
-### Wear and mending
+**With the line (F17, October 31, 2026).** The nets keep the small lives (shrimp, crabs, jellies), with their pages and naturalist finds as now. The five net fish (sand eel, sand goby, pipefish, young plaice, ballan wrasse) become **glimpses** in a net: they show on the tray for a moment and pencil their place in the journal and on the angler's chart, and their sketch comes only from the line. They join each island's fish roster as fixed, named members of the shallow waters. A page already inked from a net release still counts, so nobody loses a page and the naturalist's trail stays reachable. The sparkle (signs in the water, below) is shared with the line once it is built.
+
 
 - **Wear builds with use.** Every haul adds a little; storms, rock in the shallows and heavy hauls add more. Nothing wears while a net is stored.
 - **Holes change the catch, never stop it.** A worn net loses small things through its holes and its odds of rare and very rare things fall. That is a gradual, visible change, not a broken state.
@@ -233,7 +234,7 @@ From the code read on October 20, 2026:
 
 ## What it would change
 
-Listed only; Matt applies these later.
+Listed only; Matt applies these later. F17 (fishing) changes the nets' fish into glimpses; see Living catches above.
 
 - **Doc 07 (water and tide):** strandline cells weighted by how enclosed the shore is; nets fishing through a tide; signs drawn on the water.
 - **Doc 09 (structures):** the piece system broadened to nets on water and keepsakes set out on land.

@@ -96,6 +96,8 @@ Calls are scheduled on the audio clock (`AudioContext.currentTime`) a little ahe
 
 Soft and material: sculpt a low soil push (pitch tied to stroke speed), smooth a sand brush, paint a light rustle, water a pour that tracks flow rate, seed a soil tap then a breathy sprout, wall a stone set (pitch varied per stone), path a soft step, bridge a wooden knock, lantern a faint glass ring. Undo plays the tool sound softly reversed. Strokes are granular loops modulated by speed and pressure, fading 150 ms after release. UI sounds: a paper page for the journal, a pencil scratch for a new note, nothing on ordinary buttons.
 
+**Fishing (F17).** The cast (a soft swish and a plip as the float lands), the float's dip (a tiny plop), the line easing in (a light reel tick) and the release (a small slip into the water), all quiet and procedural, under the soundscape (`src/audio/keepsake-sounds.js`).
+
 ### Spatialization
 
 The `AudioListener` sits at the camera eye with orientation from the view. Creature voices and ambient one-shots use `PannerNode` with `HRTF`, `inverse` distance model, `refDistance` 2 m, `rolloffFactor` 1. Beds are stereo and not panned, but their filters and gains follow camera nearness. An air-absorption lowpass on each voice drops with distance (cutoff from 18 kHz at 2 m to 3 kHz at 60 m).

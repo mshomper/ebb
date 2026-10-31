@@ -28,6 +28,9 @@ export const MADE = {
   // Shovel: a stone blade lashed to a handle with a crosspiece grip.
   shovel: ['made', `<path d="M12 2.6V13.2M10.2 2.6H13.8M10.8 10.6L13.2 11.4M10.8 12L13.2 12.8"/>
     ${both('d="M8.4 13.4H15.6C16 13.4 16.2 13.8 16.1 14.2L15.2 18C14.9 19 14 19.6 13 19.6H11C10 19.6 9.1 19 8.8 18L7.9 14.2C7.8 13.8 8 13.4 8.4 13.4Z"')}${BASE}`],
+  // The fishing line (F17): a withy rod bending from the hand, its cord to a float on a ripple.
+  'fishing-line': ['made', `<path d="M4.4 20.4C8 15 12.4 9.4 19 3.6"/><path d="M19 3.6C19.4 8 19.2 12 18.4 15.6"/>
+    ${both('d="M18.4 14C19.4 14 20 14.8 20 15.8S19.4 17.6 18.4 17.6S16.8 16.8 16.8 15.8S17.4 14 18.4 14Z"')}<path d="M15.2 19.2C16.6 18.4 20.2 18.4 21.6 19.2"/>${BASE}`],
   // The keeper's blade: a ground stone blade on its unwrapped cloth.
   'keepers-blade': ['made', `<path ${A2} d="M2.8 16.4L11.4 12.6L21.2 15.8L12.4 20.4Z"/><path d="M2.8 16.4L11.4 12.6L21.2 15.8L12.4 20.4Z"/>
     <g transform="rotate(-50 12 11)">${both('d="M10 3.6H14L16 14.6C16 16.4 14.2 17.4 12 17.4S8 16.4 8 14.6Z"')}<path d="M8.6 13.8C10 14.8 14 14.8 15.4 13.8"/></g>`],
@@ -188,6 +191,10 @@ export const MADE = {
   // ---- Treats and offerings: on a flat offering stone ----
   worms: ['treats', `${STONE}<path d="M4.6 15.2C6 12.4 8.8 12.2 10 14.4S13.6 17.2 15 14.6C16 12.8 18 12.2 19.6 13.6"/><path d="M7 10.2C8 8.2 10.4 7.8 11.6 9.4S14.6 11.2 16 9.6"/>
     <path d="M8.2 12.8L8.8 14M15.2 13.6L16.2 14.4M9.6 8.6L10.4 9.6"/>${dot(19.6, 13.6, 0.8)}${dot(16, 9.6, 0.7)}`],
+  // The big dark worm (F17): one long thick worm in a loose S, its banded collar drawn in.
+  bigworms: ['treats', `${STONE}<path ${A2} d="M4 16.4C5.4 11.6 9.6 11 11.4 13.6S14.4 16 15.8 12.6C16.8 10.2 18.4 7.6 20.4 8.2C20.6 9.8 18.6 11.4 17.6 13.6C16 17.4 12.4 18.4 10.2 15.6S6.6 13.6 5.6 17Z"/>
+    <path d="M4 16.4C5.4 11.6 9.6 11 11.4 13.6S14.4 16 15.8 12.6C16.8 10.2 18.4 7.6 20.4 8.2C20.6 9.8 18.6 11.4 17.6 13.6C16 17.4 12.4 18.4 10.2 15.6S6.6 13.6 5.6 17Z"/>
+    <path d="M7.6 12.6L8.2 14.6M9 12.4L9.4 14.4"/>`],
   'lily-leaf': ['treats', `${STONE}<path ${A2} d="M12 10.6L10.6 4.4C6.6 4.8 4.4 7 4.4 10.2C4.4 13.6 7.6 16 12 16S19.6 13.6 19.6 10.2C19.6 7 17.4 4.8 13.4 4.4Z"/>
     <path d="M12 10.6L10.6 4.4C6.6 4.8 4.4 7 4.4 10.2C4.4 13.6 7.6 16 12 16S19.6 13.6 19.6 10.2C19.6 7 17.4 4.8 13.4 4.4Z"/>
     <path d="M12 10.6L6.6 9M12 10.6L6.8 13.4M12 10.6V15M12 10.6L17.2 13.4M12 10.6L17.4 9"/>`],

@@ -5,6 +5,10 @@
 // the tray and back to the sea. A keepsake turns slowly on its rarity's paper with Keep it on the
 // shelf and Back to the sea. Closing lets everything left go back. Reads the store slice `haul`
 // (src/world/nets/index.js); dispatches the nets.* actions.
+// The fishing line's catch uses the same tray (docs/future/17): mounted again on the store slice
+// `catch` with act 'fishing' (src/world/fishing), its fish says its rarity, Sketched into your
+// journal for a first of its species, and Redraw the page when it is finer than the one sketched.
+// A net fish is a glimpse (F17): it swims a moment with its line and slips away by itself.
 
 import { get, subscribe } from '../core/store.js';
 import { dispatch } from '../input/actions.js';
@@ -18,6 +22,8 @@ import { keepsakeMesh, keepsakeWords, keepsakeView } from '../world/keepsakes/fa
 const SEASONS = ['spring', 'summer', 'autumn', 'winter'];
 /** How long a catch takes to slip off the tray, ms. */
 const GO_MS = 700;
+/** How long a glimpse stays before it slips away by itself, ms. */
+const GLIMPSE_MS = 2800;
 
 /** @param {string} s */
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c] ?? c);
@@ -40,10 +46,15 @@ function weedSvg(seed) {
 
 /**
  * Mount the tray. @param {HTMLElement} parent
- * @param {{ NR: any, K: any, words: any }} o NR: nets.json; K: keepsakes.json; words: journal.json (keepsake words)
+ * @param {{ NR: any, K: any, words: any, FR?: any, slice?: string, act?: string }} o NR: nets.json; K: keepsakes.json; words:
+ *   journal.json (keepsake words); FR: fishing.json (gen 2 fish, the line's words); slice: the store slice it shows
+ *   ('haul', or 'catch' for the line); act: the actions it sends ('nets' or 'fishing')
  */
 export function mountHaulTray(parent, o) {
-  const { NR, K } = o, W = NR.words, KW = o.words.keepsakes;
+  const { NR, K } = o, FR = o.FR ?? null, KW = o.words.keepsakes;
+  const slice = o.slice ?? 'haul', act = o.act ?? 'nets', line = slice === 'catch';
+  const W = line && FR ? { ...NR.words, title: FR.words.tray, letGo: FR.words.letGo, close: FR.words.close } : NR.words;
+  /** @type {Set<string>} */ const glimpsing = new Set();
   const root = document.createElement('div');
   root.className = 'ebb-haul';
   root.setAttribute('role', 'dialog');
@@ -61,20 +72,39 @@ export function mountHaulTray(parent, o) {
     return W.again.replace('{name}', name.charAt(0).toLowerCase() + name.slice(1)).replace('{season}', SEASONS[s.index]).replace('{day}', String(s.day + 1));
   }
 
-  /** Build the tray for a new haul. @param {any} h the store slice `haul` */
+  /** The line a fish on the line says about its sketch: a first, finer, or redrawn. @param {any} c */
+  function sketchHtml(c) {
+    if (!line || !FR) return '';
+    const w = c.first ? FR.words.first : c.redrawn ? FR.words.redrawn : c.finer ? FR.words.finer : '';
+    return w ? `<p class="ebb-haul__again">${esc(w)}</p>` : '';
+  }
+
+  /** A fish's buttons: none for a glimpse; Redraw the page when finer; Let it go. @param {any} c */
+  function buttonsHtml(c) {
+    if (c.glimpse) return '';
+    const redraw = line && FR && c.finer && !c.redrawn
+      ? `<button type="button" class="ebb-haul__btn is-main" data-redraw="${esc(c.id)}">${iconSvg('sketchbook')}<span>${esc(FR.words.redraw)}</span></button>` : '';
+    return `${redraw}<button type="button" class="ebb-haul__btn" data-go="${esc(c.id)}">${iconSvg('release')}<span>${esc(W.letGo)}</span></button>`;
+  }
+
+  /** Build the tray for a new haul. @param {any} h the store slice `haul` (or `catch`) */
   function build(h) {
     shown = h.haul;
     const s = seasonOf(h.hour * 3600);
-    const after = W.after.replace('{tide}', h.springTide ? W.springTide : W.highTide).replace('{season}', SEASONS[s.index]).replace('{day}', String(s.day + 1));
+    const after = line && FR
+      ? FR.words.trayAfter.replace('{water}', (FR.words.waters[h.water] ?? '').toLowerCase()).replace('{season}', SEASONS[s.index]).replace('{day}', String(s.day + 1))
+      : W.after.replace('{tide}', h.springTide ? W.springTide : W.highTide).replace('{season}', SEASONS[s.index]).replace('{day}', String(s.day + 1));
     const rows = h.haul.living.map((/** @type {any} */ c) => `
       <div class="ebb-haul__row" data-row="${esc(c.id)}">
         <div class="ebb-haul__pic"><canvas data-pic="${esc(c.id)}"></canvas></div>
         <div class="ebb-haul__txt">
-          <b class="ebb-haul__name">${esc(catchName(c.n, NR))}</b>
+          ${c.n.gen === 2 && FR ? `<span class="ebb-haul__rarity">${esc(FR.words.rarity[c.n.rarity] ?? '')}</span>` : ''}
+          <b class="ebb-haul__name">${esc(catchName(c.n, NR, FR))}</b>
           ${c.again ? `<p class="ebb-haul__again">${esc(againLine(c))}</p>` : ''}
-          <p class="ebb-haul__note">${esc(catchWords(c.n, NR))}</p>
+          ${sketchHtml(c)}
+          <p class="ebb-haul__note">${esc(c.glimpse && FR ? FR.words.glimpse : catchWords(c.n, NR, FR))}</p>
         </div>
-        <div class="ebb-haul__btns"><button type="button" class="ebb-haul__btn" data-go="${esc(c.id)}">${iconSvg('release')}<span>${esc(W.letGo)}</span></button></div>
+        <div class="ebb-haul__btns">${buttonsHtml(c)}</div>
       </div>`).join('');
     const ks = h.haul.keepsake;
     const ksRow = ks ? `
@@ -99,9 +129,14 @@ export function mountHaulTray(parent, o) {
       </div>`;
     pics = [];
     for (const c of h.haul.living) {
-      const mesh = catchMesh(c.n, NR);
+      const mesh = catchMesh(c.n, NR, FR);
       pics.push({ cv: /** @type {HTMLCanvasElement} */ (root.querySelector(`[data-pic="${CSS.escape(c.id)}"]`)), mesh, n: c.n, look: catchLook(c.n),
-        fit: { ...fitOf(mesh), alpha: catchAlpha(c.n) }, out: new Float32Array(mesh.vertices.length), spin: false });
+        fit: { ...fitOf(mesh), alpha: catchAlpha(c.n, FR) }, out: new Float32Array(mesh.vertices.length), spin: false });
+      // A glimpse swims a moment, then slips away by itself.
+      if (c.glimpse && !glimpsing.has(c.id)) {
+        glimpsing.add(c.id);
+        setTimeout(() => dispatch(/** @type {any} */ ({ type: `${act}.release`, id: c.id })), GLIMPSE_MS);
+      }
     }
     if (ks) {
       const mesh = keepsakeMesh(ks.n, K);
@@ -127,9 +162,9 @@ export function mountHaulTray(parent, o) {
 
   /** Follow the slice: a new haul builds the tray; released catches slip off; an answered keepsake settles; none closes it. */
   function render() {
-    const h = get('haul');
+    const h = get(slice);
     if (!h) {
-      if (!root.hidden) { root.classList.remove('is-open'); setTimeout(() => { if (!get('haul')) { root.hidden = true; root.innerHTML = ''; pics = []; } }, 220); }
+      if (!root.hidden) { root.classList.remove('is-open'); setTimeout(() => { if (!get(slice)) { root.hidden = true; root.innerHTML = ''; pics = []; } }, 220); }
       shown = null;
       return;
     }
@@ -145,20 +180,29 @@ export function mountHaulTray(parent, o) {
       const btns = root.querySelector('[data-out="ks-btns"]');
       if (btns) btns.outerHTML = h.ksGone ? '' : `<p class="ebb-haul__done">${esc(W.kept)}</p>`;
     }
+    // A redrawn page: the Redraw button goes, and the line says so.
+    for (const c of h.haul.living) {
+      const b = c.redrawn ? root.querySelector(`[data-redraw="${CSS.escape(c.id)}"]`) : null;
+      if (!b) continue;
+      b.remove();
+      const said = root.querySelector(`[data-row="${CSS.escape(c.id)}"] .ebb-haul__again`);
+      if (said && FR) said.textContent = FR.words.redrawn;
+    }
   }
 
   root.addEventListener('click', (e) => {
     const b = /** @type {HTMLElement | null} */ (/** @type {HTMLElement} */ (e.target).closest('button'));
     if (!b) return;
-    if (b.dataset.go) dispatch(/** @type {any} */ ({ type: 'nets.release', id: b.dataset.go }));
+    if (b.dataset.go) dispatch(/** @type {any} */ ({ type: `${act}.release`, id: b.dataset.go }));
+    else if (b.dataset.redraw) dispatch(/** @type {any} */ ({ type: `${act}.redraw`, id: b.dataset.redraw }));
     else if (b.dataset.act === 'keep') dispatch(/** @type {any} */ ({ type: 'nets.keep' }));
     else if (b.dataset.act === 'leave') dispatch(/** @type {any} */ ({ type: 'nets.leave' }));
-    else if (b.dataset.act === 'close') dispatch(/** @type {any} */ ({ type: 'nets.close' }));
+    else if (b.dataset.act === 'close') dispatch(/** @type {any} */ ({ type: `${act}.close` }));
   });
   // Pointer and wheel input on the tray never reach the island below.
   for (const ev of ['pointerdown', 'pointermove', 'wheel']) root.addEventListener(ev, (e) => e.stopPropagation(), { passive: true });
 
   render();
-  const off = subscribe('haul', render);
+  const off = subscribe(slice, render);
   return () => { off(); cancelAnimationFrame(raf); root.remove(); };
 }

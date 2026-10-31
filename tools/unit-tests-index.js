@@ -41,6 +41,7 @@ export const TEST_FILES = {
   'figure': '',
   'finds': '',
   'fire-products': '',
+  'fishing': '',
   'forager': '',
   'format9': '',
   'frogs': '',

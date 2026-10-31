@@ -1,8 +1,27 @@
 # F17 — Fishing, the fish and the angler's chart
 
-> The keeper lives on an island in the sea, so some fishing belongs in ebb. This doc proposes it in the game's own terms: a **line the player makes**, **worms from the dig as bait**, and fish that are **never kept**. Each fish is let go, and the journal keeps one **sketch per species**. What bites depends on reading the water: which of five **waters** you cast into, the tide, the hour, the weather and the season, plus the same **sparkle** the nets watch for. Every fish is drawn by one procedural generator, so no two catches look alike. A fixed **roster** per island keeps the sketches finite. Sketching every ordinary species fills in **the angler's chart**, a hand-drawn sea chart in the journal that inks in as you go and hands out riddles for **twelve rare fish**. A prize fish in an **aquarium** waits for a future living space. It is grounded in a read of the code on October 31, 2026, and two click-through pages: `tools/fish-lab.html` and `tools/angler-chart.html`.
+> The keeper lives on an island in the sea, so some fishing belongs in ebb. This doc proposes it in the game's own terms: a **line the player makes**, **worms from the dig as bait**, and fish that are **never kept**. Each fish is let go, and the journal keeps one **sketch per species**. What bites depends on reading the water: which of five **waters** you cast into, the tide, the hour, the weather and the season, plus the same **sparkle** the nets watch for. Every fish is drawn by one procedural generator, so no two catches look alike. A fixed **roster** per island keeps the sketches finite. Sketching every ordinary species fills in **the angler's chart**, a hand-drawn sea chart in the Keeper book that inks in as you go and hands out riddles for **twelve rare fish**. A prize fish in an **aquarium** waits for a future living space. It is grounded in a read of the code on October 31, 2026, and two click-through pages: `tools/fish-lab.html` and `tools/angler-chart.html`.
 
-**Status:** Decided (direction, October 30 and 31, 2026). Nothing is built. The nets' living catches (F12, K6) are built and would change (see "The nets, reworked"). The sparkle waits for F12's signs in the water (K8). The aquarium is a roadmap item only.
+**Status:** Decided (direction, October 30 and 31, 2026). Being built on `m2-fishing` (October 31, 2026), after the corrections below. The nets' living catches (F12, K6) change with it (see "The nets, reworked"). The sparkle waits for F12's signs in the water (K8), which are not built: fishing is built without it and leaves a hook. The aquarium is a roadmap item only.
+
+## Corrections after a read of the code (October 31, 2026)
+
+The orchestrator checked this doc against the code before the build. These change the proposal below, and the sections have been brought in line:
+
+1. **The line has three parts, not four.** The workbench has three part spots (`recipes/world/camp.json` stations.workbench.spots). The line is a withy (`willow.withies`), rush cord and gorse thorns; the float is drawn as part of the line. `{willow.withies, rush-cord, gorse.thorns}` is a set no other make uses (the second hamper is rushes, rush cord and a withy; the basket a withy and two cords).
+2. **Gorse thorns are a new gather part** (`gorse.thorns` in `recipes/world/gather.json`, all year). Gorse gave only its flowers and seed before.
+3. **Willow and gorse already grow on the main island** (the hen asks for three gorse or willow bushes; withies go into the basket and the charcoal), so fishing does not wait for the meadow islet. Doc 20's line says so.
+4. **There is no robin in the game.** It is gone from the worm uses and the open questions.
+5. **The angler's chart is the Keeper book's, not the journal's.** On October 30 Matt split the books: the journal (J) is what lives on the island, the Keeper book (I) is what you have done and kept. The fish pages go in the journal, in a **Fish** group under Living things; the chart, a reward that fills in as you go, is the Keeper book's own **Chart** tab, shown once the line is made (so the tab row stays five tabs until then and never crowds).
+6. **Fish on screen move like living things.** A hooked fish and the fish on the tray swim (a skinned wiggle in the world, the tray's swim bend), never a still posed mesh (the creature rule's spirit).
+7. **The net fish pages count on the naturalist's trail today.** The five net fish become glimpses in a net, but their pages stay the same journal pages, a page already inked from a net release still counts, and a sketch of one on the line inks that same page, so every stop of the trail is still reachable (`src/world/expansion.js` counts journal `findOrder` pages known).
+8. **The sparkle is not built.** "Near a sparkle" is only an odds boost; fishing is built without it and leaves a hook (`sign` in the bite's input, as in the haul). The moon glassfish can still bite at night.
+9. **Fog is `mist`** in the weather (`src/world/weather.js` moods: clear, cloud, rain, mist). Read every "fog" below as mist.
+10. **The clam rake is only reserved** (the tide band in `src/world/dig/layers.js`), so lugworms are not a winter bait.
+11. **The chart's riddles run over days,** so the chart has a thread in `recipes/world/threads.json` (CLAUDE.md, "Adding a set piece or story arc").
+12. **Deep water** is reached for now by a long cast from a headland or the far end of the stepping stones. Matt plans a dock of planks and nails (from the underground spring work) where the boat will land; the dock is the later way out to deep water.
+
+**The open questions' answers for the build** (the orchestrator's calls, October 31, 2026; Matt can change them): winter bait is the worms carried from autumn, so winter fishing is slower by design; the worm split is fishing only, and the turtles and the hen still take the small red worm; the roster stays at 22; a redraw replaces the sketch; the inked chart title is the reward at the end.
 
 ## Decided so far
 
@@ -64,14 +83,15 @@ The nets work while you are away and tell you who lives where. The line works wh
 
 A made tool, in the language of F13's makes (real island things, a unique set of parts, made at the workbench):
 
-| Part | From | Notes (proposal) |
+| Part | From | Notes |
 |---|---|---|
-| Rod | A withy (grey willow) | Willow is already a volunteer and a withy is already a part (the drying rack, the hamper lid) |
+| Rod | A withy (grey willow) | Willow already grows on the main island and a withy is already a part (the drying rack, the basket, the second hamper) |
 | Line | Rush cord | Already made from rushes |
-| Hook | A gorse thorn | Gorse is a volunteer; a thorn hook is an old real practice |
-| Float | Drift twigs or a small piece of driftwood | Drift twigs are on the strandline from the first evening |
+| Hook | Gorse thorns (`gorse.thorns`, a new gather part) | Gorse already grows on the main island; a thorn hook is an old real practice |
 
-- It hangs on the pack like the shovel and takes no pouch.
+The float is drawn as part of the line, not a fourth part (the workbench has three part spots; October 31, 2026).
+
+- It hangs on the belt like the shovel and takes no pouch.
 - Proposed tier: T3, after the shovel (T2), so worms are already coming up when the line arrives.
 - A line never breaks or wears out. Wear belongs to the nets (F12, K7); one mending chore is enough.
 
@@ -81,12 +101,12 @@ The dig already tells the two worms apart (`src/world/dig/finds.js`: topsoil giv
 
 | Pack kind | From | Bait for | Other uses today |
 |---|---|---|---|
-| `worms` (the small red worm) | Topsoil | Shallow-water fish | Turtles, the hen, the robin, the lily leaf parcel |
-| `bigworms` (the big dark worm) | Subsoil | Deeper and larger fish | Proposed: the turtles prefer it (see open questions) |
+| `worms` (the small red worm) | Topsoil | Shallow-water fish | Turtles, the hen, the lily leaf parcel |
+| `bigworms` (the big dark worm) | Subsoil | Deeper and larger fish | None: the turtles, the hen and the lily leaf parcel keep to the small red worm (fishing only, October 31, 2026) |
 
 - Each species prefers the small red worm, the big dark worm, or either. The water sets the leaning: sand and kelp fish lean small red, open and deep water fish lean big dark (the lab's weights: sand 60/10/30, kelp 50/20/30, reef 35/35/30, open 15/50/35, deep 5/70/25, as small/big/either).
 - The right worm doubles a species' odds; the wrong one doesn't stop a bite.
-- **Winter has no worms** (F13: "No worms, no clay" in winter). Worms already keep in their pouch, so autumn digging carries into winter. See the open questions for a winter bait.
+- **Winter has few worms** (F13: "No worms, no clay" in winter; the subsoil still gives a big dark worm now and then). Worms already keep in their pouch, so autumn digging carries into winter, and winter fishing is slower by design. Lugworms from the clam rake are not a winter bait: the rake is only reserved (the tide band in `src/world/dig/layers.js`).
 - Saves: the existing `worms` count becomes small red worms, so older saves read without change.
 
 ### Reading the water
@@ -103,7 +123,9 @@ The dig already tells the two worms apart (`src/world/dig/finds.js`: topsoil giv
 
 Shaping the coast changes what you can catch. A cliff headland the player raised brings the reef; a sheltered sandy cove brings the flats.
 
-**Conditions** (each species has none, one or two): night, dawn and dusk, calm sunny days, rain, fog, after a storm, low tide, high tide, a season, and near a sparkle.
+**Reaching deep water.** For now, a long cast from a headland or from the far end of the stepping stones reaches it. Later, Matt's dock of planks and nails (from the underground spring work), where the boat will land, is the way out to it.
+
+**Conditions** (each species has none, one or two): night, dawn and dusk, calm sunny days, rain, mist (the weather's `mist` mood), after a storm, low tide, high tide, a season, and near a sparkle (a hook only until F12's signs in the water are built).
 
 **Odds, never gates** (proposal for the numbers):
 
@@ -113,7 +135,7 @@ Shaping the coast changes what you can catch. A cliff headland the player raised
 - With none of its conditions met, a species keeps its base weight, so a night fish can still bite at noon, just rarely.
 - Every number lives in `recipes/world/fishing.json`.
 
-**The sparkle** is F12's sign in the water (K8), shared. Casting near one counts as the "near a sparkle" condition, and for every species it nudges the morphs up a little.
+**The sparkle** is F12's sign in the water (K8), shared. Casting near one counts as the "near a sparkle" condition, and for every species it nudges the morphs up a little. K8 is not built yet: the bite takes a `sign` input that is always none for now, so the sparkle plugs in later without changing the odds code.
 
 ### The bite
 
@@ -123,7 +145,8 @@ No reflex minigame and no fail state. Cast, the float settles, and after a short
 
 - The fish shows for a moment in the tray language the nets already use (`src/ui/haul-tray.js`): name, length, rarity word, and a short line.
 - **A first of its species is sketched into the journal.** The page uses the same traced-sketch path as the net catches (`src/ui/sketches/catch.js`), so the sketch is of that very fish.
-- **One sketch per species.** When you catch a more remarkable one (a rare morph, a larger one), the tray offers to redraw the page. The page keeps one sketch, never a count.
+- **One sketch per species.** When you catch a more remarkable one (a rare morph, a larger one), the tray offers to redraw the page. The page keeps one sketch, never a count; a redraw replaces it.
+- **It moves.** The hooked fish wriggles at the end of the line as you ease it in (a skinned swim in the world), and on the tray it swims in place as the net catches do, never a still posed mesh.
 - Every fish goes back. Releasing is what counts, as with the nets.
 - Counters of kinds are allowed and totals never (F12, October 21): "14 kinds sketched" is a record; "catch 50 fish" is grinding.
 
@@ -165,9 +188,9 @@ Twelve species in four types. Each is labeled Very rare and has its own look and
 
 | Type | What makes it | Species | Water | Conditions |
 |---|---|---|---|---|
-| Ghost fish | See-through body showing spine, ribs, skull and gut | Glass sprat | Open water | Fog, dawn and dusk |
+| Ghost fish | See-through body showing spine, ribs, skull and gut | Glass sprat | Open water | Mist, dawn and dusk |
 | | | Wraith catfish (eel-like) | Open water | Night, rain |
-| | | Moon glassfish (deep-bodied, violet) | Open water | Night, near a sparkle |
+| | | Moon glassfish (deep-bodied, violet) | Open water | Night, near a sparkle (the sparkle a hook for now; it still bites at night) |
 | Lionfish | Bars onto the head, separate banded spines, fan fins | Firework lionfish | Rocky reef | Calm sunny days, summer |
 | | | Ember dwarf lionfish (orange, short spines, 9 to 16 cm) | Rocky reef | Dawn and dusk, summer |
 | | | Zebra lionfish (black and white) | Rocky reef | Night, high tide |
@@ -182,7 +205,7 @@ Twelve species in four types. Each is labeled Very rare and has its own look and
 
 ## The angler's chart
 
-A hand-drawn sea chart of your own island's waters, kept in the journal in the keeper's hand. Worked out in `tools/angler-chart.html` (sketch fish one at a time, play the whole fill, or tap fish in any order).
+A hand-drawn sea chart of your own island's waters, kept in the Keeper book in the keeper's hand: its own **Chart** tab, shown once the line is made. The fish themselves have their pages in the journal (the Fish group under Living things); the chart is a record of what you have done, so it is the Keeper book's (Matt's split of the books, October 30, 2026). Worked out in `tools/angler-chart.html` (sketch fish one at a time, play the whole fill, or tap fish in any order).
 
 **It starts as a pencil draft:** the coastline, the five water names, depth lines, the water marks, the compass and the title, all faint pencil.
 
@@ -212,6 +235,8 @@ A hand-drawn sea chart of your own island's waters, kept in the journal in the k
 
 **When every ordinary fish is sketched,** the frame and the title ink. In the game there's no count on the chart; the chart itself shows how far along it is.
 
+**Its thread.** The riddles run over days, so the chart has a thread in the Keeper book's Threads (`recipes/world/threads.json`, "The angler's chart"): the line made, the first sketch, the first riddle, a first finished water, the first rare fish, and the title inked, each a line in the keeper's voice written the first time its flag is set (`fishing:*` journal flags).
+
 **Placing everything.** Each riddle's mark sits in the right water on the player's own coast: the stonefish just off rock coast, the lionfish further off the reef, the ghosts offshore, the anglers past the drop-off. Because the coast is shaped, the chart is drawn from the island's own shoreline when the journal opens, not from a fixed picture. So nothing on it has a fixed position: water names, riddle marks, fish, soundings and water marks are placed in that order, each only where it is clear of everything already placed and of every drawn line (coast, depth lines, drop-off, frame), with a little air around it. The mockup checks this: on the finished chart, no text, fish or mark touches another or crosses a line (Matt, October 31, 2026: "make sure that all the text and everything has the proper spacing").
 
 
@@ -230,6 +255,7 @@ Today the general net brings up eight living kinds (sand eel, sand goby, pipefis
 - **Fish in a net become glimpses.** A roster fish in a haul shows on the tray for a moment and pencils its silhouette into the journal and onto the chart ("a silver shoal passed the east reef at dawn"). The sketch, and the chart's ink, come only from the line.
 - **The five net fish join the roster** as fixed, named members of the shallow waters (sand eel and sand goby on the flats, pipefish and wrasse in the kelp or reef, plaice on the flats). They stay the common, familiar fish; the generator gives their individuals the new variety.
 - **Saves:** a fish page already inked from a net release counts as sketched, so nobody loses a page.
+- **The naturalist's trail:** the five pages stay the same journal pages (the trail counts journal `findOrder` pages known, `src/world/expansion.js`), so a page inked from a net still counts, and sketching one on the line inks that same page. Every stop stays reachable.
 - Nets keep scouting: a glimpse tells you a fish lives in that water, which is a reason to come back with the line.
 
 ## How it plugs into the code
@@ -241,14 +267,15 @@ Today the general net brings up eight living kinds (sand eel, sand goby, pipefis
 - **`src/world/pack/`** and `recipes/world/pack.json`: the `bigworms` kind; `dig/index.js` routes the big dark worm to it.
 - **`recipes/world/cook.json`**: the line's make.
 - **`src/ui/haul-tray.js`**: reused for a caught fish, with the redraw choice.
-- **`src/ui/journal-chart.js`** (new): the chart page, drawn from the island's coast. Its pencil-then-ink pieces follow the mockup's rules.
-- **`recipes/world/journal.json`**: a Fish section with one page per roster species and the chart page.
+- **`src/ui/keeper-chart.js`** (new) and **`src/world/fishing/chart.js`** (new, pure): the chart, the Keeper book's Chart tab, drawn from the island's coast. Its pencil-then-ink pieces follow the mockup's rules; the layout is pure, so a test checks nothing overlaps.
+- **`recipes/world/journal.json`** and `journal-list.json`: a Fish group under Living things, with one page per roster species (built from the roster when the island loads) and the five net fish's pages.
+- **`recipes/world/threads.json`**: the angler's chart thread.
 - **Saves:** a fishing section (species sketched, each with the seed of the sketched individual; glimpses; clue progress), read without breaking by older saves.
 - **Test links:** `?fishing`, `?fishing=chart:N` (the chart with N species sketched), `?fishing=rare` (every rare species catchable for review).
 
 ## What it would change
 
-Each line is a change to a numbered doc, for Matt to apply when this is accepted:
+Each line is a change to a numbered doc. Applied on October 31, 2026, with the corrections above:
 
 - **Doc 01 (vision):** fishing joins the core hooks beside keepsakes; "living catches are always released" extends to fish caught on the line, with the aquarium as the one future exception.
 - **Doc 07 (water and tide):** the five waters as a classification of the sea beside the coast; the bite reads tide, depth and the sparkle.
@@ -257,7 +284,7 @@ Each line is a change to a numbered doc, for Matt to apply when this is accepted
 - **Doc 15 (camera, input and UI):** the cast and the bite; the journal's Fish section and the chart page.
 - **Doc 17 (audio):** the cast, the float, the line easing in and the release, all quiet.
 - **Doc 18 (saves):** the fishing section; the worm split; net fish pages counting as sketched.
-- **Doc 20 (roadmap):** a fishing stage (proposed after the meadow islet, since the line needs willow and gorse); the aquarium as a later line with the living space.
+- **Doc 20 (roadmap):** a fishing stage, on the main island (willow and gorse grow there already, so it need not wait for the meadow islet); the aquarium as a later line with the living space.
 - **F12 (keepsakes and nets):** net fish become glimpses; the five net fish join the roster; the sparkle is shared with the line.
 - **F13 (keeper's camp):** the `bigworms` pack kind; the line as a T3 make; worms as bait in the uses tables.
 
@@ -271,12 +298,14 @@ Each line is a change to a numbered doc, for Matt to apply when this is accepted
 
 ## Open questions
 
-- **Winter bait.** Winter has no worms. Should lugworms from the clam rake work as winter bait, should the pouch simply carry autumn's worms, or should winter fishing be slow by design?
-- **Turtles and the big dark worm.** Should the turtles (or the robin) prefer one worm, or stay a fishing-only distinction?
-- **The roster size.** Is 22 ordinary species right, or should it grow with new waters as the island expands (the tide flats, the outer skerry)?
-- **Reaching deep water.** A long cast from a headland, the end of the stepping stones, or the boat later?
-- **The redraw.** Does a redraw replace the sketch, or keep the first in pencil behind the new one?
-- **The chart's reward beyond the riddles.** Is the inked title enough at the end, or should completing it open something (a second line, a new bait)?
+Each has an answer for the build (the orchestrator's calls, October 31, 2026), for Matt to change:
+
+- **Winter bait.** Answer for now: the pouch carries autumn's worms, and winter fishing is slower by design (the clam rake and its lugworms are only reserved).
+- **Turtles and the big dark worm.** Answer for now: a fishing-only distinction; the turtles and the hen keep to the small red worm.
+- **The roster size.** Answer for now: 22 ordinary species. It could grow with new waters as the island expands (the tide flats, the outer skerry).
+- **Reaching deep water.** Answer: a long cast from a headland or the end of the stepping stones now; Matt's dock later.
+- **The redraw.** Answer for now: a redraw replaces the sketch.
+- **The chart's reward beyond the riddles.** Answer for now: the inked title is the reward at the end.
 
 ## Depends on / feeds into
 

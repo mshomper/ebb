@@ -69,6 +69,8 @@ import { createShaperWatch } from './world/shaper.js';
 import { pickedFirsts, noteFirsts, knifed, hasForage, sampleForager } from './world/forager.js';
 import { createForagerBelt } from './world/forager-belt.js';
 import { createNets } from './world/nets/index.js';
+import { createFishing } from './world/fishing/index.js';
+import { mountFishingOverlay } from './ui/fishing-overlay.js';
 import { cleanShelf, keep as keepShelf, letGo as letGoShelf, readLetter, swap as swapShelf } from './world/keepsakes/shelf.js';
 import { chooseLetter } from './world/keepsakes/letters.js';
 import { createPieces } from './world/pieces/index.js';
@@ -1082,6 +1084,33 @@ export async function startApp(canvas, hooks = {}) {
   // The walker's kit (the Walker page, K1; src/world/kit): hat, lantern, in hand, coat and carrier.
   const kit = createKit({ recipe: await loadRecipe('world/kit'), pack, you: () => (walk.below ? walk.you() : null) });
   sim.addSystem(kit);
+  // Fishing (docs/future/17; src/world/fishing): the line made at the workbench, worms from the dig
+  // for bait, a cast into one of five waters, every fish sketched and let go. `?fishing` (testing,
+  // unsaved) gives the line, both worms and short waits; `?fishing=rare` makes every rare fish
+  // bite often in its water; `?fishing=chart:N` sketches N of the island's fish for the chart.
+  const fishingRecipe = await loadRecipe('world/fishing');
+  const fishingTest = params.has('fishing') ? params.get('fishing') ?? '' : null;
+  const fishing = createFishing({ recipe: fishingRecipe, water, terrain, walk, pack, shore: () => ww.shore.zones(), worldSeed: seed, seed: subSeed(seed, 'fishing'),
+    nowH: () => clock.worldT() / clock.SECONDS_PER_HOUR,
+    now: () => {
+      const t = clock.worldT(), w = weatherAt(world.state?.weather, t, seasonsRecipe), y = world.state?.weather?.yesterday;
+      const ts = tideState(t / clock.SECONDS_PER_HOUR, tideParams(waterRecipe.tide));
+      return { hourOfDay: (t / clock.SECONDS_PER_HOUR) % 24, season: ['spring', 'summer', 'autumn', 'winter'][clock.seasonOf(t).index], rain: w.rain ?? 0, mist: w.mist ?? 0,
+        cloud: w.cloud ?? 0, wind: w.wind ?? 0, yRain: y?.rainAmount ?? 0, yWind: y?.windStrength ?? 0, tideLevel: ts.level, tideAmp: ts.amp, sign: null };
+    },
+    passRecipe: findsRecipe, propsRecipe: campRecipe.props, shadowBias: shadowPass.bias, test: fishingTest, camera });
+  sim.addSystem(fishing);
+  if (fishingTest !== null && !back) {
+    pack.add('worms', fishingRecipe.test.worms);
+    pack.add('bigworms', fishingRecipe.test.bigworms);
+    updateStore('cook', (c) => ({ ...(c ?? {}), tools: [...new Set([...(c?.tools ?? []), 'line'])] }));
+    // `?fishing=chart:N`: N of the island's fish sketched, and the Keeper book open on the chart.
+    const chartN = /^chart:(\d+)$/.exec(fishingTest);
+    if (chartN) {
+      fishing.sketchTest(Number(chartN[1]));
+      setTimeout(() => dispatch(/** @type {any} */ ({ type: 'ui.keeper', open: true, tab: 'chart' })), 2500);
+    }
+  }
   // `?sketch` (a test link, unsaved): a full pouch of charcoal sticks in the pack.
   if (params.has('sketch') && !back) pack.add('charcoal-sticks', 3);
   // `?planting` (a test link, unsaved; P2g): in the pack, water mint seed, an iris clump, two willow
@@ -1357,6 +1386,9 @@ export async function startApp(canvas, hooks = {}) {
     camp.props,
     // The shovel in the walker's hands while it digs (src/world/dig).
     dig.props,
+    // The fishing rod in hand and the float on the water, and the fish on the line (src/world/fishing).
+    fishing.props,
+    fishing.pass,
     boat.pass,
     // The passing boat at anchor offshore (docs/future/14).
     passingBoat.pass,
@@ -1671,7 +1703,7 @@ export async function startApp(canvas, hooks = {}) {
     // Something in hand (D1a): the sowing ring follows the pointer, and nothing else is named.
     if (walk.below && getStore('hand')) {
       sowScreen = e.buttons ? null : [ox, oy];
-      sowing.setPointer(sowScreen ? groundAt(ox, oy) : null);
+      sowing.setPointer(sowScreen ? aimAt(ox, oy) : null);
       if (getStore('hover')) updateStore('hover', () => null);
       canvas.classList.remove('ebb-can-use');
       return;
@@ -1711,7 +1743,7 @@ export async function startApp(canvas, hooks = {}) {
     aiming: () => !!getStore('hand'),
     use: (x, y) => dispatch({ type: 'look.tap', x, y, source: 'mouse' }),
     hover: (x, y) => {
-      if (getStore('hand')) { sowing.setPointer(groundAt(x, y)); return; }
+      if (getStore('hand')) { sowing.setPointer(aimAt(x, y)); return; }
       const h = hoverPick(x, y), key = h?.key ?? '', now = performance.now();
       if (key !== dotKey) { dotKey = key; dotSince = now; if (getStore('hover')) updateStore('hover', () => null); }
       else if (h && now - dotSince >= walkerRecipe.click.hoverRestS * 1000 && getStore('hover')?.key !== key) updateStore('hover', () => h);
@@ -1740,6 +1772,26 @@ export async function startApp(canvas, hooks = {}) {
     const [px, , pz] = hit.point;
     if (px < ob.openMin[0] || px > ob.openMax[0] || pz < ob.openMin[1] || pz > ob.openMax[1]) return null;
     return hit.point;
+  }
+  /**
+   * Where the pointer aims: the ground, or with the fishing line in hand (F17) the sea's surface
+   * under the pointer where the ray meets water first, so the cast ring stays under the cursor
+   * instead of sliding out to where the ray reaches the sea bed. @param {number} x @param {number} y
+   */
+  function aimAt(x, y) {
+    const g = groundAt(x, y);
+    if (getStore('hand')?.kind !== 'line') return g;
+    const r = camera.ray(x, y);
+    if (r.d[1] >= -1e-4) return g;
+    const t = (water.tide - r.o[1]) / r.d[1];
+    if (t <= 0) return g;
+    const px = r.o[0] + r.d[0] * t, pz = r.o[2] + r.d[2] * t, gy = terrain.sampleHeight(px, pz);
+    // Water there, and met before the ground: aim at the surface.
+    if (gy >= water.tide) return g;
+    if (g && Math.hypot(g[0] - r.o[0], g[1] - r.o[1], g[2] - r.o[2]) < t * Math.hypot(r.d[0], r.d[1], r.d[2])) return g;
+    const ob = terrain.openBounds();
+    if (px < ob.openMin[0] || px > ob.openMax[0] || pz < ob.openMin[1] || pz > ob.openMax[1]) return g;
+    return [px, gy, pz];
   }
   /** @param {number} size */
   const clampSize = (size) => Math.min(rb.radiusRange[1], Math.max(rb.radiusRange[0], size));
@@ -1855,12 +1907,13 @@ export async function startApp(canvas, hooks = {}) {
   const planting = createPlanting({ recipe: sowingRecipe, plantTool, growth, pack, flora, walk,
     hasShovel: () => !!getStore('cook')?.tools?.includes('shovel'), plants: () => world.state?.growth?.plants ?? [],
     ground: (x, z) => terrain.sampleHeight(x, z), worldChanged: () => updateStore('world', () => world.state) });
-  const sowing = createSowing({ recipe: sowingRecipe, plantTool, pieces, nets, walk, planting,
+  const sowing = createSowing({ recipe: sowingRecipe, plantTool, pieces, nets, fishing, walk, planting,
     ground: (x, z) => terrain.sampleHeight(x, z),
     depth: (x, z) => water.sampleLive(x, z)?.depth ?? 0,
     worldChanged: () => updateStore('world', () => world.state) });
   updateStore('hand', () => null);
   const sowOverlay = mountSowOverlay(document.body, sowingRecipe);
+  const fishingOverlay = mountFishingOverlay(document.body);
 
   // The Feed tool (S6c-2, src/world/creatures/feeding.js): food lands where you tap and a frog may
   // come for it. Not an edit: a gentle toss never startles. Its line goes to the tool card (`feedUi`).
@@ -1963,11 +2016,13 @@ export async function startApp(canvas, hooks = {}) {
       if (a.type === 'look.tap') {
         // One click walks and uses (src/world/walk/click.js): a thing walks you to it and opens its
         // card; a creature's card opens where you stand; grass, sand and shingle only near you.
-        const point = groundAt(a.x, a.y);
+        // The line out (F17): a click anywhere pulls it in, a fish with it if the float is under.
+        if (fishing.out()) { if (!fishing.ease()) fishing.reel(); return; }
+        const point = aimAt(a.x, a.y);
         if (!point) return;
         // Carrying (a lantern lifted on foot, B2 L1): the click sets it down there instead.
         if (pieces.carrying()) { carryTap(a.x, a.y); return; }
-        // A seed, a gift or the net in hand: the click sows, places or sets it instead (D1a).
+        // A seed, a gift, the net or the line in hand: the click sows, places, sets or casts it instead (D1a).
         if (sowing.click(a.x, a.y, point)) return;
         sowing.cancelWalk();
         // Low down, the ray grazes past a log or stone onto the ground behind it: try it first.
@@ -2006,7 +2061,13 @@ export async function startApp(canvas, hooks = {}) {
         else updateStore('identify', () => null);
         return;
       }
-      if (a.type === 'walk.up') { sowing.putAway(); sowing.cancelWalk(); walk.up(); return; }
+      if (a.type === 'walk.up') { sowing.putAway(); sowing.cancelWalk(); fishing.reel(true); walk.up(); return; }
+      // Fishing (src/world/fishing): the bar's Line again reels in, Ease it in brings a fish on.
+      if (a.type === 'fishing.reel') { sowing.putAway(); fishing.reel(); return; }
+      if (a.type === 'fishing.empty') { emitDeferred('island:notice', { text: fishingRecipe.words.noWorms, showS: 5 }); return; }
+      if (a.type === 'fishing.release') { fishing.release(a.id); return; }
+      if (a.type === 'fishing.redraw') { fishing.redraw(a.id); return; }
+      if (a.type === 'fishing.close') { fishing.closeTray(); return; }
       if (a.type === 'walk.stuck') { sowing.cancelWalk(); walk.stuck(); return; }
       if (a.type === 'walk.posture') { walk.posture(a.posture); return; }
       if (a.type === 'walk.feed') { feedHere(); return; }
@@ -2497,10 +2558,11 @@ export async function startApp(canvas, hooks = {}) {
     // Planting on foot (D1a): the ring under the pointer, a net walk's end, the tossed seeds. The
     // pointer's ground point is cast again every frame, so the ring stays under the cursor while the
     // camera follows or turns (October 29, 2026).
-    if (sowScreen && walk.below && getStore('hand')) sowing.setPointer(groundAt(sowScreen[0], sowScreen[1]));
+    if (sowScreen && walk.below && getStore('hand')) sowing.setPointer(aimAt(sowScreen[0], sowScreen[1]));
     sowing.update(now);
     sowOverlay.draw(sowing.visuals(), getStore('view').project3, now);
-    terrainPass.setMarks(plantTool.marks(now, !!getStore('hand') && getStore('hand').kind !== 'net', chosen?.pinned ? chosen : null, [...(padMark ? [padMark] : []), ...bury,...(getStore('reveal')?.rings?.(now) ?? []), ...creatures.foodRings(), ...intro.rings(now), ...camp.rings(now / 1000), ...stores.rings(now / 1000)]));
+    fishingOverlay.draw(fishing.visuals(), getStore('view').project3);
+    terrainPass.setMarks(plantTool.marks(now, !!getStore('hand') && getStore('hand').kind !== 'net' && getStore('hand').kind !== 'line', chosen?.pinned ? chosen : null, [...(padMark ? [padMark] : []), ...bury,...(getStore('reveal')?.rings?.(now) ?? []), ...creatures.foodRings(), ...intro.rings(now), ...camp.rings(now / 1000), ...stores.rings(now / 1000)]));
     // Lugworm casts are drawn into the sand by the terrain pass.
     terrainPass.setCasts(finds.casts());
     // So are the holes you dug (src/world/dig): their mouths and the fresh soil round them; and the
@@ -2675,6 +2737,7 @@ export async function startApp(canvas, hooks = {}) {
     photo.dispose();
     walk.dispose();
     sowOverlay.dispose();
+    fishingOverlay.dispose();
     unHistory();
     unHour();
     unWash();
@@ -2736,6 +2799,8 @@ export async function startApp(canvas, hooks = {}) {
     glints,
     /** The nets (the journal asks which one a tap landed on; the haul tray reads the recipe). */
     nets: { ...nets, recipe: netsRecipe, keepsakesRecipe },
+    /** Fishing (the line's tray reads its recipe; the journal and the chart read the island's fish). */
+    fishing: { ...fishing, recipe: fishingRecipe },
     /** The placed loose stones (the journal asks which one a tap landed on). */
     pieces,
     /** Lift on foot (L3a): the journal asks whether a piece is in reach to lift. */

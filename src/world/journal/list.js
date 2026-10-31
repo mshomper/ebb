@@ -8,7 +8,7 @@ import { isAnimal } from './observe.js';
 
 /**
  * @typedef {{ shut: Record<string, boolean>, status: 'all'|'found'|'notYet', place: string | null, sort: 'recent'|'az'|'place' }} ListChoice
- * @typedef {{ id: string, known: boolean, name: string }} ListEntry
+ * @typedef {{ id: string, known: boolean, name: string, pencil?: boolean }} ListEntry pencil: not found, but hinted (a fish glimpsed in a net)
  */
 
 /** The choice on a new device. @type {ListChoice} */
@@ -36,6 +36,8 @@ export function groupsOf(list, words) {
     plants: words.order.filter((/** @type {string} */ id) => !isAnimal(words.species[id])),
     animals: words.order.filter((/** @type {string} */ id) => isAnimal(words.species[id])),
     finds: words.findOrder ?? [],
+    // The island's fish (docs/future/17), written from its roster when it loads (src/world/fishing/pages.js).
+    fish: words.fishOrder ?? [],
   };
   return list.groups.map((/** @type {any} */ g) => ({
     group: g,
@@ -61,8 +63,8 @@ export function livingList(list, words, choice, entry, first, unlocks = null) {
     let rows = ids.map(entry);
     const anyFound = rows.some((r) => r.known);
     if (group.unlock && unlocks && !unlocks[group.unlock] && !anyFound) return [];
-    // Small lives never list what is still to find.
-    if (group.foundOnly) rows = rows.filter((r) => r.known);
+    // Small lives never list what is still to find; a fish glimpsed in a net shows in pencil (F17).
+    if (group.foundOnly) rows = rows.filter((r) => r.known || r.pencil);
     if (choice.status === 'found') rows = rows.filter((r) => r.known);
     if (choice.status === 'notYet') rows = rows.filter((r) => !r.known);
     if (choice.place) rows = rows.filter((r) => placeOf(list, group, r.id) === choice.place);

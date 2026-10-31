@@ -43,6 +43,7 @@ flowchart LR
 - **The tide.** The name is literal. A gentle tide rises and falls twice a game day, exposing flats and shallows. Some creatures only come at low tide; some plants only grow in the band between tides.
 - **Creatures as the goal.** There is no score. Progress is the list of species that have made the island home, recorded in a field journal the player fills with their own photographs.
 - **A designer's tool inside a game.** A tuning panel lets you reshape any species, plant or palette with sliders and save it as a recipe. Customization goes all the way down.
+- **Fishing, always let go** (F17, October 31, 2026). A line the player makes, worms from the dig as bait, and fish that are sketched into the journal and let go, beside the keepsakes as a core hook. Living catches are always released, from the nets and from the line; a prize fish in an aquarium, once the player has a living space, is the one future exception.
 
 ### Non-goals
 

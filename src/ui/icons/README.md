@@ -44,6 +44,7 @@ Size and color come from CSS: set `width`/`height` on `.icon` and `color` on the
 | `fish` | a slim fish side on, its tail forked, a fin on its back: the fish the nets bring up (sand eel, goby, pipefish, plaice, wrasse) |
 | `shrimp` | an arched body ringed in segments, its tail fan tucked under, long feelers: the brown shrimp from the nets |
 | `net` | two stakes, a sagging top cord and a mesh hanging from it, a float in the middle, over a ripple line: the general net (Water's Net mode, a net's card) |
+| `line` | a withy rod bending out over the water from the lower left, its line dropping to a float on a ripple: the fishing line on the ground bar (F17) |
 | `release` | an arrow down into two ripple lines: Let it go, for a living catch on the haul tray |
 | `trails` | a winding dotted line climbing the page with three stops, two inked and the next ahead open: the journal's Trails section |
 | `loosestone` | a stone tipped up on one side, a dark gap under it: the naturalist's loose stones reward |
@@ -191,3 +192,13 @@ pouch.innerHTML = itemPouchSvg(icon, handfuls);   // 0 flat .. 3 full and tied
 ```
 
 **CSS the callers set.** `itemIconSvg` sets `--fam` itself. Set `--icon-bg` to the colour behind an icon when it is not cream (it fills the pouch's cloth so the mouth hides the glyph's foot, and draws the cracks across dark fills). Chips: about 18 px in a 48 px button (15 px on the here bar), in the bottom right corner with a 2 px ring of the button's colour (`box-shadow`), the glyph nudged 3 px up and left; on a filled main button set `--chip-fg` to the button's colour. Pouches: a 40 px drawing in the 48 px target. `--fam-op: 0.2` with `--fam: currentColor` draws them in plain ink.
+| `chart` | a folded sea chart in three panels, a small island drawn on it and a compass cross: the Keeper book's Chart tab, the angler's chart (F17) |
+| `cond-night` | a crescent moon: a rare fish's riddle, at night (F17) |
+| `cond-dawn` | a half sun on the horizon with three short rays: at dawn and dusk (F17) |
+| `cond-day` | a full sun with rays: calm sunny days (F17) |
+| `cond-rain` | a cloud with three falling strokes: in rain (F17) |
+| `cond-mist` | three soft wavy lines: in mist (F17) |
+| `cond-storm` | a cloud with a lightning stroke: after a storm (F17) |
+| `cond-low` | a wave line with an arrow down under it: at low tide (F17) |
+| `cond-high` | a wave line with an arrow up over it: at high tide (F17) |
+| `cond-sparkle` | a four-pointed glint: near a sparkle in the water (F17) |

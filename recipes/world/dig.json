@@ -127,7 +127,8 @@
       "charcoal": "The charcoal band"
     },
     "worm": {"small": "A small red worm, quick as anything.", "big": "A big dark worm, long as your hand."},
-    "wormsIn": "Into the worms pouch.",
+    "wormsIn": "Into the red worms pouch.",
+    "bigWormsIn": "Into the big worms pouch.",
     "clay1": "A handful of clay, cool and sticky, into the pack.", "deepClay1": "A handful of deep clay, dark and dense, into the pack.",
     "nothing": "Nothing else comes up.",
     "keepsake": "Something hard in the spoil.",

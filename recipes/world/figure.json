@@ -303,7 +303,7 @@
         { "t": 1.6 },
         { "t": 2.0, "yaw": 0, "head": 0 }
       ] },
-      "sow": { "keys": [
+      "cast": {"note": "F17: the line cast, the rod in the right hand raised back over the shoulder, then whipped forward to point out over the water, held a moment.", "keys": [{"t": 0}, {"t": 0.22, "arms": 1, "lean": -4, "head": 6, "r": [-0.18, 1.38, -0.12]}, {"t": 0.42, "lean": 7, "head": 2, "r": [-0.14, 1.12, 0.46]}, {"t": 0.62, "r": [-0.14, 1.02, 0.42]}, {"t": 1.1, "lean": 0, "head": 0, "arms": 0, "r": [-0.14, 0.95, 0.32]}]}, "sow": { "keys": [
         { "t": 0 },
         { "t": 0.18, "arms": 1, "lean": -2, "head": 4, "r": [-0.2, 0.62, -0.06] },
         { "t": 0.32, "lean": 6, "head": 2, "r": [-0.12, 1.0, 0.42] },

@@ -6,7 +6,7 @@
 // one, so every link that opened those views still works. Pure.
 
 /** The Keeper book's tabs, in order. */
-export const KEEPER_TABS = /** @type {const} */ (['kit', 'threads', 'trails', 'shelf', 'camp']);
+export const KEEPER_TABS = /** @type {const} */ (['kit', 'threads', 'trails', 'shelf', 'camp', 'chart']);
 
 /** @typedef {typeof KEEPER_TABS[number]} KeeperTab */
 

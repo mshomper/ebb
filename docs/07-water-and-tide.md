@@ -113,6 +113,10 @@ Rebuilding the whole world at the 192 m ceiling takes about 25 ms in a worker. I
 - **Decisions** (habitat, arrival, mood) use only the water summary plus the analytic tide at world time, on the 1 m ecology grid (`11-creatures-and-ecology.md`).
 - **Motion** uses live water: GPU boids (fish, insects over water) sample `waterDepth` and `waterVel` directly through `lib-water.wgsl`. CPU-animated creatures (frogs, herons, otters) call `water.sampleLive(x, z)`, which reads a 1 m downsample of depth, surface height and velocity for active chunks, copied back four times per second through a ring of three staging buffers, so a read never stalls. Outside active chunks it falls back to the summary plus tide. Its surface height matches the drawn water (S6b-3): each wet cell's bed (the lowest of its 2 × 2 terrain cells) plus its depth, blended between the four nearest cell centres, never below the ground.
 
+### The five waters (F17, fishing)
+
+The line reads the sea beside the coast as five **waters**, classified from ground the player shaped (`src/world/fishing/waters.js`, numbers in `recipes/world/fishing.json`): **rocky reef** off rock and cliff ground, **sand flats** off sand, **kelp shallows** where the strandline's kelp and wrack band lies, **open water** past the tide band, and **deep water** past the drop-off (depth past a threshold, the sinker net's water). A bite reads the tide (low, high), the water's depth and, once F12's signs in the water are built, a sparkle nearby (a hook only for now). Deep water is reached by a long cast from a headland or the end of the stepping stones until the dock is built.
+
 ## Data and interfaces
 
 ```js

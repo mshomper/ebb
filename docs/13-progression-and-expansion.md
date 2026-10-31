@@ -310,6 +310,8 @@ The camera stays where it is; you look around the island to find the wash. A spe
 - **The year page**: four season boxes that fill as each season is seen with a happy species in it, and each season's own small lives and moment (see "The year, season by season"). When all sixteen species pages hold a photograph and all four seasons are filled, the year page completes with a short closing note. Play continues; nothing ends.
 
 Hints live only in the journal and are always phrased as observation ("the frogs keep to the far bank since the lantern went up"), never as instructions or checklists.
+**The angler's chart (F17, October 31, 2026).** Each island seeds its own **roster** of fish from the world seed: 22 ordinary species (five on the reef, five on the flats, four each in the kelp, open and deep water, the five net fish among them) plus the same twelve rare species everywhere; a sister island rolls a new roster. Every first catch of a species is sketched into the journal's Fish group, one sketch a species, counted as kinds and never totals. Each sketch inks part of **the angler's chart**, the Keeper book's Chart tab: about every second sketch inks one riddle for a rare fish, easiest first, and the frame and title ink with the last ordinary species. The inked title is the reward at the end. Its thread is in `recipes/world/threads.json`.
+
 
 ### What never happens
 

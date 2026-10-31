@@ -63,6 +63,7 @@ Sections map one to one onto the store slices in 03-tech-stack-and-module-map.md
 | pack | from format 9 (section 4.5): each pouch's kind and fullness, and how many pouches the walker has. Empty on an older island | TBD |
 | gather | from format 9 (section 4.5): a short, capped list of picked ground spots with their period and how much was taken; each drops once its period is over. What lies on the ground is worked out from the seed, never saved | TBD |
 | dig, cook, dyes | from format 9, empty until Phase 2 (dig, cook) and Phase 4 (dyes) (section 12.1) | tiny |
+| fishing | from F17 (no format change; an older save reads as nothing sketched): each species sketched with the seed and morph of the individual sketched (a redraw replaces it), glimpses from the nets by species and hour, and a cast count for the bite seeds. The worm split needs no change: an older save's `worms` pouch is the small red worm, and the big dark worm has its own `bigworms` pouch. A net fish page inked from a net release counts as sketched | under 2 KB |
 
 Per-chunk sections, one record per open chunk, keyed `cx,cz`:
 

@@ -37,6 +37,7 @@
     "kneel": "Kneel",
     "feed": "Feed",
     "net": "Net",
+    "line": "Line",
     "feedNone": "Nothing here knows to come for food yet.",
     "noticeS": 5
   }

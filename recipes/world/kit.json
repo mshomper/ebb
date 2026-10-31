@@ -38,6 +38,7 @@
     { "id": "steel", "name": "Fire steel", "icon": "fire-steel", "line": "Steel and flint in a small pouch of their own. Three strikes, most evenings." },
     { "id": "sketchbook", "name": "Sketchbook", "icon": "sketchbook", "line": "Charcoal and a book of rough paper. The hand gets surer with every page." },
     { "id": "net", "name": "Net", "icon": "net", "line": "A hand net on a short pole, for the shallows." },
+    { "id": "line", "name": "Fishing line", "icon": "fishing-line", "line": "A willow withy, rush cord and a gorse thorn for a hook. Every fish I catch, I draw, and let go." },
     { "id": "pan", "name": "The old keeper's pan", "icon": "keepers-pan", "line": "A shallow iron pan, rusted at the rim. Swirl, tip, swirl, at the pool below the spring." }
   ],
   "words": {
@@ -45,7 +46,7 @@
     "open": "Keeper",
     "close": "Close",
     "sections": "Keeper book sections",
-    "tabs": { "kit": "Kit", "threads": "Threads", "trails": "Trails", "shelf": "Shelf", "camp": "Camp" },
+    "tabs": { "kit": "Kit", "threads": "Threads", "trails": "Trails", "shelf": "Shelf", "camp": "Camp", "chart": "Chart" },
     "dragToTurn": "drag to turn",
     "slots": { "hat": "Hat", "lantern": "Lantern", "hand": "In hand", "coat": "Coat", "carrier": "Carrier" },
     "pouches": "Pouches",

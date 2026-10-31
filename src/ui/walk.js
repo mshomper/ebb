@@ -14,11 +14,16 @@
 //     to be placed, with how many on hover). Picking one puts it in hand; the item again puts it
 //     away. Net (once the beachcomber's trail gives it) is picked the same way: a click on the
 //     water then walks you out to set it.
+//   Line (F17, once the line is made; src/world/fishing): its menu holds the worms you carry, and
+//     picking one puts the line in hand; a click on the sea walks you to the edge and you cast.
+//     While the line is out the button is pressed and a press reels it in; a click anywhere on
+//     the island pulls the line in (with a fish, when the float is under).
 // While you are below, the body has the class ebb-below (walk.css puts the shaping tools away);
 // while you sit, ebb-sitting (the buttons fade).
 //
-// Reads the store slices `walk` { below, posture }, `unlocks` and `hand`; a press goes out as the
-// action walk.down, walk.up, walk.stuck, walk.posture, walk.feed, hand.pick, hand.putAway or photo.open.
+// Reads the store slices `walk` { below, posture }, `unlocks`, `hand` and `fishingUi`; a press goes out as the
+// action walk.down, walk.up, walk.stuck, walk.posture, walk.feed, hand.pick, hand.putAway, photo.open,
+// fishing.reel or fishing.empty.
 // Styles: walk.css.
 
 import { get, subscribe } from '../core/store.js';
@@ -31,7 +36,7 @@ import { itemIconFor } from './icons/item-registry.js';
 
 /**
  * @param {HTMLElement} parent the HUD layer
- * @param {{ down: string, up: string, stuck: string, sit: string, kneel: string, feed: string, net: string, photo?: string }} words
+ * @param {{ down: string, up: string, stuck: string, sit: string, kneel: string, feed: string, net: string, photo?: string, line?: string }} words
  *   recipes/world/walker.json words
  * @param {any} sowing recipes/world/sowing.json (the seed tin and the gift spot)
  * @returns {() => void} dispose
@@ -60,6 +65,7 @@ export function mountWalk(parent, words, sowing) {
     + btn('', 'seed-tin', W.tin, ' data-menu="tin" aria-pressed="false" aria-haspopup="true" aria-expanded="false"')
     + btn('', 'gift-spot', W.gifts, ' data-menu="gifts" aria-pressed="false" aria-haspopup="true" aria-expanded="false"')
     + btn('', 'net', words.net, ' data-pick-kind="net" data-pick-id="net" aria-pressed="false" hidden')
+    + btn('', 'line', words.line ?? 'Line', ' data-menu="line" aria-pressed="false" aria-haspopup="true" aria-expanded="false" hidden')
     + btn('', 'photo', words.photo ?? 'Photo', ' data-photo') + '</div>'
     + '<div class="ebb-ground__menu" role="menu" hidden></div>';
 
@@ -73,11 +79,15 @@ export function mountWalk(parent, words, sowing) {
   const feedBtn = /** @type {HTMLButtonElement} */ (bar.querySelector('[data-feed]'));
   const tinBtn = /** @type {HTMLButtonElement} */ (bar.querySelector('[data-menu="tin"]'));
   const giftBtn = /** @type {HTMLButtonElement} */ (bar.querySelector('[data-menu="gifts"]'));
+  const lineBtn = /** @type {HTMLButtonElement} */ (bar.querySelector('[data-menu="line"]'));
   const menu = /** @type {HTMLElement} */ (bar.querySelector('.ebb-ground__menu'));
-  /** Which menu is open. @type {'tin' | 'gifts' | null} */ let open = null;
+  /** Which menu is open. @type {'tin' | 'gifts' | 'line' | null} */ let open = null;
 
-  /** The items a menu holds now. @param {'tin' | 'gifts'} which */
-  const itemsOf = (which) => (which === 'tin' ? tinItems(sowing, get('packView')?.pouches ?? []) : giftItems(sowing, get('unlocks'), stoneWaiting(get('camp'), sowing)));
+  /** The worms the line can carry (src/world/fishing publishes them in fishingUi). */
+  const baitItems = () => (get('fishingUi')?.baits ?? []).map((/** @type {any} */ b) => ({ kind: 'line', id: b.id, from: b.id, fill: 3, label: b.label }));
+  /** The items a menu holds now. @param {'tin' | 'gifts' | 'line'} which */
+  const itemsOf = (which) => (which === 'tin' ? tinItems(sowing, get('packView')?.pouches ?? []) : which === 'line' ? baitItems()
+    : giftItems(sowing, get('unlocks'), stoneWaiting(get('camp'), sowing)));
   /** A menu item's drawing: the tin's endless seeds their own icons; what the pack holds (P2g) its item glyph in a pouch as full as it is. @param {any} it */
   const drawItem = (it) => {
     const g = it.from ? itemIconFor(it.from) : null;
@@ -95,12 +105,16 @@ export function mountWalk(parent, words, sowing) {
     const arms = get('pack')?.holding === 'pot';
     if (!below) open = null;
     const tinKey = open === 'tin' ? itemsOf('tin').map((t) => `${t.id}${t.fill ?? ''}`).join(',') : '';
-    const key = `${below}|${w.posture}|${hasNet}|${arms}|${hand?.kind}:${hand?.id}|${open}|${gifts.map((g) => `${g.id}${g.left}`).join(',')}|${tinKey}`;
+    const fu = get('fishingUi') ?? {};
+    const key = `${below}|${w.posture}|${hasNet}|${arms}|${hand?.kind}:${hand?.id}|${open}|${gifts.map((g) => `${g.id}${g.left}`).join(',')}|${tinKey}|${fu.has}|${fu.out}|${(fu.baits ?? []).map((/** @type {any} */ b) => b.id).join(',')}`;
     if (key === shown) return;
     shown = key;
     netBtn.hidden = !hasNet || arms;
     feedBtn.hidden = arms;
     netBtn.setAttribute('aria-pressed', String(hand?.kind === 'net'));
+    lineBtn.hidden = !fu.has || arms;
+    lineBtn.setAttribute('aria-pressed', String(hand?.kind === 'line' || !!fu.out));
+    lineBtn.setAttribute('aria-expanded', String(open === 'line'));
     tinBtn.setAttribute('aria-pressed', String(['seed', 'ball', 'clump', 'cutting'].includes(hand?.kind)));
     giftBtn.setAttribute('aria-pressed', String(hand?.kind === 'gift'));
     // An empty gift spot rests dimmed; its word says gifts come here.
@@ -115,11 +129,11 @@ export function mountWalk(parent, words, sowing) {
     menu.hidden = !open;
     if (open) {
       menu.innerHTML = list.map((it) => {
-        const label = itemLabel(sowing, it);
+        const label = it.label ?? itemLabel(sowing, it);
         return `<button type="button" class="ebb-walk__btn" role="menuitemradio" aria-checked="${samePick(hand, it)}" aria-pressed="${samePick(hand, it)}" aria-label="${label}" data-label="${label}" data-pick-kind="${it.kind}" data-pick-id="${it.id}"><span class="ebb-walk__icon">${drawItem(it)}</span><span class="ebb-walk__name">${label}</span></button>`;
       }).join('');
       // Over its own button, kept inside the bar's width: from seven items, two even rows (P2g).
-      const b = (open === 'tin' ? tinBtn : giftBtn).getBoundingClientRect(), r = bar.getBoundingClientRect();
+      const b = (open === 'tin' ? tinBtn : open === 'line' ? lineBtn : giftBtn).getBoundingClientRect(), r = bar.getBoundingClientRect();
       const perRow = list.length >= 7 ? Math.ceil(list.length / 2) : list.length;
       menu.style.gridTemplateColumns = `repeat(${perRow}, 48px)`;
       const mw = perRow * 52 + 8;
@@ -146,8 +160,16 @@ export function mountWalk(parent, words, sowing) {
     else if (b.dataset.posture) dispatch({ type: 'walk.posture', posture: b.dataset.posture, source: 'button' });
     else if (b.dataset.feed !== undefined) dispatch({ type: 'walk.feed', source: 'button' });
     else if (b.dataset.photo !== undefined) dispatch({ type: 'photo.open', source: 'mouse' });
-    else if (b.dataset.menu) {
-      const which = /** @type {'tin' | 'gifts'} */ (b.dataset.menu);
+    else if (b.dataset.menu === 'line' && (get('fishingUi')?.out || get('hand')?.kind === 'line')) {
+      // The line out or in hand: the button reels it in and puts it away.
+      dispatch(/** @type {any} */ ({ type: 'fishing.reel', source: 'button' }));
+      if (open) { open = null; shown = ''; render(); }
+      return;
+    } else if (b.dataset.menu === 'line' && !baitItems().length) {
+      dispatch(/** @type {any} */ ({ type: 'fishing.empty', source: 'button' }));
+      return;
+    } else if (b.dataset.menu) {
+      const which = /** @type {'tin' | 'gifts' | 'line'} */ (b.dataset.menu);
       open = open === which || !itemsOf(which).length ? null : which;
       shown = '';
       render();
@@ -168,7 +190,7 @@ export function mountWalk(parent, words, sowing) {
   }
 
   render();
-  const unsubs = ['walk', 'unlocks', 'hand', 'pack', 'packView'].map((s) => subscribe(s, render));
+  const unsubs = ['walk', 'unlocks', 'hand', 'pack', 'packView', 'fishingUi'].map((s) => subscribe(s, render));
   parent.appendChild(root);
   parent.appendChild(bar);
   return () => {

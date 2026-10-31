@@ -51,6 +51,7 @@
     "world/forager": "world/forager.json",
     "world/kit": "world/kit.json",
     "world/nets": "world/nets.json",
+    "world/fishing": "world/fishing.json",
     "world/pieces": "world/pieces.json",
     "world/walker": "world/walker.json",
     "world/pack": "world/pack.json",

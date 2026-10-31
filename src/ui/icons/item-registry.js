@@ -32,7 +32,7 @@ export const POUCH_KINDS = /** @type {[string, string, string, string, number][]
   ['rush-cord', 'rush-cord', 'Rush cord', 'T2', 2], ['lichen-twigs', 'lichen-twigs', 'Lichen twigs', 'T4', 4],
   ['sand', 'sand', 'Sand', 'T2', 2], ['clay', 'clay', 'Clay', 'T2', 2], ['ash', 'ash', 'Wood ash', 'T1', 2],
   ['leaves', 'leaves', 'Fallen leaves', 'T2', 2], ['kelp', 'kelp', 'Cast kelp', 'T2', 2], ['wrack', 'wrack', 'Wrack', 'T1', 2],
-  ['worms', 'worms', 'Worms', 'T2', 2], ['acorns', 'acorns', 'Acorns', 'T5', 5], ['hazelnuts', 'hazelnuts', 'Hazelnuts', 'T5', 5],
+  ['worms', 'worms', 'Small red worms', 'T2', 2], ['bigworms', 'bigworms', 'Big dark worms', 'T2', 2], ['acorns', 'acorns', 'Acorns', 'T5', 5], ['hazelnuts', 'hazelnuts', 'Hazelnuts', 'T5', 5],
   ['old-comb', 'old-comb', 'Old comb', 'T4', 4], ['chanterelle', 'chanterelle', 'Chanterelle', 'T5', 5],
   ['shells', 'shells', 'Broken shells', 'T2', 2], ['crushed-shell', 'crushed-shell', 'Crushed shell', 'T2', 2],
   ['charcoal-sticks', 'charcoal-sticks', 'Charcoal sticks', 'T2', 2],
@@ -57,7 +57,7 @@ export const PLANT_PARTS = /** @type {[string, string, string, string, number][]
   ['reeds.down', 'reed-down', 'Reed down', 'T1', 2], ['reeds.leaves', 'reed-leaves', 'Reed leaves', 'T1', 2],
   ['rushes.stems', 'rushes', 'Rushes', 'T2', 2], ['marram.leaves', 'marram', 'Marram leaves', 'T2', 2],
   ['willow.withies', 'withies', 'Willow withies', 'T2', 2], ['willow.bark', 'willow-bark', 'Willow bark', 'T2', 2], ['willow.leaves', 'willow-leaves', 'Willow leaves', 'T2', 2],
-  ['gorse.flowers', 'gorse-flowers', 'Gorse flowers', 'T2', 2], ['mint.leaves', 'mint', 'Water mint', 'T2', 2],
+  ['gorse.flowers', 'gorse-flowers', 'Gorse flowers', 'T2', 2], ['gorse.thorns', 'gorse-thorns', 'Gorse thorns', 'T3', 3], ['mint.leaves', 'mint', 'Water mint', 'T2', 2],
   ['meadowsweet.flowers', 'meadowsweet', 'Meadowsweet', 'T2', 2], ['nettle.tops', 'nettle', 'Nettle tops', 'T2', 2], ['chamomile.flowers', 'chamomile', 'Chamomile', 'T2', 2],
   ['myrtle.twigs', 'myrtle', 'Bog myrtle', 'T2', 4], ['myrtle.leaves', 'myrtle', 'Bog myrtle leaves', 'T2', 4],
   ['watercress.leaves', 'watercress', 'Watercress', 'T3', 3], ['seacarrot.flowers', 'seacarrot', 'Sea carrot flowers', 'T3', 3],
@@ -103,13 +103,15 @@ export const MAKES = /** @type {[string, string, string, string, number][]} */ (
   ['bird-bath', 'bird-bath', 'Bird-bath stone', 'T4', 4], ['bee-dish', 'bee-dish', 'Bee water dish', 'T4', 4], ['floats', 'floats', 'Driftwood floats', 'T4', 4],
   ['larger-pot', 'larger-pot', 'Larger pot', 'T5', 5], ['hedgehog-house', 'hedgehog-house', 'Hedgehog house', 'T5', 5], ['wind-chime', 'wind-chime', 'Shell wind chime', 'T5', 5],
   ['sinker-stones', 'sinker-stones', 'Grooved sinker stones', 'T6', 5],
+  // The fishing line (F17, October 31, 2026): a withy rod, rush cord and a gorse thorn hook.
+  ['line', 'fishing-line', 'Fishing line', 'T3', 3],
   ...CAMP_ROWS,
   ...METAL_MAKE_ROWS,
 ]).map(row);
 
 /** Treats and offerings (docs/future/13 section 8). @type {ItemRow[]} */
 export const TREATS = /** @type {[string, string, string, string, number][]} */ ([
-  ['wrack-heap', 'wrack-heap', 'Wrack heap (frogs)', 'T2', 2], ['leaf-pack', 'leaf-pack', 'Leaf pack (minnows)', 'T2', 2], ['dug-worms', 'worms', 'Worms (turtles, the robin)', 'T2', 2],
+  ['wrack-heap', 'wrack-heap', 'Wrack heap (frogs)', 'T2', 2], ['leaf-pack', 'leaf-pack', 'Leaf pack (minnows)', 'T2', 2], ['dug-worms', 'worms', 'Worms (turtles)', 'T2', 2],
   ['lily-parcel', 'lily-parcel', 'Lily leaf parcel (turtles)', 'T2', 2], ['eggshell-grit', 'grit', 'Eggshell grit (the hen)', 'T3', 3],
   ['pondweed-bundle', 'pondweed', 'Pondweed bundle (minnows)', 'T3', 3], ['lily-leaf', 'lily-leaf', 'Lily leaf (turtles)', 'T2', 2], ['perch-stick', 'perch-stick', 'Perch stick (dragonflies)', 'T3', 3],
   ['overripe-fruit', 'offered:strawberries', 'Overripe fruit (butterflies)', 'T4', 4], ['seed-cake', 'seed-cake', 'Seed cake (songbirds)', 'T5', 4],

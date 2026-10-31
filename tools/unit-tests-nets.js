@@ -209,12 +209,12 @@ export function addNetsTests(test, assert, eq) {
 
   test(H, 'a distinctive animal let go comes back now and then, the same one; a plain one never does', async () => {
     const [NR, K] = await recipes();
-    // A rare wrasse and a plain common one, both let go before.
+    // A rare shore crab and a plain common one, both let go before (fish are glimpses now, docs/future/17).
     let rare = null, plain = null;
     for (let s = 1; !rare || !plain; s++) {
-      const r = catchNumbers(s, 'wrasse', 'rare', NR), c = catchNumbers(s + 5000, 'wrasse', 'common', NR);
-      if (!rare && distinctive(r)) rare = { kind: 'wrasse', seed: r.seed, hour: 100, rarity: 'rare' };
-      if (!plain && !distinctive(c)) plain = { kind: 'wrasse', seed: c.seed, hour: 90, rarity: 'common' };
+      const r = catchNumbers(s, 'shorecrab', 'rare', NR), c = catchNumbers(s + 5000, 'shorecrab', 'common', NR);
+      if (!rare && distinctive(r)) rare = { kind: 'shorecrab', seed: r.seed, hour: 100, rarity: 'rare' };
+      if (!plain && !distinctive(c)) plain = { kind: 'shorecrab', seed: c.seed, hour: 90, rarity: 'common' };
     }
     const released = [plain, rare];
     eq(comeBack(released, NR, 0.7, 'summer').length, 1, 'only the distinctive one can come back');
