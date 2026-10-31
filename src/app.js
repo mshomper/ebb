@@ -658,7 +658,7 @@ export async function startApp(canvas, hooks = {}) {
   // Spring at the pond (doc 13; src/world/creatures/spring-live.js): frogspawn, tadpoles and
   // froglets, the toad's night walk, and the basking spots (stones, logs, the raft) turtles and the
   // toad read. `?spring=spawn|tadpoles|froglets|toad` (testing, unsaved) sets one near the view.
-  const spring = createSpring({ world, terrain, water, camera, pieces, presence, test: params.get('spring'),
+  const spring = createSpring({ world, terrain, water, camera, pieces, presence, test: ['spawn', 'tadpoles', 'froglets', 'toad'].includes(params.get('spring') ?? '') ? params.get('spring') : null,
     recipes: { frogspawn: speciesRecipes.frogspawn, toad: speciesRecipes.toad, frog: frogRecipe, slowworm: speciesRecipes.slowworm, lizard: speciesRecipes.lizard } });
   sim.addSystem(spring);
   finds.addSource(spring.shown);
@@ -807,9 +807,10 @@ export async function startApp(canvas, hooks = {}) {
   // slots, the fire and the lantern as small lights, smoke and moths, and a night's rest in the tent.
   /** The passing boat (made below), whose lantern joins the camp's lights. @type {{ lights: () => any[] } | null} */ let passingBoatRef = null;
   /** The placed lanterns (made below, B2 L1), whose lights join the camp's too. @type {{ lights: () => any[] } | null} */ let lanternsRef = null;
+  /** The clay furnace's glow while a load burns (the spring-ore plan), set once the camp is made. @type {(() => any[]) | null} */ let furnaceLightsRef = null;
   const camp = createCamp({ recipe: campRecipe, seed, walk, terrain, water, clock, orbit: skyRecipe.orbit, camera, world, piles,
     // The camp sets the small lights each frame; the passing boat's lantern joins them (docs/future/14).
-    seasons: seasonsRecipe, lighting: { setPoints: (/** @type {any[]} */ l) => lighting.setPoints([...l, ...(passingBoatRef?.lights() ?? []), ...(lanternsRef?.lights() ?? [])]) }, pack, shadowBias: shadowPass.bias, low: tier === 'low', tier, poses: (await loadRecipe('world/figure')).poses,
+    seasons: seasonsRecipe, lighting: { setPoints: (/** @type {any[]} */ l) => lighting.setPoints([...l, ...(passingBoatRef?.lights() ?? []), ...(lanternsRef?.lights() ?? []), ...(furnaceLightsRef?.() ?? [])]) }, pack, shadowBias: shadowPass.bias, low: tier === 'low', tier, poses: (await loadRecipe('world/figure')).poses,
     beat: () => intro.live?.intro.current?.id ?? null, cook: await loadRecipe('world/cook'), sowing: sowingRecipe,
     // The nest box goes on the camp's rim on the side of the hen's home bushes (docs/future/15 slice 4).
     rimToward: (/** @type {string} */ slot) => (slot === 'nest' && speciesRecipes.hen?.home ? scrubHome(world.state?.growth?.plants ?? [], speciesRecipes.hen.home) : null) });
@@ -926,6 +927,7 @@ export async function startApp(canvas, hooks = {}) {
   const lanterns = createLanterns({ recipe: piecesRecipe.lantern, seed, pieces, pack, walk, terrain, water, camp, camera, liftM: piecesRecipe.driftwood.carry.liftM });
   sim.addSystem(lanterns);
   lanternsRef = lanterns;
+  furnaceLightsRef = () => camp.stations.lights(clock.animT());
   if (params.has('lantern') && !back) {
     for (const k of ['clay', 'pebbles', 'sticks', 'rushes.stems']) pack.add(k, 1);
     let stood = false;
@@ -1103,6 +1105,25 @@ export async function startApp(canvas, hooks = {}) {
         camera.setPose({ ...camera.pose(), target: [sx, terrain.sampleHeight(sx, sz), sz], yaw: yaw + Math.PI + 0.9, distance: campRecipe.rest.viewDistanceM, pitch: (campRecipe.rest.viewPitchDeg * Math.PI) / 180 });
         walk.downHere();
       }
+    }
+  });
+  // `?spring` (a test link, unsaved; the spring-ore plan): ore at the bench. The camp ready, the
+  // workbench and the clay furnace built and dry, ore, charcoal, sticks, a lump of iron and deep clay
+  // in the pack, and you standing at the furnace. `&furnace=burning` lays a load of copper ore in an
+  // hour ago (with `&hour=21` it glows); `&furnace=done` has iron waiting behind the arch.
+  // (`?spring=spawn` and the rest are the spring creatures'; `?spring=cave` goes straight to the cave.)
+  if (params.get('spring') === '' && !back && !params.has('camp')) afterGrow(() => {
+    emit('intro:camp-ready', { tent: true, ring: true });
+    for (const id of ['workbench', 'furnace']) camp.stations.debug.buildNow(id);
+    const h = clock.worldT() / 3600, f = params.get('furnace');
+    const load = f === 'burning' ? { id: 'smelt-copper', gives: 'copper', count: 1, laidHour: h - 1 } : f === 'done' ? { id: 'smelt-iron', gives: 'iron', count: 1, laidHour: h - 30 } : null;
+    updateStore('camp', (c) => ({ ...c, slots: c.slots.map((/** @type {any} */ q) => (q.slot === 'furnace' ? { ...q, placedHour: h - 48, ...(load ? { load } : {}) } : q)) }));
+    for (const [k, n] of [['iron-ore', 2], ['copper-ore', 1], ['charcoal-sticks', 2], ['sticks', 2], ['iron', 1], ['deep-clay', 2]]) pack.add(/** @type {string} */ (k), /** @type {number} */ (n));
+    const at = camp.stations.benchAt('furnace');
+    if (at && walk.placeAt(at.stand.x, at.stand.z, Math.atan2(at.x - at.stand.x, at.z - at.stand.z), 'stand')) {
+      camera.setPose({ ...camera.pose(), target: [at.stand.x, terrain.sampleHeight(at.stand.x, at.stand.z), at.stand.z], yaw: Math.atan2(at.x - at.stand.x, at.z - at.stand.z) + Math.PI + 0.9,
+        distance: campRecipe.rest.viewDistanceM, pitch: (campRecipe.rest.viewPitchDeg * Math.PI) / 180 });
+      walk.downHere();
     }
   });
   // A long, slow look (P2e, src/world/creatures/tea-reveal.js): an unfound creature gives itself away

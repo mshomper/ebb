@@ -13,13 +13,15 @@ import { cleanBoon } from './boons.js';
 import { cleanGifts } from './gifts.js';
 import { cleanKnown } from './known.js';
 import { cleanBed } from './herb-bed.js';
+import { cleanLoad } from './furnace.js';
 
 /**
  * @typedef {{ slot: string, kind: string, seed: number, placedHour: number, stack?: number,
  *   holds?: import('../pack/store.js').Holds, bunches?: import('../pack/piles.js').Bunches,
- *   pot?: string | null, water?: import('./pots.js').Water, shaped?: string[], u?: number, v?: number }} SlotRecord
+ *   pot?: string | null, water?: import('./pots.js').Water, shaped?: string[], u?: number, v?: number, load?: import('./furnace.js').Load }} SlotRecord
  *   stack, holds: the hamper's (P2j); bunches: the drying rack's (S2); pot: the hearth's pot; water:
- *   a pot's; shaped: the pieces waiting pale on the workbench (S4, S5); u, v: a rim slot's own place (the nest box)
+ *   a pot's; shaped: the pieces waiting pale on the workbench (S4, S5); u, v: a rim slot's own place (the nest box);
+ *   load: the clay furnace's ore and charcoal, burning through the night (furnace.js)
  * @typedef {{ version: number, stamped?: boolean, pad?: any, kit: { tent: 'pack' | 'pitched' | 'boat', lantern: 'pole' | 'carried' },
  *   slots: SlotRecord[], fire: import('./fire.js').Fire, work: import('./work.js').WorkPiece[], rested: { hour: number, at: number } | null, boon?: import('./boons.js').Boon | null,
  *   firstPitchedHour: number | null, gifts: import('./gifts.js').Gift[], known: import('./known.js').Known, bed: import('./herb-bed.js').Bed }} Camp
@@ -45,6 +47,8 @@ export function cleanCamp(v) {
     // The hamper (P2j) carries what it holds and how many stack; the rack (S2) its bunches.
     if (s.kind === 'hamper') { r.stack = s.stack === 2 ? 2 : 1; r.holds = cleanHolds(s.holds); }
     if (s.kind === 'rack') r.bunches = cleanBunches(s.bunches);
+    // The clay furnace's load burning through the night (furnace.js).
+    if (s.kind === 'furnace') { const load = cleanLoad(s.load); if (load) r.load = load; }
     // A rim slot's own place, chosen when it was made (the nest box; layout.js rimSpot).
     if (Number.isFinite(s.u) && Number.isFinite(s.v)) { r.u = s.u; r.v = s.v; }
     // The hearth's pot, a pot's water, the workbench's shaped pieces (S4, S5).

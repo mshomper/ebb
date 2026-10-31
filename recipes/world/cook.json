@@ -5,7 +5,8 @@
 
   "builds": {
     "workbench": { "slot": "workbench", "parts": [["flat-stones", 2]], "act": "lay", "afterRing": true, "src": ["3.12", "C-41"] },
-    "apothecary": { "slot": "apothecary", "parts": [["sticks", 2], ["rush-cord", 1]], "act": "lay", "afterRing": true, "src": ["3.12", "S2"] }
+    "apothecary": { "slot": "apothecary", "parts": [["sticks", 2], ["rush-cord", 1]], "act": "lay", "afterRing": true, "src": ["3.12", "S2"] },
+    "furnace": { "slot": "furnace", "parts": [["deep-clay", 2], ["sand", 1], ["marram.leaves", 1]], "act": "lay", "afterRing": true, "src": ["spring-ore plan, Matt, October 30, 2026"] }
   },
   "buildsNote": "Things built in their own camp slot, the way the ring is laid (CS-05): the slot glows while the pack (or a pile at camp, or the hamper) holds the parts and you are near camp, once the ring is laid (afterRing); its card offers Build; the walker plays act at the slot and the parts leave. parts: [kind, handfuls] pairs. The first build is written on the camp page. The apothecary bench (S2) is lashed from sticks with rush cord, so it waits for cord.",
 
@@ -39,8 +40,16 @@
     "eggshell-grit": { "tier": "T3", "at": "apothecary", "act": "grind", "parts": ["eggshells"], "out": "pouch", "gives": "grit", "count": 1, "after": "mortar", "src": ["docs/future/15 slice 4", "B1 H4"] },
     "lantern-pot": { "tier": "T3", "at": "workbench", "parts": ["clay", "pebbles"], "out": "shaped", "unlock": "lantern", "src": ["B2 L1, Matt, October 30, 2026"] },
     "fire-lantern-pot": { "tier": "T3", "at": "fire", "parts": ["shaped:lantern-pot"], "out": "work", "needH": 8, "gives": "lantern-pot", "count": 1, "fires": "lantern-pot", "src": ["B2 L1"] },
-    "post-lantern": { "tier": "T3", "at": "workbench", "parts": ["lantern-pot", "sticks", "rushes.stems"], "out": "pouch", "gives": "post-lantern", "count": 1, "unlock": "lantern", "src": ["B2 L1"] }
+    "post-lantern": { "tier": "T3", "at": "workbench", "parts": ["lantern-pot", "sticks", "rushes.stems"], "out": "pouch", "gives": "post-lantern", "count": 1, "unlock": "lantern", "src": ["B2 L1"] },
+    "twisted-sticks": { "tier": "T3", "at": "workbench", "parts": ["sticks", "sticks"], "out": "pouch", "gives": "twisted-sticks", "count": 1, "src": ["spring-ore plan; October 29, 2026 (Matt: woven sticks)"] },
+    "planks": { "tier": "T3", "at": "workbench", "parts": ["twisted-sticks", "nails"], "out": "pouch", "gives": "planks", "count": 1, "src": ["spring-ore plan, Matt, October 30, 2026"] },
+    "smelt-iron": { "tier": "T3", "at": "furnace", "act": "smelt", "parts": ["iron-ore", "charcoal-sticks"], "out": "smelt", "gives": "iron", "count": 1, "src": ["spring-ore plan"] },
+    "smelt-copper": { "tier": "T3", "at": "furnace", "act": "smelt", "parts": ["copper-ore", "charcoal-sticks"], "out": "smelt", "gives": "copper", "count": 1, "src": ["spring-ore plan"] },
+    "nails": { "tier": "T3", "at": "furnace", "act": "draw", "parts": [["iron", "copper"]], "out": "pouch", "gives": "nails", "count": 1, "src": ["spring-ore plan: copper nails and iron nails both count as nails"] }
   },
+  "springNote": "The underground spring (spring-ore plan, Matt, October 30, 2026; src/world/camp/furnace.js). The clay furnace is a camp build in the work corner from two handfuls of deep clay (the third dig layer on a damp bank, with the keeper's blade), a handful of sand and a handful of marram (builds.furnace). It stands one night to dry before its first use. At the furnace: Smelt lays a handful of ore and a handful of willow charcoal sticks in at the top (out 'smelt'); it burns through the night and the metal is ready by morning (furnace.readyHour), taken up from the furnace's card; one load at a time. Draw out turns one copper or one iron into a handful of nails at once (copper nails and iron nails both count as nails). At the workbench: twisted sticks (two handfuls of sticks, wound and bound; the twin of woven twigs) and planks (twisted sticks and nails), kept for the dock. Every set of parts is its own: no other make takes two handfuls of sticks alone (the apothecary bench adds cord, the rack cord, the nest box rushes), and nothing else takes ore, metal or nails.",
+  "furnace": { "readyHour": 7, "minH": 8, "dryMinH": 8, "light": { "cd": 18, "rangeM": 3.5, "rgb": [1.0, 0.42, 0.12], "flickerHz": 0.7, "flicker": 0.25, "outM": 0.12, "upM": 0.06 }, "glowAt": [0, 0.15, 0], "doorAt": [0, 0.08, 0.34] },
+  "furnaceNote": "The clay furnace's night (src/world/camp/furnace.js, pure): a load laid at laidHour is ready at the first readyHour (game hour of the day) at least minH game hours later, so ore in at dusk is metal by morning; the furnace itself is dry the same way, dryMinH after it was built. While a load burns the furnace glows out of its tapping arch: a small light (cd, rangeM, rgb, flickering by the flicker share at flickerHz) outM in front of the arch (doorAt) and upM over it. glowAt and doorAt are the model's empties glow and tap_door (m, the model's frame, from Matt's clay-furnace.glb).",
   "lanternNote": "B2 L1 (Matt, October 30, 2026): the shaper's trail stop 'A lantern' (shaper.json, a pond of your own with no fish) gives the lantern; unlock names that gift (unlocks.lantern), and the make is offered only while the island has room for another lantern (the store slice makeRoom, from pieces.json lantern.cap, counting those standing, in the pack and on their way). Three steps: clay pressed round with pebbles to pierce it (the lantern pot, shaped, pale on the bench); a night in the star fire hardens it (fire-lantern-pot, out 'work', taken up from the ring's card into a pouch, as a bowl is); then at the workbench the fired pot goes on a stick post with a rush wick (post-lantern, into a pouch of its own). Its parts are unique: the cooking pot is clay and sand, the tea pot clay and crushed shell, the cup and bowl clay alone, seed balls clay and a seed, the mortar a flat stone and pebbles; the nest box is a stick and two handfuls of rushes, the apothecary bench two sticks and cord. The lantern stands where the pouch card's Set it here puts it (src/world/pieces/lantern-live.js).",
   "lilyParcelNote": "October 27, 2026 (Matt): the turtles' made treat. A handful of worms wrapped in a lily leaf picked in summer and tied with rush cord, one parcel; set by a basking spot at the water's edge, the turtles tear at it together (recipes/species/turtle.json treat).",
   "seedBallsNote": "P2g G5: a handful of clay and a handful of any plant's saved seed ({ part: 'seed' } takes any '<species>.seed'; its pencil outline wears thrift seed) roll into a handful of seed balls of that species (gives '{sp}.ball', the laid seed's species). Each ball sows a cluster of three on slightly poorer ground (sowing.json ball).",
@@ -88,17 +97,20 @@
   "words": {
     "workbenchSlot": { "name": "Workbench ground", "line": "Level ground facing the fire. A stone slab on a frame would make a bench here.", "needs": "A bench here needs two handfuls of flat stones.", "build": "Build the workbench" },
     "apothecarySlot": { "name": "Bench ground", "line": "Level ground facing the fire. Sticks lashed with cord would make a bench for herbs here.", "needs": "A bench here needs two handfuls of sticks and a handful of rush cord.", "build": "Build the apothecary bench" },
+    "furnaceSlot": { "name": "Furnace ground", "line": "Bare ground in the work corner. A clay chimney could stand here, for ore.", "needs": "A furnace here needs two handfuls of deep clay, a handful of sand and a handful of marram.", "build": "Build the furnace" },
     "build": "Build the workbench",
     "built": "A stone slab on a lashed frame. Somewhere to make things.",
-    "builtLines": { "apothecary": "Sticks lashed with cord, a shelf behind. Somewhere for herbs and stones." },
+    "builtLines": { "apothecary": "Sticks lashed with cord, a shelf behind. Somewhere for herbs and stones.", "furnace": "Clay built up in courses round a sandy bore, marram worked through it. It wants a night to dry before a fire." },
     "workbench": { "name": "Workbench", "line": "A stone slab on a lashed frame, facing the fire." },
     "apothecary": { "name": "Apothecary bench", "line": "A lashed bench facing the fire, for drying and grinding." },
     "store": { "name": "The hamper", "line": "A lidded rush hamper among the stores." },
     "rack": { "name": "Drying rack", "line": "Withies lashed in a frame, for herbs to hang." },
+    "furnace": { "name": "Clay furnace", "line": "A waist-high chimney of clay, an arch at its foot.", "drying": "Still drying. It can take a fire after a night.", "empty": "Cold and ready. Ore and charcoal go in at the top.",
+      "burning": "Burning through the night. By morning it is done.", "done": "Cooled. Something waits behind the arch.", "full": "It is already burning. One load at a time.", "notDry": "The clay is still damp. Let it stand a night first." },
     "fire": { "name": "The fire" },
     "make": "Make",
     "fireAct": "Fire",
-    "acts": { "dry": "Dry", "grind": "Grind" },
+    "acts": { "dry": "Dry", "grind": "Grind", "smelt": "Smelt", "draw": "Draw out" },
     "nothing": "These don't come to anything together.",
     "spotsFull": "The surface is full. Take something off first.",
     "none": "Nothing in the pack or the piles to lay here.",
@@ -133,7 +145,12 @@
       "eggshell-grit": "Ground fine. A handful of eggshell grit, for the hen.",
       "lantern-pot": "A round of clay, pressed through with a pebble all over. It waits pale on the bench for the fire.",
       "fire-lantern-pot": "Set at the fire's edge. A night of fire will harden it.",
-      "post-lantern": "The fired pot on a stick post, a rush for its wick. A lantern, in its own pouch. Set it down where you want a light." },
+      "post-lantern": "The fired pot on a stick post, a rush for its wick. A lantern, in its own pouch. Set it down where you want a light.",
+      "twisted-sticks": "Two sticks wound round each other and bound at the ends. Stiff and straight.",
+      "planks": "Twisted sticks laid side by side, a batten nailed across. A plank, kept for the dock.",
+      "smelt-iron": "Black sand and charcoal in at the top. It will burn through the night.",
+      "smelt-copper": "Green-flecked ore and charcoal in at the top. It will burn through the night.",
+      "nails": "Heated and drawn out, cut and headed. A handful of nails." },
     "benchFull": "The bench is full of pieces waiting for the fire. Fire one first.",
     "onBench": "On the workbench",
     "benchWaiting": "Waiting for the fire",
@@ -146,6 +163,8 @@
     "workWaitings": { "fire-cooking-pot": "A pale pot at the fire's edge, firing.", "fire-tea-pot": "A pale tea pot at the fire's edge, firing.",
       "fire-cup": "A pale cup at the fire's edge, firing.", "fire-bowl": "A pale bowl at the fire's edge, firing.", "fire-lantern-pot": "A pale lantern pot at the fire's edge, firing." },
     "workDones": { "fire-bowl": "A fired bowl at the fire's edge.", "fire-lantern-pot": "A fired lantern pot at the fire's edge, light shows through every hole." },
+    "furnaceTakes": { "iron": "Take up the iron", "copper": "Take up the copper" },
+    "furnaceTook": { "iron": "A rough lump of iron, still warm. Into the pack.", "copper": "A small lump of copper, still warm. Into the pack." },
     "workTakes": { "willow-charcoal": "Take up the charcoal sticks", "fire-bowl": "Take up the bowl", "fire-lantern-pot": "Take up the lantern pot" },
     "firedLines": { "cooking-pot": "The cooking pot is fired, hard and ringing.", "tea-pot": "The tea pot is fired, hard and ringing.", "cup": "The cup is fired. It rings when you tap it." },
     "pieceNames": { "cooking-pot": "Cooking pot", "tea-pot": "Tea pot", "cup": "Clay cup", "bowl": "Clay bowl", "lantern-pot": "Lantern pot", "stand": "Pot stand" },
@@ -195,7 +214,7 @@
       "bed": "The herb bed",
       "bedGrows": "Growing in it:",
       "bedEmpty": "Nothing growing in it just now.",
-      "sketchNames": { "tent": "Your tent", "ring": "Fire ring", "workbench": "Workbench", "apothecary": "Apothecary bench", "rack": "Drying rack", "sticks": "Stick pile", "stones": "Stone pile", "clay": "Clay pile", "store": "Rush hamper", "gift": "Gift stone", "nest": "Nest box" }
+      "sketchNames": { "tent": "Your tent", "ring": "Fire ring", "workbench": "Workbench", "apothecary": "Apothecary bench", "rack": "Drying rack", "sticks": "Stick pile", "stones": "Stone pile", "clay": "Clay pile", "store": "Rush hamper", "gift": "Gift stone", "nest": "Nest box", "furnace": "Clay furnace" }
     },
     "giftNames": { "pondweed": "Pondweed seeds", "raft": "A raft of reeds", "hen-feather": "A tail feather" },
     "pageNames": { "ring": "Fire ring", "workbench": "Workbench", "shovel": "Shovel", "woven-twigs": "Woven twigs", "rush-cord": "Rush cord", "apothecary": "Apothecary bench", "rack": "Drying rack",
@@ -204,7 +223,8 @@
       "fire-cooking-pot": "Cooking pot, fired", "fire-tea-pot": "Tea pot, fired", "fire-cup": "Clay cup, fired", "fire-bowl": "Clay bowl, fired", "leaf-pack": "Leaf pack",
       "satchel": "Rush satchel, eight pouches", "basket": "Willow basket, ten pouches", "seed-balls": "Seed balls", "lily-parcel": "Lily leaf parcel",
       "gift-stone": "Gift stone", "nest-box": "Nest box", "eggshell-grit": "Eggshell grit", "meal": "An egg, cooked on the hearth",
-      "lantern-pot": "Lantern pot, shaped", "fire-lantern-pot": "Lantern pot, fired", "post-lantern": "A lantern on a post" },
+      "lantern-pot": "Lantern pot, shaped", "fire-lantern-pot": "Lantern pot, fired", "post-lantern": "A lantern on a post",
+      "furnace": "Clay furnace", "twisted-sticks": "Twisted sticks", "planks": "A plank", "smelt-iron": "First iron, smelted", "smelt-copper": "First copper, smelted", "nails": "Nails" },
     "pageParts": { "ring": "Sticks and stones", "workbench": "Two flat stones", "shovel": "Woven twigs or a stick, a flat stone, cord", "woven-twigs": "Two handfuls of drift twigs, woven", "rush-cord": "Rushes, reed leaves or marram, twisted",
       "apothecary": "Sticks lashed with cord", "rack": "Withies or sticks, cord", "mortar": "A flat stone and a pebble", "hamper": "Rushes coiled, stitched with cord",
       "hamper2": "Rushes, cord, a willow lid", "dry": "A handful of herbs, hung", "grind": "Broken shells, ground", "willow-charcoal": "Withies, a night in the fire",
@@ -212,7 +232,8 @@
       "fire-cooking-pot": "A night in the fire", "fire-tea-pot": "A night in the fire", "fire-cup": "A night in the fire", "fire-bowl": "A night in the fire",
       "leaf-pack": "Fallen leaves, rush cord", "satchel": "Rushes plaited, a cord strap", "basket": "Withies woven, two cord straps", "seed-balls": "Clay and saved seed, rolled", "lily-parcel": "Worms, a lily leaf, rush cord",
       "gift-stone": "A flat stone, two handfuls of shells", "nest-box": "Sticks, two handfuls of rushes", "eggshell-grit": "The eggshells from a breakfast", "meal": "An egg from the hen",
-      "lantern-pot": "Clay, pierced with a pebble; it wants a night in the fire", "fire-lantern-pot": "A night in the fire", "post-lantern": "The fired pot, a stick post, a rush wick" }
+      "lantern-pot": "Clay, pierced with a pebble; it wants a night in the fire", "fire-lantern-pot": "A night in the fire", "post-lantern": "The fired pot, a stick post, a rush wick",
+      "furnace": "Deep clay, sand and marram, built up in courses", "twisted-sticks": "Two handfuls of sticks, wound together", "planks": "Twisted sticks and nails", "smelt-iron": "Black sand and willow charcoal, a night in the furnace", "smelt-copper": "Copper ore and willow charcoal, a night in the furnace", "nails": "One iron or one copper, drawn out at the furnace" }
   },
   "wordsNote": "Every line the stations and the camp page say. <slot>Slot: a bench's ground card (name, line, needs, and its Build label); builtLines: the line after a build other than the workbench's (built). acts: the apothecary's actions. hamper: the stations' row of what the hamper holds; takeUp, setDownHere, emptySlot: the hamper's and the rack's cards. made: the line after a first make, by make id. workFull, workTake, workWaiting, workDone: the overnight work at the fire (the ring's card). pageNames, pageParts: the camp page's first-made lines, in the walker's hand: name, what it was made of, and the date."
 }

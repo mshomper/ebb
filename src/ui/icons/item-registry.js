@@ -16,6 +16,7 @@
 import { ICON_NAMES } from './icons.js';
 import { DYES } from './items-made.js';
 import { CAMP_ROWS } from './items-camp.js';
+import { METAL_POUCH_ROWS, METAL_MAKE_ROWS } from './items-metal.js';
 
 /**
  * @typedef {{ id: string, icon: string, name: string, tier: string, phase: number }} ItemRow
@@ -47,6 +48,8 @@ export const POUCH_KINDS = /** @type {[string, string, string, string, number][]
   ['lily-parcel', 'lily-parcel', 'Lily leaf parcel', 'T2', 2],
   // The hen's eggs and what comes of them (docs/future/15 slice 4); sea salt waits for the salt pans.
   ['egg', 'egg', 'Eggs', 'T3', 3], ['eggshells', 'eggshells', 'Eggshells', 'T3', 3], ['grit', 'grit', 'Eggshell grit', 'T3', 3], ['sea-salt', 'sea-salt', 'Sea salt', 'T2', 3],
+  // The underground spring (spring-ore plan): its ores, the furnace's metal, nails, and the dock's first parts.
+  ...METAL_POUCH_ROWS,
 ]).map(row);
 
 /** Plant parts, '<species>.<part>' (docs/future/13 sections 4.1 and 5.3). @type {ItemRow[]} */
@@ -100,6 +103,7 @@ export const MAKES = /** @type {[string, string, string, string, number][]} */ (
   ['larger-pot', 'larger-pot', 'Larger pot', 'T5', 5], ['hedgehog-house', 'hedgehog-house', 'Hedgehog house', 'T5', 5], ['wind-chime', 'wind-chime', 'Shell wind chime', 'T5', 5],
   ['sinker-stones', 'sinker-stones', 'Grooved sinker stones', 'T6', 5],
   ...CAMP_ROWS,
+  ...METAL_MAKE_ROWS,
 ]).map(row);
 
 /** Treats and offerings (docs/future/13 section 8). @type {ItemRow[]} */

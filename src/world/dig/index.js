@@ -387,7 +387,12 @@ export function createDig(o) {
       emitDeferred('dig:found', { kind: 'worm', id: f.worm });
       emitDeferred('dig:detail', { id: `worm-${f.worm}` });
     }
-    if (f.clay === 'yes') { if (toPack('clay')) lines.push(W.clay1); emitDeferred('dig:found', { kind: 'clay', id: 'clay' }); }
+    // The blue-grey clay fills a clay pouch; the deeper clay a deep clay pouch (the furnace's, clay.kinds).
+    if (f.clay === 'yes') {
+      const kind = R.clay.kinds?.[P.layer] ?? 'clay';
+      if (toPack(kind)) lines.push(kind === 'clay' ? W.clay1 : W.deepClay1 ?? W.clay1);
+      emitDeferred('dig:found', { kind: 'clay', id: kind });
+    }
     else if (f.clay === 'winter') lines.push(W.clayWinter);
     let keepsake = null;
     if (f.keepsake) {
