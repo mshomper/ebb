@@ -974,5 +974,26 @@
     0.443
    ]
   }
+ },
+ "keepsake-shelf": {
+  "source": "keepsake-shelf.glb",
+  "file": "keepsake-shelf.glb",
+  "bytes": 796832,
+  "sourceBytes": 4109656,
+  "trianglesBefore": 19648,
+  "triangles": 12000,
+  "maps": 1024,
+  "bounds": {
+   "min": [
+    -0.638,
+    0,
+    -0.221
+   ],
+   "max": [
+    0.638,
+    1.31,
+    0.221
+   ]
+  }
  }
 }

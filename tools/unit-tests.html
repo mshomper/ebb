@@ -57,6 +57,7 @@
   <div id="slowest"></div>
   <p class="note">Open this page through the local server (double-click play.cmd, then go to tools/unit-tests.html). Modules and workers do not load from a file on disk.</p>
   <p class="note">The long island runs share all the computer's cores. Add ?only=pond to the address to run just the tests whose names hold "pond", or ?serial to run everything one after another on the page, as it used to.</p>
+  <p class="note">Node runs the same tests without this page, all but the few that need a browser: node tools/run-tests.mjs (add --affected for what a branch changed). A new test file is listed by running node tools/index-tests.mjs; this page says so in a failed line at the top when the list is out of date.</p>
 </main>
 <script type="module" src="./unit-tests.js"></script>
 </body>

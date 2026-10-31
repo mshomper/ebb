@@ -88,6 +88,11 @@ function campSketch(pad, camp, names = {}) {
     } else if (s.id === 'rack' && has('rack')) {
       parts.push(`<rect x="${x - (s.w / 2) * S}" y="${y - (s.d / 2) * S}" width="${s.w * S}" height="${s.d * S}" rx="3" class="cp-bench"/>`);
       spot(s.id, x, y, (s.w / 2) * S, (s.d / 2) * S);
+    } else if (s.yaw === 'inward' && has(s.id)) {
+      // The keepsake shelf (B2): turned to face the pad's middle, w across.
+      const deg = Math.atan2(-s.v, s.u) * 180 / Math.PI + 90;
+      parts.push(`<rect x="${x - (s.w / 2) * S}" y="${y - (s.d / 2) * S}" width="${s.w * S}" height="${s.d * S}" rx="2" class="cp-bench" transform="rotate(${deg.toFixed(1)} ${x} ${y})"/>`);
+      spot(s.id, x, y, (s.w / 2) * S * 0.8, (s.w / 2) * S * 0.8);
     } else if (['sticks', 'stones', 'clay'].includes(s.id) || ((s.id === 'store' || s.id === 'gift' || s.id === 'nest') && has(s.id))) {
       parts.push(`<circle cx="${x}" cy="${y}" r="${(s.r ?? 0.4) * S}" class="cp-store"/>`);
       spot(s.id, x, y, (s.r ?? 0.4) * S, (s.r ?? 0.4) * S);

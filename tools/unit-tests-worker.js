@@ -1,8 +1,8 @@
 // @ts-check
-// One of the unit test page's helpers: it loads a test file from unit-tests-parallel.js
+// One of the unit test page's helpers: it loads a test file from unit-tests-index.js
 // and runs the single tests the page hands it, so the long island runs share all cores.
 
-import { PARALLEL, assert, eq, runOne } from './unit-tests-parallel.js';
+import { loadTestFile, assert, eq, runOne } from './unit-tests-parallel.js';
 import { initWorkers } from '../src/core/workers.js';
 
 // The game's own pool would start a worker per core inside every test worker; one is plenty.
@@ -15,7 +15,7 @@ const files = new Map();
 function testsOf(key) {
   let p = files.get(key);
   if (!p) {
-    p = PARALLEL[key]().then((add) => {
+    p = loadTestFile(key).then((add) => {
       /** @type {{group: string, name: string, fn: () => any}[]} */
       const tests = [];
       add((group, name, fn) => tests.push({ group, name, fn }), assert, eq);

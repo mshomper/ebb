@@ -95,8 +95,9 @@ The twin of the list above (Matt, October 30, 2026), for every set piece (`recip
 - Each feature ships with a short click-test list: what Matt should see and do, in plain language. Put it in the PR description.
 - For anything numeric (simulation stability, frame time, catch-up determinism), add or extend a page in `tools/` that shows the result visually and can be run locally.
 - Determinism check: the same seed and the same edits must produce the same world after catch-up. `tools/determinism.html` compares two runs.
-- Run only what a change reaches while working: `node tools/affected-tests.mjs` prints the test groups (and a `tools/unit-tests.html?groups=...` link) for what the branch changed. Run the full suite (`tools/unit-tests.html`, no parameters) once at handoff, before reporting ready. Open `tools/determinism.html` only when the script says so.
-- Progress: every feature branch adds one row at the end of the table in `docs/progress.md`. Never add progress rows to `README.md`, which keeps only a short status.
+- A branch runs only what it reaches, while working and at handoff: `node tools/run-tests.mjs --affected` (the groups its changes reach, plus the core), `tools/determinism.html` when that says so, and the browser page (`tools/unit-tests.html?groups=...`) only for the page-only groups it names. The full suite runs once, on the combined tip, in the orchestrator's merge queue.
+- A new test file is `tools/unit-tests-<key>.js` with one `add...Tests` export; `node tools/index-tests.mjs` lists it. Never add it to a shared list by hand. `node tools/typecheck.mjs` lists type errors that are new since its baseline: fix the ones the branch added.
+- Progress: every feature branch adds its own file, `docs/progress/<date>-<branch>.md` (the format is in `docs/progress/README.md`). The table in `docs/progress.md` is a closed archive; never edit it. Never add progress rows to `README.md`, which keeps only a short status.
 
 ## Current target
 

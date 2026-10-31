@@ -1,7 +1,7 @@
 // @ts-check
 // Music notation tests (doc 24): the ABC subset reader (src/audio/music/score.js) and the chord
 // symbol reader (src/audio/music/chords.js). Pure modules, no audio. Run on
-// tools/unit-tests-audio.html, and in Node with tools/run-audio-tests.mjs.
+// tools/unit-tests-audio.html, and in Node with tools/run-tests.mjs.
 //
 // Conventions the reader promises (doc 24, "Authoring format"):
 // - Time is in integer ticks, 480 per quarter note. Tick 0 is the first note of the tune.

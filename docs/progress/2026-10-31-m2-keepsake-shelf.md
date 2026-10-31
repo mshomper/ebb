@@ -1,0 +1,5 @@
+# The keepsake shelf at camp (m2-keepsake-shelf)
+
+Status: Done
+
+B2, Matt, October 30, 2026. A driftwood shelf, made at the workbench from a stick, woven twigs and rush cord (parts no other make takes), stands in the reserved slot beside the tent, facing the fire, and you walk round it. The keepsakes kept in the Keeper book's Shelf tab stand on its sixteen spaces in the same order, each rebuilt from its saved numbers, sized to its space at the findable scale, bottles stood up and flat things (starfish, purses, feathers, cuttlebone, bivalves) leant against the boards; keep or let one go and the shelf follows at once. Its card (Look along the shelf, Read the letters, the camp page) opens the Shelf tab; the letter tin on top opens Letters; clicked from above, the view eases round to its front (the model's look_from). The camp page names it, its parts and its first. Model in assets/models/camp (12k triangles), spots in recipes/world/camp.json keepsakeShelf. Test link `?camp=shelf` (`&keep=N`, `&make`); tests in tools/unit-tests-keepsake-shelf.js.

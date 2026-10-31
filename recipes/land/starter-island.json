@@ -75,7 +75,7 @@
       { "id": "dyepot", "kinds": ["dyepot"], "u": 1.5, "v": 2.4, "r": 0.18 },
       { "id": "jar", "kinds": ["jar"], "u": 0.7, "v": 2.95, "r": 0.12 },
       { "id": "lamp", "kinds": ["lamp"], "u": -1.1, "v": 1.2, "r": 0.08 },
-      { "id": "shelf", "kinds": ["shelf"], "u": -2.15, "v": 2.5, "w": 1.3, "d": 0.45, "yaw": "inward", "frontM": 1.0 },
+      { "id": "shelf", "kinds": ["keepsake-shelf"], "u": -2.15, "v": 2.5, "w": 1.3, "d": 0.45, "yaw": "inward", "frontM": 1.0, "blocks": true },
       { "id": "chime", "kinds": ["chime"], "u": -1.0, "v": 2.9, "r": 0.08 },
       { "id": "gift", "kinds": ["gift-stone"], "u": -3.1, "v": -1.65, "r": 0.28 },
       { "id": "nest", "kinds": ["nest-box"], "u": -3.35, "v": 1.3, "r": 0.22, "rim": { "rM": 3.55, "stepDeg": 5, "maxDeg": 120, "gapM": 0.15 } },

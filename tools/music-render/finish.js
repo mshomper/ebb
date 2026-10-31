@@ -3,7 +3,7 @@
 // both ends (keeping the room's tail after the last note, with a short fade), measure the loudness
 // the way streaming services do (ITU-R BS.1770-4: K-weighting, 400 ms blocks, absolute and relative
 // gates) and set it to a target with the peaks kept under a ceiling, then write a WAV file.
-// Pure functions on Float32Array channels, so the Node tests (tools/run-audio-tests.mjs) can run them.
+// Pure functions on Float32Array channels, so the Node tests (tools/run-tests.mjs) can run them.
 
 /**
  * K-weighting as two biquads (BS.1770-4: a high shelf near 1.7 kHz, then a high pass near 38 Hz),

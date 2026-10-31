@@ -6,6 +6,10 @@
     "giftStone": { "name": "Gift stone", "lies": "On it:", "empty": "A flat stone with shells set on it. What the creatures give is left here.", "takeUp": "Take up",
       "toSpot": "Taken up. It is on your gift spot now.", "taken": "Taken up.",
       "knownRose": "The creatures near camp are getting used to it. They let you a little closer than they used to." },
+    "keepsakeShelf": { "name": "Keepsake shelf", "line": "Driftwood boards lashed with cord. The things you kept from the shore stand here, each in its own space.",
+      "empty": "Driftwood boards with sixteen spaces. What you keep from the shore will stand here.", "open": "Look along the shelf", "letters": "Read the letters",
+      "tinName": "Letter tin", "tinLine": "A flat tin on top of the shelf. The letters from bottles you have read are kept in it.",
+      "tinNone": "A flat tin on top of the shelf, empty for now. A letter from a bottle, once read, is kept in it." },
     "clear": "The camp ground stays clear.",
     "tentSlot": { "name": "Tent ground", "line": "A level patch for your tent, out of the wind." },
     "tent": { "name": "Your tent", "line": "Canvas on two poles, your bedroll rolled inside." },
@@ -141,7 +145,8 @@
       "mortar": { "file": "assets/models/camp/mortar.glb", "look": { "albedo": 0.9, "rough": 1, "normal": 1, "normalY": -1 } },
       "pestle": { "file": "assets/models/camp/pestle.glb", "look": { "albedo": 0.9, "rough": 1, "normal": 1, "normalY": -1 } },
       "satchel": { "file": "assets/models/camp/satchel.glb", "look": { "albedo": 0.9, "rough": 1, "normal": 1, "normalY": -1 } },
-      "willow-basket": { "file": "assets/models/camp/willow-basket.glb", "look": { "albedo": 0.9, "rough": 1, "normal": 1, "normalY": -1 } }
+      "willow-basket": { "file": "assets/models/camp/willow-basket.glb", "look": { "albedo": 0.9, "rough": 1, "normal": 1, "normalY": -1 } },
+      "keepsake-shelf": { "file": "assets/models/camp/keepsake-shelf.glb", "look": { "albedo": 0.9, "rough": 1, "normal": 1, "normalY": -1 }, "shade": [0.7, 0.3, 0.45] }
     },
     "ember": [1.0, 0.3, 0.05], "emberNits": 14, "emberHz": 0.5,
     "charAlbedo": [0.03, 0.028, 0.026], "dryTint": [1.7, 1.42, 0.86], "dryMix": 0.85,
@@ -183,6 +188,25 @@
     }
   },
   "giftStoneNote": "B1 C1 (docs/future/13 C-14, C-37): the gift stone made at the workbench (cook.json makes gift-stone) and drawn in code in the camp's gift slot. stoneRadiiM: the low flat stone's half sizes (x, y, z; m), lump (how uneven its outline is), sink (share of its height below the ground), stoneColor and the pale flecks of lichenColor (linear), yawDeg its turn from seaward. shells: how many shells sit along its far side, each shellM across (m) at shellRingShare of its radius, coloured from shellColors. A gift laid on it lies at giftRingShare of its radius on the near side, each giftApartRad round from the last, drawn giftScale times its real size (findable scale), and you stand standM off its edge (on the ring's side) and reach it within reachM. pass: the draw pass's contact shadow. tokens: how each kind of gift is drawn on the stone, by its gift id: a 'bundle' of count strands lenM long and radiusM thick tied with tieColor, a 'feather', or a small wrapped 'parcel' (any kind not listed).",
+  "keepsakeShelf": {
+    "model": "keepsake-shelf",
+    "slotsM": [
+      [-0.4036, 1.0365, 0.0867], [-0.1346, 1.0365, 0.0867], [0.1346, 1.0365, 0.0867], [0.4036, 1.0365, 0.0867],
+      [-0.4036, 0.7475, 0.0867], [-0.1346, 0.7475, 0.0867], [0.1346, 0.7475, 0.0867], [0.4036, 0.7475, 0.0867],
+      [-0.4036, 0.4585, 0.0867], [-0.1346, 0.4585, 0.0867], [0.1346, 0.4585, 0.0867], [0.4036, 0.4585, 0.0867],
+      [-0.4036, 0.1694, 0.0867], [-0.1346, 0.1694, 0.0867], [0.1346, 0.1694, 0.0867], [0.4036, 0.1694, 0.0867]
+    ],
+    "letterTinM": [0.3588, 1.2877, 0.0169], "tinHalfM": [0.095, 0.03, 0.07],
+    "boxM": [[-0.64, 0, -0.23], [0.64, 1.31, 0.23]],
+    "look": { "fromM": [0, 1.3953, 1.6016], "pitchDeg": 25.1, "minDistanceM": 2.7 },
+    "fit": { "scale": 2.5, "minM": 0.09, "maxWideM": 0.22, "maxHighM": 0.2, "maxDeepM": 0.13, "jitterDeg": 10, "leanBackM": 0.05 },
+    "families": { "bottle": { "stand": true }, "starfish": { "leanDeg": 62 }, "purse": { "leanDeg": 60 }, "feather": { "leanDeg": 70 },
+      "cuttlebone": { "leanDeg": 50 }, "bivalve": { "leanDeg": 55 } },
+    "sitM": 0.002, "pass": { "lengthM": 0.2, "roughness": 0.6 },
+    "standM": 0.45, "reachM": 0.3, "liftM": 0.9, "cardPadM": 0.15, "tinCardM": 0.1,
+    "testStandM": [0.95, 0, 0.55], "testViewRad": 0.45
+  },
+  "keepsakeShelfNote": "B2 (Matt, October 30, 2026): the keepsake shelf, made at the workbench (cook.json makes keepsake-shelf) into the camp's shelf slot, drawn with its model (props.models keepsake-shelf; meters, origin at the middle of its base, front +z, turned to face the pad's middle) and holding the Shelf tab's keepsakes in order (src/world/camp/keepsake-shelf.js, shelf-fit.js). slotsM: the sixteen spots in the model's frame, top left to bottom right as you face it, each on its plank's top (the source model's empties slot_01 to slot_16, which the web copy drops; scaled with it); letterTinM, tinHalfM: the letter tin on top, its middle and half sizes; boxM: the shelf's box for a click's ray (low down a click on it would pass to the ground behind); look: the source's look_from empty, the camera's place in front and its pitch down (the view eases there when the shelf is clicked from above), stepped back along that line to minDistanceM so the whole shelf is in view. fit: how a keepsake sits in its spot: at scale (the findable scale) but at least minM along its longest side and never wider, taller or deeper than the spot holds (maxWideM, maxHighM: under the plank above, maxDeepM), its longer side along the plank and turned up to jitterDeg either way by its seed; families: stand (a bottle on its base) or leanDeg (a flat thing leant back against the boards, set leanBackM further back). sitM: a hair above the plank. pass: the keepsakes' draw pass. standM: where you stand in front of it (beyond its half depth); reachM: how near the walk takes you; liftM: the lift's reach from there (the shelf and its keepsakes, no further); cardPadM: the card's footprint grown by this; tinCardM: a click this near the tin's spot opens its card. testStandM, testViewRad: the test link ?camp=shelf stands you beside it (in its frame) with the low view turned this far from straight in front.",
   "known": { "reachM": 6, "perSeason": 0.25, "ringAtFull": 0.85, "restsPerSeason": 6 },
   "knownNote": "A known place (C-36): within reachM of the pad's center, every creature's comfort ring is multiplied by 1 - (1 - ringAtFull) * known. known grows by perSeason for each season in which you rested at camp at least restsPerSeason times (Matt's brief, B1: 6; the spec's first draft said 2), up to 1, and never falls.",
   "bed": { "checkS": 1, "edging": { "spacingM": 0.18, "outM": 0.08, "jitterM": 0.03, "sizeM": [0.08, 0.13], "color": [0.34, 0.32, 0.29], "shades": [1, 0.85, 1.12] } },

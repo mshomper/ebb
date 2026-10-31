@@ -6,6 +6,9 @@
 
 import { loadShader } from '../src/core/gpu.js';
 
+/** The test page runs this file on its main thread, where WebGPU is; Node cannot (tools/index-tests.mjs). */
+export const NEEDS = 'webgpu';
+
 const FALLS = 'waterfalls';
 const NO_GPU = 'skipped: WebGPU is not available in this browser';
 const T = 768, W = 384, ORIGIN = -80;

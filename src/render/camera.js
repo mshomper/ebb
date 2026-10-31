@@ -83,6 +83,8 @@ export function createOrbitCamera(r) {
   let close = null;
   /** A focus's exact target height (m), kept until the next pan. @type {number | null} */
   let targetY = null;
+  /** A focus's own target height, held above until the next input (the keepsake shelf's look), or null. @type {number | null} */
+  let heldY = null;
   /**
    * The low view below (doc 23, the walker): while set, the camera follows you from behind and
    * close (`follow` each frame), with its own zoom and look limits and no panning; null above.
@@ -120,20 +122,28 @@ export function createOrbitCamera(r) {
   function touched() {
     sinceInput = 0;
     focusing = false;
+    heldY = null;
   }
 
   /**
    * Glide to look at a ground point from a set distance and pitch (the journal's Show me).
    * @param {number} x @param {number} z world meters @param {number} distance meters @param {number} pitchDeg
    * @param {number} [y] the target's height (m); left out, it follows the ground
+   * @param {number} [yaw] the view's turn as well (radians; the keepsake shelf, seen from its front),
+   *   the short way round; left out, the view keeps its turn
+   * @param {boolean} [holdY] above, aim at height y itself until the next input, instead of half way
+   *   down the slope (the keepsake shelf, looked at from its front)
    */
-  function focus(x, z, distance, pitchDeg, y) {
+  function focus(x, z, distance, pitchDeg, y, yaw, holdY = false) {
     goal.target[0] = x;
     goal.target[2] = z;
     targetY = y ?? null;
+    heldY = holdY && Number.isFinite(y) ? /** @type {number} */ (y) : null;
+    if (heldY !== null) goal.target[1] = heldY;
     clampTarget();
     goal.distance = clamp(distance, minSoft(), maxSoft());
     goal.pitch = clamp(pitchDeg * DEG, ...pitchSoft());
+    if (Number.isFinite(yaw)) goal.yaw = cur.yaw + Math.atan2(Math.sin(/** @type {number} */ (yaw) - cur.yaw), Math.cos(/** @type {number} */ (yaw) - cur.yaw));
     focusing = true;
     focusHalfLife = r.halfLifeFocus ?? 0.5;
   }
@@ -260,7 +270,7 @@ export function createOrbitCamera(r) {
     // Zoomed in (recipe `close`), the view eases from aiming half way down the slope to aiming at
     // the ground itself, and the eye may come down near it. Below, it aims at you.
     const near = nearness(cur.distance);
-    if (!close && !ground) cur.target[1] = h * 0.5 + (Math.max(h, floor0) - h * 0.5) * near;
+    if (!close && !ground) cur.target[1] = heldY !== null ? cur.target[1] + (heldY - cur.target[1]) * kd : h * 0.5 + (Math.max(h, floor0) - h * 0.5) * near;
     const eyeMin = ground?.minEyeHeight ?? close?.minEyeHeight ?? r.minEyeHeight + ((r.close?.minEyeHeight ?? r.minEyeHeight) - r.minEyeHeight) * near;
 
     let pitch = cur.pitch;
@@ -365,6 +375,7 @@ export function createOrbitCamera(r) {
       }
       vec3.set(at[0], at[1], at[2], goal.target);
       targetY = g ? at[1] : null;
+      heldY = null;
       clampTarget();
       focusing = true;
       focusHalfLife = r.halfLifeGoDown ?? r.halfLifeFocus ?? 0.5;
