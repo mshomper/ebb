@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ebb progress</title>
+<style>
+  @font-face {
+    font-family: 'Nunito';
+    src: url('../src/vendor/fonts/nunito-latin-600-normal.woff2') format('woff2');
+    font-weight: 600;
+    font-display: swap;
+  }
+  @font-face {
+    font-family: 'Nunito';
+    src: url('../src/vendor/fonts/nunito-latin-800-normal.woff2') format('woff2');
+    font-weight: 800;
+    font-display: swap;
+  }
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; max-width: 100%; overflow-x: hidden; }
+  body {
+    background: #F4EEE4;
+    color: #1E2624;
+    font-family: 'Nunito', system-ui, sans-serif;
+    font-weight: 600;
+    font-size: 18px;
+    line-height: 1.5;
+    padding: 16px;
+    overflow-wrap: anywhere;
+  }
+  main { max-width: 980px; margin: 0 auto; }
+  h1 { font-size: 26px; font-weight: 800; margin: 0 0 6px; }
+  .lead { margin: 0 0 18px; color: #4A5551; }
+  .note { margin: 0 0 16px; padding: 10px 14px; border-radius: 10px; background: #F3E3C3; color: #5A4520; font-size: 16px; font-weight: 700; }
+  ol { list-style: none; margin: 0; padding: 0; }
+  li { padding: 12px 0 14px; border-bottom: 1px solid #E3D9C9; }
+  .head { display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: baseline; }
+  .step { font-weight: 800; font-size: 19px; }
+  .meta { font-size: 15px; color: #6B7570; }
+  .body { margin: 6px 0 0; font-size: 17px; }
+  code { font-size: 15px; background: #EAE2D4; padding: 1px 5px; border-radius: 5px; }
+  a { color: #3E6B70; }
+  .new { border-left: 4px solid #5F7F5B; padding-left: 12px; }
+  h2 { font-size: 21px; font-weight: 800; margin: 26px 0 4px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>ebb progress</h1>
+  <p class="lead">Everything built so far, oldest first: the archive table (docs/progress.md, closed on October 31, 2026), then one entry per branch from docs/progress/. <a href="#newest">Jump to the newest</a>.</p>
+  <p class="note" id="note" hidden></p>
+  <h2>The archive table</h2>
+  <ol id="archive"></ol>
+  <h2>Entries since October 31, 2026</h2>
+  <ol id="entries"></ol>
+  <p id="newest"></p>
+</main>
+<script type="module" src="./progress.js"></script>
+</body>
+</html>

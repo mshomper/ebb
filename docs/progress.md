@@ -1,6 +1,6 @@
 # Progress
 
-Where ebb stands, one row per piece of work that has landed in `main`. Every feature branch adds its row at the end of this table (not in the README). The full plan is in [20-roadmap-and-vertical-slice.md](20-roadmap-and-vertical-slice.md); the current target is in `CLAUDE.md`.
+Where ebb stood, one row per piece of work that landed in `main`, up to October 31, 2026. **This table is an archive and is never edited again** (the unit tests check that it keeps its rows): since then every branch adds its own file to [progress/](progress/), as its README says. `tools/progress.html` shows the table and the files together, in date order. The full plan is in [20-roadmap-and-vertical-slice.md](20-roadmap-and-vertical-slice.md); the current target is in `CLAUDE.md`.
 
 | | Step | What it gives you |
 |---|---|---|

@@ -208,6 +208,18 @@ while ($listener.IsListening) {
       continue
     }
 
+    # GET /__list/tools or /__list/docs/progress: that folder's file names as JSON, for the test
+    # page's check of its test list and for tools/progress.html. No other folder is listed.
+    if ($path.StartsWith('/__list/')) {
+      $which = $path.Substring('/__list/'.Length).TrimEnd('/')
+      if (@('tools', 'docs/progress') -notcontains $which) { Send-Json $res 404 '{"ok":false,"error":"not a listed folder"}'; continue }
+      $dir = Join-Path $root $which.Replace('/', '\')
+      $names = @()
+      if (Test-Path -LiteralPath $dir -PathType Container) { $names = @(Get-ChildItem -LiteralPath $dir -File | ForEach-Object { $_.Name }) }
+      Send-Json $res 200 (ConvertTo-Json -InputObject $names -Compress)
+      continue
+    }
+
     $isBuildInfo = $path -eq '/__local.json' -or
       ($path -eq '/build.json' -and -not (Test-Path -LiteralPath (Join-Path $root 'build.json')))
     if ($isBuildInfo) {

@@ -10,6 +10,9 @@ import { createVoices } from '../src/audio/voices.js';
 import { createWingVoice, rattleBuffer, wingRecipe } from '../src/audio/voices/dragonfly.js';
 import { stream } from '../src/core/rng.js';
 
+/** The test page runs this file on its main thread, where Web Audio is; in Node its rendering checks skip themselves (tools/index-tests.mjs). */
+export const NEEDS = 'web-audio';
+
 const G = 'sound: pond life';
 const FROGS = { pollS: 0.025, leadS: 0.03, staleS: 0.4, intensityFromMood: [0.4, 1], duckNearM: 8, duckHoldS: 4 };
 const POND = { sips: ['minnows'], wings: ['dragonflies'], leadS: 0.03, staleS: 0.4 };
