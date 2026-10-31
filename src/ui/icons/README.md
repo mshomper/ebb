@@ -93,6 +93,7 @@ Size and color come from CSS: set `width`/`height` on `.icon` and `color` on the
 | `midges` | a loose cloud of dots over a reed tip: the midges journal page |
 | `pool` | water held in a hollow between two rocks: a rock pool, in the journal's Web |
 | `strandline` | a line of torn litter along the shore with the sea below: the strandline, in the Web |
+| `islet` | a low mound standing out of the sea with a tuft of meadow, water lines below: the meadow islet's thread (B3a) |
 | `wrack` | a bladderwrack frond forking twice, with paired bladders: wrack, in the Web |
 | `kelp` | two broad blades with a midrib lying downslope from a holdfast: kelp, in the Web |
 | `lichen` | dark crust patches on a splash rock, a little spray above: black lichen, in the Web |

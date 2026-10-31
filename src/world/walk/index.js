@@ -51,9 +51,13 @@ export function createWalk(o) {
   let zone = null;
   const rawGround = (/** @type {number} */ x, /** @type {number} */ z) => (zone ? zone.ground(x, z) : terrain.sampleHeight(x, z));
   const ground = (/** @type {number} */ x, /** @type {number} */ z) => (zone ? zone.ground(x, z) : Math.max(rawGround(x, z), o.footing ? o.footing(x, z) : -Infinity));
-  const b = terrain.openBounds();
-  let grid = createWalkGrid({ ground: (x, z) => terrain.sampleHeight(x, z), footing: o.footing, minX: b.openMin[0], minZ: b.openMin[1], maxX: b.openMax[0], maxZ: b.openMax[1],
-    cellM: R.grid.cellM, maxSlopeDeg: R.grid.maxSlopeDeg });
+  // Over the open land and any new land risen beside it (the meadow islet, src/world/islet).
+  const islandGrid = () => {
+    const b = terrain.landBounds?.() ?? terrain.openBounds();
+    return createWalkGrid({ ground: (x, z) => terrain.sampleHeight(x, z), footing: o.footing, minX: b.openMin[0], minZ: b.openMin[1], maxX: b.openMax[0], maxZ: b.openMax[1],
+      cellM: R.grid.cellM, maxSlopeDeg: R.grid.maxSlopeDeg });
+  };
+  let grid = islandGrid();
   const tideP = tideParams(o.tide);
   /**
    * Water over a cell right now: the live water where it runs, and the sea at the tide now
@@ -176,6 +180,19 @@ export function createWalk(o) {
   const offStroke = on('terrain:stroke-ended', (/** @type {{ rect: { x0: number, z0: number, x1: number, z1: number } }} */ p) => {
     (zone ? zone.islandGrid : grid).refresh(p.rect.x0, p.rect.z0, p.rect.x1, p.rect.z1);
     keepFree();
+  });
+  // New land rising (the islet): the same over the ground it raised; when the land grows, a new grid
+  // holds it, with the solid things marked on it again.
+  const offRaised = on('terrain:raised', (/** @type {{ rect: { x0: number, z0: number, x1: number, z1: number } }} */ p) => {
+    (zone ? zone.islandGrid : grid).refresh(p.rect.x0, p.rect.z0, p.rect.x1, p.rect.z1);
+    keepFree();
+  });
+  const offGrew = on('terrain:land-grew', () => {
+    if (zone) { zone.islandGrid = islandGrid(); return; }
+    // A walk under way counts cells of the old grid: it stops, and you stand where you are.
+    walker.stop();
+    grid = islandGrid();
+    solids.mark(grid);
   });
   // A stepping stone or slab put down, moved or taken away: the same, over the ground it covers.
   const offFooting = on('pieces:footing-changed', (/** @type {{ rect: { x0: number, z0: number, x1: number, z1: number } }} */ p) => {
@@ -666,7 +683,7 @@ export function createWalk(o) {
       if (steps.length > 3) steps = steps.slice(-3);
     },
 
-    dispose() { offStroke(); offFooting(); for (const off of offArrivals) off(); },
+    dispose() { offStroke(); offFooting(); offRaised(); offGrew(); for (const off of offArrivals) off(); },
   };
 }
 

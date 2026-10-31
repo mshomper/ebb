@@ -16,16 +16,31 @@ import { WATER_CLASS } from '../water/summary.js';
  */
 export function createMossLive(device, opts) {
   const { water, recipe } = opts;
-  const rect = water.rect;
-  const n = rect.w * rect.h;
+  // Its own copy of the water's rect: when new land rises (src/world/islet) the water's grows, and
+  // the moss grows with it at the next summary (fit), keeping the cover it had.
+  const rect = { ...water.rect };
+  let n = rect.w * rect.h;
   const texture = makeTexture(device, {
     label: 'moss-cover', size: [WATER_CELLS, WATER_CELLS], format: 'r8unorm',
     usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST,
   });
-  const cover = new Float32Array(n);
-  const habitat = new Float32Array(n);   // how much moss the ground supports (0..1)
-  const core = new Uint8Array(n);       // cells where moss may start on its own
-  const bytes = new Uint8Array(n);
+  let cover = new Float32Array(n);
+  let habitat = new Float32Array(n);   // how much moss the ground supports (0..1)
+  let core = new Uint8Array(n);       // cells where moss may start on its own
+  let bytes = new Uint8Array(n);
+
+  /** Grow to a summary's rect (new land risen), moving the cover across. @param {{ x: number, y: number, w: number, h: number }} r */
+  function fit(r) {
+    if (r.x === rect.x && r.y === rect.y && r.w === rect.w && r.h === rect.h) return;
+    const was = cover, old = { ...rect };
+    Object.assign(rect, r);
+    n = r.w * r.h;
+    cover = new Float32Array(n); habitat = new Float32Array(n); core = new Uint8Array(n); bytes = new Uint8Array(n);
+    for (let j = 0; j < old.h; j++) for (let i = 0; i < old.w; i++) {
+      const ii = old.x + i - r.x, jj = old.y + j - r.y;
+      if (ii >= 0 && jj >= 0 && ii < r.w && jj < r.h) cover[jj * r.w + ii] = was[j * old.w + i];
+    }
+  }
   /** @type {any} */ let summary = null;
   let first = true;
   let hours = 0;     // game hours waiting to be applied
@@ -113,7 +128,7 @@ export function createMossLive(device, opts) {
     /** @param {import('../../sim/live-sim.js').FrameInfo} f */
     tick(f) {
       const s = water.getSummary();
-      if (s && s !== summary) { summary = s; rebuildHabitat(s); upload(); }
+      if (s && s !== summary) { summary = s; fit(s.rect); rebuildHabitat(s); upload(); }
       // Game hours from the world clock (FrameInfo.dt is real seconds; worldT follows 1x to 4x and pause).
       if (lastWorldT !== null) hours += Math.max(0, f.worldT - lastWorldT) / 3600;
       lastWorldT = f.worldT;

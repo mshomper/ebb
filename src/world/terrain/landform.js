@@ -392,6 +392,21 @@ function makeShore(land, seed) {
 }
 
 /**
+ * The bearings (degrees, 0 is +x, 90 is +z, from the island's center) of the camp's facing, the
+ * spit and the rocky point, for things placed away from them (the meadow islet, src/world/islet).
+ * Null spit and point when the land has no `shape`; null camp when it has no camp.
+ * @param {LandRecipe} land @param {number} seed the terrain sub-seed
+ * @returns {{ campDeg: number | null, spitDeg: number | null, rockDeg: number | null }}
+ */
+export function shoreBearings(land, seed) {
+  const DEG = det.PI / 180;
+  const sh = makeShore(land, seed >>> 0);
+  const camp = /** @type {any} */ (land).camp ? campPad(/** @type {any} */ (land).camp) : null;
+  const deg = (/** @type {{ dx: number, dz: number }} */ t) => det.atan2(t.dz, t.dx) / DEG;
+  return { campDeg: camp ? det.atan2(camp.fz, camp.fx) / DEG : null, spitDeg: sh ? deg(sh.spit) : null, rockDeg: sh ? deg(sh.rocky) : null };
+}
+
+/**
  * How far one tongue (a spit or a point) pushes the coast out at (x, z), in meters, and its weight
  * (0..1) across its width. A pointed tongue: full length on its center line, nothing past `half`.
  * @param {{ dx: number, dz: number, len: number, half: number }} t @param {number} x @param {number} z

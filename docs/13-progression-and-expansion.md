@@ -151,8 +151,8 @@ A new island starts in early spring, so it always opens with the pond waking. It
 |---|---|---|
 | Spring (0 to 14), the pond wakes | frogs and their Cliff tool, minnows, most plants, shells and loose stones | frogspawn hatching into tadpoles; the common toad's night walk back to the pond; the first damselflies at the very end |
 | Summer (14 to 28), warm water and wings | dragonflies (from the first day of summer into mid-autumn, and only over a second, fish-free pond the player made with reeds along its edge), gorse, driftwood at about here on the finds line | **turtles arrive only once the water is warm**; froglets leaving the pond; damselflies; sand martins nesting in a sandy face the player cut; common lizards basking on stones and logs among the gorse; moon jellyfish stranded on the strandline |
-| Autumn (28 to 42), leaving and gathering | willow turning yellow, leaf fall | silver eels slipping from the pond to the sea on rainy nights; fungi on carried logs; dewy spiders' webs on misty mornings; the first wintering waders; grey seals hauling out on the sandbar |
-| Winter (42 to 56), the shore's season | frogs asleep, gorse still flowering | turnstones flipping wrack on the strandline; purple sandpipers on rock at the waterline; **teal on the pond** while the frogs sleep (Matt, October 27, 2026); storm tides leaving the rarest shells; a seal pup on the bar; frost on the logs |
+| Autumn (28 to 42), leaving and gathering | willow turning yellow, leaf fall | silver eels slipping from the pond to the sea on rainy nights; fungi on carried logs; dewy spiders' webs on misty mornings; the first wintering waders; grey seals hauling out on the sandbar, and a seal pup on the bar in early autumn, days 29 to 35 (Matt, October 30, 2026) |
+| Winter (42 to 56), the shore's season | frogs asleep, gorse still flowering | turnstones flipping wrack on the strandline; purple sandpipers on rock at the waterline; **teal on the pond** while the frogs sleep (Matt, October 27, 2026); storm tides leaving the rarest shells; frost on the logs |
 
 What the player does to bring each one, and its weight (the classes in `docs/future/11`):
 
@@ -226,7 +226,7 @@ All new land is a **pre-shaped heightfield chunk set** generated from a land rec
 
 | Milestone | Land piece | How it joins | Opens |
 |---|---|---|---|
-| Tier 1 (pond) | **Meadow islet**, about 40 m across, 25 m offshore | Appears as a pale sand shoal at low tide, then rises over one full tide cycle (12 game hours) to sit just above high tide. A sandbar links it to the main island at low tide only. | Tier 2 |
+| Tier 1 (pond) | **Meadow islet**, an oblong about 60 m long and 34 m wide lying along the coast, its middle about 86 m from the island's, about 25 m offshore in the open sea beside the island's 4 x 4 chunks, on the side away from the camp's beach and the spit (Matt, October 30, 2026) | Appears as a pale sand shoal at the big low tide near day 27 (or the next low tide after a later milestone), then rises over one full tide cycle (12 game hours) to sit just above high tide. A sandbar links it to the main island, dry only around low tide. | Tier 2 |
 | Tier 2 (meadow) | **Woodland knoll**, about 48 m, beyond a narrow channel | Rises the same way. The **bridge** gift arrives with it: the player draws one small bridge across the channel (`09-structures.md`). | Tier 3 |
 | Tier 3 (woodland) | **Tide flats and marsh spit**, about 70 m by 30 m | The shore around the main island lowers a little and widens, so the low tide exposes wide flats; a curved spit of marsh grows out from one end. | Tier 4 |
 | Tier 4 (shore) | **Outer skerry and long sandbar**, skerry about 30 m, bar about 80 m | A rocky skerry rises at the edge; the long bar is exposed at low tide and covered at high tide. | Tier 5 |
@@ -258,7 +258,7 @@ Target player: 20 to 40 minutes most evenings, with the game left closed overnig
 | First frog named (the Cliff tool) | about 4 to 5 played days after they come, with a treat a day | a few evenings in | trust 0.5 (October 27, 2026) |
 | Turtles come | 14 to 20 (summer) | second week of play | only once the water is warm in summer; a sunny stone at a shallow pond with lilies; a carried log makes them happier |
 | Dragonflies come | 15 to 18 (summer) | second week of play | only from the first day of summer, and only over a second, fish-free pond the player dug with reeds along its edge (happy about 3 days later). A rain-fed pond lowers through summer (doc 07); routing the starter brook into it, or digging it below the water table near the shore, keeps it full all summer, and a gently shelving bank keeps a shallow margin at any level |
-| Tier 1 milestone, meadow islet | 6 to 10 | second or third evening | minnows happy (about 4 days after their 1 m deep spot is dug); dragonflies and turtles come only from summer |
+| Tier 1 milestone, meadow islet | 27 to 28 at the earliest | about the fourth week | earned by the second happy pond species (minnows about 4 days after their 1 m deep spot is dug; dragonflies and turtles only from summer), but it first shows only at the big low tide near day 27, at the turn of summer to autumn; a milestone earned later rises at the next low tide after it (Matt, October 30, 2026) |
 | Tier 2 milestone, woodland knoll and bridge | 15 to 25 | end of the first week | wildflowers and hawthorn maturing |
 | Tier 3 milestone, tide flats | 35 to 55 | second or third week | trees maturing for squirrels and owls |
 | Tier 4 milestone, outer skerry | 55 to 80 | about a month | fish populations, the shore finds for oystercatchers, alder growth |
@@ -331,10 +331,10 @@ export function update(clock) {}           // starts a queued rise at the next l
 export function coarseStep(state, hourIndex, env) {}  // milestones and queued rises during catch-up
 export function riseProgress(pieceId) {}   // 0..1, read by terrain and water
 
-// recipes/land/meadow-islet.json
-{ "id":"meadow-islet", "tier":1, "size":[40,40], "offset":{"dist":25,"bearingSeed":true},
-  "height":{"noise":"fbm","base":0.8,"amp":1.6}, "linkBar":{"lowTideOnly":true},
-  "starterFlora":["grass","clover"], "chunkSize":32 }
+// recipes/land/meadow-islet.json (built in B3a, October 31, 2026; src/world/islet): milestone,
+// place (distanceM 86, the side away from the camp and the spit), shape (60 x 34 m), bar (top
+// 0.35 m under mean sea level), rise (firstDay 27, firstHour 18, shoalH, durationH 12,
+// blendDepthM 3), starters (meadow clumps, and flax's slot)
 ```
 
 Events (past tense, per doc 03): `progress:gifted`, `progress:milestone-reached`, `land:queued`, `land:rise-started`, `land:joined`, `expansion:unlocked` (a tier's species become eligible), `journal:page-updated`, `journal:year-completed`. Save fields (`18-saves-and-persistence.md`): gifts given, happy-ever set per species, land piece states, journal contents.
@@ -358,7 +358,7 @@ Tuning panel: milestone threshold (second or third happy species), rise duration
 
 ## Acceptance checks
 
-- Get frogs and minnows happy: at the next low tide a pale shoal appears offshore and, over about 12 real minutes at 1x, rises into a green islet with a sandbar that floods at high tide.
+- Get frogs and minnows happy: at the big low tide near day 27 (or the next low tide, if that is later) a pale shoal appears offshore and, over about 12 real minutes at 1x, rises into a green islet with a sandbar that floods at high tide.
 - Reach a milestone while away: the reveal's drift passes over the new islet and a note says it rose.
 - Open the journal: unknown species show pencil outlines with a short hint; photographed species show the photo; the map shows each land piece.
 - Leave a happy frog group, add a lantern until they move on: the gift stays, the page says they moved on, and removing the lantern brings a scout back.

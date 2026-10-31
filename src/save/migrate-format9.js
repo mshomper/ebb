@@ -15,9 +15,10 @@ import { cleanBook, emptyBook } from '../world/sketchbook/model.js';
 import { cleanKit, emptyKit } from '../world/kit/model.js';
 import { cleanThreads, emptyThreads } from '../world/threads/model.js';
 import { cleanFishing, emptyFishing } from '../world/fishing/model.js';
+import { cleanIslet, emptyIslet } from '../world/islet/model.js';
 
 /** The sections format 9 brings in, in the order they are written. */
-export const SECTIONS9 = /** @type {const} */ (['camp', 'pack', 'gather', 'dig', 'cook', 'dyes', 'sketchbook', 'kit', 'threads', 'fishing']);
+export const SECTIONS9 = /** @type {const} */ (['camp', 'pack', 'gather', 'dig', 'cook', 'dyes', 'sketchbook', 'kit', 'threads', 'fishing', 'islet']);
 
 /** @typedef {typeof SECTIONS9[number]} Section9 */
 
@@ -35,6 +36,7 @@ export function empty9(id) {
   if (id === 'kit') return emptyKit();
   if (id === 'threads') return emptyThreads();
   if (id === 'fishing') return emptyFishing();
+  if (id === 'islet') return emptyIslet();
   return { version: 1 };
 }
 
@@ -62,6 +64,9 @@ export function clean9(id, v) {
   // Fishing (docs/future/17, src/world/fishing/model.js): likewise, a save without it reads as
   // nothing sketched yet.
   if (id === 'fishing') return cleanFishing(v);
+  // The meadow islet (B3a, src/world/islet/model.js): likewise, a save without it reads as not
+  // earned; one that has risen stays risen.
+  if (id === 'islet') return cleanIslet(v);
   if (!v || typeof v !== 'object' || Array.isArray(v) || v.version !== 1) return empty9(id);
   const out = structuredClone(v);
   if (id === 'gather' && !Array.isArray(out.events)) out.events = [];

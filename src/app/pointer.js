@@ -226,7 +226,7 @@ export function start(ctx) {
     const r = camera.ray(x, y);
     const hit = terrain.raycast(r.o, r.d);
     if (!hit.hit) return null;
-    const ob = terrain.openBounds();
+    const ob = terrain.landBounds();
     const [px, , pz] = hit.point;
     if (px < ob.openMin[0] || px > ob.openMax[0] || pz < ob.openMin[1] || pz > ob.openMax[1]) return null;
     return hit.point;
@@ -247,7 +247,7 @@ export function start(ctx) {
     // Water there, and met before the ground: aim at the surface.
     if (gy >= water.tide) return g;
     if (g && Math.hypot(g[0] - r.o[0], g[1] - r.o[1], g[2] - r.o[2]) < t * Math.hypot(r.d[0], r.d[1], r.d[2])) return g;
-    const ob = terrain.openBounds();
+    const ob = terrain.landBounds();
     if (px < ob.openMin[0] || px > ob.openMax[0] || pz < ob.openMin[1] || pz > ob.openMax[1]) return g;
     return [px, gy, pz];
   }

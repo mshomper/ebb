@@ -111,7 +111,7 @@ export function snapshot(p) {
  * Placed pieces that are missing or unreadable come back as none.
  * @returns {{ meta: any, world: any, journal: any, water: any, unlocks: any, view: any, looks: any, music: any,
  *   pieces: import('../world/pieces/model.js').PiecesState, keepsakes: import('../world/keepsakes/shelf.js').ShelfState,
- *   nets: import('../world/nets/model.js').NetsState, camp: any, pack: any, gather: any, dig: any, cook: any, dyes: any, sketchbook: any, kit: any, threads: any, fishing: any,
+ *   nets: import('../world/nets/model.js').NetsState, camp: any, pack: any, gather: any, dig: any, cook: any, dyes: any, sketchbook: any, kit: any, threads: any, fishing: any, islet: any,
  *   chunks: SavedChunk[], extra: [string, any][], bad: string[] }}
  */
 export function restore(sections) {
@@ -131,6 +131,6 @@ export function restore(sections) {
     water: sections.water ?? null, unlocks: sections.unlocks ?? {}, view: sections.view ?? null,
     looks: sections.looks ?? {}, music: sections.music ?? null, pieces: cleanPieces(sections.pieces), keepsakes: cleanShelf(sections.keepsakes), nets: cleanNets(sections.nets),
     camp: clean9('camp', sections.camp), pack: clean9('pack', sections.pack), gather: clean9('gather', sections.gather),
-    dig: clean9('dig', sections.dig), cook: clean9('cook', sections.cook), dyes: clean9('dyes', sections.dyes), sketchbook: clean9('sketchbook', sections.sketchbook), kit: clean9('kit', sections.kit), threads: clean9('threads', sections.threads), fishing: clean9('fishing', sections.fishing), chunks, extra, bad,
+    dig: clean9('dig', sections.dig), cook: clean9('cook', sections.cook), dyes: clean9('dyes', sections.dyes), sketchbook: clean9('sketchbook', sections.sketchbook), kit: clean9('kit', sections.kit), threads: clean9('threads', sections.threads), fishing: clean9('fishing', sections.fishing), islet: clean9('islet', sections.islet), chunks, extra, bad,
   };
 }

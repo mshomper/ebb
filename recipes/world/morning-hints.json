@@ -17,7 +17,8 @@
     { "id": "treats", "text": "A creature here has begun to know you. Something it likes to eat, set out from that pouch's card on your bar, helps the friendship along.", "done": "gaveTreat", "when": "knowsYou", "showMe": ["frogs", "turtles", "minnows", "hens"] },
     { "id": "stone", "text": "Past the camp there's a flat stone with a sign scratched into it. Someone left it there on purpose. Dig beside it.", "done": "foundCache", "when": "stoneShown" },
     { "id": "spring", "text": "The old keeper's letter said to dig above the spring, where the water starts. Up the rise from the spring's stones there is a small worn mark. Dig beside it, gently.", "done": "springFell", "when": "cairnsRead" },
-    { "id": "gift", "text": "Gifts wait on your gift spot, on your bar when you're on foot. Pick one there and set it where it would do well.", "done": "usedGiftSpot", "when": "giftCame" }
+    { "id": "gift", "text": "Gifts wait on your gift spot, on your bar when you're on foot. Pick one there and set it where it would do well.", "done": "usedGiftSpot", "when": "giftCame" },
+    { "id": "islet", "text": "Where the sea was, a little islet stands offshore now. Its sandbar dries around low tide: walk across then, and back before the tide comes in.", "done": "isletWalked", "when": "isletRose" }
   ],
   "tests": {
     "gathered": [{ "flag": "did:gathered" }, { "prefix": "picked:" }, { "flag": "intro:gather", "unless": "intro:skipped" }],
@@ -37,7 +38,9 @@
     "foundCache": [{ "flag": "dig:cache" }],
     "cairnsRead": [{ "flag": "keeper:cairns-letter" }],
     "springFell": [{ "flag": "setpiece:cairns:fell" }],
-    "usedGiftSpot": [{ "flag": "did:gift-spot" }]
+    "usedGiftSpot": [{ "flag": "did:gift-spot" }],
+    "isletRose": [{ "flag": "setpiece:islet:rose" }],
+    "isletWalked": [{ "flag": "setpiece:islet:walked" }]
   },
   "record": {
     "gather:done": "did:gathered",

@@ -343,6 +343,14 @@ const ICONS = {
     <path ${ACCENT} d="M2.5 20.5C8 17.5 16 17.5 21.5 20.5Z"/>
     <path d="M2.5 20.5C8 17.5 16 17.5 21.5 20.5"/>`,
 
+  // Islet: a low mound of land standing out of the sea, a tuft of meadow on it, water lines below.
+  islet: `
+    <path ${ACCENT} d="M3.5 15.5C6 11.5 9 10 12.5 10S18.5 12 20.5 15.5Z"/>
+    <path d="M3.5 15.5C6 11.5 9 10 12.5 10S18.5 12 20.5 15.5"/>
+    <path d="M11 10V7.5M11 8.5L9.5 7M11 8.5L12.5 7"/>
+    <path d="M2.5 15.5H21.5"/>
+    <path d="M5 19C6.5 18 8 18 9.5 19S12.5 20 14 19S17.5 18 19 19"/>`,
+
   // Almanac: a calendar page with a crescent moon on it.
   almanac: `
     <rect ${ACCENT} x="4.5" y="5" width="15" height="15.5" rx="2"/>

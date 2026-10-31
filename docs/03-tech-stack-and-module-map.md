@@ -132,6 +132,7 @@ Time: 1 game day = 24 real minutes at 1x, so 1 real minute = 1 game hour while w
 | `world/structures/` | paths, walls, bridge, lanterns | doc 09 |
 | `world/ecology/`, `world/creatures/` | 1 m ecology grid, habitat, creatures | doc 11 |
 | `world/expansion.js` | land pieces, milestones, chunk unlocks | doc 13 |
+| `world/islet/` | the meadow islet (B3a): its layout from the seed, the rise over one tide cycle, its save section and the store slice `islet` (`phase`, `risen`, `riseDay`, `bar`, `box`) other systems read | `createIslet()`, `isletLayout()`; doc 13 |
 | `sim/live-sim.js` | system registry, hourly tick order, per-frame update | `addSystem`, `hourlyTick`, `update`, `encode` |
 | `sim/catchup.js` | away-time catch-up in a worker, a day per job (S7b) | `awayHours(p)`, `catchUp(input)`, `catchUpJob(input)` (doc 02) |
 | `sim/hour.js` | one game hour: the tick, then the journal's look | `hourStep(state, journal, hour, env, jc)` |
