@@ -6,7 +6,7 @@
 import { emitDeferred } from '../../core/events.js';
 import { get as getStore, update as updateStore, subscribe as subscribeStore } from '../../core/store.js';
 import { padMask } from '../camp/layout.js';
-import { CELL, CHUNK_CELLS, WORLD_CELLS as N, WORLD_ORIGIN, quantize, dequantize, chunkKey, chunkFirstCell } from './grid.js';
+import { CELL, CHUNK_CELLS, CHUNK_SIZE, CHUNK_MIN, CHUNK_MAX, WORLD_CELLS as N, WORLD_ORIGIN, quantize, dequantize, chunkKey, chunkFirstCell } from './grid.js';
 import {
   createMirror, createTextures, uploadRect, syncFloat,
   sampleHeight, sampleNormal, sampleMaterial, raycast,
@@ -58,6 +58,8 @@ export async function createTerrain(gpu, opts) {
     for (let cx = c0; cx <= c1; cx++) chunks.open(cx, cz, landId);
   }
   const bounds = chunks.bounds();
+  /** The open land and any new land risen beside it (landBounds), in world meters. */
+  const reach = { openMin: bounds.openMin.slice(), openMax: bounds.openMax.slice() };
   // Where brushes reach: the open land, less the keeper's camp pad (docs/future/13 CP-01), which
   // follows the store slice `campPad` (null until an older island's pad is stamped).
   /** @type {import('./brushes.js').Edge} */
@@ -349,6 +351,46 @@ export async function createTerrain(gpu, opts) {
     cellRect(x0, z0, x1, z1) {
       const i0 = Math.floor((x0 - WORLD_ORIGIN) / CELL), j0 = Math.floor((z0 - WORLD_ORIGIN) / CELL);
       return grow({ x: i0, y: j0, w: Math.ceil((x1 - WORLD_ORIGIN) / CELL) - i0 + 1, h: Math.ceil((z1 - WORLD_ORIGIN) / CELL) - j0 + 1 }, 0);
+    },
+
+    /**
+     * The open land and any new land risen beside it (the meadow islet, src/world/islet), as one
+     * box: where the water runs, the walker walks and a tap finds ground. The brushes keep to
+     * openBounds.
+     */
+    landBounds: () => ({ openMin: reach.openMin.slice(), openMax: reach.openMax.slice() }),
+
+    /**
+     * New land rising in the sea beside the open land (the meadow islet): draw the chunks a world box
+     * touches from now on, and grow landBounds to hold the box (`terrain:land-grew`, which the water
+     * and the walk grid follow). @param {{ x0: number, z0: number, x1: number, z1: number }} box
+     */
+    raiseLand(box) {
+      const c = (/** @type {number} */ v) => Math.max(CHUNK_MIN, Math.min(CHUNK_MAX, Math.floor((v - WORLD_ORIGIN) / CHUNK_SIZE) + CHUNK_MIN));
+      for (let cz = c(box.z0); cz <= c(box.z1); cz++) for (let cx = c(box.x0); cx <= c(box.x1); cx++) chunks.raise(cx, cz);
+      const before = JSON.stringify(reach);
+      reach.openMin = [Math.min(reach.openMin[0], box.x0), Math.min(reach.openMin[1], box.z0)];
+      reach.openMax = [Math.max(reach.openMax[0], box.x1), Math.max(reach.openMax[1], box.z1)];
+      if (JSON.stringify(reach) !== before) emitDeferred('terrain:land-grew', { bounds: terrain.landBounds() });
+    },
+
+    /**
+     * Write new land's heights and paint over a cell rect anywhere in the world (the islet's rise; no
+     * undo, and the open chunks it reaches are marked edited so the save keeps them). edit(mirror)
+     * writes heightQ, heightF and material inside the rect. Emits `terrain:raised` (not a stroke:
+     * the player did not shape it). False while a stroke is live (try again shortly).
+     * @param {CellRect} rect @param {(m: import('./heightfield.js').Mirror) => void} edit
+     */
+    raiseCells(rect, edit) {
+      if (terrain.isBusy()) return false;
+      const x0 = Math.max(0, rect.x), y0 = Math.max(0, rect.y);
+      const r = { x: x0, y: y0, w: Math.max(0, Math.min(N, rect.x + rect.w) - x0), h: Math.max(0, Math.min(N, rect.y + rect.h) - y0) };
+      if (r.w === 0 || r.h === 0) return true;
+      edit(mirror);
+      uploadRect(device, tex, mirror, r);
+      markEdited(r);
+      emitDeferred('terrain:raised', { rect: worldRect(r) });
+      return true;
     },
 
     /**

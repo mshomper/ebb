@@ -187,7 +187,9 @@ export async function createWaterSim(device, terrainTex) {
       slot = { buffer: makeBuffer(device, { label: `water-live-read-${ring.length}`, size, usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST }), busy: false, rect: r, pitchD, pitchV };
       ring.push(slot);
     }
-    if (!slot || slot.buffer.size < size) return;
+    if (!slot) return;
+    // The rect grew (new land risen, src/world/islet): this slot's copy is too small, so it grows.
+    if (slot.buffer.size < size) { slot.buffer.destroy(); slot.buffer = makeBuffer(device, { label: 'water-live-read-grown', size, usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST }); }
     slot.rect = { ...r }; slot.pitchD = pitchD; slot.pitchV = pitchV;
     encoder.copyTextureToBuffer({ texture: depth[cur], origin: [r.x, r.y] }, { buffer: slot.buffer, bytesPerRow: pitchD, rowsPerImage: r.h }, [r.w, r.h]);
     encoder.copyTextureToBuffer({ texture: vel, origin: [r.x, r.y] }, { buffer: slot.buffer, offset: pitchD * r.h, bytesPerRow: pitchV, rowsPerImage: r.h }, [r.w, r.h]);

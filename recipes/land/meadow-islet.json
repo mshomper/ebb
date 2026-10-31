@@ -1,0 +1,51 @@
+{
+  "type": "land-piece",
+  "version": 1,
+  "id": "meadow-islet",
+  "tier": 1,
+  "note": "The meadow islet and its sandbar (docs/13-progression-and-expansion.md, 'How new land joins'; B3a, Matt's calls of October 30, 2026), built by src/world/islet. Meters, Y-up, sea level 0. milestone: the Tier 1 milestone that earns it, when `need` of these journal flags are set (the second happy pond species; src/world/expansion.js milestoneReached). place: the islet's middle lies distanceM from the island's middle, out in the open-sea strip the island's 4 x 4 chunks leave in the 6 x 6 world; each side in sidesDeg (0 is +x, 90 is +z) where its outline clears the open land and its coast stays inside the world (edgeMarginM) is a candidate, turned up to jitterDeg by the seed (and up to nearerM nearer where the world's edge is close, as on the older, smaller island), and the one farthest from the camp's facing and the spit wins (the side away from the camp's beach and the spit). shape: an oblong lengthM along the coast and widthM across, its outline a superellipse of power roundness wobbled outward and inward by coast (meters, seeded noise); its ground climbs from the waterline to topM over inlandM, with a low dome (domeM) toward its middle and detail bumps, and falls to the island's seabed over seaFallM. bar: the sandbar from the island's shore to the islet, its top at topM (under mean sea level, so it is dry only near low water and waded or closed at high water) with crownM more along its middle, halfWidthM either side of its line (flare times more where it meets each shore), its line wandering up to wander.amount meters to either side away from its ends, its sides falling to the seabed over shoulderM; it starts where the island's own generated ground reaches its top (shoreInM further in) and runs intoIsletM into the islet. materials: sand on the beach band below sandHighM (softened over sandSoftM, wobbled by sandJitterM), then a patchy ring of sandy turf (turf: share of sand through the grass, from fromM to toM in from the coast) like the island's dune, bare soil patches where soil noise passes soilLow..soilHigh (at most soilMax), meadow grass for the rest; the bar is sand. Colors come from the terrain's albedos and the palette, never from here. rise: it first shows only at the big low tide of firstDay at firstHour (day 27, 18:00, the spring low tide at the turn of summer to autumn), or at the first low water after the milestone if that comes later: over shoalH before that low water it grows from the seabed into a pale shoal blendDepthM under its final shape, then over durationH (one tide cycle) it rises to sit just above high tide (smootherstep). The terrain is written whenever the shape has climbed stepM since the last write. starters: meadow clumps planted on its dry ground once it has risen and its habitat is known: each entry tries up to `tries` seeded spots across it, on ground at least minHeightM high (above the tides), and plants at the first its habitat suits, then the rest of its `count` within spreadM, sizeShare grown (chamomile, thrift, campion and marram want its sandy, salty shore; gorse its dry middle). A species with no flora recipe yet is skipped and planted later once it has one (flax: wave 2's F1 session builds the plant; this is its slot). camera: the view above may roam over the islet, marginM past it, once it shows. words: its journal note when it first shows (the reveal rings it if that was while you were away).",
+  "milestone": { "flags": ["frogs:happy", "minnows:happy", "dragonflies:happy", "turtles:happy"], "need": 2 },
+  "place": { "distanceM": 86, "nearerM": 8, "sidesDeg": [0, 90, 180, 270], "jitterDeg": 5, "edgeMarginM": 2 },
+  "shape": {
+    "lengthM": 60,
+    "widthM": 34,
+    "roundness": 2.6,
+    "coast": { "amount": 16, "scale": 0.03, "octaves": 3, "lacunarity": 2.1, "gain": 0.5 },
+    "topM": 1.2,
+    "inlandM": 9,
+    "domeM": 0.35,
+    "seaFallM": 9,
+    "detail": { "amplitude": 0.12, "scale": 0.11, "octaves": 3, "lacunarity": 2, "gain": 0.5 }
+  },
+  "bar": { "topM": -0.35, "crownM": 0.06, "halfWidthM": 3, "flare": 1.2, "wander": { "amount": 4, "scale": 0.05, "octaves": 2, "lacunarity": 2, "gain": 0.5 }, "shoulderM": 6, "shoreInM": 2, "intoIsletM": 5 },
+  "materials": {
+    "sandHighM": 0.95,
+    "sandSoftM": 0.3,
+    "sandJitterM": 0.15,
+    "sand": { "scale": 0.2, "octaves": 2, "lacunarity": 2, "gain": 0.5 },
+    "turf": { "share": 0.45, "fromM": 2, "toM": 9 },
+    "soilLow": 0.25,
+    "soilHigh": 0.6,
+    "soilMax": 0.45,
+    "soil": { "scale": 0.08, "octaves": 3, "lacunarity": 2, "gain": 0.5 }
+  },
+  "rise": { "firstDay": 27, "firstHour": 18, "shoalH": 1.5, "durationH": 12, "blendDepthM": 3, "stepM": 0.04 },
+  "starters": {
+    "clumpsNote": "A stand-in set from plants the island already has, until Matt picks the islet's own meadow plants (B3a follow-up): new species join as entries here and are planted once their flora recipe exists, as flax will be.",
+    "clumps": [
+      { "sp": "chamomile", "count": 3 },
+      { "sp": "chamomile", "count": 2 },
+      { "sp": "thrift", "count": 3 },
+      { "sp": "thrift", "count": 2 },
+      { "sp": "marram", "count": 3 },
+      { "sp": "gorse", "count": 1 },
+      { "sp": "flax", "count": 4, "note": "Flax's slot (wave 2, F1 builds the plant): skipped until recipes/flora/flax.json is in growth's list, then planted on the next summary." }
+    ],
+    "spreadM": 1.2,
+    "sizeShare": 0.55,
+    "minHeightM": 0.7,
+    "tries": 60
+  },
+  "camera": { "marginM": 6 },
+  "words": { "rose": "At the big low tide a pale shoal showed offshore, and by the next low water it stood above the sea: a little meadow islet, with a sandbar to it that dries at low tide." }
+}

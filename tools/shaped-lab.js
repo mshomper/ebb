@@ -52,7 +52,7 @@ async function run() {
     // A walker standing on the biggest bar this hour breaks its quiet.
     const bar = first.bars[0];
     const steps = /** @type {HTMLInputElement} */ ($('walked')).checked && bar ? noteStep([], bar.x, bar.z, nowH, S) : [];
-    const islet = /** @type {HTMLInputElement} */ ($('islet')).checked ? { risen: true, day: 30, barM2: 60, bar: { x: 0, z: 40 } } : null;
+    const islet = /** @type {HTMLInputElement} */ ($('islet')).checked ? { risen: true, riseDay: 30, bar: { from: [0, 30], to: [0, 50], halfWidthM: 1.5 } } : null;
     const report = shapedReport({ hab, ageOf: ponds.ageOf, quiet: (b) => quietAt(b, steps, nowH, S), islet,
       wrack: { lyingM: Number(/** @type {HTMLInputElement} */ ($('wrackM')).value), days: Number(/** @type {HTMLInputElement} */ ($('wrackD')).value) } }, S);
     drawMap(hab, report);

@@ -61,6 +61,7 @@ export const TEST_FILES = {
   'hollow': '',
   'intro': '',
   'islands': '',
+  'islet': '',
   'items': '',
   'journal': '',
   'keeper': '',

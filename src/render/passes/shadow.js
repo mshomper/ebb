@@ -52,7 +52,7 @@ export function createShadowPass(opts) {
     let key = '';
     for (let cz = CHUNK_MIN; cz < CHUNK_MIN + 6; cz++) {
       for (let cx = CHUNK_MIN; cx < CHUNK_MIN + 6; cx++) {
-        if (terrain.chunkState(cx, cz) !== 'open') continue;
+        if (terrain.chunkState(cx, cz) === 'sea') continue;
         const d = Math.hypot(eye[0] - cx * CHUNK_SIZE, eye[1] - 2, eye[2] - cz * CHUNK_SIZE) - CHUNK_SIZE * 0.5;
         const lod = d < cliffDetailM && terrain.cliffs.has(cx, cz) ? 0 : lodIndex;
         byLod[lod].push(cx, cz);

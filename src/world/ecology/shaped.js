@@ -273,10 +273,13 @@ export function shapedReport(inp, R) {
   const shore = shoreShare(hab, walls, bars, R);
   // The meadow islet's bar (B3a publishes `islet`): a bar of its own, quiet unless a walker was near.
   const I = inp.islet;
-  if (I?.risen && (I.barM2 ?? 0) > 0) {
-    const at = I.bar ?? { x: I.x ?? 0, z: I.z ?? 0 };
-    const b = /** @type {any} */ ({ cells: [], areaM2: I.barM2, x: at.x, z: at.z, lengthM: I.barLengthM ?? Math.sqrt(I.barM2 * 3), widthM: I.barWidthM ?? Math.sqrt(I.barM2 / 3),
-      along: [1, 0], sand: 1, islet: true, risenDay: I.day ?? null });
+  // Its bar is a line from the shore to the islet: { from: [x, z], to: [x, z], halfWidthM }.
+  if (I?.risen && I.bar?.from && I.bar?.to) {
+    const [x0, z0] = I.bar.from, [x1, z1] = I.bar.to;
+    const lengthM = Math.hypot(x1 - x0, z1 - z0), widthM = 2 * (I.bar.halfWidthM ?? 0);
+    const r1 = (/** @type {number} */ v) => Math.round(v * 10) / 10;
+    const b = /** @type {any} */ ({ cells: [], areaM2: Math.round(lengthM * widthM), x: r1((x0 + x1) / 2), z: r1((z0 + z1) / 2), lengthM: r1(lengthM), widthM: r1(widthM),
+      along: lengthM > 0 ? [(x1 - x0) / lengthM, (z1 - z0) / lengthM] : [1, 0], sand: 1, islet: true, risenDay: I.riseDay ?? null });
     Object.assign(b, inp.quiet ? inp.quiet(b) : { quiet: true, nearM: null });
     bars.push(b);
   }

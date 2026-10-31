@@ -18,6 +18,7 @@
   "reveal": {
     "_doc": "The reveal on return (docs/02, src/world/journal/reveal-plan.js) shows its notes best first: by the first class whose kinds hold the note's kind (doc 02's order), then newer first; kinds not listed come last. Kinds are shared by every species, so a new plant or animal ranks by the kinds of its notes.",
     "rank": [
+      { "class": "land", "kinds": ["land"] },
       { "class": "arrival", "kinds": ["arrived", "seen", "plantable", "sign", "signAgain", "back", "settled", "settledUnseen", "joined", "joinedUnseen"] },
       { "class": "named", "kinds": ["named"] },
       { "class": "content", "kinds": ["happy"] },

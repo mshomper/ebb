@@ -110,8 +110,8 @@ export function addShapedTests(test, assert, eq) {
     eq(quietAt(bar, steps, 11, R).quiet, false, 'a walk on it breaks the quiet');
     eq(quietAt(bar, steps, 11 + R.bar.quietH + 1, R).quiet, true, 'a day on, quiet again');
     const { model } = await island([]);
-    const r = shapedReport({ hab: model.habitat, islet: { risen: true, day: 30, barM2: 60, bar: { x: 30, z: 0 } } }, R);
-    assert(r.bars.some((/** @type {any} */ b) => b.islet && b.areaM2 === 60), "the islet's bar is read from the store slice");
+    const r = shapedReport({ hab: model.habitat, islet: { risen: true, riseDay: 30, bar: { from: [20, 0], to: [40, 0], halfWidthM: 1.5 } } }, R);
+    assert(r.bars.some((/** @type {any} */ b) => b.islet && b.areaM2 === 60 && b.lengthM === 20 && b.widthM === 3 && b.risenDay === 30), "the islet's bar is read from B3a's store slice (from, to, halfWidthM, riseDay)");
   });
 
   test(G, 'home fit: the weakest need decides, max fields cap, booleans must hold', () => {
