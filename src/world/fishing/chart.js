@@ -18,9 +18,11 @@ import { stream } from '../../core/rng.js';
 export const CHART_W = 1000, CHART_H = 700;
 const BX0 = 52, BY0 = 52, BX1 = 948, BY1 = 648;
 /** Sizes of what is placed. */
-const FISH = [76, 47], RARE = 56, SOUND = [34, 24], COMPASS = [112, 166], CART = [370, 62];
+const FISH = [76, 47], RARE = 56, SOUND = [30, 22], COMPASS = [112, 166], CART = [270, 46];
+/** Water names keep at least this far apart (between their middles), so no two read as one place. */
+const LABEL_GAP = 210;
 /** Text sizes (px) and the estimate of a character's width as a share of its size (Fraunces italic). */
-export const TEXT = { label: 32, small: 24, sound: 20, title: 46, charShare: 0.52 };
+export const TEXT = { label: 24, small: 19, sound: 17, title: 32, charShare: 0.52 };
 
 /** @typedef {{ x0: number, y0: number, x1: number, y1: number }} Box */
 /** @typedef {{ x: number, z: number, water: string }} CoastPoint a shore point in world meters and the near water it faces */
@@ -217,14 +219,26 @@ function layoutToward(island, fish, rare, o, corner) {
   const title = freeCorner(CART, away.filter((c) => c[1] === BY1).concat(away.filter((c) => c[1] === BY0)));
   const compass = freeCorner(COMPASS, away);
 
-  // Water names: off their own coast, or in their own water.
+  // Water names: each near the middle of its own longest stretch of coast (open water well out, deep
+  // water past the drop-off), and never near another name, so no two read as one place.
   /** @type {{ water: string, x: number, y: number, w: number, size: number }[]} */ const labels = [];
-  for (const w of ['reef', 'sand', 'kelp', 'open', 'deep']) {
+  for (const w of ['reef', 'sand', 'kelp', 'deep', 'open']) {
     const name = o.waters[w];
-    for (const size of [TEXT.label, TEXT.small]) {
+    const run = runs.filter((r) => r.water === w).sort((a, b) => b.len - a.len)[0];
+    const want = run ? off(run.start + run.len / 2, 110) : w === 'deep' ? [deepCorner[0] + (CHART_W / 2 - deepCorner[0]) * 0.3, deepCorner[1] + (CHART_H / 2 - deepCorner[1]) * 0.3] : null;
+    const cands = (w === 'deep' ? deepPts(1500) : w === 'open' ? openPts(170, 330, 1500) : nearPts(w, 60, 210, 1500))
+      .filter((c) => labels.every((l) => Math.hypot(l.x - c[0], l.y - c[1]) >= LABEL_GAP));
+    if (want) cands.sort((a, b) => Math.hypot(a[0] - want[0], a[1] - want[1]) - Math.hypot(b[0] - want[0], b[1] - want[1]));
+    else cands.sort((a, b) => Math.min(...labels.map((l) => Math.hypot(l.x - b[0], l.y - b[1]))) - Math.min(...labels.map((l) => Math.hypot(l.x - a[0], l.y - a[1]))));
+    placing: for (const size of [TEXT.label, TEXT.small]) {
       const tw = textWidth(name, size), th = size * 1.15;
-      const got = pick(w === 'deep' ? deepPts(1200) : w === 'open' ? openPts(120, 320, 1200) : nearPts(w, 60, 230, 1200), tw, th, 1, { pad: 8, linePad: 10 });
-      if (got.length) { labels.push({ water: w, x: got[0][0], y: got[0][1], w: tw, size }); break; }
+      for (const c of cands) {
+        const b = boxAt(c[0], c[1], tw, th);
+        if (!free(b, 8, 10)) continue;
+        occ.push(b);
+        labels.push({ water: w, x: c[0], y: c[1], w: tw, size });
+        break placing;
+      }
     }
   }
   // Rare marks, easiest first, each in its place.

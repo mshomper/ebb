@@ -41,6 +41,7 @@ import { emit } from '../core/events.js';
  *   | { type: 'nets.lift', id: number }
  *   | { type: 'nets.bringIn', id?: number }
  *   | { type: 'nets.release', id: string }
+ *   | { type: 'fishing.reel' } | { type: 'fishing.empty' } | { type: 'fishing.release', id: string } | { type: 'fishing.redraw', id: string } | { type: 'fishing.close' }
  *   | { type: 'nets.keep' }
  *   | { type: 'nets.leave' }
  *   | { type: 'nets.close' }
@@ -65,7 +66,7 @@ import { emit } from '../core/events.js';
  *   | { type: 'creature.name', id: number, name: string, sp?: string }
  *   | { type: 'ui.hideHud', hidden?: boolean, source?: Source }
  *   | { type: 'ui.journal', open?: boolean, toggle?: boolean, view?: 'trails'|'living'|'ground'|'web'|'almanac'|'notes'|'shelf', page?: string|null, size?: 'half'|'full', trail?: 'naturalist'|'beach'|'shape' }
- *   | { type: 'ui.keeper', open?: boolean, toggle?: boolean, tab?: 'kit'|'threads'|'trails'|'shelf'|'camp', page?: string|null, trail?: string }} Action  ui.journal's trails and shelf views (and herbarium, camp, keeper) open the Keeper book (src/world/keeper/route.js)
+ *   | { type: 'ui.keeper', open?: boolean, toggle?: boolean, tab?: 'kit'|'threads'|'trails'|'shelf'|'camp'|'chart', page?: string|null, trail?: string }} Action  ui.journal's trails and shelf views (and herbarium, camp, keeper) open the Keeper book (src/world/keeper/route.js)
  */
 
 /** @type {((a: Action) => void)[]} */

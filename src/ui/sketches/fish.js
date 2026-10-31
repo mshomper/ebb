@@ -23,7 +23,7 @@ export function traceFish(n, FR) {
 
 /**
  * Draw a fish on a page: shallow water behind it, the fish as wide as the page allows, its scale.
- * @param {any} p the page's pen @param {import('./trace.js').Traced} T @param {number} scale @param {string} name
+ * @param {any} p the page's pen @param {import('./trace.js').Traced} T @param {any} scale @param {string} name
  */
 export function drawFish(p, T, scale, name) {
   p.tint('M44 60H346V220H44Z', '#C9DCE0', 0.3);

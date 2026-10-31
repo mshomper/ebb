@@ -113,7 +113,7 @@ export function createChartView(o) {
         svg += both(`<path d="${d}" class="CLS${ft.water === 'sand' ? ' is-stip' : ''}"/>`, ink.feature(ft.water, ft.i, ft.of));
       }
       // Soundings, inked as their water fills.
-      for (const s of L.soundings) if (ink.sounding(s.water, s.i)) svg += `<text x="${f1(s.x)}" y="${f1(s.y + 7)}" class="ebb-chart__sound">${s.v}</text>`;
+      for (const s of L.soundings) if (ink.sounding(s.water, s.i)) svg += `<text x="${f1(s.x)}" y="${f1(s.y + 6)}" class="ebb-chart__sound" style="font-size:${TEXT.sound}px">${s.v}</text>`;
       // Water names: pencil, inked when the water is finished.
       for (const l of L.labels) {
         const t = `<text x="${f1(l.x)}" y="${f1(l.y + l.size * 0.35)}" class="CLS" style="font-size:${l.size}px" text-anchor="middle">${esc(W.waters[l.water])}</text>`;
@@ -131,8 +131,8 @@ export function createChartView(o) {
       }
       if (L.title) {
         const [tx, ty] = L.title;
-        svg += both(`<rect x="${f1(tx - 185)}" y="${f1(ty - 31)}" width="370" height="62" rx="6" class="CLS is-thin"/>`, ink.full);
-        svg += both(`<text x="${f1(tx)}" y="${f1(ty + 15)}" class="CLS" text-anchor="middle">${esc(C.title)}</text>`, ink.full, 'ebb-chart__title is-pencil', 'ebb-chart__title');
+        svg += both(`<rect x="${f1(tx - 135)}" y="${f1(ty - 23)}" width="270" height="46" rx="6" class="CLS is-thin"/>`, ink.full);
+        svg += both(`<text x="${f1(tx)}" y="${f1(ty + 11)}" class="CLS" style="font-size:${TEXT.title}px" text-anchor="middle">${esc(C.title)}</text>`, ink.full, 'ebb-chart__title is-pencil', 'ebb-chart__title');
       }
       // The rare fish's numbered marks, each with its riddle.
       for (const r of L.rares) {

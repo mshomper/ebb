@@ -70,7 +70,8 @@ export function createSowing(o) {
   function ringAt(item, p) {
     const c = check(item, p);
     const d = o.depth(p[0], p[2]);
-    return { x: p[0], y: p[1] + Math.max(0, d), z: p[2], r: R.ring.radiusM, ok: !!c.ok, message: c.ok ? '' : c.message ?? '', flashAt: ring?.flashAt ?? -1e9 };
+    const y = item.kind === 'line' ? o.fishing.surfaceY(p) : p[1] + Math.max(0, d);
+    return { x: p[0], y, z: p[2], r: R.ring.radiusM, ok: !!c.ok, message: c.ok ? '' : c.message ?? '', flashAt: ring?.flashAt ?? -1e9 };
   }
 
   /** The seed leaves the hand toward p (UI only). @param {number[]} p */
@@ -170,7 +171,7 @@ export function createSowing(o) {
       if (!item && get('hand')) api.putAway();
       if (item && pointer) {
         if (!ring || now - readAt >= 1000 / R.ring.checkHz) { readAt = now; ring = ringAt(item, pointer); }
-        else ring = { ...ring, x: pointer[0], y: pointer[1] + Math.max(0, o.depth(pointer[0], pointer[2])), z: pointer[2] };
+        else ring = { ...ring, x: pointer[0], y: item.kind === 'line' ? o.fishing.surfaceY(pointer) : pointer[1] + Math.max(0, o.depth(pointer[0], pointer[2])), z: pointer[2] };
       } else ring = null;
       tosses = tosses.filter((t) => now < t.at + (t.plan.s + Math.max(R.toss.fadeS, R.splash.s + R.splash.gapS * 3, R.puff.s)) * 1000);
       o.planting.update(now);

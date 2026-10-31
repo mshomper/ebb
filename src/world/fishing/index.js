@@ -3,11 +3,10 @@
 // makes.line); on foot its button on the ground bar holds the worms you carry, and picking one puts
 // the line in hand (store slice `hand`, kind 'line'; src/world/sowing draws its ring). A click on the
 // sea walks you to the water's edge and you cast: the float flies out and settles, and after a
-// short seeded wait it dips. Click the float, or Ease it in on the bar, while it is under, and the
-// fish comes in, wriggling at the end of the line (a four-bone swim, fish-mesh.js), to the tray
+// short seeded wait it dips. Click anywhere while it is under and the fish comes in, wriggling at the end of the line (a four-bone swim, fish-mesh.js), to the tray
 // (store slice `catch`, src/ui/haul-tray.js). A missed dip only means waiting for the next; nothing
-// is lost, and a worm is used only by a fish eased in. Walking off, Go up or the button again reels
-// the line in. Which fish bites is pure (bite.js), from the world seed and the island's cast count.
+// is lost, and a worm is used only by a fish eased in. A click while it waits, walking off, Go up or
+// the button again reels the line in. Which fish bites is pure (bite.js), from the world seed and the island's cast count.
 //
 // Keeps the saved store slice `fishing` (model.js) and `fishingUi` for the bar; the rod and float
 // are drawn by its props pass, the hooked fish by its creature pass, the line and ripples by
@@ -206,7 +205,7 @@ export function createFishing(o) {
     const s = cast?.stage ?? null;
     const u = get('fishingUi');
     const baits = api.baitItems().map((b) => ({ id: b.id, label: b.label }));
-    const next = { has: hasLine(), out: !!cast, stage: s, dip: s === 'dip', ease: W.ease, baits };
+    const next = { has: hasLine(), out: !!cast, stage: s, baits };
     if (!u || u.has !== next.has || u.out !== next.out || u.stage !== next.stage || JSON.stringify(u.baits) !== JSON.stringify(baits)) update('fishingUi', () => next);
   }
 
@@ -263,6 +262,8 @@ export function createFishing(o) {
     },
     hasLine,
     check,
+    /** The height the cast ring sits at over a point: the sea's surface, or the ground above it. @param {number[]} p */
+    surfaceY: (p) => Math.max(o.terrain.sampleHeight(p[0], p[2]), o.water.tide),
 
     /**
      * Cast at a sea point with a worm (the line in hand, a click; src/world/sowing). Walks you to the
@@ -283,7 +284,7 @@ export function createFishing(o) {
       return true;
     },
 
-    /** Ease the fish in while the float is under (a click on the float, or Ease it in). Returns whether it took. */
+    /** Ease the fish in while the float is under (a click anywhere). Returns whether it took. */
     ease() {
       if (!cast || cast.stage !== 'dip' || !cast.bite) return false;
       const f = byId.get(cast.bite.id);
@@ -299,10 +300,7 @@ export function createFishing(o) {
       return true;
     },
 
-    /** Is a ground point on the float (a click there eases the fish in)? @param {number} x @param {number} z */
-    onFloat(x, z) { return !!cast && cast.stage !== 'walk' && Math.hypot(x - cast.p[0], z - cast.p[2]) < 0.9; },
-
-    /** Reel the line in (the button again, Go up, a walk elsewhere). */
+    /** Reel the line in (a click while it waits, the button again, Go up, a walk elsewhere). */
     reel,
     /** Is the line out? */
     out: () => !!cast,

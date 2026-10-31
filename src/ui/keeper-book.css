@@ -160,9 +160,9 @@
 .ebb-chart__ink.is-hollow { fill: var(--jr-paper, #F4EEE4); }
 .ebb-chart__label { font-family: Fraunces, Georgia, serif; font-style: italic; font-weight: 600; fill: var(--ch-sepia); }
 .ebb-chart__label.is-pencil { fill: var(--ch-pencil); opacity: 0.5; }
-.ebb-chart__title { font-family: Fraunces, Georgia, serif; font-style: italic; font-weight: 700; font-size: 46px; fill: var(--ch-sepia); }
+.ebb-chart__title { font-family: Fraunces, Georgia, serif; font-style: italic; font-weight: 700; fill: var(--ch-sepia); }
 .ebb-chart__title.is-pencil { fill: var(--ch-pencil); opacity: 0.45; }
-.ebb-chart__sound { font-family: Fraunces, Georgia, serif; font-style: italic; font-size: 20px; fill: var(--ch-sepia); text-anchor: middle; }
+.ebb-chart__sound { font-family: Fraunces, Georgia, serif; font-style: italic; fill: var(--ch-sepia); text-anchor: middle; }
 .ebb-chart__fish, .ebb-chart__rare { cursor: pointer; }
 .ebb-chart__fish.is-glimpse { opacity: 0.32; filter: grayscale(1); }
 .ebb-chart__fish.is-picked image { filter: drop-shadow(0 0 3px #C9A86A); }

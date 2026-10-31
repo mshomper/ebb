@@ -342,6 +342,7 @@ export function addFishingTests(test, assert, eq) {
         eq(L.fishMarks.length, 22, `${at}: every fish placed`);
         eq(L.rares.length, 12, `${at}: every riddle mark placed`);
         eq(L.labels.length, 5, `${at}: every water named`);
+        for (const a of L.labels) for (const b of L.labels) if (a !== b) assert(Math.hypot(a.x - b.x, a.y - b.y) >= 200, `${at}: ${a.water} and ${b.water} named apart`);
         assert(L.compass && L.title, `${at}: the compass and the title`);
         const B = L.boxes;
         for (let i = 0; i < B.length; i++) for (let j = i + 1; j < B.length; j++) {
