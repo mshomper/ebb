@@ -89,7 +89,7 @@ export function createHearth(k) {
       }
       out.push({ key: modelOf(kind), x: s.x, y: s.y, z: s.z, yaw: s.yaw + turnOf(p.seed), shade: M[modelOf(kind)]?.shade });
     }
-    // The dye pot's stand: a flat stone by the fire, waiting for Phase 4's dyes.
+    // The dye pot's stand: a flat stone in the herb corner, waiting for Phase 4's dyes.
     const d = k.where.slotAt(H.slots['dye-pot']);
     if (d && hearth && !pieceOf(c, 'dye-pot')) out.push({ key: 'stand', x: d.x, y: d.y - 0.01, z: d.z, yaw: d.yaw + 0.7, scale: H.standScale, squash: H.standSquash, shade: M.stand?.shade });
     // Shaped pieces waiting pale on the workbench's slab.

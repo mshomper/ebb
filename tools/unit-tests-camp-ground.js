@@ -130,7 +130,8 @@ export function addCampGroundTests(test, assert, eq) {
     eq(padMask(pad, pad.x + pad.r + pad.lockFadeM, pad.z), 1, 'full a meter outside');
     const mid = padMask(pad, pad.x + pad.r + pad.lockFadeM / 2, pad.z);
     assert(mid > 0.4 && mid < 0.6, 'half way across the fade');
-    for (const s of pad.camp.slots) {
+    // The off-pad slots (the birdbath by the herb bed) stand beyond it (unit-tests-camp-layout.js).
+    for (const s of pad.camp.slots.filter((/** @type {any} */ q) => !q.offPad)) {
       const w = slotWorld(pad, s);
       assert(Math.hypot(w.x - pad.x, w.z - pad.z) <= 3.71, `slot ${s.id} inside 3.7 m`);
     }

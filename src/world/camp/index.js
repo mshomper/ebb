@@ -58,8 +58,10 @@ const H = 3600;
  * @param {{ recipe: any, seed: number, walk: any, terrain: any, clock: any, orbit: any, camera: any,
  *   world: any, seasons: any, lighting: { setPoints: (l: any[]) => void }, pack?: any,
  *   shadowBias?: { depthBias: number, depthBiasSlopeScale: number }, low?: boolean, tier?: string,
- *   beat?: () => string | null, poses?: any, piles?: any, cook?: any, water?: any, sowing?: any }} o
+ *   beat?: () => string | null, poses?: any, piles?: any, cook?: any, water?: any, sowing?: any,
+ *   rimToward?: (slot: string) => { x: number, z: number } | null }} o
  *   cook: recipes/world/cook.json (the stations' makes and builds, S1); water: the live water (Fill the pot, K-26);
+ *   rimToward: the world point a rim slot is placed toward when made (the nest box: the hen's home bushes), or null;
  *   sowing: recipes/world/sowing.json (the gifts that go to the gift spot, laid on the gift stone once it stands)
  *   piles: E2's piles at camp (src/world/pack/piles-live.js): Feed and Light take a handful from the stick pile
  *   recipe: recipes/world/camp.json; walk: the walker; lighting: the shared light block;
