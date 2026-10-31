@@ -34,6 +34,7 @@ Matt, October 31, 2026 (after the chart mockup):
 - **The condition icons beside each riddle are a fair nudge.**
 - **The rare-fish clues ink in a little at a time** as the player catches more fish, not all at the end.
 - **The chart's level of detail is right:** the fish themselves, the water marks, soundings, the compass and the title.
+- **Nothing on the chart intersects.** All text and every element keeps proper spacing.
 
 ## The loop
 
@@ -211,7 +212,8 @@ A hand-drawn sea chart of your own island's waters, kept in the journal in the k
 
 **When every ordinary fish is sketched,** the frame and the title ink. In the game there's no count on the chart; the chart itself shows how far along it is.
 
-**Placing the marks.** Each riddle's mark sits in the right water on the player's own coast: the stonefish beside rock coast at the tide line, the lionfish further off the reef, the ghosts offshore, the anglers past the drop-off. Because the coast is shaped, the chart is drawn from the island's own shoreline when the journal opens, not from a fixed picture.
+**Placing everything.** Each riddle's mark sits in the right water on the player's own coast: the stonefish just off rock coast, the lionfish further off the reef, the ghosts offshore, the anglers past the drop-off. Because the coast is shaped, the chart is drawn from the island's own shoreline when the journal opens, not from a fixed picture. So nothing on it has a fixed position: water names, riddle marks, fish, soundings and water marks are placed in that order, each only where it is clear of everything already placed and of every drawn line (coast, depth lines, drop-off, frame), with a little air around it. The mockup checks this: on the finished chart, no text, fish or mark touches another or crosses a line (Matt, October 31, 2026: "make sure that all the text and everything has the proper spacing").
+
 
 ## Later: the aquarium (roadmap only)
 

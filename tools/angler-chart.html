@@ -457,7 +457,7 @@ function renderFish(cv,sp,ind,opt={}){
 }
 
 
-const CX=440,CY=350,R0=120,TAU2=Math.PI*2;
+const CX=430,CY=372,R0=108,TAU2=Math.PI*2;
 const deg=d=>d*Math.PI/180;
 const angDiff=(a,b)=>{let d=(a-b)%TAU2;if(d>Math.PI)d-=TAU2;if(d<-Math.PI)d+=TAU2;return d};
 function coastR(t){let r=R0;
@@ -473,10 +473,10 @@ function spline(P,closed){const n=P.length,g=i=>closed?P[(i+n)%n]:P[Math.max(0,M
 const arc=(a0,a1,e,n=40)=>{const P=[];for(let i=0;i<=n;i++)P.push(pt(deg(a0+(a1-a0)*i/n),e));return P};
 
 const ZONES=[
-  {key:'reef',name:'Rocky reef',a0:-60,a1:40,n:5,label:[800,452],anchor:'middle',spots:[[-46,135],[-27,72],[-8,150],[13,74],[33,138]]},
+  {key:'reef',name:'Rocky reef',a0:-45,a1:40,n:5,label:[800,452],anchor:'middle',spots:[[-46,135],[-27,72],[-8,150],[13,74],[33,138]]},
   {key:'sand',name:'Sand flats',a0:40,a1:130,n:5,label:[270,640],anchor:'middle',spots:[[52,72],[70,128],[90,62],[110,128],[126,70]]},
   {key:'kelp',name:'Kelp shallows',a0:130,a1:215,n:4,label:[62,250],anchor:'start',spots:[[142,96],[162,52],[184,104],[204,58]]},
-  {key:'open',name:'Open water',a0:215,a1:300,n:4,label:[285,82],anchor:'middle',spots:[[228,128],[248,74],[268,140],[290,72]]},
+  {key:'open',name:'Open water',a0:215,a1:315,n:4,label:[285,82],anchor:'middle',spots:[[228,128],[248,74],[268,140],[290,72]]},
   {key:'deep',name:'Deep water',n:4,label:[945,82],anchor:'end',abs:[[640,74],[770,130],[862,196],[898,288]]}
 ];
 const ZK=Object.fromEntries(ZONES.map(z=>[z.key,z]));
@@ -523,64 +523,109 @@ function buildChart(svg,roster){
   const defs=el('defs',{},svg),cp=el('clipPath',{id:'frameclip'},defs);el('rect',{x:41,y:41,width:918,height:618},cp);
   const frame=el('g',{},svg),clip=el('g',{'clip-path':'url(#frameclip)'},svg);
   const g={wash:el('g',{},clip),pen:el('g',{class:'pen'},clip),ink:el('g',{class:'inkg'},clip),fish:el('g',{},clip),top:el('g',{},clip),fpen:el('g',{class:'pen'},frame),fink:el('g',{},frame)};
+  /* ---- placement: every box must be clear of every other box and of every drawn line ---- */
+  const occ=[],lines=[],BX0=52,BY0=52,BX1=948,BY1=648;
+  const DROP=[[520,40],[640,160],[820,290],[960,420]];
+  const DROPS=[DROP];
+  const dropY=x=>{let lo=0,hi=1;for(let i=0;i<30;i++){const m=(lo+hi)/2;bez(...DROP,m)[0]<x?lo=m:hi=m}return bez(...DROP,lo)[1]};
+  const inDeep=(x,y)=>x>=DROP[0][0]&&y<dropY(x)-4;
+  const sampleBez=B=>{const P=[];for(let i=0;i<=160;i++)P.push(bez(...B,i/160));return P};
+  const addLine=P=>{const Q=[];for(let i=0;i<P.length-1;i++){const [a,b]=[P[i],P[i+1]],n=Math.max(1,Math.ceil(Math.hypot(b[0]-a[0],b[1]-a[1])/3));for(let k=0;k<n;k++)Q.push([a[0]+(b[0]-a[0])*k/n,a[1]+(b[1]-a[1])*k/n])}Q.push(P[P.length-1]);lines.push(Q)};
+  const hit=(a,b)=>a.x0<b.x1&&a.x1>b.x0&&a.y0<b.y1&&a.y1>b.y0;
+  const grow=(b,p)=>({x0:b.x0-p,y0:b.y0-p,x1:b.x1+p,y1:b.y1+p});
+  function free(b,pad=6,linePad=pad){if(b.x0<BX0||b.y0<BY0||b.x1>BX1||b.y1>BY1)return false;const B=grow(b,pad);for(const o of occ)if(hit(B,o))return false;
+    const L=grow(b,linePad);for(const Q of lines)for(const p of Q)if(p[0]>L.x0&&p[0]<L.x1&&p[1]>L.y0&&p[1]<L.y1)return false;return true}
+  const boxAt=(x,y,w,h)=>({x0:x-w/2,y0:y-h/2,x1:x+w/2,y1:y+h/2});
+  const textBox=(t)=>{const b=t.getBBox();return{x0:b.x,y0:b.y,x1:b.x+b.width,y1:b.y+b.height}};
+  function sectorPts(z,e0,e1,n){const P=[];for(let i=0;i<n;i++){const a=z.a0+(z.a1-z.a0)*rnd(),e=e0+(e1-e0)*rnd(),p=pt(deg(a),e);if(!inDeep(p[0],p[1]))P.push(p)}return P}
+  function deepPts(n){const P=[];for(let i=0;i<n;i++){const x=530+rnd()*420,y=50+rnd()*370;if(inDeep(x,y))P.push([x,y])}return P}
+  function pick(cands,w,h,k,opt={}){const got=[];const pad=opt.pad??6,lp=opt.linePad??pad;
+    for(let n=0;n<k;n++){let best=null,bd=-1;for(const c of cands){const b=boxAt(c[0],c[1],w,h);if(!free(b,pad,lp))continue;
+      const d=got.length?Math.min(...got.map(q=>Math.hypot(q[0]-c[0],q[1]-c[1]))):(opt.prefer?-Math.hypot(c[0]-opt.prefer[0],c[1]-opt.prefer[1]):0);if(d>bd){bd=d;best=c}}
+      if(!best)break;got.push(best);occ.push(boxAt(best[0],best[1],w,h))}return got}
+  /* ---- lines first ---- */
+  const coast=[];for(let i=0;i<180;i++)coast.push(pt(TAU2*i/180));coast.push(coast[0]);addLine(coast);
+  const contours={};for(const z of ZONES)if(!z.abs){contours[z.key]=arc(z.a0,z.a1,50,40);addLine(contours[z.key])}
+  DROPS.forEach(B=>addLine(sampleBez(B)));
   /* frame */
   for(const [p,o] of [[30,0],[40,1]]){el('rect',{x:p,y:p,width:1000-2*p,height:700-2*p,rx:4,class:o?'pline thin':'pline'},g.fpen);rev(el('rect',{x:p,y:p,width:1000-2*p,height:700-2*p,rx:4,class:o?'iline thin':'iline'},g.fink),full,true)}
   /* land */
-  const coast=[];for(let i=0;i<180;i++)coast.push(pt(TAU2*i/180));const cd=spline(coast,true);
-  el('path',{d:cd,class:'land'},g.wash);
+  const cd=spline(coast.slice(0,-1),true);el('path',{d:cd,class:'land'},g.wash);
   for(let i=0;i<34;i++){const t=rnd()*TAU2,rr=rnd()*.7,p=[CX+Math.cos(t)*coastR(t)*rr,CY+Math.sin(t)*coastR(t)*rr];el('path',{d:`M${p[0]-7} ${p[1]+5}l14 -10`,class:'hatch'},g.wash)}
   el('path',{d:cd,class:'pline'},g.pen);
-  /* zones */
+  /* compass and title reserve their space */
+  const C=[118,152];occ.push({x0:C[0]-56,y0:C[1]-96,x1:C[0]+56,y1:C[1]+70});
+  const CART={x0:570,y0:582,x1:940,y1:644};occ.push(CART);
+  /* ---- zone line work ---- */
   for(const z of ZONES){
     if(z.key==='deep'){
-      const D=['M560 40C680 150 840 260 960 380','M610 40C722 140 862 236 960 330','M668 40C772 124 886 206 960 272','M730 40C826 108 906 172 960 214'];
-      D.forEach((d,i)=>{el('path',{d,class:'pline'+(i?' thin':'')},g.pen);rev(el('path',{d,class:'iline'+(i?' thin':'')},g.ink),zoneNeed('deep',i+1),true)});
-      for(let i=0;i<16;i++){const t=.06+i*.058,p=bez([560,40],[680,150],[840,260],[960,380],t),q=bez([560,40],[680,150],[840,260],[960,380],t+.01),dx=q[0]-p[0],dy=q[1]-p[1],L=Math.hypot(dx,dy),nx=dy/L,ny=-dx/L;
-        rev(el('path',{d:`M${p[0].toFixed(1)} ${p[1].toFixed(1)}l${(nx*12).toFixed(1)} ${(ny*12).toFixed(1)}`,class:'iline thin'},g.ink),zoneNeed('deep',1+(i%4)),true)}
-      [[700,62,'38'],[700,212,'45'],[850,128,'70'],[930,232,'64'],[790,262,'52']].forEach((s,i)=>rev(el('text',{x:s[0],y:s[1],class:'sound'},g.ink),zoneNeed('deep',1+(i%4))).textContent=s[2]);
+      DROPS.forEach((B,i)=>{const d=`M${B[0][0]} ${B[0][1]}C${B[1][0]} ${B[1][1]} ${B[2][0]} ${B[2][1]} ${B[3][0]} ${B[3][1]}`;el('path',{d,class:'pline'+(i?' thin':'')},g.pen);rev(el('path',{d,class:'iline'+(i?' thin':'')},g.ink),zoneNeed('deep',i+1),true)});
       wash(z,null);
     }else{
       const seg=arc(z.a0,z.a1,0,50);rev(el('path',{d:spline(seg),class:'iline coast'},g.ink),zoneNeed(z.key,1),true);
-      const ct=arc(z.a0,z.a1,50,40);el('path',{d:spline(ct),class:'pline thin dash'},g.pen);rev(el('path',{d:spline(ct),class:'iline thin dash'},g.ink),zoneNeed(z.key,2),true);
+      const ct=contours[z.key];el('path',{d:spline(ct),class:'pline thin dash'},g.pen);rev(el('path',{d:spline(ct),class:'iline thin dash'},g.ink),zoneNeed(z.key,2),true);
       const band=arc(z.a0,z.a1,0,40).concat(arc(z.a1,z.a0,50,40));wash(z,spline(band,true));
-      features(z,g,rnd);
-      for(let i=0;i<3;i++){const a=deg(z.a0+(z.a1-z.a0)*(.2+.3*i+.1*rnd())),p=pt(a,30+rnd()*95);rev(el('text',{x:p[0].toFixed(0),y:p[1].toFixed(0),class:'sound'},g.ink),zoneNeed(z.key,2+i)).textContent=String(1+Math.floor(rnd()*(z.key==='open'?18:6)+(z.key==='open'?10:0)))}
     }
-    /* label */
-    const [lx,ly]=z.label,anc=z.anchor;
-    el('text',{x:lx,y:ly,class:'zlab pen-t','text-anchor':anc},g.pen).textContent=z.name;
-    rev(el('text',{x:lx,y:ly,class:'zlab','text-anchor':anc},g.ink),zoneNeed(z.key,z.n)).textContent=z.name;
   }
+  /* ---- labels: first clear candidate ---- */
+  const LC={reef:[[800,452],[820,500],[780,400],[840,540],[760,560]],sand:[[270,640],[200,630],[340,630],[150,600]],kelp:[[62,250],[62,300],[62,470],[62,520]],
+    open:[[300,96],[340,94],[400,100],[460,92],[300,120]],deep:[[945,90],[945,104],[945,80],[945,120]]};
+  for(const z of ZONES){const anc=z.anchor,t=el('text',{class:'zlab','text-anchor':anc},g.ink);t.textContent=z.name;let placed=false;
+    for(const [x,y] of LC[z.key]){t.setAttribute('x',x);t.setAttribute('y',y);const b=textBox(t);if(free(b,8,10)){occ.push(b);placed=true;break}}
+    if(!placed){const c=z.key==='deep'?deepPts(800):sectorPts(z,60,260,800);t.setAttribute('text-anchor','middle');
+      for(const [x,y] of c){t.setAttribute('x',x.toFixed(0));t.setAttribute('y',y.toFixed(0));const bb=textBox(t);if(free(bb,8,10)){occ.push(bb);placed=true;break}}}
+    if(!placed)console.warn('label',z.key);
+    const pen=t.cloneNode(true);pen.setAttribute('class','zlab pen-t');g.pen.appendChild(pen);rev(t,zoneNeed(z.key,z.n))}
+  /* ---- rare marks ---- */
+  const RR=28*2;
+  const RREG={'Reef stonefish':[-44,-16,56,92],'Mossy devilfish':[-24,8,56,92],'Rust stonefish':[8,38,56,92],'Firework lionfish':[-44,-16,110,210],'Ember dwarf lionfish':[-16,12,110,210],'Zebra lionfish':[12,40,110,210]};
+  RARE.forEach((r,i)=>{let c;const z=ZK[r.z];
+    if(r.z==='deep')c=deepPts(700);else if(RREG[r.name]){const [a0,a1,e0,e1]=RREG[r.name];c=sectorPts({a0,a1},e0,e1,700)}else c=sectorPts(z,150,300,700);
+    let p=null;for(const pad of [6,4,2]){p=pick(c,RR,RR,1,{pad,linePad:pad})[0];if(p)break;
+      if(r.z==='deep')c=deepPts(1500);else if(RREG[r.name]){const [a0,a1,e0,e1]=RREG[r.name];c=sectorPts({a0:a0-6,a1:a1+6},e0,e1*1.4,1500)}else c=sectorPts(z,110,330,1500)}
+    if(!p){console.warn('rare',r.name);return}
+    const gg=el('g',{class:'raremark','data-r':i,transform:`translate(${p[0].toFixed(0)} ${p[1].toFixed(0)})`},g.top);
+    el('circle',{r:24,class:'ring'},gg);el('circle',{r:15,class:'rdot'},gg);el('text',{y:6,class:'rnum','text-anchor':'middle'},gg).textContent=i+1;el('circle',{r:26,class:'hit'},gg);
+    r.th=Math.ceil(roster.length*(i+1)/RARE.length);rev(gg,totalNeed(r.th));r.mark=gg});
+  /* ---- fish marks ---- */
+  const FW=68,FH=38;const spots={};
+  for(const z of ['open','kelp','sand','deep','reef'].map(k=>ZK[k])){const sp=roster.filter(s=>s.habKey===z.key);spots[z.key]=[];
+    for(const [pad,eMax] of [[8,z.key==='reef'?150:z.key==='open'?240:190],[6,z.key==='reef'?190:280],[4,320]]){const c=z.key==='deep'?deepPts(1600):sectorPts(z,58,eMax,1600);
+      spots[z.key].push(...pick(c,FW,FH,sp.length-spots[z.key].length,{pad,linePad:pad-2}));if(spots[z.key].length>=sp.length)break}
+    if(spots[z.key].length<sp.length){console.warn('fish',z.key);if(location.hash==='#debug'){for(const o of occ)el('rect',{x:o.x0,y:o.y0,width:o.x1-o.x0,height:o.y1-o.y0,fill:'none',stroke:'red'},svg);for(const p of sectorPts(z,58,320,400))el('circle',{cx:p[0],cy:p[1],r:2,fill:'blue'},svg)}continue}
+    sp.forEach((s,i)=>{const p=spots[z.key][i];const gg=el('g',{class:'fishmark','data-id':s.id,transform:`translate(${p[0].toFixed(0)} ${p[1].toFixed(0)})`},g.fish);
+      el('image',{href:s.img,x:-38,y:-24,width:76,height:47},gg);el('rect',{x:-38,y:-24,width:76,height:47,class:'hit'},gg);rev(gg,spNeed(s.id));s.mark=gg})}
+  /* ---- soundings ---- */
+  for(const z of ZONES){const n=z.key==='deep'?5:3,c=z.key==='deep'?deepPts(500):sectorPts(z,58,z.key==='open'?240:170,500);
+    const got=pick(c,30,22,n,{pad:6,linePad:4});got.forEach((p,i)=>{const v=z.key==='deep'?36+Math.floor(rnd()*40):z.key==='open'?10+Math.floor(rnd()*18):1+Math.floor(rnd()*6);
+      rev(el('text',{x:p[0].toFixed(0),y:(p[1]+7).toFixed(0),class:'sound'},g.ink),zoneNeed(z.key,1+((i+1)%z.n))).textContent=String(v)})}
+  /* ---- water marks ---- */
+  for(const z of ZONES){if(z.key==='deep')continue;features(z,g,rnd,pick,sectorPts)}
+  /* deep: ticks along the drop-off, on the line itself */
+  for(let i=0;i<16;i++){const t=.06+i*.058,p=bez(...DROP,t),q=bez(...DROP,t+.01),dx=q[0]-p[0],dy=q[1]-p[1],L=Math.hypot(dx,dy),nx=dy/L,ny=-dx/L;
+    const tb=boxAt(p[0]+nx*6,p[1]+ny*6,10,10);let clear=true;for(const o of occ)if(hit(grow(tb,3),o))clear=false;if(!clear)continue;
+    rev(el('path',{d:`M${p[0].toFixed(1)} ${p[1].toFixed(1)}l${(nx*12).toFixed(1)} ${(ny*12).toFixed(1)}`,class:'iline thin'},g.ink),zoneNeed('deep',1+(i%4)),true)}
   /* compass */
-  const C=[118,140];el('circle',{cx:C[0],cy:C[1],r:46,class:'pline thin'},g.pen);rev(el('circle',{cx:C[0],cy:C[1],r:46,class:'iline thin'},g.ink),totalNeed(Math.ceil(roster.length*.25)),true);
+  el('circle',{cx:C[0],cy:C[1],r:46,class:'pline thin'},g.pen);rev(el('circle',{cx:C[0],cy:C[1],r:46,class:'iline thin'},g.ink),totalNeed(Math.ceil(roster.length*.25)),true);
   [[0,-1],[1,0],[0,1],[-1,0]].forEach(([dx,dy],i)=>{const L=i?50:66,w=11,tip=[C[0]+dx*L,C[1]+dy*L],a=[C[0]-dy*w,C[1]+dx*w],b=[C[0]+dy*w,C[1]-dx*w];
     const d=`M${tip[0]} ${tip[1]}L${a[0]} ${a[1]}L${C[0]} ${C[1]}L${b[0]} ${b[1]}Z`;el('path',{d,class:'pline thin'},g.pen);rev(el('path',{d,class:'iline compass'+(i%2?' hollow':'')},g.ink),totalNeed(Math.ceil(roster.length*(i+1)/4)),true)});
   rev(el('text',{x:C[0],y:C[1]-74,class:'zlab small','text-anchor':'middle'},g.ink),totalNeed(Math.ceil(roster.length*.25))).textContent='N';
   /* title */
   el('rect',{x:570,y:582,width:370,height:62,rx:6,class:'pline thin'},g.pen);rev(el('rect',{x:570,y:582,width:370,height:62,rx:6,class:'iline thin cart'},g.ink),full,true);
-  el('text',{x:755,y:626,class:'title pen-t','text-anchor':'middle'},g.pen).textContent='The angler\u2019s chart';
-  rev(el('text',{x:755,y:626,class:'title','text-anchor':'middle'},g.ink),full).textContent='The angler\u2019s chart';
-  /* fish marks */
-  for(const z of ZONES){const sp=roster.filter(s=>s.habKey===z.key);sp.forEach((s,i)=>{const p=z.abs?z.abs[i]:pt(deg(z.spots[i][0]),z.spots[i][1]);
-    const gg=el('g',{class:'fishmark','data-id':s.id,transform:`translate(${p[0].toFixed(0)} ${p[1].toFixed(0)})`},g.fish);
-    el('image',{href:s.img,x:-44,y:-28,width:88,height:55},gg);el('rect',{x:-46,y:-30,width:92,height:59,class:'hit'},gg);
-    rev(gg,spNeed(s.id));s.mark=gg})}
-  /* rare */
-  RARE.forEach((r,i)=>{const p=r.abs||pt(deg(r.at.a),r.at.e);const gg=el('g',{class:'raremark','data-r':i,transform:`translate(${p[0].toFixed(0)} ${p[1].toFixed(0)})`},g.top);
-    el('circle',{r:24,class:'ring'},gg);el('circle',{r:15,class:'rdot'},gg);el('text',{y:6,class:'rnum','text-anchor':'middle'},gg).textContent=i+1;el('circle',{r:26,class:'hit'},gg);
-    r.th=Math.ceil(roster.length*(i+1)/RARE.length);rev(gg,totalNeed(r.th));r.mark=gg});
-  function wash(z,d){if(!d)d='M560 40C680 150 840 260 960 380L960 40Z';const w=el('path',{d,class:'wash'},g.wash);REV.push({e:w,wash:z.key,n:z.n})}
+  el('text',{x:755,y:626,class:'title pen-t','text-anchor':'middle'},g.pen).textContent='The angler’s chart';
+  rev(el('text',{x:755,y:626,class:'title','text-anchor':'middle'},g.ink),full).textContent='The angler’s chart';
+  function wash(z,d){if(!d)d='M520 40C640 160 820 290 960 420L960 40Z';const w=el('path',{d,class:'wash'},g.wash);REV.push({e:w,wash:z.key,n:z.n})}
 }
 function bez(a,b,c,d,t){const u=1-t;return[u*u*u*a[0]+3*u*u*t*b[0]+3*u*t*t*c[0]+t*t*t*d[0],u*u*u*a[1]+3*u*u*t*b[1]+3*u*t*t*c[1]+t*t*t*d[1]]}
-function features(z,g,rnd){
-  const n=z.key==='sand'?46:14,list=[];
-  for(let i=0;i<n;i++){const a=deg(z.a0+4+(z.a1-z.a0-8)*rnd());let e,d;
-    if(z.key==='reef'){e=8+rnd()*70;const p=pt(a,e);d=`M${(p[0]-5).toFixed(1)} ${(p[1]-5).toFixed(1)}l10 10M${(p[0]+5).toFixed(1)} ${(p[1]-5).toFixed(1)}l-10 10`}
-    else if(z.key==='sand'){e=6+rnd()*58;const p=pt(a,e);d=`M${p[0].toFixed(1)} ${p[1].toFixed(1)}h.1`}
-    else if(z.key==='kelp'){e=14+rnd()*80;const p=pt(a,e);d=`M${p[0].toFixed(1)} ${(p[1]+11).toFixed(1)}c-5-4 5-7 0-11s5-7 0-11`}
-    else {e=40+rnd()*150;const p=pt(a,e);d=`M${(p[0]-11).toFixed(1)} ${p[1].toFixed(1)}c4-5 7-5 11 0s7 5 11 0`}
-    list.push(d)}
-  list.forEach((d,i)=>{const cls=z.key==='sand'?'stip':'feat';el('path',{d,class:'p'+cls},g.pen);rev(el('path',{d,class:'i'+cls},g.ink),zoneNeed(z.key,1+Math.floor(i*z.n/n)),z.key!=='sand')});
+function features(z,g,rnd,pick,sectorPts){
+  const spec={reef:{n:14,e:[8,80],w:14,h:14},sand:{n:46,e:[8,46],w:5,h:5},kelp:{n:14,e:[10,95],w:12,h:26},open:{n:14,e:[40,230],w:26,h:12}}[z.key];
+  const c=sectorPts(z,spec.e[0],spec.e[1],1500);const got=pick(c,spec.w,spec.h,spec.n,{pad:z.key==='sand'?1:3,linePad:z.key==='sand'?2:3});
+  got.forEach((p,i)=>{let d;
+    if(z.key==='reef')d=`M${(p[0]-5).toFixed(1)} ${(p[1]-5).toFixed(1)}l10 10M${(p[0]+5).toFixed(1)} ${(p[1]-5).toFixed(1)}l-10 10`;
+    else if(z.key==='sand')d=`M${p[0].toFixed(1)} ${p[1].toFixed(1)}h.1`;
+    else if(z.key==='kelp')d=`M${p[0].toFixed(1)} ${(p[1]+11).toFixed(1)}c-5-4 5-7 0-11s5-7 0-11`;
+    else d=`M${(p[0]-11).toFixed(1)} ${p[1].toFixed(1)}c4-5 7-5 11 0s7 5 11 0`;
+    const cls=z.key==='sand'?'stip':'feat';el('path',{d,class:'p'+cls},g.pen);rev(el('path',{d,class:'i'+cls},g.ink),zoneNeed(z.key,1+Math.floor(i*z.n/got.length)),z.key!=='sand')});
 }
 function zoneNote(sp){const c={small:0,big:0,either:0};for(const s of sp)c[s.bait]++;
   const bait=c.small>=c.big+1&&c.small>=c.either?'Most here take the small red worm.':c.big>=c.small+1&&c.big>=c.either?'Most here take the big dark worm.':'These take either worm.';
