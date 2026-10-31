@@ -140,6 +140,8 @@ The rest of M2 continues after the first season (changed October 24, 2026), toge
   5. The shore birds (sand martins, turnstones, purple sandpipers), which may run into M3.
   6. Grey seals last, with the meadow islet's sandbar.
 - **Keepsakes and the shelf** (F12, agreed October 21, 2026): unnamed, procedurally generated trinkets on the strandline, rarer at spring tides and in coves the player carved, kept on a 16-slot shelf that is its own journal section. Then the general net on the beachcomber's trail at four keepsake families kept, with living catches released and given short pages. Both are built and merged, with `tools/keepsake-lab.html` and `tools/catch-lab.html`. The light and sinker nets wait for the meadow and shore tier milestones.
+- **Fishing and the angler's chart** (F17, decided October 30 and 31, 2026; being built on `m2-fishing`): the line made at the workbench from a withy, rush cord and gorse thorns, worms from the dig as bait (the small red and the big dark worm in their own pouches), five waters read from the shaped coast, a roster of 22 ordinary and 12 rare fish per island, every fish sketched and let go, and the angler's chart in the Keeper book. Willow and gorse already grow on the main island, so it does not wait for the meadow islet. Deep water is reached by a long cast from a headland or the stepping stones until Matt's dock of planks and nails (from the underground spring work) is built, where the boat will land.
+- **Later: the aquarium** (F17, roadmap only): once the player has a living space, one special individual fish, caught only then, kept in an aquarium: the one exception to letting go.
 
 ### The Hollow, first version (after M2)
 

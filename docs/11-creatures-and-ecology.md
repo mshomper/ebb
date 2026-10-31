@@ -184,6 +184,10 @@ A body recipe lists SDF primitives (sphere, ellipsoid, capsule, round cone, roun
 
 The coarse model keeps only **group records** (species, patch, population, group mood, trust per named individual) and swarm densities. There are no positions while away. On re-seed, agents spawn near their home cells in the state their activity curve gives for that hour, as described in `02-core-loop-and-idle-model.md`.
 
+### Fish on the line (F17)
+
+Fish caught on the line are catches, not simulated creatures: each is one individual made from a seed when it bites (`src/world/fishing/`, the generator in `src/world/nets/living/fish2.js`), shown, sketched if it is a species' first, and let go. They need no presence or trust and keep no group records. They still move like living things: a hooked fish wriggles on a skinned swim at the end of the line, and on the tray it swims in place.
+
 ## Data and interfaces
 
 ```js

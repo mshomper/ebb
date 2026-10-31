@@ -648,7 +648,8 @@ Plant parts come from section 1's plant table; this table only gives each a pouc
 | Clumps | `<species>.clump` | earth | A plant dug up whole | Stays in the pouch | T2 | PR-31 |
 | Cast kelp | `kelp` | sea | Strandline after spring tides | Weed heap | T2 | G-05, PR-37 |
 | Wrack | `wrack` | sea | Strandline litter | Weed heap | T1 | G-06, PR-37 |
-| Worms | `worms` | living | Dug, spring and autumn | Never piled | T2 | D-29, F-16, F-09 |
+| Worms (the small red worm) | `worms` | living | Dug from the topsoil, spring and autumn | Never piled | T2 | D-29, F-16, F-09 |
+| Big dark worms | `bigworms` | living | Dug from the subsoil, spring and autumn, a few in winter (F17, October 31, 2026: its own pouch, bait for deeper fish) | Never piled | T2 | F17 |
 | Rose hips | `rose.hips` | living | Dog rose, autumn into winter | Bowl | T4 | P-32, T-08, T-46 |
 | Elderberries | `elder.berries` | living | Elder, autumn | Bowl | T4 | P-31, T-23, X-17 |
 | Blackberries | `bramble.berries` | living | Bramble (gift), late summer | Bowl | T5 | P-33, F-13, F-21 |
@@ -875,7 +876,7 @@ Uses are listed across the whole spec. Section numbers for makes, teas, treats a
 | Sea water (pot only) | The sea's edge | All year | T2 | Boiled sea salt, a camp-page first (G-08, resolution 21) | G-08 |
 | Clay | Dug: second layer on a damp bank near fresh water | All but winter | T2 (shovel) | Pot (M-09), cup (M-11), bowls (M-12), lamp (M-33), sealed jar (M-35), bird-bath saucer (M-36), bee water dish (M-37), dye pot (M-40), seed balls (X-24), clay slip paint (X-28) | G-16, D-03 |
 | Topsoil | Dug: first layer under grass or soil | All year | T2 (shovel) | Seed balls (X-24) | D-01, X-24 |
-| Worms | Dug: first and second layer in soft soil | Spring and autumn | T2 (shovel); used from T3 | Earthworm at the log for turtles (F-09); dug worms for the robin (F-16) | D-29, F-09, F-16 |
+| Worms | Dug: first and second layer in soft soil (the small red worm from the topsoil into `worms`, the big dark worm from the subsoil into `bigworms`, F17) | Spring and autumn | T2 (shovel); used from T3 | Earthworm at the log for turtles (F-09); bait for the fishing line, the small red worm for shallow fish and the big dark worm for deeper ones (F17) | D-29, F-09, F17 |
 | Fallen leaves | Foot of willow, later oak, hazel and beech | From the host's leaf fall through winter; none in spring and summer | T2 | Hedgehog house (M-43); leaf pack for minnows (F-04); beetle bait, standing in for the cut leaf litter (F-21); leaf mould in a planting hole (G-24) | G-24 (promoted) |
 | Lichen twigs | Foot of a willow or gorse at least one game year old | Only the day after a windy day | T4 (the dye pot) | Rust brown dye (X-05, dyes) | X-05, G-38 |
 | Old comb | Two seeded places each autumn, at the foot of an old gorse or willow near where bees nest | Autumn, from T4 (bees on the island) | T4 | Beeswax for the clay lamp (M-33), the sealed jar (M-35) and dipped candles (X-13) | resolution 18 |
@@ -1753,6 +1754,7 @@ Each part is one pouch kind (K-24 order: fuel, stones, fibres, herbs, earth, sea
 | Stone pile | T1 | Pebbles (set down) | Hands | Camp: stone pile slot | The store for pebbles; gaps for beetles and lizards later | M-04, C-22, K-15 |
 | Rush cord | T2 | Rushes or marram leaves | Hands | Into a pouch | The binding for almost every later make | M-07, G-45, X-18, resolution 12 |
 | Shovel | T2 | Stick, flat stone, rush cord | Hands | Hangs on the pack (takes no pouch) | Digs layers 1 and 2: clay, worms, planting holes, the cache | M-08, DR-20, resolution 4a |
+| Fishing line | T3 | A withy, rush cord, gorse thorns (a new gather part); the float drawn as part of it (F17, October 31, 2026) | Workbench | Hangs on the belt (takes no pouch) | Casts into the five waters with a worm for bait; every fish sketched and let go; never wears out | F17 |
 | Keeper's blade fitted | T2 (once the cache is found) | Keeper's blade, rush cord | The shovel | On the shovel | The same shovel now reaches layer 3 | DR-22, D-23, resolution 4b |
 | Hearth stones | T2 | Flat stones | Hands | Camp: inside the ring | The pot stands on them over the coals | C-07 |
 | Clay pot | T2 | Clay, sand | Fire | Camp: on the hearth stones | Fired overnight; brews teas, warms treats, holds spring water | M-09, C-09, G-03, K-26 |
