@@ -435,6 +435,8 @@ export function createCamp(o) {
     id: 'camp',
     /** The draw passes: the models (with their shadow caster), then after the sky the fire sim's volume and the fire's other effects. */
     props, firePass, fx,
+    /** The sun's altitude now (radians), as the camp's lantern reads it (the placed lanterns, B2 L1). */
+    sunAlt,
     /** Draw more things with the camp's models each frame (the hen's feather by the ring). @param {() => import('../../render/passes/props.js').Prop[]} f */
     addProps: (f) => frame.addProps(f),
     /** A sim system: each frame. @param {{ realDt: number }} f */

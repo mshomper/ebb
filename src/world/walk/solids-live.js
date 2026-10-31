@@ -8,7 +8,7 @@
 //     ring, the rack turned by camp.json rack.yawDeg), the wood store always (its stakes), the stone
 //     store and the heaps only while a pile is in them;
 //   pieces: loose stones (circles), kept logs and strand driftwood (rectangles along their length),
-//     the reed raft; the piece being carried is left out;
+//     the reed raft, a lantern's post; the piece being carried is left out;
 //   the boat at its mooring.
 // Stepping stones, Steps' slabs and holes stay open (footing, or small and filling in), and so do
 // small things you walk over (twigs, pebbles, shells, finds, low plants).
@@ -62,6 +62,8 @@ export function pieceSolids(list, carried, strand) {
     if (p.kind === 'stone') out.push({ x: p.x, z: p.z, r: (p.size ?? 0.3) / 2, id: p.id });
     else if (p.kind === 'log') log(p, p.id);
     else if (p.kind === 'raft') out.push({ x: p.x, z: p.z, r: 0.6 * (p.size ?? 1.2), id: p.id });
+    // A lantern's post (B2 L1): you step round it, as round a stone.
+    else if (p.kind === 'lantern') out.push({ x: p.x, z: p.z, r: (p.size ?? 0.24) / 2, id: p.id });
   }
   for (const s of strand ?? []) log(s, `strand:${Math.round(s.x * 10)}:${Math.round(s.z * 10)}`);
   return out;

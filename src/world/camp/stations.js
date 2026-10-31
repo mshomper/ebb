@@ -87,8 +87,13 @@ export function createStations(k) {
     const b = benchAt(id);
     return b ? { x: b.x, z: b.z, stand: b.stand, reachM: S.reachM } : null;
   }
-  /** What making reads: which slots are built, a kind's pack group. @type {import('./making.js').MakeCtx} */
-  const ctx = { filled: built, groupOf: (kind) => o.pack?.kinds?.groupOf?.(kind) ?? null };
+  /**
+   * What making reads: which slots are built, a kind's pack group, and a gift given with room for
+   * another (the lantern, B2 L1: unlocks.lantern, and the store slice makeRoom from lantern-live.js).
+   * @type {import('./making.js').MakeCtx}
+   */
+  const ctx = { filled: built, groupOf: (kind) => o.pack?.kinds?.groupOf?.(kind) ?? null,
+    unlocked: (key) => !!get('unlocks')?.[key] && get('makeRoom')?.[key] !== false };
 
   // ---- where handfuls come from: the pack, then the piles, then the hamper ----
 

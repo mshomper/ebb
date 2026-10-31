@@ -39,6 +39,13 @@ export const CAMP = {
   // The hen's perch (docs/future/15 slice 3): two forked sticks in the ground, a bar laid across their forks.
   'hen-perch': ['made', `<rect ${A2} x="3.6" y="9.4" width="16.8" height="2.4" rx="1.2"/><rect x="3.6" y="9.4" width="16.8" height="2.4" rx="1.2"/>
     <path d="M7 20.6V11.8M17 20.6V11.8M7 11.8L5.4 7.6M7 11.8L8.6 7.8M17 11.8L15.4 7.8M17 11.8L18.6 7.6"/>${BASE}`],
+  // The lantern pot (B2 L1): a round-bellied clay housing pierced all over, a knob of a lid.
+  'lantern-pot': ['made', `${both('d="M8.6 8.4H15.4C17.8 9.8 18.8 12.4 18.4 15.2C18 18 15.6 19.6 12 19.6S6 18 5.6 15.2C5.2 12.4 6.2 9.8 8.6 8.4Z"')}
+    <path d="M9.4 8.4C9.6 7.2 10.6 6.6 12 6.6S14.4 7.2 14.6 8.4"/><circle cx="12" cy="5.2" r="1.2"/>${dot(9, 13.2, 0.8)}${dot(12, 12.6, 0.8)}${dot(15, 13.2, 0.8)}${dot(10.4, 16.2, 0.8)}${dot(13.6, 16.2, 0.8)}${BASE}`],
+  // The lantern (B2 L1): the fired pot on a short stick post, a rush tie round the post.
+  'post-lantern': ['made', `${both('d="M9.6 4.8H14.4C16.2 5.8 16.8 7.6 16.4 9.2C16 10.8 14.4 11.6 12 11.6S8 10.8 7.6 9.2C7.2 7.6 7.8 5.8 9.6 4.8Z"')}
+    <circle cx="12" cy="3.2" r="1"/>${dot(10, 8.4, 0.7)}${dot(12, 8, 0.7)}${dot(14, 8.4, 0.7)}<path d="M12 11.6V21.2"/>
+    <path ${A2} d="M10.6 14.6H13.4V16.8H10.6Z"/><path d="M10.6 14.6H13.4M10.6 16.8H13.4"/><path d="M8.4 21.2H15.6"/>`],
 };
 
 /**
@@ -50,5 +57,6 @@ export const CAMP_ROWS = [
   ['camp-store', 'camp-store', 'Camp store', 'T2', 2], ['camp-store-grown', 'camp-store-grown', 'Camp store, grown', 'T2', 2],
   ['gathering-knife', 'gathering-knife', 'Gathering knife', 'T2', 2], ['seed-scoop', 'seed-scoop', 'Seed scoop', 'T2', 2], ['tea-caddy', 'tea-caddy', 'Tea caddy', 'T2', 2],
   ['hen-perch', 'hen-perch', "The hen's perch", 'T3', 3], ['nest-box', 'nest-box', 'Nest box', 'T3', 3],
+  ['lantern-pot', 'lantern-pot', 'Lantern pot', 'T3', 3], ['post-lantern', 'post-lantern', 'Lantern on a post', 'T3', 3],
   ['walking-stick', 'walking-stick', 'Hazel walking stick', 'T4', 4], ['pressing-frame', 'pressing-frame', 'Pressing frame', 'T4', 4],
 ];
