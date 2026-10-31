@@ -1012,6 +1012,12 @@ export async function startApp(canvas, hooks = {}) {
     pack.add('worms', fishingRecipe.test.worms);
     pack.add('bigworms', fishingRecipe.test.bigworms);
     updateStore('cook', (c) => ({ ...(c ?? {}), tools: [...new Set([...(c?.tools ?? []), 'line'])] }));
+    // `?fishing=chart:N`: N of the island's fish sketched, and the Keeper book open on the chart.
+    const chartN = /^chart:(\d+)$/.exec(fishingTest);
+    if (chartN) {
+      fishing.sketchTest(Number(chartN[1]));
+      setTimeout(() => dispatch(/** @type {any} */ ({ type: 'ui.keeper', open: true, tab: 'chart' })), 2500);
+    }
   }
   // `?sketch` (a test link, unsaved): a full pouch of charcoal sticks in the pack.
   if (params.has('sketch') && !back) pack.add('charcoal-sticks', 3);

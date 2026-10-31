@@ -28,7 +28,7 @@ export function addKeeperTests(test, assert, eq) {
   const threadsP = json('world/threads'), hintsP = json('world/morning-hints'), wordsP = json('world/journal');
 
   test(G, 'the moved views open the Keeper book on their tab; the journal keeps its own five', () => {
-    eq(js(KEEPER_TABS), js(['kit', 'threads', 'trails', 'shelf', 'camp']), 'five tabs, Kit first');
+    eq(js(KEEPER_TABS), js(['kit', 'threads', 'trails', 'shelf', 'camp', 'chart']), 'five tabs, Kit first, and Chart once the line is made (F17)');
     eq(js(keeperOfJournal({ type: 'ui.journal', open: true, view: 'shelf', page: null })), js({ type: 'ui.keeper', tab: 'shelf', open: true, page: null }), 'the Shelf');
     eq(js(keeperOfJournal({ type: 'ui.journal', open: true, view: 'trails', trail: 'beach' })), js({ type: 'ui.keeper', tab: 'trails', open: true, page: null, trail: 'beach' }), 'a trail, by name');
     eq(keeperOfJournal({ type: 'ui.journal', view: 'herbarium' })?.page, 'herbarium', 'the herbarium under Trails');
@@ -139,7 +139,7 @@ export function addKeeperTests(test, assert, eq) {
       }
       for (const e of th.end ?? []) assert(Array.isArray(T.tests[e]), `${th.id}: end test ${e} is in tests`);
     }
-    eq([...ids].join(), 'stone,cairns,boat,keeper', 'the first four threads');
+    eq([...ids].join(), 'stone,cairns,boat,keeper,angler', 'the first four threads, then the angler chart (F17)');
     assert(ICON_NAMES.includes('keeper') && ICON_NAMES.includes('threads'), 'the book and its Threads tab have drawn icons');
   });
 

@@ -84,6 +84,18 @@
     "rareTypes": { "ghost": { "water": "open" }, "lion": { "water": "reef" }, "stone": { "water": "reef" }, "angler": { "water": "deep" } }
   },
   "sketch": { "finerLength": 1.15 },
+  "chart": {
+    "title": "The angler's chart",
+    "aria": "The angler's chart: a hand-drawn sea chart of the island's waters that inks in as fish are sketched",
+    "most": "Most here take {bait}.",
+    "either": "These take either worm.",
+    "more": "More bite at {when}.",
+    "takes": "Takes {bait}.",
+    "notes": "Notes in the margin",
+    "notesNone": "Something is still to be written here.",
+    "tap": "Tap a fish or a numbered mark to read it.",
+    "glimpsed": "Something seen through the mesh of a net, not yet sketched."
+  },
   "pages": {
     "cardLine": "A fish of the {water}, sketched and let go.",
     "place": "In the {water}; takes {bait}",

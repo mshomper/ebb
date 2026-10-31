@@ -19,10 +19,12 @@ import { dispatch } from '../../input/actions.js';
 import { WATER_CLASS } from '../water/summary.js';
 import { waterCellOf } from '../water/grid.js';
 import { groundOfCell } from '../water/shore.js';
+import { WORLD_ORIGIN, WORLD_CELLS, CELL } from '../terrain/grid.js';
 import { packMesh } from '../creatures/bodies.js';
 import { createCreaturePass } from '../../render/passes/creatures.js';
 import { createPropsPass } from '../../render/passes/props.js';
-import { cleanFishing, castOnce, sketch, finer, glimpse } from './model.js';
+import { cleanFishing, castOnce, sketch, finer, glimpse, sketchedOrInked } from './model.js';
+import { chartInk, chartFlags } from './chart.js';
 import { classifyWater, sampleWater } from './waters.js';
 import { biteOf, missWaitS } from './bite.js';
 import { allFish } from './roster.js';
@@ -30,6 +32,7 @@ import { rodMesh, floatHalf } from './rod-mesh.js';
 import { fishNumbers, fishMeshOf, fieldAsync, hasField } from '../nets/living/fish2.js';
 import { fishSkin, swimBones } from '../nets/living/fish-mesh.js';
 import { run } from '../../core/workers.js';
+import { hash32 } from '../../core/rng.js';
 
 /** How long the float flies, s. */
 const FLY_S = 0.75;
@@ -72,9 +75,22 @@ export function createFishing(o) {
     update('fishing', (s) => glimpse(cleanFishing(s), p.kind, p.hour));
     dispatch(/** @type {any} */ ({ type: 'journal.flag', flag: `glimpse:${p.kind}` }));
   });
+  const ordinary = fish.filter((f) => f.kind !== 'rare');
+  /** The species that count as sketched (a net fish page inked from a net counts). */
+  const sketchedNow = () => sketchedOrInked(state(), ordinary, (page) => !!get('journal')?.species?.[page]?.ever);
+  /** The chart's thread flags (threads.json "angler"): each set once, as the chart fills. */
+  function syncFlags() {
+    const flags = get('journal')?.flags;
+    if (!flags) return;
+    const rareSketched = fish.some((f) => f.kind === 'rare' && state().sketched[f.id]);
+    for (const fl of chartFlags(chartInk(ordinary, sketchedNow(), FR.rare.length), rareSketched)) {
+      if (!flags.includes(fl)) dispatch(/** @type {any} */ ({ type: 'journal.flag', flag: fl }));
+    }
+  }
+  let flagT = 0;
   const say = (/** @type {string} */ text, showS = 4) => { if (text) emitDeferred('island:notice', { text, showS }); };
   const sound = (/** @type {string} */ name, /** @type {number} */ seed) => emitDeferred('keepsake:sound', { name, seed });
-  const hasLine = () => !!(o.test !== null && o.test !== undefined) || (get('cook')?.tools ?? []).includes('line');
+  const hasLine = () => (o.test !== null && o.test !== undefined) || (get('cook')?.tools ?? []).includes('line');
 
   /** Is a point open sea, and how deep is it now? @param {number} x @param {number} z */
   function seaAt(x, z) {
@@ -91,10 +107,11 @@ export function createFishing(o) {
   }
 
   /** The water a cast at a point lands in. @param {number} x @param {number} z */
-  function waterAt(x, z) {
+  /** The island's readers for the waters: its ground, its tide band, its shore zones, its rock. */
+  function readers() {
     const zones = o.shore();
     const material = get('terrainLive')?.mirror?.material;
-    const read = {
+    return {
       ground: (/** @type {number} */ px, /** @type {number} */ pz) => o.terrain.sampleHeight(px, pz),
       inBand: (/** @type {number} */ px, /** @type {number} */ pz) => seaAt(px, pz).band,
       zoneAt: (/** @type {number} */ px, /** @type {number} */ pz) => {
@@ -111,7 +128,39 @@ export function createFishing(o) {
         return groundOfCell(material, waterCellOf(px), waterCellOf(pz)) === 2;
       },
     };
-    return classifyWater(sampleWater(x, z, read, FR.waters), FR.waters);
+  }
+  function waterAt(x, z) {
+    return classifyWater(sampleWater(x, z, readers(), FR.waters), FR.waters);
+  }
+
+  /**
+   * The island for the angler's chart (src/world/fishing/chart.js): its middle, a ring of shore
+   * points round it, each with the near water it faces (kelp over the kelp band, reef off rock, sand
+   * flats otherwise), and the way the sea floor falls to deep water soonest.
+   * @returns {{ coast: { x: number, z: number, water: string }[], center: number[], deepAngle: number }}
+   */
+  function chartIsland() {
+    const read = readers(), g = (/** @type {number} */ x, /** @type {number} */ z) => o.terrain.sampleHeight(x, z);
+    let sx = 0, sz = 0, c = 0;
+    for (let x = WORLD_ORIGIN; x < WORLD_ORIGIN + WORLD_CELLS * CELL; x += 2) for (let z = WORLD_ORIGIN; z < WORLD_ORIGIN + WORLD_CELLS * CELL; z += 2) if (g(x, z) > 0.05) { sx += x; sz += z; c++; }
+    const center = c ? [sx / c, sz / c] : [0, 0];
+    /** @type {{ x: number, z: number, water: string }[]} */ const coast = [];
+    let deepAngle = 0, bestD = Infinity, bestLow = Infinity;
+    for (let i = 0; i < 180; i++) {
+      const a = (i / 180) * Math.PI * 2, ux = Math.cos(a), uz = Math.sin(a);
+      let last = 0;
+      for (let r = 0; r < 95; r += 0.5) { if (g(center[0] + ux * r, center[1] + uz * r) >= 0) last = r; else if (r - last > 4) break; }
+      const at = (/** @type {number} */ r) => [center[0] + ux * r, center[1] + uz * r];
+      const kelp = [1, 2, 3].some((d) => { const p = at(last + d), zn = read.zoneAt(p[0], p[1]); return zn === 'kelp' || zn === 'wrack' || zn === 'channelled'; });
+      const rock = [-0.5, 0, 0.5, 1].filter((d) => { const p = at(last + d); return read.rockAt(p[0], p[1]) === true; }).length >= 2;
+      const p0 = at(last);
+      coast.push({ x: p0[0], z: p0[1], water: kelp ? 'kelp' : rock ? 'reef' : 'sand' });
+      let d = Infinity;
+      for (let r = last; r < last + 60; r += 1) { const p = at(r); if (g(p[0], p[1]) <= -FR.waters.deepM) { d = r - last; break; } }
+      const low = (() => { const p = at(last + 40); return g(p[0], p[1]); })();
+      if (d < bestD || (d === bestD && low < bestLow)) { bestD = d; bestLow = low; deepAngle = a; }
+    }
+    return { coast, center, deepAngle };
   }
 
   /** How far you can cast from a stand point. @param {number[]} S [x, z] @param {boolean} here standing there now */
@@ -262,6 +311,7 @@ export function createFishing(o) {
     tick(f) {
       const dt = f.realDt;
       clock += dt;
+      if ((flagT -= dt) <= 0) { flagT = 5; syncFlags(); }
       rings = rings.filter((g) => clock - g.t < RING_S);
       const me = o.walk.spot();
       if (cast && !me) reel(true);
@@ -340,6 +390,7 @@ export function createFishing(o) {
       if (first) {
         update('fishing', (s) => sketch(cleanFishing(s), f.id, { seed: n.seed, hour: o.nowH(), cm: Math.round(n.lengthM * 100), ...(n.morphId ? { morph: n.morphId } : {}) }));
         emitDeferred('fish:sketched', { id: f.id, page: f.page, kind: f.kind, water: f.water, first: true });
+        flagT = 0.5;
       }
       update('catch', () => ({ haul: { netId: 0, tideId: 0, living: [{ id: `line:${c.cast}`, n, first, finer: better }], keepsake: null, weed: n.seed }, hour: o.nowH(), water: c.water,
         released: [], kept: true, line: true, at: performance.now() }));
@@ -391,6 +442,25 @@ export function createFishing(o) {
         pts.push([rod.tip[0] + (fl[0] - rod.tip[0]) * t, rod.tip[1] + (fl[1] + 0.03 - rod.tip[1]) * t - sag * 4 * t * (1 - t), rod.tip[2] + (fl[2] - rod.tip[2]) * t]);
       }
       return { line: pts, rings: rings.map((g) => ({ ...g, k: (clock - g.t) / RING_S })) };
+    },
+
+    chartIsland,
+    /** The species sketched so far, for the chart (net fish pages inked from a net count). */
+    sketchedNow,
+    /**
+     * The ?fishing=chart:N link: the first n of the island's ordinary fish (in a seeded order)
+     * sketched, each from a fish of its own. @param {number} n
+     */
+    sketchTest(n) {
+      const order = ordinary.map((f, i) => ({ f, k: hash32(o.seed, 0xc4a, i) })).sort((a, b) => a.k - b.k).map((x) => x.f);
+      let s = cleanFishing(state());
+      order.slice(0, Math.max(0, Math.min(order.length, n))).forEach((f, i) => {
+        const nn = fishNumbers(f.id, f.ref, hash32(o.seed, 0x5e7, i), FR);
+        s = sketch(s, f.id, { seed: nn.seed, hour: i, cm: Math.round(nn.lengthM * 100) });
+        emitDeferred('fish:sketched', { id: f.id, page: f.page, kind: f.kind, water: f.water, first: true });
+      });
+      update('fishing', () => s);
+      flagT = 1;
     },
 
     /** The island's species (the journal, the chart, tests). */

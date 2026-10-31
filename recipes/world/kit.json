@@ -45,7 +45,7 @@
     "open": "Keeper",
     "close": "Close",
     "sections": "Keeper book sections",
-    "tabs": { "kit": "Kit", "threads": "Threads", "trails": "Trails", "shelf": "Shelf", "camp": "Camp" },
+    "tabs": { "kit": "Kit", "threads": "Threads", "trails": "Trails", "shelf": "Shelf", "camp": "Camp", "chart": "Chart" },
     "dragToTurn": "drag to turn",
     "slots": { "hat": "Hat", "lantern": "Lantern", "hand": "In hand", "coat": "Coat", "carrier": "Carrier" },
     "pouches": "Pouches",

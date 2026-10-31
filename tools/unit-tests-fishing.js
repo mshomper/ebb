@@ -4,7 +4,9 @@
 // generator, catch gen 2 (species and individuals rebuild from their seeds, the grown pattern, the
 // mesh, the swim), with gen 1 catches still rebuilding; the line (its make, its gorse thorns, the
 // belt), the five waters, the roster, the bite's odds (conditions raise them, never gate) and the
-// fishing save section; the journal's Fish pages and group, and the nets' fish as glimpses.
+// fishing save section; the journal's Fish pages and group, and the nets' fish as glimpses; the
+// angler's chart (everything placed with nothing overlapping on several island shapes, what inks
+// as fish are sketched, its thread).
 
 import { cleanPack } from '../src/world/pack/model.js';
 import { digFinds } from '../src/world/dig/finds.js';
@@ -23,11 +25,13 @@ import { speciesOf } from '../src/world/nets/living/fish2.js';
 import { livingList, DEFAULT_CHOICE } from '../src/world/journal/list.js';
 import { haulOf, comeBack } from '../src/world/nets/haul.js';
 import { findsFound } from '../src/world/expansion.js';
+import { chartLayout, chartInk, chartFlags } from '../src/world/fishing/chart.js';
 
 const G = 'fishing';
 const GEN = 'fishing: generator';
 const LINE = 'fishing: the line';
 const PAGES = 'fishing: pages and nets';
+const CHART = 'fishing: the chart';
 /** A quiet noon in summer at mid tide, no weather. */
 const NOON = { hourOfDay: 12, season: 'summer', rain: 0, mist: 0, cloud: 0, wind: 0.1, yRain: 0, yWind: 0, tideLevel: 0, tideAmp: 0.6, sign: null };
 /** @param {string} p */
@@ -316,5 +320,69 @@ export function addFishingTests(test, assert, eq) {
     assert(glimpses > 0 && small > 0, `both come up (${glimpses} glimpses, ${small} small lives)`);
     const back = comeBack([{ kind: 'wrasse', seed: 1, hour: 3, rarity: 'veryRare' }, { kind: 'shrimp', seed: 2, hour: 4, rarity: 'veryRare' }], NR, 0.6, 'summer');
     assert(!back.some((r) => r.kind === 'wrasse'), 'a fish never comes back as the same animal');
+  });
+
+  test(CHART, 'the chart places every fish, riddle mark, water name, the compass and the title, nothing touching anything or crossing a line, on several island shapes', async () => {
+    const FR = await load('world/fishing');
+    const fish = rosterOf(2026, FR), rare = rareRoster(FR).map((f) => ({ id: f.id, water: f.water, mark: FR.rare.find((/** @type {any} */ r) => r.id === f.id).mark }));
+    const wrap = (/** @type {number} */ a) => Math.atan2(Math.sin(a), Math.cos(a));
+    /** @type {Record<string, (a: number) => number>} */
+    const shapes = {
+      round: () => 40,
+      long: (a) => 40 / Math.sqrt((Math.cos(a) / 1.6) ** 2 + (Math.sin(a) / 0.6) ** 2),
+      bay: (a) => 38 - 22 * Math.exp(-((wrap(a - 1.6) / 0.35) ** 2)) + 6 * Math.sin(3 * a),
+      lumpy: (a) => 34 + 7 * Math.sin(2 * a + 1) + 4 * Math.sin(5 * a) + 2 * Math.sin(9 * a + 0.5),
+    };
+    let checked = 0;
+    for (const [name, R] of Object.entries(shapes)) {
+      for (const deep of [0.4, 2.3]) {
+        const coast = Array.from({ length: 180 }, (_, i) => { const a = (i / 180) * Math.PI * 2, r = R(a); return { x: Math.cos(a) * r, z: Math.sin(a) * r, water: a < 2 ? 'reef' : a < 4 ? 'sand' : 'kelp' }; });
+        const L = chartLayout({ coast, center: [0, 0], deepAngle: deep }, fish, rare, { waters: FR.words.waters, title: FR.chart.title, seed: 20261031 });
+        const at = `${name}, deep at ${deep}`;
+        eq(L.fishMarks.length, 22, `${at}: every fish placed`);
+        eq(L.rares.length, 12, `${at}: every riddle mark placed`);
+        eq(L.labels.length, 5, `${at}: every water named`);
+        assert(L.compass && L.title, `${at}: the compass and the title`);
+        const B = L.boxes;
+        for (let i = 0; i < B.length; i++) for (let j = i + 1; j < B.length; j++) {
+          const a = B[i], b = B[j];
+          assert(!(a.x0 < b.x1 && a.x1 > b.x0 && a.y0 < b.y1 && a.y1 > b.y0), `${at}: nothing touches anything else`);
+        }
+        for (const b of B) for (const Q of L.lines) for (const q of Q) assert(!(q[0] > b.x0 && q[0] < b.x1 && q[1] > b.y0 && q[1] < b.y1), `${at}: nothing crosses a line`);
+        for (const b of B) assert(b.x0 >= 52 && b.y0 >= 52 && b.x1 <= 948 && b.y1 <= 648, `${at}: everything inside the frame`);
+        checked++;
+      }
+    }
+    return `${checked} charts laid out`;
+  });
+
+  test(CHART, 'the chart inks as fish are sketched: the coast of a water at its first, its name when finished, a riddle about every second sketch, the title with the last; its thread flags follow', async () => {
+    const FR = await load('world/fishing');
+    const fish = rosterOf(5, FR);
+    const none = chartInk(fish, new Set(), 12);
+    assert(!none.coast('reef') && !none.full && none.riddles === 0, 'nothing sketched: all pencil');
+    eq(chartFlags(none, false).length, 0, 'no thread flags yet');
+    const reef = fish.filter((f) => f.water === 'reef');
+    const one = chartInk(fish, new Set([reef[0].id]), 12);
+    assert(one.coast('reef') && !one.contour('reef') && !one.finished('reef'), 'one reef fish: its coast inks, not yet its depth line or name');
+    const allReef = chartInk(fish, new Set(reef.map((f) => f.id)), 12);
+    assert(allReef.finished('reef') && !allReef.finished('sand'), 'every reef fish: the reef is finished');
+    eq(allReef.riddles, 2, 'five sketches: two riddles (one about every second sketch)');
+    const ids = fish.map((f) => f.id);
+    let last = 0;
+    for (let k = 1; k <= ids.length; k++) {
+      const ink = chartInk(fish, new Set(ids.slice(0, k)), 12);
+      assert(ink.riddles >= last && ink.riddles - last <= 1, 'riddles come one at a time');
+      last = ink.riddles;
+    }
+    eq(last, 12, 'all twelve with the last sketch');
+    const full = chartInk(fish, new Set(ids), 12);
+    assert(full.full && full.compass(3), 'the chart full: frame, title, the compass whole');
+    const flags = chartFlags(full, true);
+    for (const f of ['fishing:sketch', 'fishing:riddle:12', 'fishing:water:deep', 'fishing:rare', 'fishing:chart:full']) assert(flags.includes(f), `flag ${f}`);
+    const T = await load('world/threads');
+    const thread = T.threads.find((/** @type {any} */ t) => t.id === 'angler');
+    assert(thread && thread.end.includes('chartFull'), 'the angler\'s chart has its thread, ending with the chart full');
+    for (const l of thread.lines) assert(T.tests[l.test], `its line ${l.id} has a test`);
   });
 }

@@ -6,7 +6,8 @@
 // journal-shelf.js, journal-camp.js, moved here from the journal). Opened by I or the Keeper button at
 // the bottom right, beside the time button; Esc or the close button shuts it. It remembers the last
 // tab (on this device, in settings). On a wide window Trails widens the book so the four trails sit
-// two by two, or side by side.
+// two by two, or side by side. Chart, the angler's chart (docs/future/17, src/ui/keeper-chart.js),
+// joins the row once the line is made, so the row stays five tabs until then.
 // Reads `keeperUi`, `journal`, `threads`, the camp and shelf slices; answers `ui.keeper`
 // (src/world/keeper/route.js) and the older `ui.walkerPage`. One book open at a time: opening it
 // shuts the journal and the sketchbook, and they (or a station) shut it. Styles: walker-page.css,
@@ -22,11 +23,12 @@ import { herbariumView } from './journal-herbarium.js';
 import { keeperView, keeperShown, keeperUnread } from './journal-keeper.js';
 import { campView } from './journal-camp.js';
 import { threadsHtml, threadHtml } from './keeper-threads.js';
+import { createChartView } from './keeper-chart.js';
 import { KEEPER_TABS, keeperUi0, nextKeeperUi } from '../world/keeper/route.js';
 import { threadsUnread, emptyThreads } from '../world/threads/model.js';
 
 /** Each tab's drawn icon. @type {Record<string, string>} */
-const TAB_ICON = { kit: 'walker', threads: 'threads', trails: 'trails', shelf: 'shelf', camp: 'pitch' };
+const TAB_ICON = { kit: 'walker', threads: 'threads', trails: 'trails', shelf: 'shelf', camp: 'pitch', chart: 'chart' };
 /** Under this window width the book covers the island, so Show me shuts it. */
 const NARROW = '(max-width: 699px)';
 /** From this width Trails shows its four trails two by two in a wider book; from WIDE4, side by side. */
@@ -40,11 +42,11 @@ const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<
 /**
  * Mount the Keeper button and book.
  * @param {HTMLElement} parent @param {HTMLElement} buttonParent the HUD layer
- * @param {{ live: any, words: any, W: any, T: any, H: any, kit?: { recipe: any, pack: any, portrait?: (host: HTMLElement) => { start: () => void, stop: () => void } } | null }} o
+ * @param {{ live: any, words: any, W: any, T: any, H: any, kit?: { recipe: any, pack: any, portrait?: (host: HTMLElement) => { start: () => void, stop: () => void } } | null, fishing?: any }} o
  *   live: the live journal with the trails' recipes, shelf, keeper pages and cook recipe (as main.js
  *   hands the journal); words: recipes/world/journal.json; W: the book's words (recipes/world/kit.json
  *   words); T: recipes/world/threads.json; H: recipes/world/morning-hints.json; kit: the Kit page's
- *   recipe, pack and portrait, or none (the Kit tab then stays hidden)
+ *   recipe, pack and portrait, or none (the Kit tab then stays hidden); fishing: the live fishing with its recipe (the Chart tab), or none
  * @returns {() => void} dispose
  */
 export function mountKeeperBook(parent, buttonParent, o) {
@@ -53,7 +55,10 @@ export function mountKeeperBook(parent, buttonParent, o) {
   const L = /** @type {any} */ (live);
   const shelf = L.shelf ? createShelfView({ ...L.shelf, words }) : null;
   const keeper = L.keeper ?? null, cookR = L.cook ?? null;
-  const tabsShown = KEEPER_TABS.filter((t) => t !== 'kit' || !!o.kit);
+  const chart = o.fishing ? createChartView({ fishing: o.fishing, recipe: o.fishing.recipe }) : null;
+  const tabsShown = KEEPER_TABS.filter((t) => (t !== 'kit' || !!o.kit) && (t !== 'chart' || !!chart));
+  /** Is a tab there now (Chart waits for the line)? @param {string} t */
+  const tabOpen = (t) => tabsShown.includes(/** @type {any} */ (t)) && (t !== 'chart' || !!chart?.shown());
   const kindOf = (/** @type {string} */ sp) => words?.species?.[sp]?.kind;
   const label = (/** @type {string} */ t) => W.tabs?.[t] ?? t;
 
@@ -103,6 +108,7 @@ export function mountKeeperBook(parent, buttonParent, o) {
     }
     if (u.tab === 'shelf') return shelf ? shelf.html() : '';
     if (u.tab === 'camp') return cookR ? campView(cookR, get('camp'), get('cook'), get('campPad'), words, get('campBed'), false) : '';
+    if (u.tab === 'chart') return chart ? chart.html(get('fishing')) : '';
     // Threads: a keeper page (the old keeper's thread opens them), a thread, or the tab's own page.
     if (u.page?.startsWith('keeper:') && keeper) return keeperView(keeper, flags, u.page.slice(7) || null, NEW);
     const input = { T, H, s: { journal: get('journal'), cook: get('cook'), kindOf }, st: get('threads') ?? emptyThreads(), words, newDot: NEW,
@@ -123,6 +129,8 @@ export function mountKeeperBook(parent, buttonParent, o) {
     const threadsNew = keeperUnread(keeper, flags) || threadsUnread(get('threads'));
     dot(openBtn, threadsNew);
     for (const t of tabs) {
+      t.hidden = !tabOpen(/** @type {string} */ (t.dataset.tab));
+      t.parentElement?.classList.toggle('has-chart', !!chart?.shown());
       dot(t, t.dataset.tab === 'threads' && threadsNew);
       t.setAttribute('aria-pressed', String(t.dataset.tab === u.tab));
     }
@@ -169,6 +177,7 @@ export function mountKeeperBook(parent, buttonParent, o) {
   function onClick(e) {
     const t = /** @type {HTMLElement} */ (e.target);
     if (ui().tab === 'shelf' && shelf?.click(t, render)) return;
+    if (ui().tab === 'chart' && chart?.click(t)) { body.dataset.html = ''; render(); return; }
     const b = /** @type {HTMLElement | null} */ (t.closest('button'));
     if (!b) return;
     const d = b.dataset;
@@ -207,7 +216,7 @@ export function mountKeeperBook(parent, buttonParent, o) {
     const u = ui();
     // The Walker page's own action, from before the book: open or toggle, as it was.
     const next = nextKeeperUi(u, a.type === 'ui.walkerPage' ? { open: a.open, toggle: a.toggle } : a);
-    if (!tabsShown.includes(next.tab)) next.tab = tabsShown[0];
+    if (!tabOpen(next.tab)) next.tab = tabsShown[0];
     // One book at a time: opening this shuts the journal and the sketchbook.
     if (next.open && get('journalUi')?.open) dispatch({ type: 'ui.journal', open: false });
     if (next.open && get('sketchbookUi')?.open) update('sketchbookUi', (s) => ({ ...s, open: false }));
@@ -235,7 +244,7 @@ export function mountKeeperBook(parent, buttonParent, o) {
   const when = (on) => () => { if (on.includes(ui().tab)) render(); };
   const unsubs = [subscribe('keeperUi', render), subscribe('journal', render), subscribe('threads', render),
     subscribe('keepsakes', when(['shelf'])), subscribe('shelfPending', when(['shelf'])), subscribe('shelfUi', when(['shelf'])),
-    subscribe('unlocks', when(['trails'])), subscribe('cook', when(['camp', 'threads'])), subscribe('camp', when(['camp'])), subscribe('campBed', when(['camp'])),
+    subscribe('unlocks', when(['trails'])), subscribe('cook', when(['camp', 'threads', 'chart', 'kit'])), subscribe('fishing', when(['chart'])), subscribe('camp', when(['camp'])), subscribe('campBed', when(['camp'])),
     subscribe('journalUi', closeFor), subscribe('sketchbookUi', closeFor), subscribe('stationView', (x) => { if (x) shut(); })];
   render();
   buttonParent.appendChild(btnRoot);

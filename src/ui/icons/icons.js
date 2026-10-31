@@ -578,6 +578,47 @@ const ICONS = {
     <circle cx="18.2" cy="16.4" r="1.7"/>
     <path d="M13.6 19.4C15.4 18.4 19.6 18.4 21.4 19.4"/>
   `,
+  // The angler's chart (F17): the Keeper book's Chart tab, a folded sea chart with a coast and a compass point.
+  chart: `
+    <path d="M3 6.5L8.5 4.5L15.5 6.5L21 4.5V17.5L15.5 19.5L8.5 17.5L3 19.5Z"/>
+    <path d="M8.5 4.5V17.5M15.5 6.5V19.5"/>
+    <path ${ACCENT} d="M5.5 13C6.5 11 9 10.6 10 12C10.8 13.2 9.4 15 7.4 14.8C6.2 14.7 5.2 14 5.5 13Z"/>
+    <path d="M5.5 13C6.5 11 9 10.6 10 12C10.8 13.2 9.4 15 7.4 14.8C6.2 14.7 5.2 14 5.5 13Z"/>
+    <path d="M18.3 8.2V12.6M16.6 10.4H20"/>
+  `,
+  // The chart's riddle marks (F17): the conditions a rare fish comes in, beside each riddle.
+  'cond-night': `
+    <path d="M15.5 4.5a7.5 7.5 0 1 0 4 12.6A6.2 6.2 0 0 1 15.5 4.5z"/>
+  `,
+  'cond-dawn': `
+    <path d="M3 17h18M6.5 17a5.5 5.5 0 0 1 11 0M12 6.5v2.5M5.2 9.6l1.7 1.7M18.8 9.6l-1.7 1.7"/>
+  `,
+  'cond-day': `
+    <circle cx="12" cy="12" r="4"/>
+    <path d="M12 3v2.2M12 18.8V21M3 12h2.2M18.8 12H21M5.6 5.6l1.6 1.6M16.8 16.8l1.6 1.6M5.6 18.4l1.6-1.6M16.8 7.2l1.6-1.6"/>
+  `,
+  'cond-rain': `
+    <path d="M7 14.5a4 4 0 0 1 .6-8 5 5 0 0 1 9.5 1.4 3.3 3.3 0 0 1-.6 6.6z"/>
+    <path d="M8.5 17.5l-1 2.5M12.5 17.5l-1 2.5M16.5 17.5l-1 2.5"/>
+  `,
+  'cond-mist': `
+    <path d="M3 8c3-2 6 2 9 0s6 2 9 0M3 12.5c3-2 6 2 9 0s6 2 9 0M3 17c3-2 6 2 9 0s6 2 9 0"/>
+  `,
+  'cond-storm': `
+    <path d="M7 13.5a4 4 0 0 1 .6-8 5 5 0 0 1 9.5 1.4 3.3 3.3 0 0 1-.6 6.6"/>
+    <path d="M12.5 12l-2.5 4.5h3.5l-2.5 4.5"/>
+  `,
+  'cond-low': `
+    <path d="M3 9c3-2 6 2 9 0s6 2 9 0"/>
+    <path d="M12 12v8M8.5 16.5L12 20l3.5-3.5"/>
+  `,
+  'cond-high': `
+    <path d="M3 17c3-2 6 2 9 0s6 2 9 0"/>
+    <path d="M12 13V5M8.5 8.5L12 5l3.5 3.5"/>
+  `,
+  'cond-sparkle': `
+    <path d="M12 3c.8 4.6 2.4 6.2 7 7-4.6.8-6.2 2.4-7 7-.8-4.6-2.4-6.2-7-7 4.6-.8 6.2-2.4 7-7z"/>
+  `,
   net: `
     <path d="M5 4V18.5M19 4V18.5"/>
     <path d="M5 6.5C9.5 8.5 14.5 8.5 19 6.5"/>

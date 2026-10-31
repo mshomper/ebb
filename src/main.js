@@ -188,6 +188,7 @@ startApp(canvas, { onDeviceLost: (rebuilding) => showRebuildingNote(rebuilding),
       {
         const app = /** @type {any} */ (r), kitR = await loadRecipe('world/kit');
         mountKeeperBook(document.body, hud.layer, { live: journalLive, words, W: kitR.words, T: threadsR, H: hintsR,
+          fishing: /** @type {any} */ (r).fishing ?? null,
           kit: packApp && app.kit ? { recipe: kitR, pack: packApp,
             portrait: (host) => createWalkerPortrait(host, { device: app.device, figure: app.figureRecipe, R: kitR, pack: packApp }) } : null });
       }

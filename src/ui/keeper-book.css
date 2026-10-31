@@ -10,12 +10,13 @@
 .ebb-kb.is-wide { width: min(1000px, calc(100vw - 32px)); }
 .ebb-kb.is-wide.is-four { width: min(1200px, calc(100vw - 32px)); }
 
-/* Five tabs in one row; three and two below 640 px; two to a row below 400 px (an odd last one
-   takes the row). */
+/* Five tabs in one row (six once Chart joins, F17); three and two below 640 px (three and three
+   with Chart); two to a row below 400 px (an odd last one takes the row). */
 .ebb-kb__nav {
   flex: none;
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
   gap: 6px;
   margin: 0 0 12px;
   padding-bottom: 12px;
@@ -39,22 +40,25 @@
   font-weight: 700;
   font-size: calc(16px * var(--text-scale, 1));
 }
+.ebb-kb__tab[hidden] { display: none; }
 .ebb-kb__tab:hover { background: rgba(30, 38, 36, 0.05); }
 .ebb-kb__tab[aria-pressed='true'] { background: var(--jr-moss, #5F7F5B); border-color: var(--jr-moss, #5F7F5B); color: var(--jr-paper, #F4EEE4); }
 .ebb-kb__tab .icon { width: 24px; height: 24px; display: block; flex: none; }
 .ebb-kb__tab span { min-width: 0; overflow-wrap: anywhere; }
 .ebb-kb__tab .ebb-new { position: absolute; top: 5px; right: 5px; }
 @media (max-width: 640px) {
-  .ebb-kb__nav { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+  .ebb-kb__nav { grid-auto-flow: row; grid-template-columns: repeat(6, minmax(0, 1fr)); }
   .ebb-kb__tab { grid-column: span 2; }
   .ebb-kb__tab:nth-child(n + 4) { grid-column: span 3; }
+  .ebb-kb__nav.has-chart .ebb-kb__tab:nth-child(n + 4) { grid-column: span 2; }
 }
 @media (max-width: 400px) {
-  .ebb-kb__nav { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .ebb-kb__nav { grid-auto-flow: row; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .ebb-kb__nav.has-chart .ebb-kb__tab:nth-child(n + 4) { grid-column: auto; }
   .ebb-kb__tab, .ebb-kb__tab:nth-child(n + 4) { grid-column: auto; justify-content: flex-start; }
   .ebb-kb__tab:last-child:nth-child(odd) { grid-column: 1 / -1; }
 }
-:root.ebb-text-large .ebb-kb__nav { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+:root.ebb-text-large .ebb-kb__nav { grid-auto-flow: row; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
 :root.ebb-text-large .ebb-kb__tab, :root.ebb-text-large .ebb-kb__tab:nth-child(n + 4) { grid-column: auto; }
 
 .ebb-kb__page {
@@ -140,3 +144,51 @@
 
 /* The shelf and the camp page keep the size they had in the journal's narrower panel. */
 .ebb-kb__page > .ebb-shelf { max-width: 600px; }
+
+/* The angler's chart (F17, src/ui/keeper-chart.js): pencil first, ink as fish are sketched. */
+.ebb-chart { --ch-sepia: #3A2A1C; --ch-pencil: #8A8478; --ch-sea: #AFC6CF; --ch-land: #EDE2CB; }
+.ebb-chart__svg { width: 100%; height: auto; display: block; border-radius: 10px; background: var(--jr-paper, #F4EEE4); }
+.ebb-chart__land { fill: var(--ch-land); }
+.ebb-chart__wash { fill: var(--ch-sea); transition: opacity 1.2s; }
+.ebb-chart__pen { fill: none; stroke: var(--ch-pencil); stroke-width: 1.4; opacity: 0.4; stroke-linecap: round; }
+.ebb-chart__ink { fill: none; stroke: var(--ch-sepia); stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; animation: ebb-chart-ink 0.8s ease both; }
+.ebb-chart__pen.is-thin, .ebb-chart__ink.is-thin { stroke-width: 1.1; }
+.ebb-chart__pen.is-dash, .ebb-chart__ink.is-dash { stroke-dasharray: 6 6; }
+.ebb-chart__pen.is-stip, .ebb-chart__ink.is-stip { stroke-width: 3.2; }
+.ebb-chart__ink.is-coast { stroke-width: 2.6; }
+.ebb-chart__ink.is-solid { fill: var(--ch-sepia); }
+.ebb-chart__ink.is-hollow { fill: var(--jr-paper, #F4EEE4); }
+.ebb-chart__label { font-family: Fraunces, Georgia, serif; font-style: italic; font-weight: 600; fill: var(--ch-sepia); }
+.ebb-chart__label.is-pencil { fill: var(--ch-pencil); opacity: 0.5; }
+.ebb-chart__title { font-family: Fraunces, Georgia, serif; font-style: italic; font-weight: 700; font-size: 46px; fill: var(--ch-sepia); }
+.ebb-chart__title.is-pencil { fill: var(--ch-pencil); opacity: 0.45; }
+.ebb-chart__sound { font-family: Fraunces, Georgia, serif; font-style: italic; font-size: 20px; fill: var(--ch-sepia); text-anchor: middle; }
+.ebb-chart__fish, .ebb-chart__rare { cursor: pointer; }
+.ebb-chart__fish.is-glimpse { opacity: 0.32; filter: grayscale(1); }
+.ebb-chart__fish.is-picked image { filter: drop-shadow(0 0 3px #C9A86A); }
+.ebb-chart__hit { fill: transparent; }
+.ebb-chart__ring { fill: none; stroke: var(--ch-sepia); stroke-width: 1.2; stroke-dasharray: 3 4; }
+.ebb-chart__dot { fill: var(--jr-paper, #F4EEE4); stroke: var(--ch-sepia); stroke-width: 2; }
+.ebb-chart__rare.is-picked .ebb-chart__dot { fill: #E8D4A0; }
+.ebb-chart__num { font-family: Nunito, sans-serif; font-weight: 800; font-size: 17px; fill: var(--ch-sepia); }
+@keyframes ebb-chart-ink { from { opacity: 0; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .ebb-chart__ink { animation: none; } }
+.ebb-chart__cap { min-height: 26px; margin: 8px 4px 0; font-size: calc(16px * var(--text-scale, 1)); color: var(--jr-soft, #4A5551); }
+.ebb-chart__cap i { font-family: Fraunces, Georgia, serif; font-size: calc(17px * var(--text-scale, 1)); color: var(--jr-ink, #1E2624); }
+.ebb-chart__legend { list-style: none; margin: 8px 0 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 2px 18px; }
+.ebb-chart__legend li { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 10px; align-items: center; padding: 5px 0; border-bottom: 1px solid var(--jr-rule, #DCCFBB); font-size: calc(15px * var(--text-scale, 1)); }
+.ebb-chart__legend b { color: var(--ch-pencil); font-weight: 800; }
+.ebb-chart__legend li.is-on b { color: var(--jr-moss, #5F7F5B); }
+.ebb-chart__note { font-family: Fraunces, Georgia, serif; font-style: italic; font-size: calc(16px * var(--text-scale, 1)); }
+.ebb-chart__blank { display: block; height: 0; border-top: 2px dashed var(--jr-rule, #DCCFBB); }
+.ebb-chart__notes h3 { margin: 16px 0 6px; font-family: Fraunces, Georgia, serif; font-style: italic; font-weight: 600; font-size: calc(22px * var(--text-scale, 1)); }
+.ebb-chart__riddles { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 2px 18px; }
+.ebb-chart__riddles li { display: grid; grid-template-columns: 30px minmax(0, 1fr) auto; align-items: center; gap: 10px; padding: 8px 6px; border-bottom: 1px solid var(--jr-rule, #DCCFBB); border-radius: 6px; }
+.ebb-chart__riddles li.is-on { cursor: pointer; }
+.ebb-chart__riddles li.is-picked { background: #EAE0CD; }
+.ebb-chart__n { width: 28px; height: 28px; border-radius: 50%; border: 1.5px solid var(--ch-pencil); color: var(--ch-pencil); display: flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 800; }
+.ebb-chart__riddles li.is-on .ebb-chart__n { border-color: var(--jr-ink, #1E2624); color: var(--jr-ink, #1E2624); }
+.ebb-chart__riddles li .ebb-chart__blank { grid-column: 2 / -1; }
+.ebb-chart__riddle { font-family: Fraunces, Georgia, serif; font-style: italic; font-size: calc(17px * var(--text-scale, 1)); line-height: 1.35; }
+.ebb-chart__conds { display: flex; gap: 4px; color: var(--jr-soft, #4A5551); }
+.ebb-chart__cond .icon { width: 22px; height: 22px; display: block; }
