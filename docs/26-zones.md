@@ -25,9 +25,13 @@ flowchart LR
   `recipes/world/zones.json`. A plain dark veil over the view does the fading; the HUD stays.
 - **The registry** (`src/world/zones/live.js`): a zone registers `enter` and `leave` (it moves the
   walker in and out), and what it brings: its `light` each frame, its `sound` bed, its `cardAt`, where
-  a click meets its floor (`groundAt`), and how far back the view may sit (`viewRoom`). The store
-  slice `zone` holds the zone you are in (null on the island). Events: `zone:entered`, `zone:left`.
-- **The walker** (`src/world/walk/index.js` `enterZone`, `leaveZone`): a zone's ground and water
+  a click meets its floor (`groundAt`), and how far back the view may sit (`viewRoom`); `rayCard`
+  picks out a thing along a tap's ray before the floor (a rope, a pan leaning on a stone). A tap and
+  a hover (the pointer's rest, or the centre dot with the mouse captured) both ask `zoneCardAt` in
+  app.js, so what the hand names is what a click opens. The store slice `zone` holds the zone you are
+  in (null on the island). Events: `zone:entered`, `zone:left`.
+- **The walker** (`src/world/walk/index.js` `enterZone`, `leaveZone`): going in, the view turns at
+  once (while the screen is dark) to look the way you face, or the zone's `viewYaw`. A zone's ground and water
   become the walk's, on a walk grid over the zone's bounds, with none of the island's solids. While
   in one, you are not on the island: presence, the finds and the here-bar feel nobody, no prints are
   left, and `spot()` keeps the island spot you went down from.

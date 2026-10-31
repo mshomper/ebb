@@ -401,6 +401,8 @@ export function createOrbitCamera(r) {
       cur.distance = goal.distance = Math.max(p.distance, 0.05);
       fitted = true;
     },
+    /** Turn the view at once to look from this yaw (no glide): going into a zone, while the screen is dark. @param {number} yaw */
+    setYaw(yaw) { cur.yaw = goal.yaw = yaw; },
     /** @param {(x: number, z: number) => number} fn */
     setGroundProbe(fn) { groundProbe = fn; },
     /** How far back the view may sit this frame (m; Infinity on the island): a zone's walls. @param {number} m */
