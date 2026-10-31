@@ -50,6 +50,7 @@ export const PARALLEL = {
   assets: () => import('./unit-tests-assets.js').then((m) => m.addAssetTests),
   campLock: () => import('./unit-tests-camp-lock.js').then((m) => m.addCampLockTests),
   campGround: () => import('./unit-tests-camp-ground.js').then((m) => m.addCampGroundTests),
+  campLayout: () => import('./unit-tests-camp-layout.js').then((m) => m.addCampLayoutTests),
   campPieces: () => import('./unit-tests-camp-pieces.js').then((m) => m.addCampPieceTests),
   shoreSand: () => import('./unit-tests-shore-sand.js').then((m) => m.addShoreSandTests),
   campEdge: () => import('./unit-tests-camp-edge.js').then((m) => m.addCampEdgeTests),

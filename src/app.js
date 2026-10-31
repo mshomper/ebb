@@ -74,6 +74,7 @@ import { createLift } from './world/pieces/lift.js';
 import { createUnderLogLive } from './world/finds/under-log-live.js';
 import { createSpring } from './world/creatures/spring-live.js';
 import { createHen } from './world/hen/index.js';
+import { scrubHome } from './world/hen/life.js';
 import { takeFeather, featherLying, nameHen } from './world/hen/trust.js';
 import { featherMesh } from './world/hen/feather.js';
 import { perchMesh } from './world/hen/perch.js';
@@ -800,7 +801,9 @@ export async function startApp(canvas, hooks = {}) {
   const camp = createCamp({ recipe: campRecipe, seed, walk, terrain, water, clock, orbit: skyRecipe.orbit, camera, world, piles,
     // The camp sets the small lights each frame; the passing boat's lantern joins them (docs/future/14).
     seasons: seasonsRecipe, lighting: { setPoints: (/** @type {any[]} */ l) => lighting.setPoints([...l, ...(passingBoatRef?.lights() ?? [])]) }, pack, shadowBias: shadowPass.bias, low: tier === 'low', tier, poses: (await loadRecipe('world/figure')).poses,
-    beat: () => intro.live?.intro.current?.id ?? null, cook: await loadRecipe('world/cook'), sowing: sowingRecipe });
+    beat: () => intro.live?.intro.current?.id ?? null, cook: await loadRecipe('world/cook'), sowing: sowingRecipe,
+    // The nest box goes on the camp's rim on the side of the hen's home bushes (docs/future/15 slice 4).
+    rimToward: (/** @type {string} */ slot) => (slot === 'nest' && speciesRecipes.hen?.home ? scrubHome(world.state?.growth?.plants ?? [], speciesRecipes.hen.home) : null) });
   sim.addSystem(camp);
   ringPlace = camp.ringPlace;
   // The hen's tail feather (docs/future/15 slice 2b): drawn with the camp's models where it lies,

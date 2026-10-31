@@ -999,7 +999,18 @@ button.ebb-trail__row:hover b { text-decoration: underline; text-decoration-colo
 /* The camp page (src/ui/journal-camp.js; S1): the camp from above, then the firsts in the walker's
    hand, each with its parts drawn small beside it. */
 .ebb-camppage__h { margin: 14px 0 6px; font-size: var(--text-small); font-weight: 800; color: var(--jr-soft); }
-.ebb-camppage__sketch { display: block; width: min(100%, 220px); height: auto; margin: 0 auto; }
+.ebb-camppage__map { position: relative; width: min(100%, 220px); margin: 0 auto; }
+.ebb-camppage__sketch { display: block; width: 100%; height: auto; }
+/* Hovering a piece (or tabbing to it) names it: the spot sits over the piece, the label above it. */
+.ebb-camppage__spot { position: absolute; border-radius: 6px; cursor: default; outline: none; }
+.ebb-camppage__spot:hover, .ebb-camppage__spot:focus-visible { box-shadow: 0 0 0 2px var(--jr-moss); z-index: 2; }
+.ebb-camppage__tip { position: absolute; left: 50%; bottom: calc(100% + 6px); transform: translateX(-50%); white-space: nowrap; pointer-events: none;
+  font-size: calc(15px * var(--text-scale, 1)); font-weight: 700; color: var(--jr-ink); background: var(--jr-paper); border: 1px solid var(--jr-edge);
+  border-radius: 999px; padding: 2px 10px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15); opacity: 0; transition: opacity 0.12s; }
+/* Near the sketch's sides the label runs inward, so it never leaves the page. */
+.ebb-camppage__spot.is-l .ebb-camppage__tip { left: 0; transform: none; }
+.ebb-camppage__spot.is-r .ebb-camppage__tip { left: auto; right: 0; transform: none; }
+.ebb-camppage__spot:hover .ebb-camppage__tip, .ebb-camppage__spot:focus-visible .ebb-camppage__tip { opacity: 1; }
 .ebb-camppage__sketch .cp-pad { fill: rgba(156, 123, 96, 0.22); stroke: none; }
 .ebb-camppage__sketch .cp-tent { fill: #E6D3BE; stroke: #7D6352; stroke-width: 2; }
 .ebb-camppage__sketch .cp-ring { fill: none; stroke: #949A93; stroke-width: 5; }

@@ -13,6 +13,7 @@ import { itemIconFor } from './icons/item-registry.js';
 import { dateOfHour } from '../world/journal/observe.js';
 import { partKinds, buildKinds } from '../world/camp/making.js';
 import { cleanTeaNotes } from '../world/camp/brew.js';
+import { slotPlaced } from '../world/camp/layout.js';
 
 /** @param {string} s */
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c] ?? c);
@@ -49,30 +50,51 @@ export function campEntry(C, camp, cook) {
 }
 
 /**
- * The camp seen from above, as it is now: the pad, and each slot that holds something.
+ * The camp seen from above, as it is now: the pad, and each slot that holds something. Hovering a
+ * piece (or tabbing to it) names it: a spot over the sketch for each, its label drawn above the
+ * sketch so no other piece hides it.
  * @param {any} pad the live pad (layout.js) @param {any} camp the camp section
+ * @param {Record<string, string>} [names] cook.json words.page.sketchNames, by slot id
  */
-function campSketch(pad, camp) {
+function campSketch(pad, camp, names = {}) {
   const slots = pad?.camp?.slots ?? [];
-  const R = pad?.r ?? 4, S = 22;
+  const R = pad?.r ?? 4, S = 22, w = (2 * R) * S + 20;
   // u to the right (seaward), v up the page.
   const at = (/** @type {any} */ s) => [(s.u + R) * S + 10, (R - s.v) * S + 10];
   const has = (/** @type {string} */ id) => (camp?.slots ?? []).some((/** @type {any} */ q) => q.slot === id);
-  const parts = [];
-  for (const s of slots) {
+  const parts = [], spots = [];
+  /** A hover spot over a piece, hw by hh half across (sketch units, never too small to find). */
+  const spot = (/** @type {string} */ id, /** @type {number} */ x, /** @type {number} */ y, /** @type {number} */ hw, /** @type {number} */ hh) => {
+    const name = names[id];
+    if (!name) return;
+    const sw = Math.max(hw, 7), sh = Math.max(hh, 7), pc = (/** @type {number} */ n) => `${((n / w) * 100).toFixed(2)}%`;
+    const side = x < w / 3 ? ' is-l' : x > (2 * w) / 3 ? ' is-r' : '';
+    spots.push(`<span class="ebb-camppage__spot${side}" tabindex="0" aria-label="${esc(name)}" style="left:${pc(x - sw)};top:${pc(y - sh)};width:${pc(2 * sw)};height:${pc(2 * sh)}"><span class="ebb-camppage__tip">${esc(name)}</span></span>`);
+  };
+  for (const s0 of slots) {
+    const s = slotPlaced(s0, (camp?.slots ?? []).find((/** @type {any} */ q) => q.slot === s0.id));
     const [x, y] = at(s);
-    if (s.id === 'tent' && has('tent')) parts.push(`<rect x="${x - (s.w / 2) * S}" y="${y - (s.d / 2) * S}" width="${s.w * S}" height="${s.d * S}" rx="4" class="cp-tent"/>`);
-    else if (s.id === 'ring' && has('ring')) parts.push(`<circle cx="${x}" cy="${y}" r="${s.r * S}" class="cp-ring"/>`);
-    else if (s.faces && has(s.id)) {
+    if (s.id === 'tent' && has('tent')) {
+      parts.push(`<rect x="${x - (s.w / 2) * S}" y="${y - (s.d / 2) * S}" width="${s.w * S}" height="${s.d * S}" rx="4" class="cp-tent"/>`);
+      spot(s.id, x, y, (s.w / 2) * S, (s.d / 2) * S);
+    } else if (s.id === 'ring' && has('ring')) {
+      parts.push(`<circle cx="${x}" cy="${y}" r="${s.r * S}" class="cp-ring"/>`);
+      spot(s.id, x, y, s.r * S, s.r * S);
+    } else if (s.faces && has(s.id)) {
       const f = slots.find((/** @type {any} */ q) => q.id === s.faces);
       const deg = f ? Math.atan2(-(f.v - s.v), f.u - s.u) * 180 / Math.PI + 90 : 0;
       parts.push(`<rect x="${x - (s.w / 2) * S}" y="${y - (s.d / 2) * S}" width="${s.w * S}" height="${s.d * S}" rx="3" class="cp-bench" transform="rotate(${deg.toFixed(1)} ${x} ${y})"/>`);
-    } else if (s.id === 'rack' && has('rack')) parts.push(`<rect x="${x - (s.w / 2) * S}" y="${y - (s.d / 2) * S}" width="${s.w * S}" height="${s.d * S}" rx="3" class="cp-bench"/>`);
-    else if (['sticks', 'stones', 'clay'].includes(s.id) || ((s.id === 'store' || s.id === 'gift' || s.id === 'nest') && has(s.id))) parts.push(`<circle cx="${x}" cy="${y}" r="${(s.r ?? 0.4) * S}" class="cp-store"/>`);
+      spot(s.id, x, y, (s.w / 2) * S * 0.8, (s.w / 2) * S * 0.8);
+    } else if (s.id === 'rack' && has('rack')) {
+      parts.push(`<rect x="${x - (s.w / 2) * S}" y="${y - (s.d / 2) * S}" width="${s.w * S}" height="${s.d * S}" rx="3" class="cp-bench"/>`);
+      spot(s.id, x, y, (s.w / 2) * S, (s.d / 2) * S);
+    } else if (['sticks', 'stones', 'clay'].includes(s.id) || ((s.id === 'store' || s.id === 'gift' || s.id === 'nest') && has(s.id))) {
+      parts.push(`<circle cx="${x}" cy="${y}" r="${(s.r ?? 0.4) * S}" class="cp-store"/>`);
+      spot(s.id, x, y, (s.r ?? 0.4) * S, (s.r ?? 0.4) * S);
+    }
   }
-  const w = (2 * R) * S + 20;
-  return `<svg class="ebb-camppage__sketch" viewBox="0 0 ${w} ${w}" role="img" aria-label="The camp from above">
-    <circle cx="${w / 2}" cy="${w / 2}" r="${R * S}" class="cp-pad"/>${parts.join('')}</svg>`;
+  return `<div class="ebb-camppage__map"><svg class="ebb-camppage__sketch" viewBox="0 0 ${w} ${w}" role="img" aria-label="The camp from above">
+    <circle cx="${w / 2}" cy="${w / 2}" r="${R * S}" class="cp-pad"/>${parts.join('')}</svg>${spots.join('')}</div>`;
 }
 
 /**
@@ -120,7 +142,7 @@ export function campView(C, camp, cook, pad, words, bed = null, withBack = true)
   return `<section class="ebb-shelf ebb-camppage">${back}
     <h3 class="ebb-shelf__title">${esc(P.title)}</h3>
     <h4 class="ebb-camppage__h">${esc(P.now)}</h4>
-    ${campSketch(pad, camp)}
+    ${campSketch(pad, camp, P.sketchNames)}
     <h4 class="ebb-camppage__h">${esc(P.firsts)}</h4>
     ${rows ? `<ul class="ebb-camppage__list">${rows}</ul>` : `<p class="ebb-journal__voice">${esc(P.empty)}</p>`}
     ${giftsView(C, camp, words)}
