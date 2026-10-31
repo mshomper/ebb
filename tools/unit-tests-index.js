@@ -63,6 +63,7 @@ export const TEST_FILES = {
   'journal': '',
   'keeper': '',
   'keepsake-artifacts': '',
+  'keepsake-shelf': '',
   'keepsake-sound': 'web-audio',
   'keepsakes': '',
   'kit': '',

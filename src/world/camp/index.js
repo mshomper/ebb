@@ -21,7 +21,7 @@
 // cards and the here-bar), frame.js (drawing each frame, the star fire from star.js), hearth.js (the
 // hearth stones, the pots, the cup and the clay pieces, S4 and S5), carry.js (the pot in both arms,
 // filled at the spring or the sea, K-26 and K-28), gift-stone.js (the gift stone and its gifts,
-// the known place and the herb bed, B1 C1).
+// the known place and the herb bed, B1 C1), keepsake-shelf.js (the keepsake shelf beside the tent, B2).
 
 import { on, emit, emitDeferred } from '../../core/events.js';
 import { get, update } from '../../core/store.js';
@@ -51,6 +51,7 @@ import { createBoons } from './boons.js';
 import { createTeapot } from './teapot.js';
 import { createCookpot } from './cookpot.js';
 import { createGiftStone } from './gift-stone.js';
+import { createKeepsakeShelf } from './keepsake-shelf.js';
 
 const H = 3600;
 
@@ -59,7 +60,8 @@ const H = 3600;
  *   world: any, seasons: any, lighting: { setPoints: (l: any[]) => void }, pack?: any,
  *   shadowBias?: { depthBias: number, depthBiasSlopeScale: number }, low?: boolean, tier?: string,
  *   beat?: () => string | null, poses?: any, piles?: any, cook?: any, water?: any, sowing?: any,
- *   rimToward?: (slot: string) => { x: number, z: number } | null }} o
+ *   rimToward?: (slot: string) => { x: number, z: number } | null, keepsakes?: any }} o
+ *   keepsakes: recipes/world/keepsakes.json (the keepsake shelf draws the kept ones from their numbers)
  *   cook: recipes/world/cook.json (the stations' makes and builds, S1); water: the live water (Fill the pot, K-26);
  *   rimToward: the world point a rim slot is placed toward when made (the nest box: the hen's home bushes), or null;
  *   sowing: recipes/world/sowing.json (the gifts that go to the gift spot, laid on the gift stone once it stands)
@@ -211,6 +213,8 @@ export function createCamp(o) {
   const boons = createBoons({ cook: o.cook ?? { boons: {} }, change, hourNow });
   // The gift stone and its gifts, the known place and the herb bed (B1 C1).
   const gifts = createGiftStone({ R, CW: o.cook?.words ?? {}, camp, change, where, player, hourNow, campSeed, terrain: o.terrain, world: o.world, sowing: o.sowing });
+  // The keepsake shelf beside the tent and the keepsakes kept on it (B2).
+  const shelf = createKeepsakeShelf({ R, K: o.keepsakes ?? null, camp, where, frame, camera: o.camera, below: () => !!o.walk.below });
   teapot = createTeapot({ ...kit, o, cook: o.cook ?? { boons: {}, teas: { herbs: {}, strength: [] }, words: {} }, keeps: stations.keeps, change, frame, boons });
   // The walker's meal (docs/future/15 slice 4): the cooking pot's workspace, an egg and a pinch of
   // salt, Cook, the boil and the sit by the fire (cookpot.js).
@@ -427,6 +431,7 @@ export function createCamp(o) {
     cookpot?.update(dt);
     boons.update(dt);
     gifts.update(dt);
+    shelf.update();
     frame.draw(dt, time, c, fireNow);
   }
   let hidden = false;
@@ -446,13 +451,14 @@ export function createCamp(o) {
     },
     rings,
     /** The card a click at a ground point opens (cards.js). @param {number} x @param {number} z */
-    cardAt: (x, z) => hearth.benchPieceAt(x, z) ?? carriers.cardAt(x, z) ?? stations.cardAt(x, z) ?? gifts.cardAt(x, z) ?? hearth.cardAt(x, z) ?? campCardAt(kit, x, z),
+    cardAt: (x, z) => hearth.benchPieceAt(x, z) ?? carriers.cardAt(x, z) ?? stations.cardAt(x, z) ?? gifts.cardAt(x, z) ?? shelf.cardAt(x, z) ?? hearth.cardAt(x, z) ?? campCardAt(kit, x, z),
     /**
      * What a view ray meets first among the things sitting up on the hearth and by the fire (a pot,
      * the cup, a piece firing), as the ground point under its middle: tried before the ground, so
-     * they win over the ring that holds them. @param {number[]} o @param {number[]} d
+     * they win over the ring that holds them; then the keepsake shelf, which a low click would
+     * otherwise pass to the ground behind. @param {number[]} o @param {number[]} d
      */
-    liftedUnderRay: (o, d) => (hidden ? null : hearth.liftedUnderRay(o, d)),
+    liftedUnderRay: (o, d) => (hidden ? null : hearth.liftedUnderRay(o, d) ?? shelf.underRay(o, d)),
     /** The stations (S1): the workbench and the fire's workspace (tools, tests, test links). */
     stations,
     /** The hearth, the pots and the clay pieces (S4, S5; tools, tests, test links). */
@@ -472,6 +478,8 @@ export function createCamp(o) {
      * something on it (false before it stands), `take()` (tests, test links).
      */
     gifts,
+    /** The keepsake shelf (B2): its draw pass (`shelf.pass`), where it stands and what stands on it (tests, test links). */
+    shelf,
     /** For the evening director: the tent is up; the ring is laid. */
     pitched: () => pitched(camp()),
     ringLaid: () => ringLaid(camp()),
@@ -537,7 +545,7 @@ export function createCamp(o) {
         update('camp', (c) => ({ ...c, fire: { ...c.fire, ...set, lightings: Math.max(1, c.fire?.lightings ?? 0) } }));
       },
     },
-    dispose() { for (const off of offs) off(); player.dispose(); stations.dispose(); hearth.dispose(); carry.dispose(); gifts.dispose(); teapot?.dispose(); cookpot?.dispose(); boons.dispose(); carriers.dispose(); },
+    dispose() { for (const off of offs) off(); player.dispose(); stations.dispose(); hearth.dispose(); carry.dispose(); gifts.dispose(); shelf.dispose(); teapot?.dispose(); cookpot?.dispose(); boons.dispose(); carriers.dispose(); },
   };
 }
 

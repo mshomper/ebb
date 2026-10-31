@@ -102,7 +102,7 @@ export function addCampLayoutTests(test, assert, eq) {
       const sh = S.find((/** @type {any} */ s) => s.id === 'shelf');
       assert(sh && sh.yaw === 'inward' && sh.frontM >= 1 && Math.abs(sh.w - 1.3) < 0.1 && Math.abs(sh.d - 0.45) < 0.05, `${id}: the shelf slot, turned in, with a meter of room`);
       assert(Math.hypot(sh.u - t.u, sh.v - t.v) < 3, `${id}: beside the tent`);
-      assert(!sh.blocks && !(await load('world/cook')).makes.shelf, 'only reserved: nothing makes the shelf yet');
+      assert(sh.blocks && (await load('world/cook')).makes['keepsake-shelf']?.slot === 'shelf', 'the keepsake shelf is made into it, and you walk round it (B2)');
     }
   });
 
