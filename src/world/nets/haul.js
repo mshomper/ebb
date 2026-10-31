@@ -8,6 +8,8 @@
 // the season leans them (moon jellies in summer; fewer living things in winter). Now and then a
 // distinctive animal you let go before comes back (N7): it is the same seed, so the same animal, and
 // the tray says so. The released list is part of the island's saved state, so this stays pure.
+// A fish of the shallow waters (nets.json kinds' fish, docs/future/17) comes up as a glimpse: it
+// is shown a moment and slips away, and never comes back as the same animal.
 
 import { hash32 } from '../../core/rng.js';
 import { pickIndex, pickRarity } from '../keepsakes/rarity.js';
@@ -19,8 +21,8 @@ import { catchNumbers, distinctive } from './living/index.js';
 const SALT = 0x4e75;
 
 /**
- * @typedef {{ id: string, n: import('./living/index.js').CatchNumbers, again?: { hour: number } }} LivingCatch
- *   again: one let go before, at that game hour, caught again
+ * @typedef {{ id: string, n: import('./living/index.js').CatchNumbers, again?: { hour: number }, glimpse?: boolean }} LivingCatch
+ *   again: one let go before, at that game hour, caught again; glimpse: a fish, gone through the mesh (F17)
  * @typedef {{ id: string, n: any }} NetKeepsake
  * @typedef {{ netId: number, tideId: number, living: LivingCatch[], keepsake: NetKeepsake | null, weed: number }} Haul
  * @typedef {{ seed: number, net: { id: number, kind: string }, tideId: number, cell: number[], depthM: number,
@@ -46,7 +48,7 @@ function kindWeight(NR, kind, depthM, season) {
  * @param {number} depthM @param {string} season
  */
 export function comeBack(released, NR, depthM, season) {
-  return released.filter((r) => r.rarity && kindWeight(NR, r.kind, depthM, season) > 0
+  return released.filter((r) => r.rarity && !NR.catches.kinds[r.kind]?.fish && kindWeight(NR, r.kind, depthM, season) > 0
     && distinctive(catchNumbers(r.seed, r.kind, r.rarity, NR)));
 }
 
@@ -101,7 +103,7 @@ export function haulOf(p, NR, K) {
     }
     const kind = pickKind(u01(hash32(hk, 1)), NR, p.depthM, p.season);
     const rarity = pickRarity(u01(hash32(hk, 2)), K.rarity, cond);
-    living.push({ id: `${p.net.id}:${p.tideId}:${i}`, n: catchNumbers(hash32(hk, 3), kind, rarity, NR) });
+    living.push({ id: `${p.net.id}:${p.tideId}:${i}`, n: catchNumbers(hash32(hk, 3), kind, rarity, NR), ...(NR.catches.kinds[kind]?.fish ? { glimpse: true } : {}) });
   }
   /** @type {NetKeepsake | null} */ let keepsake = null;
   if (u01(hash32(h, 2)) < (winter ? H.winterKeepsake : H.keepsakeChance)) {

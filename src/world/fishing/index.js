@@ -14,14 +14,15 @@
 // src/ui/fishing-overlay.js from visuals().
 
 import { get, update } from '../../core/store.js';
-import { emitDeferred } from '../../core/events.js';
+import { emitDeferred, on } from '../../core/events.js';
+import { dispatch } from '../../input/actions.js';
 import { WATER_CLASS } from '../water/summary.js';
 import { waterCellOf } from '../water/grid.js';
 import { groundOfCell } from '../water/shore.js';
 import { packMesh } from '../creatures/bodies.js';
 import { createCreaturePass } from '../../render/passes/creatures.js';
 import { createPropsPass } from '../../render/passes/props.js';
-import { cleanFishing, castOnce, sketch, finer } from './model.js';
+import { cleanFishing, castOnce, sketch, finer, glimpse } from './model.js';
 import { classifyWater, sampleWater } from './waters.js';
 import { biteOf, missWaitS } from './bite.js';
 import { allFish } from './roster.js';
@@ -65,6 +66,12 @@ export function createFishing(o) {
   /** @type {Cast | null} */ let cast = null;
   /** @type {{ x: number, y: number, z: number, t: number }[]} */ let rings = [];
   let clock = 0;
+  // A fish glimpsed in a net (src/world/nets): kept, and its page pencilled (journal flag glimpse:<id>).
+  const offGlimpse = on('fish:glimpsed', (/** @type {{ kind: string, hour: number }} */ p) => {
+    if (!byId.has(p.kind)) return;
+    update('fishing', (s) => glimpse(cleanFishing(s), p.kind, p.hour));
+    dispatch(/** @type {any} */ ({ type: 'journal.flag', flag: `glimpse:${p.kind}` }));
+  });
   const say = (/** @type {string} */ text, showS = 4) => { if (text) emitDeferred('island:notice', { text, showS }); };
   const sound = (/** @type {string} */ name, /** @type {number} */ seed) => emitDeferred('keepsake:sound', { name, seed });
   const hasLine = () => !!(o.test !== null && o.test !== undefined) || (get('cook')?.tools ?? []).includes('line');
@@ -390,7 +397,7 @@ export function createFishing(o) {
     fish: () => fish,
     byId: (/** @type {string} */ id) => byId.get(id) ?? null,
 
-    dispose() {},
+    dispose() { offGlimpse(); },
   };
   publish();
   // On the ?fishing link only, a handle for the console and tools.

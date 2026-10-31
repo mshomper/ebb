@@ -1,7 +1,7 @@
 {
   "type": "nets",
   "version": 1,
-  "note": "The nets (docs/future/12, piece K6; src/world/nets). A net is cast in the shallows of the tide band at low tide, fishes through the next high water, and is ready from the low water after it; a full net waits and never spoils, and lifting brings it in. set: where a net may go: in the tide band, at least coverM under the coming high water, and no deeper than wadeM now. kinds: one per kind of net, with its words (general now; light and sinker later). haul (haul.js, rolled when a net is lifted, pure): living is the weights for 0, 1, 2 living catches (winterLiving in winter); keepsakeChance how often a haul holds a keepsake (winterKeepsake in winter); lean multiplies keepsake rarity weights on top of the season's, so nets reach rarer tiers than the beach (the tide's gates still apply); families weighs the keepsake families a net snags (artifact 0: they wait for the sinker net; bottles stay on the strandline); shallowM: a net under less than this at its high water fishes the shallows; againChance: for each living catch, the chance it is a distinctive one you let go before (rare and up, or its rarer colour form, whose kind lives at that depth in that season), the same animal again, which the tray says (words.again). catches: the living catches, always released (living/). Each kind: journal, the journal page its first release inks; weight in the shallows and in deeper water; season multiplies the weight; then how it is built (fish.js plans, shrimp.js, crab.js, jelly.js), sizes in meters, linear albedo, and a morph: a rarer colour form, more likely the rarer the tier (tierMorph), with its own words. tierSize scales a catch up by tier. sizeWord: the card says its length, about. words: what the tray, the cards and the Net card say. test: the ?nets link.",
+  "note": "The nets (docs/future/12, piece K6; src/world/nets). A net is cast in the shallows of the tide band at low tide, fishes through the next high water, and is ready from the low water after it; a full net waits and never spoils, and lifting brings it in. set: where a net may go: in the tide band, at least coverM under the coming high water, and no deeper than wadeM now. kinds: one per kind of net, with its words (general now; light and sinker later). haul (haul.js, rolled when a net is lifted, pure): living is the weights for 0, 1, 2 living catches (winterLiving in winter); keepsakeChance how often a haul holds a keepsake (winterKeepsake in winter); lean multiplies keepsake rarity weights on top of the season's, so nets reach rarer tiers than the beach (the tide's gates still apply); families weighs the keepsake families a net snags (artifact 0: they wait for the sinker net; bottles stay on the strandline); shallowM: a net under less than this at its high water fishes the shallows; againChance: for each living catch, the chance it is a distinctive one you let go before (rare and up, or its rarer colour form, whose kind lives at that depth in that season), the same animal again, which the tray says (words.again). catches: the living catches, always released (living/). fish: a fish of the shallow waters (F17, October 31, 2026): with the fishing line it is a glimpse in a net, shown a moment and gone, its place pencilled in the journal and on the angler's chart, its sketch only from the line (a page already inked from a net release still counts). Each kind: journal, the journal page its first release inks; weight in the shallows and in deeper water; season multiplies the weight; then how it is built (fish.js plans, shrimp.js, crab.js, jelly.js), sizes in meters, linear albedo, and a morph: a rarer colour form, more likely the rarer the tier (tierMorph), with its own words. tierSize scales a catch up by tier. sizeWord: the card says its length, about. words: what the tray, the cards and the Net card say. test: the ?nets link.",
   "set": { "wadeM": 0.15, "coverM": 0.08 },
   "kinds": { "general": { "name": "your net" } },
   "haul": {
@@ -19,7 +19,7 @@
     "tierMorph": { "common": 0.02, "uncommon": 0.15, "rare": 0.4, "veryRare": 0.75, "lifetime": 1 },
     "kinds": {
       "sandeel": {
-        "journal": "sandeel", "name": "Sand eel", "weight": { "shallow": 8, "deep": 22 }, "season": { "spring": 1, "summer": 1.3, "autumn": 1, "winter": 0.4 },
+        "journal": "sandeel", "fish": true, "name": "Sand eel", "weight": { "shallow": 8, "deep": 22 }, "season": { "spring": 1, "summer": 1.3, "autumn": 1, "winter": 0.4 },
         "plan": "eel", "lengthM": [0.08, 0.13], "height": [0.07, 0.085], "width": [0.055, 0.065],
         "albedo": { "back": [0.16, 0.24, 0.22], "belly": [0.62, 0.63, 0.6], "blotch": [0.12, 0.18, 0.17], "fin": [0.3, 0.32, 0.3], "eye": [0.02, 0.02, 0.02], "eyeRing": [0.5, 0.5, 0.45] },
         "blotch": { "scale": 90, "amount": 0 },
@@ -27,7 +27,7 @@
         "morph": { "back": [0.08, 0.16, 0.34], "note": "Its back shines blue-green, like oil on water." }
       },
       "goby": {
-        "journal": "goby", "name": "Sand goby", "weight": { "shallow": 22, "deep": 8 }, "season": { "spring": 1, "summer": 1.2, "autumn": 1, "winter": 0.6 },
+        "journal": "goby", "fish": true, "name": "Sand goby", "weight": { "shallow": 22, "deep": 8 }, "season": { "spring": 1, "summer": 1.2, "autumn": 1, "winter": 0.6 },
         "plan": "goby", "lengthM": [0.045, 0.075], "height": [0.17, 0.2], "width": [0.15, 0.18],
         "albedo": { "back": [0.32, 0.26, 0.17], "belly": [0.52, 0.47, 0.38], "blotch": [0.11, 0.08, 0.05], "fin": [0.36, 0.31, 0.23], "eye": [0.02, 0.02, 0.02], "eyeRing": [0.55, 0.48, 0.3] },
         "blotch": { "scale": 380, "amount": 0.45 },
@@ -35,7 +35,7 @@
         "morph": { "back": [0.58, 0.4, 0.1], "blotch": [0.32, 0.18, 0.05], "note": "A golden one, freckled darker gold." }
       },
       "pipefish": {
-        "journal": "pipefish", "name": "Pipefish", "weight": { "shallow": 4, "deep": 8 }, "season": { "spring": 1, "summer": 1.2, "autumn": 1, "winter": 0.7 },
+        "journal": "pipefish", "fish": true, "name": "Pipefish", "weight": { "shallow": 4, "deep": 8 }, "season": { "spring": 1, "summer": 1.2, "autumn": 1, "winter": 0.7 },
         "plan": "pipe", "lengthM": [0.12, 0.2], "height": [0.03, 0.036], "width": [0.026, 0.032],
         "albedo": { "back": [0.22, 0.2, 0.1], "belly": [0.4, 0.36, 0.2], "blotch": [0.1, 0.09, 0.05], "fin": [0.3, 0.28, 0.16], "eye": [0.02, 0.02, 0.02], "eyeRing": [0.45, 0.4, 0.2] },
         "blotch": { "scale": 160, "amount": 0.3 },
@@ -43,7 +43,7 @@
         "morph": { "back": [0.38, 0.22, 0.12], "blotch": [0.6, 0.55, 0.4], "amount": 0.6, "note": "Ringed all along with pale bands." }
       },
       "plaice": {
-        "journal": "plaice", "name": "Young plaice", "weight": { "shallow": 6, "deep": 14 }, "season": { "spring": 1.2, "summer": 1.2, "autumn": 0.9, "winter": 0.5 },
+        "journal": "plaice", "fish": true, "name": "Young plaice", "weight": { "shallow": 6, "deep": 14 }, "season": { "spring": 1.2, "summer": 1.2, "autumn": 0.9, "winter": 0.5 },
         "plan": "flat", "lengthM": [0.06, 0.1], "height": [0.1, 0.12], "width": [0.55, 0.62],
         "albedo": { "back": [0.32, 0.27, 0.18], "belly": [0.76, 0.75, 0.71], "blotch": [0.62, 0.22, 0.06], "fin": [0.34, 0.29, 0.2], "eye": [0.02, 0.02, 0.02], "eyeRing": [0.5, 0.45, 0.3] },
         "blotch": { "scale": 150, "amount": 0.32 },
@@ -51,7 +51,7 @@
         "morph": { "blotch": [0.8, 0.3, 0.04], "amount": 0.55, "note": "Its orange spots are bright and crowded." }
       },
       "wrasse": {
-        "journal": "wrasse", "name": "Ballan wrasse", "weight": { "shallow": 2, "deep": 10 }, "season": { "spring": 0.9, "summer": 1.3, "autumn": 1.1, "winter": 0.4 },
+        "journal": "wrasse", "fish": true, "name": "Ballan wrasse", "weight": { "shallow": 2, "deep": 10 }, "season": { "spring": 0.9, "summer": 1.3, "autumn": 1.1, "winter": 0.4 },
         "plan": "wrasse", "lengthM": [0.08, 0.13], "height": [0.27, 0.31], "width": [0.13, 0.15],
         "albedo": { "back": [0.13, 0.22, 0.1], "belly": [0.4, 0.36, 0.22], "blotch": [0.42, 0.2, 0.08], "fin": [0.18, 0.26, 0.12], "eye": [0.02, 0.02, 0.02], "eyeRing": [0.55, 0.4, 0.2] },
         "blotch": { "scale": 300, "amount": 0.4 },

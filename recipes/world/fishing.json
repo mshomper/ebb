@@ -84,6 +84,26 @@
     "rareTypes": { "ghost": { "water": "open" }, "lion": { "water": "reef" }, "stone": { "water": "reef" }, "angler": { "water": "deep" } }
   },
   "sketch": { "finerLength": 1.15 },
+  "pages": {
+    "cardLine": "A fish of the {water}, sketched and let go.",
+    "place": "In the {water}; takes {bait}",
+    "when": ", more at {when}",
+    "and": "and",
+    "riddle": "Something lives in the {water} that a line might bring up close.",
+    "rareRiddle": "Something rare. The angler's chart may tell you where to look.",
+    "glimpsed": "Something slipped through your net in the {water}. A line might bring it up close.",
+    "foundLine": "You sketched your first {name} on {date}, and let it go.",
+    "found": "You sketched a {name} and let it go.",
+    "likes": "takes {bait}",
+    "scale": "about {cm} cm",
+    "field": {
+      "reef": "It keeps to the rocks off the reef, in and out of the weed.",
+      "sand": "It lies over the sand flats, the color of the sand it rests on.",
+      "kelp": "It threads through the kelp in the shallows, where the light is green.",
+      "open": "It swims the open water past the tide band, silver in the light.",
+      "deep": "It lives past the drop-off, where the water goes dark."
+    }
+  },
   "words": {
     "waters": { "reef": "Rocky reef", "sand": "Sand flats", "kelp": "Kelp shallows", "open": "Open water", "deep": "Deep water" },
     "rarity": { "common": "Common", "uncommon": "Uncommon", "rare": "Rare", "veryRare": "Very rare" },

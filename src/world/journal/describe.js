@@ -168,8 +168,8 @@ export function describe(journal, sp, state, hab, words, hour = journal.last) {
   const story = known && k ? storyOf(k, rec, m, hour, journal, words) : [];
   const notes = journal.notes.filter((n) => n.sp === sp).slice(0, words.pageNotes);
   // An animal not yet found: the latest hint the island has given, else its riddle.
-  let riddle = rec.riddle;
-  for (const h of rec.hints ?? []) if (journal.flags.includes(h.when)) riddle = h.text;
+  let riddle = rec.riddle, hinted = false;
+  for (const h of rec.hints ?? []) if (journal.flags.includes(h.when)) { riddle = h.text; hinted = true; }
   // The ones you have named (S6c-3), oldest first: "Pip, here since Spring, day 4".
   // A named turtle (bonds.js) is dated from the day you named it.
   const named = known && rec.trust?.namedLine
@@ -183,7 +183,7 @@ export function describe(journal, sp, state, hab, words, hour = journal.last) {
     const got = !!k?.learned.includes(`item:${c.id}`);
     return { id: c.id, found: got, name: got ? c.name : null, rarity: c.rarity, text: got ? c.line : c.hint };
   });
-  return { sp, kind: 'living', name: rec.name, icon: rec.icon, known, riddle, status, likes, field, named, collection,
+  return { sp, kind: 'living', name: rec.name, icon: rec.icon, known, riddle, hinted, status, likes, field, named, collection,
     fieldHint: rec.fieldHint, story, seasons, moments, gives, notes, canShow: known && present(rec, m), sketch: sketchOf(k, known, rec.sketch) };
 }
 

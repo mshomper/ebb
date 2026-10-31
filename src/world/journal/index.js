@@ -460,6 +460,13 @@ export function createJournal(opts) {
         commit(foundFind(journal, p.page, { state: world.state, hour: hourIndex(), words }));
       }
     }),
+    // A fish sketched on the line (docs/future/17, src/world/fishing): its page inks, as a net
+    // release's does; a net fish sketched on the line inks the same page.
+    on('fish:sketched', (/** @type {{ page: string }} */ p) => {
+      if (words.species[p.page]?.kind === 'find' && !journal.species[p.page]?.ever) {
+        commit(foundFind(journal, p.page, { state: world.state, hour: hourIndex(), words }));
+      }
+    }),
     // The first pick of a plant (src/world/gather): its page's Gives line inks (`picked:<species>`).
     on('plant:picked', (/** @type {{ sp: string }} */ p) => {
       const next = flag(journal, `picked:${p.sp}`);

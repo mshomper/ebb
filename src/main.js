@@ -19,6 +19,9 @@ import { createThreads } from './world/threads/live.js';
 import { hourIndex } from './core/clock.js';
 import { createWalkerPortrait } from './ui/walker-portrait.js';
 import { mountHaulTray } from './ui/haul-tray.js';
+import { addFishPages } from './world/fishing/pages.js';
+import { speciesOf, fishNumbers } from './world/nets/living/fish2.js';
+import { registerFishSketches } from './ui/sketches/fish.js';
 import { registerCatchSketches } from './ui/sketches/catch.js';
 import { registerUnderLogSketches } from './ui/sketches/under-log.js';
 import { setDriftwoodRecipe, noteLog } from './ui/sketches/driftwood.js';
@@ -119,6 +122,12 @@ startApp(canvas, { onDeviceLost: (rebuilding) => showRebuildingNote(rebuilding),
       // The field journal (docs 13, 15): watches the world, writes notes, names what you tap.
       const [words, island, web, wash, list, naturalist] = await Promise.all([loadRecipe('world/journal'), loadRecipe('world/journal-island'),
         loadRecipe('world/journal-web'), loadRecipe('world/journal-wash'), loadRecipe('world/journal-list'), loadRecipe('world/naturalist')]);
+      // The island's fish pages, written from its roster (docs/future/17), and their sketches.
+      const fishingApp0 = /** @type {any} */ (r).fishing;
+      if (fishingApp0) {
+        addFishPages(words, fishingApp0.fish(), fishingApp0.recipe, (/** @type {any} */ f) => speciesOf(f.ref, fishingApp0.recipe).size);
+        registerFishSketches(fishingApp0.recipe, fishingApp0.fish(), () => getStore('fishing'));
+      }
       const journal = createJournal({ world: r.world, words, island, web, wash, list, creatures: /** @type {any} */ (r).creatures ?? null,
         finds: /** @type {any} */ (r).finds ?? null, keepsakes: /** @type {any} */ (r).keepsakes ?? null, pieces: /** @type {any} */ (r).pieces ?? null, lift: /** @type {any} */ (r).lift ?? null, nets: /** @type {any} */ (r).nets ?? null, shore: /** @type {any} */ (r).shorePresence ?? null,
         schools: /** @type {any} */ (r).schools ?? [], gather: /** @type {any} */ (r).gather ?? null, piles: /** @type {any} */ (r).piles ?? null,
@@ -136,7 +145,11 @@ startApp(canvas, { onDeviceLost: (rebuilding) => showRebuildingNote(rebuilding),
       if (netsApp) {
         mountHaulTray(document.body, { NR: netsApp.recipe, K: netsApp.keepsakesRecipe, words });
         // Each living kind's page is traced from the first one you let go (src/ui/sketches/catch.js).
-        registerCatchSketches(netsApp.recipe, () => getStore('nets')?.released ?? []);
+        const fishingR = /** @type {any} */ (r).fishing;
+        registerCatchSketches(netsApp.recipe, () => getStore('nets')?.released ?? [], fishingR ? (kind) => {
+          const f = fishingR.byId(kind), sk = getStore('fishing')?.sketched?.[kind];
+          return f && sk ? { n: fishNumbers(f.id, f.ref, sk.seed, fishingR.recipe), FR: fishingR.recipe } : null;
+        } : undefined);
         // The fishing line's catch on the same tray (docs/future/17).
         const fishingApp = /** @type {any} */ (r).fishing;
         if (fishingApp) mountHaulTray(document.body, { NR: netsApp.recipe, K: netsApp.keepsakesRecipe, words, FR: fishingApp.recipe, slice: 'catch', act: 'fishing' });

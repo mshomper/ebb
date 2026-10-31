@@ -4,7 +4,7 @@
 // generator, catch gen 2 (species and individuals rebuild from their seeds, the grown pattern, the
 // mesh, the swim), with gen 1 catches still rebuilding; the line (its make, its gorse thorns, the
 // belt), the five waters, the roster, the bite's odds (conditions raise them, never gate) and the
-// fishing save section.
+// fishing save section; the journal's Fish pages and group, and the nets' fish as glimpses.
 
 import { cleanPack } from '../src/world/pack/model.js';
 import { digFinds } from '../src/world/dig/finds.js';
@@ -18,10 +18,16 @@ import { rosterOf, rareRoster, allFish } from '../src/world/fishing/roster.js';
 import { conditionsNow, weightOf, biteOf, bitesJob } from '../src/world/fishing/bite.js';
 import { cleanFishing, emptyFishing, sketch, glimpse, castOnce, finer, sketchedOrInked } from '../src/world/fishing/model.js';
 import { cleanCook, layout } from '../src/world/camp/making.js';
+import { addFishPages } from '../src/world/fishing/pages.js';
+import { speciesOf } from '../src/world/nets/living/fish2.js';
+import { livingList, DEFAULT_CHOICE } from '../src/world/journal/list.js';
+import { haulOf, comeBack } from '../src/world/nets/haul.js';
+import { findsFound } from '../src/world/expansion.js';
 
 const G = 'fishing';
 const GEN = 'fishing: generator';
 const LINE = 'fishing: the line';
+const PAGES = 'fishing: pages and nets';
 /** A quiet noon in summer at mid tide, no weather. */
 const NOON = { hourOfDay: 12, season: 'summer', rain: 0, mist: 0, cloud: 0, wind: 0.1, yRain: 0, yWind: 0, tideLevel: 0, tideAmp: 0.6, sign: null };
 /** @param {string} p */
@@ -269,5 +275,46 @@ export function addFishingTests(test, assert, eq) {
     const FR = await load('world/fishing'), roster = rosterOf(3, FR);
     const set = sketchedOrInked(emptyFishing(), roster, (page) => page === 'sandeel');
     assert(set.has('sandeel') && set.size === 1, 'a net fish page inked from a net release counts as sketched');
+  });
+
+  test(PAGES, 'the Fish pages: one per species the island has, finds that list once sketched, a glimpse in pencil, the net fish on their own pages', async () => {
+    const [FR, words, list] = await Promise.all([load('world/fishing'), load('world/journal'), load('world/journal-list')]);
+    const fish = allFish(2026, FR);
+    addFishPages(words, fish, FR, (f) => speciesOf(f.ref, FR).size);
+    eq(words.fishOrder.length, 17 + 12, 'the 17 drawn species and the 12 rare ones have pages written');
+    for (const id of words.fishOrder) {
+      const r = words.species[id];
+      eq(r.kind, 'find', `${id} is a find`);
+      assert(r.name && r.icon === 'fish' && r.riddle && r.place && r.foundLine && r.notes.found && r.field.length && r.likes.length, `${id} has every line a page needs`);
+    }
+    for (const n of FR.named) assert(words.species[n.page]?.hints?.some((/** @type {any} */ h) => h.when === `glimpse:${n.id}`), `${n.name} keeps its page and takes the glimpse line`);
+    const before = findsFound({ species: {}, flags: [] }, words).length;
+    eq(before, 0, 'nothing found yet');
+    /** @type {Record<string, boolean>} */ const known = { 'sandeel': true, [words.fishOrder[0]]: true };
+    const groups = livingList(list, words, DEFAULT_CHOICE, (id) => ({ id, known: !!known[id], name: words.species[id].name, pencil: id === words.fishOrder[1] }), () => -1, {});
+    const g = groups.find((x) => x.id === 'fish');
+    assert(g, 'a Fish group under Living things');
+    eq([...(g?.rows ?? [])].sort().join(), [words.fishOrder[0], words.fishOrder[1], 'sandeel'].sort().join(), 'sketched ones, and the glimpsed one in pencil; never the rest');
+    const small = groups.find((x) => x.id === 'small');
+    assert(!small || !small.rows.includes('sandeel'), 'the sand eel moved from Small lives to Fish');
+    assert(!words.findOrder.some((/** @type {string} */ id) => words.fishOrder.includes(id)), 'the new pages are not naturalist finds');
+    assert(words.findOrder.includes('sandeel'), 'the net fish pages still count on the naturalist\'s trail');
+  });
+
+  test(PAGES, 'in a net, the five fish are glimpses that never come back as the same animal; shrimp, crabs and jellies are as they were', async () => {
+    const [NR, K] = await Promise.all([load('world/nets'), load('world/keepsakes')]);
+    const fishKinds = Object.entries(NR.catches.kinds).filter(([, k]) => /** @type {any} */ (k).fish).map(([id]) => id).sort();
+    eq(fishKinds.join(), 'goby,pipefish,plaice,sandeel,wrasse', 'the five net fish');
+    let glimpses = 0, small = 0;
+    for (let t = 0; t < 400; t++) {
+      const h = haulOf({ seed: 9, net: { id: 1, kind: 'general' }, tideId: t, cell: [t % 9, 4], depthM: (t % 4) * 0.2, spring: 0, season: 'summer' }, NR, K);
+      for (const c of h.living) {
+        if (NR.catches.kinds[c.n.kind].fish) { assert(c.glimpse, `${c.n.kind} is a glimpse`); glimpses++; }
+        else { assert(!c.glimpse, `${c.n.kind} is caught as before`); small++; }
+      }
+    }
+    assert(glimpses > 0 && small > 0, `both come up (${glimpses} glimpses, ${small} small lives)`);
+    const back = comeBack([{ kind: 'wrasse', seed: 1, hour: 3, rarity: 'veryRare' }, { kind: 'shrimp', seed: 2, hour: 4, rarity: 'veryRare' }], NR, 0.6, 'summer');
+    assert(!back.some((r) => r.kind === 'wrasse'), 'a fish never comes back as the same animal');
   });
 }
