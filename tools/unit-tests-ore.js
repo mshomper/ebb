@@ -4,7 +4,9 @@
 // clay, sand and marram, dry after a night, ore and charcoal in at dusk and metal by morning, nails
 // at once; every make's parts unique and no workbench make over its three spots; the deeper clay
 // fills its own pouch. O2: the way down lies just above the spring's head; the cairn trail ends
-// just short of it; the first spadeful there gives way once, into a hole that never fills.
+// just short of it; the first spadeful there gives way once, into a hole that never fills. O3:
+// the zone's fade swaps once while dark; the cave is the same from the same seed, walkable round a
+// pool; panning is seeded, a few a day, the first always black sand.
 
 import { cleanCook, layout, partKinds } from '../src/world/camp/making.js';
 import { cleanCamp } from '../src/world/camp/model.js';
@@ -19,6 +21,10 @@ import { mouthStones } from '../src/world/dig/story-draw.js';
 import { planTrail } from '../src/world/setpieces/cairn-rules.js';
 import { landmarks, baseSampler } from '../src/world/terrain/landform.js';
 import { subSeed } from '../src/core/rng.js';
+import { idleFade, stepFade, darkness, startFade } from '../src/world/zones/zone.js';
+import { createZones } from '../src/world/zones/live.js';
+import { cleanPans, pansLeft, panFind, panned } from '../src/world/spring/pan.js';
+import { caveShape, caveMesh, meshHash } from '../src/world/spring/cave-field.js';
 
 const G = 'ore';
 /** @param {string} p */
@@ -165,4 +171,64 @@ export function addOreTests(test, assert, eq) {
     assert(Math.max(...gaps) > Math.PI / 3, 'a gap between the boulders to step up to the edge');
     assert(ring.every((q) => Math.hypot(q.x - 3, q.z - 4) > SP.hole.sizeM / 2), 'none in the hole');
   });
+
+  test(G, 'O3: a zone fades out, swaps once while the screen is dark, fades back in; going back reverses it', async () => {
+    const R = await load('world/zones');
+    let f = startFade(idleFade(), 'spring-cave', null), swaps = 0, t = 0, peak = 0;
+    while (f.phase !== 'idle' && t < 10) { const s = stepFade(f, 1 / 60, R); if (s.swap) { swaps++; eq(darkness(s.fade, R), 1, 'black at the swap'); } f = s.fade; peak = Math.max(peak, darkness(f, R)); t += 1 / 60; }
+    eq(swaps, 1, 'one swap');
+    assert(Math.abs(t - (2 * R.fadeS + R.holdS)) < 0.05, `the whole fade takes fadeS twice and holdS (${t.toFixed(2)} s)`);
+    eq(startFade(startFade(idleFade(), 'a', null), 'b', null).to, 'a', 'a fade going is not restarted');
+    eq(startFade(idleFade(), 'a', 'a').phase, 'idle', 'already there: no fade');
+    // The live module, without a page: enter on the swap, leave on the way back.
+    const log = [];
+    const Z = createZones({ R, host: null });
+    Z.register({ id: 'test', enter: () => { log.push('in'); return true; }, leave: () => log.push('out') });
+    Z.go('test');
+    for (let i = 0; i < 200; i++) Z.tick(1 / 60);
+    eq(Z.active(), 'test', 'in the zone');
+    Z.back();
+    for (let i = 0; i < 200; i++) Z.tick(1 / 60);
+    eq(Z.active(), null, 'back on the island');
+    eq(log.join(','), 'in,out', 'entered once, left once');
+  });
+
+  test(G, 'O3: the cave is the same from the same seed, with a pool, a floor to stand on and a shaft up to the hole', async () => {
+    const C = await load('world/spring-cave'), S = C.shape;
+    const a = caveMesh(S, C.seed, C.depthM), b = caveMesh(S, C.seed, C.depthM);
+    eq(meshHash(a), meshHash(b), 'the same mesh, bit for bit');
+    assert(a.count > 2000 && a.idx.length > 3000, `a full mesh (${a.count} vertices)`);
+    const shape = caveShape(S, C.seed);
+    assert(shape.poolDepth(S.pool.at[0], S.pool.at[1]) > 0.3, 'the pool is deep in the middle');
+    eq(shape.poolDepth(R0(C).x, R0(C).z), 0, 'dry where you come down the rope');
+    assert(shape.inside(R0(C).x, R0(C).z) > C.walk.wallM, 'the rope comes down inside the walls');
+    assert(shape.air(0, C.depthM - 0.1, 0) > 0, 'the shaft is open up to the hole');
+    assert(shape.air(0, shape.floorAt(0, 0) + 1, 0) > 0, 'air over the floor under the hole');
+    assert(shape.air(S.centre[0] + S.radiusM[0] + 1.5, 1, S.centre[1]) < 0, 'rock beyond the walls');
+    assert(shape.drips.length > 0, 'dripstone');
+    return `${a.count} vertices, ${shape.drips.length} dripstones`;
+  });
+
+  test(G, 'O3: panning: a few a day, the first always black sand, copper only after the first few, the same every time', async () => {
+    const P = (await load('world/spring-cave')).pan;
+    let c = cleanPans(null);
+    eq(pansLeft(c, 3, 3 * 24 + 10, P), P.perDay, 'a full day to start');
+    eq(panFind(77, 3, 0, 0, P), P.firstFind, 'the first pan ever is black sand');
+    for (let i = 0; i < P.perDay; i++) c = panned(c, 3, 3 * 24 + 10 + i);
+    eq(pansLeft(c, 3, 3 * 24 + 14, P), 0, 'then the pool is cloudy');
+    eq(pansLeft(c, 4, 3 * 24 + 12 + P.settleH - 0.1, P), 0, 'still settling just after midnight');
+    eq(pansLeft(c, 4, 4 * 24 + 10, P), P.perDay, 'settled by the next morning');
+    eq(c.total, P.perDay, 'the count goes on');
+    // Seeded: the same day and pan, the same find; over many, iron most, copper less, some gravel.
+    const n = { 'iron-ore': 0, 'copper-ore': 0, gravel: 0 };
+    for (let d = 0; d < 400; d++) for (let i = 0; i < 3; i++) n[/** @type {'iron-ore'} */ (panFind(77, d, i, 10, P))]++;
+    eq(panFind(77, 9, 1, 10, P), panFind(77, 9, 1, 10, P), 'the same pan, the same find');
+    assert(n['iron-ore'] > n['copper-ore'] && n['copper-ore'] > n.gravel * 0.5 && n.gravel > 0, `iron ${n['iron-ore']}, copper ${n['copper-ore']}, gravel ${n.gravel}`);
+    for (let d = 0; d < 50; d++) assert(panFind(77, d, 0, 1, P) !== 'copper-ore' || P.copperAfter <= 2, 'no copper before copperAfter');
+    eq(JSON.stringify(cleanDig({ spring: { hour: 1, x: 0, z: 0, pans: c } }).spring?.pans), JSON.stringify(c), 'the pans keep in the save');
+    return `iron ${n['iron-ore']}, copper ${n['copper-ore']}, gravel ${n.gravel} of 1200`;
+  });
 }
+
+/** Where the rope comes down (the cave's frame). @param {any} C */
+function R0(C) { return { x: C.rope.at[0], z: C.rope.at[1] }; }

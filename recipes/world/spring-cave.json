@@ -11,21 +11,22 @@
   "shape": {
     "centre": [-0.7, 0.2], "radiusM": [3.0, 2.4], "wobbleM": 0.45, "wobbleLobes": 5,
     "floorNoiseM": 0.12, "floorRiseM": 0.55, "ceilingM": 2.3, "domeM": 0.9,
-    "pool": { "at": [0.9, 0.6], "radiusM": 1.15, "depthM": 0.55, "levelM": 0.04 },
+    "pool": { "at": [1.25, 0.85], "radiusM": 1.0, "depthM": 0.55, "levelM": 0.04 },
     "shaft": { "radiusM": 0.42, "flareM": 0.25 },
-    "wallNoiseM": 0.1, "wallNoiseScale": 1.6, "blendM": 0.35,
+    "wallNoiseM": 0.1, "wallNoiseScale": 1.6, "fineNoiseM": 0.045, "fineNoiseScale": 5.5, "blendM": 0.35,
+    "dripstone": { "hanging": 9, "rising": 5, "radiusM": [0.06, 0.16], "lengthM": [0.35, 0.9], "clearM": 0.75 },
     "cellM": 0.08, "boundsM": [-4.2, -0.8, -3.6, 4.2, 5.0, 3.6]
   },
-  "shapeNote": "In the cave's own frame, meters from the hole's axis (x, z), y up from the cave's floor level. centre: the chamber's middle, set off from the hole so the light falls near the pool; radiusM: its half widths along x and z, wobbled by wobbleM over wobbleLobes seeded lobes; floorNoiseM: the floor's bumps; floorRiseM: how far it rises into the walls; ceilingM: the ceiling's height at the walls and domeM more at the middle. pool: its middle, radius, how deep the basin is and the water's level over the floor. shaft: the round chimney from the ceiling up to the hole, flaring flareM wider where it meets the ceiling. wallNoiseM, wallNoiseScale: the seeded 3D noise that wears the rock; blendM: the smooth corners where floor, wall and ceiling meet. cellM: the mesher's sample spacing; boundsM: the sampled box [x0, y0, z0, x1, y1, z1].",
+  "shapeNote": "In the cave's own frame, meters from the hole's axis (x, z), y up from the cave's floor level. centre: the chamber's middle, set off from the hole so the light falls near the pool; radiusM: its half widths along x and z, wobbled by wobbleM over wobbleLobes seeded lobes; floorNoiseM: the floor's bumps; floorRiseM: how far it rises into the walls; ceilingM: the ceiling's height at the walls and domeM more at the middle. pool: its middle, radius, how deep the basin is and the water's level over the floor. shaft: the round chimney from the ceiling up to the hole, flaring flareM wider where it meets the ceiling. wallNoiseM, wallNoiseScale: the seeded 3D noise that wears the rock, and fineNoiseM, fineNoiseScale its finer grain; dripstone: hanging stalactites from the roof and rising stalagmites from the floor (radiusM at the root, lengthM long, seeded), none within clearM of the rope, the hole's light or the pool; blendM: the smooth corners where floor, wall and ceiling meet. cellM: the mesher's sample spacing; boundsM: the sampled box [x0, y0, z0, x1, y1, z1].",
 
-  "view": { "cutM": 1.95, "cutDark": 0.35, "camera": { "distanceM": [3.2, 7], "startM": 4.8, "pitchDeg": [38, 72], "startPitchDeg": 52, "minEyeHeightM": 1.2, "orbitDegPerPx": 0.1, "turnHalfLifeS": 0.16, "lookHeightM": 1.0 } },
-  "viewNote": "The cave is seen as a diorama, cut away (Matt's island is a diorama too): nothing of the rock is drawn above cutM over the cave's floor level, so the view looks down into it from over the walker's shoulder (camera: the view below in here, the fields of walker.json camera). The rock's outside, seen past the cut, is plain and dark (cutDark of its lit colour). The light is still the hole's, worked out as if the roof were there.",
+  "view": { "fadeM": 0.7, "throughM": 0.45, "camera": { "distanceM": [1.4, 3.0], "startM": 2.4, "pitchDeg": [-4, 38], "startPitchDeg": 16, "lookHeightM": 1.0, "minEyeHeightM": 0.35, "orbitDegPerPx": 0.1, "turnHalfLifeS": 0.16 } },
+  "viewNote": "Matt, October 31, 2026: the cave is seen from inside, enclosed. The view stays down in it behind your shoulder (camera: the view below in here, the fields of walker.json camera), kept out of the rock; the rock between the view and you fades out (within fadeM of the line from the eye to you, softly dithered), so the roof and walls never hide you; the view may sit up to throughM inside the rock for that (beyond it, it comes closer).",
   "walk": { "cellM": 0.2, "wallM": 0.35, "wadeM": 0.12 },
   "walkNote": "The walker's ground below: the floor in cells of cellM, closed within wallM of the walls; the pool is water, waded only where under wadeM deep (the walker's own rules decide the rest).",
 
   "light": {
-    "skyShare": 0.25, "cloudCut": 0.75, "holeRadiusM": 0.4, "bounce": 0.35, "fill": 0.003, "minNits": 0.004, "exposureBiasEV": 2.0,
-    "beam": { "nits": 0.12, "scatter": 0.05, "spread": 1.2 },
+    "skyShare": 0.25, "cloudCut": 0.75, "holeRadiusM": 0.4, "bounce": 0.35, "fill": 0.0015, "minNits": 0.004, "exposureBiasEV": 2.0,
+    "beam": { "nits": 6, "scatter": 0.05, "spread": 1.25 },
     "figure": { "share": 1.0, "ambientShare": 1.0 }
   },
   "lightNote": "Physical light, painted last (the look rule). The hole is a disc of sky, holeRadiusM across its top: its radiance is the outside light falling on level ground (the sun's, plus skyShare more for the sky, less cloudCut of it under cloud) over pi, and it lights what can see it past the shaft's rim, falling off as the inverse square. The sun itself shines straight down the shaft only when it stands high enough to pass the rim, a bright moving patch. bounce: the share of the light that comes in that is bounced round the cave (its albedo carries it on), the soft fill everywhere; fill (Matt, October 31, 2026: fake light is fine for ambience): a soft extra fill everywhere, this share of the outside light, so the cave reads in the day and still dims at dusk and goes dark at night. minNits keeps the darkest corners from black. exposureBiasEV: the eye adapts to the dark, but not all the way: the picture stays this much darker than the meter asks, so the cave reads as a cave and the shaft of light is not blown out. beam: the dust in the shaft scattering the light toward you (scatter per meter) at nits per 1000 lux, the cone spread times wider at the floor than at the hole. figure: how the walker is lit (the frame's sun is the light from the hole on it, ambientShare of the bounce as its fill).",
@@ -45,6 +46,8 @@
   },
   "panNote": "The old keeper's pan (O3): a shallow iron pan radiusM across with a rimM rim, lying fromPoolM from the water's edge on the side nearest the light (at: its place, filled in from the pool at load). Pan at the pool is a calm kneel of panS real seconds, no minigame. perDay pans a game day; after the last, the pool needs settleH game hours before it gives again (counted from the game day's start after that). finds: weights for what a pan leaves behind (iron ore, the black sand, most often; copper ore, the green-flecked pebbles, more rarely; gravel, nothing to keep). The first pan ever is always iron ore (firstFind), and copper can come from the copperAfter-th pan on. Every pan is seeded by the island, the game day and the pan's number that day, so time away never changes it.",
 
+  "stones": { "count": 34, "sizeM": [0.07, 0.26], "lump": 0.22, "albedo": [0.13, 0.125, 0.11], "seed": 5521 },
+  "stonesNote": "Loose stones on the floor: gathered along the walls' foot and round the pool's edge (seeded), lumpy (lump), sizeM across, never on the rope's foot, the pan or the way from the rope to the pool.",
   "rope": { "radiusM": 0.018, "at": [0.18, -0.12], "sway": 0.03 },
   "ropeNote": "The old rope down from the hole (radiusM thick), its foot at `at` (m from the hole's axis), swaying a little. Its card offers Climb up.",
 

@@ -10,7 +10,7 @@
 
 import { get, update } from '../../core/store.js';
 import { emitDeferred, emit } from '../../core/events.js';
-import { subSeed } from '../../core/rng.js';
+import { subSeed, hash32 as hashOf } from '../../core/rng.js';
 import { run } from '../../core/workers.js';
 import { dispatch, onAction } from '../../input/actions.js';
 import { registerCardAction } from '../../ui/card-actions.js';
@@ -173,7 +173,45 @@ export function createSpringCave(o) {
     for (let k = 0; k <= 12; k++) { const t = k / 12; pts.push([at.x + (fx - at.x) * t + Math.sin(t * Math.PI) * 0.04, at.top + 0.05 + (fy - at.top - 0.05) * t, at.z + (fz - at.z) * t]); }
     pts.push([fx + 0.12, fy, fz + 0.05], [fx + 0.2, fy, fz - 0.06]);
     const rope = tube(pts, R.rope.radiusM, 6, L.rope);
-    o.pass.setMesh('things', join([pan, rope]));
+    o.pass.setMesh('things', join([pan, rope, stones()]));
+  }
+
+  /** @type {{ data: number[], idx: number[] } | null} */ let stoneMesh = null;
+  /**
+   * The loose stones (seeded): along the walls' foot and round the pool's edge, lumpy, each a small
+   * sphere pushed in and out, sunk a little into the floor; never on the rope's foot, the pan or the
+   * way from the rope to the pool.
+   */
+  function stones() {
+    if (stoneMesh) return stoneMesh;
+    const at = /** @type {NonNullable<typeof O>} */ (origin()), T = R.stones, parts = [];
+    const u = (/** @type {number} */ i, /** @type {number} */ k) => (hashOf(T.seed, i, k) >>> 8) / 16777216;
+    const foot = { x: R.rope.at[0], z: R.rope.at[1] };
+    for (let i = 0, n = 0; i < T.count * 8 && n < T.count; i++) {
+      // Half by the walls, half by the pool.
+      let x, z;
+      if (i % 2) { const a = u(i, 1) * Math.PI * 2, rr = S.pool.radiusM + 0.08 + u(i, 2) * 0.35; x = S.pool.at[0] + Math.cos(a) * rr; z = S.pool.at[1] + Math.sin(a) * rr; }
+      else { x = S.centre[0] + (u(i, 1) - 0.5) * 2 * S.radiusM[0]; z = S.centre[1] + (u(i, 2) - 0.5) * 2 * S.radiusM[1]; const k = shape.inside(x, z); if (k < 0.1 || k > 0.6) continue; }
+      if (shape.inside(x, z) < 0.05 || shape.poolDepth(x, z) > 0.02) continue;
+      if (Math.hypot(x - foot.x, z - foot.z) < 0.5 || Math.hypot(x - panAt.x, z - panAt.z) < 0.35) continue;
+      // The way from the rope to the pool stays clear.
+      const ax = S.pool.at[0] - foot.x, az = S.pool.at[1] - foot.z, al = Math.hypot(ax, az), t = Math.max(0, Math.min(1, ((x - foot.x) * ax + (z - foot.z) * az) / (al * al)));
+      if (Math.hypot(x - (foot.x + ax * t), z - (foot.z + az * t)) < 0.4) continue;
+      const size = T.sizeM[0] + (T.sizeM[1] - T.sizeM[0]) * u(i, 3) ** 2, r = size / 2, y0 = at.y + shape.floorAt(x, z);
+      const sph = [], sidx = [], LAT = 5, LON = 8;
+      for (let a = 0; a <= LAT; a++) for (let b = 0; b <= LON; b++) {
+        const th = (a / LAT) * Math.PI, ph = (b / LON) * Math.PI * 2;
+        const k = 1 + T.lump * (Math.sin(2 * ph + u(i, 4) * 6) * Math.sin(th) * 0.6 + Math.cos(3 * th + u(i, 5) * 6) * 0.4);
+        const nx = Math.sin(th) * Math.cos(ph), ny = Math.cos(th), nz = Math.sin(th) * Math.sin(ph);
+        sph.push(at.x + x + nx * r * k, y0 + r * 0.55 + ny * r * 0.65 * k, at.z + z + nz * r * k * (0.8 + u(i, 6) * 0.4), nx, ny, nz, T.albedo[0], T.albedo[1], T.albedo[2], 1);
+      }
+      for (let a = 0; a < LAT; a++) for (let b = 0; b < LON; b++) { const q = a * (LON + 1) + b; sidx.push(q, q + LON + 1, q + 1, q + 1, q + LON + 1, q + LON + 2); }
+      parts.push({ data: sph, idx: sidx });
+      n++;
+    }
+    const all = join(parts);
+    stoneMesh = { data: Array.from(all.data), idx: Array.from(all.idx) };
+    return stoneMesh;
   }
 
   // ---- going down and coming up ----
@@ -298,7 +336,7 @@ export function createSpringCave(o) {
       ...W2.absorption, W2.f0,
       ...W2.tint, W2.ripple,
       W2.drips, W2.dripS, L.beam.nits, L.beam.scatter,
-      at.y + R.view.cutM, R.view.cutDark, 0, 0,
+      (o.walk.walker?.x ?? at.x), (o.walk.walker?.y ?? at.y) + 0.9, (o.walk.walker?.z ?? at.z), R.view.fadeM,
     ];
     // The walker: lit from the hole as a light from its direction, as bright as the hole is there.
     const y = o.walk.walker, wx = y?.x ?? at.x, wz = y?.z ?? at.z, wy = (y?.y ?? at.y) + 0.9;
@@ -337,11 +375,12 @@ export function createSpringCave(o) {
     const at = origin();
     if (!at) return Infinity;
     const dx = eye[0] - target[0], dy = eye[1] - target[1], dz = eye[2] - target[2], d = Math.hypot(dx, dy, dz) || 1;
+    // The rock between the eye and you fades out (cave-draw.wgsl), so the view keeps its distance
+    // through a wall; only the solid beyond the cave's own box stops it.
     let room = 0.4;
     for (let t = 0.2; t <= 8; t += 0.1) {
       const x = target[0] + (dx / d) * t, y = target[1] + (dy / d) * t, z = target[2] + (dz / d) * t;
-      // Above the cut is open (the diorama's view); below it, the rock stops the view.
-      if (y - at.y < R.view.cutM && shape.air(lx(x), y - at.y, lz(z)) < 0.25) break;
+      if (shape.air(lx(x), y - at.y, lz(z)) < -R.view.throughM) break;
       room = t;
     }
     return room;
@@ -363,6 +402,8 @@ export function createSpringCave(o) {
     /** Start building the cave as soon as the ground has given way (so climbing down is instant). */
     prepare() { if (origin() && !built) build(); },
     cardAt, ground, water, light, sound, groundAt, viewRoom,
+    /** The floor alone (no raised walls), for the view to keep above. @param {number} x @param {number} z */
+    floor: (x, z) => (O?.y ?? 0) + shape.floorAt(lx(x), lz(z)),
     /** Tests and the test links. */
     debug: { origin, pans, panDone, shape, panAt, panStand, get built() { return built; } },
     dispose() { for (const off of offs) off(); },

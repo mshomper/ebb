@@ -2408,7 +2408,7 @@ export async function startApp(canvas, hooks = {}) {
     walk.update(realDt);
     zones.tick(realDt);
     const zoneNow = zones.zone();
-    zoneGround = zoneNow ? (x, z) => springCave.ground(x, z) : null;
+    zoneGround = zoneNow ? (x, z) => springCave.floor(x, z) : null;
     camera.setFloor(zoneNow ? -Infinity : 0);
     camera.setRoom(zoneNow?.viewRoom ? zoneNow.viewRoom(camera.target, camera.eye) : Infinity);
     // The eye adapts to a zone's dark, but not all the way (spring-cave.json light.exposureBiasEV).

@@ -24,7 +24,7 @@ struct CaveUniforms {
   water: vec4f,     // rgb: absorption per meter; w: f0
   tint: vec4f,      // rgb: what the water scatters; w: ripple slope
   drips: vec4f,     // x: count, y: every dripS seconds, z: beam nits per 1000 lux, w: beam scatter per meter
-  cut: vec4f,       // x: the cut-away height (world): nothing of the rock above it is drawn, so you look down into the cave; y: how dark the cut rock is
+  you: vec4f,       // xyz: the walker's chest (world): the rock between the eye and it fades out; w: within this far of the line (m)
 };
 
 @group(0) @binding(0) var<uniform> frame: FrameUniforms;
@@ -52,6 +52,15 @@ fn vnoise(p: vec3f) -> f32 {
   let x = mix(mix(a.xz, a.yw, u.x), mix(b.xz, b.yw, u.x), u.z);
   return mix(x.x, x.y, u.y);
 }
+
+/** The rock's bump height: a coarse and a fine layer of noise (m, small). */
+fn bump(w: vec3f) -> f32 {
+  let p = local(w);
+  return vnoise(p * 7.0) * 0.6 + vnoise(p * 23.0) * 0.3 + smoothstep(0.35, 0.65, vnoise(vec3f(p.x * 1.6, p.y * 11.0, p.z * 1.6))) * 0.3;
+}
+
+/** A point in the cave's own frame (the noise stays precise near the world's far corners). */
+fn local(w: vec3f) -> vec3f { return w - vec3f(cu.shaft.x, cu.pool.y, cu.shaft.z) + vec3f(37.0, 11.0, 23.0); }
 
 /** Light from the hole's disc of sky reaching a point (lux), seen past the chimney's rim. */
 fn holeLight(p: vec3f, n: vec3f) -> vec3f {
@@ -101,14 +110,28 @@ fn wetSpec(p: vec3f, n: vec3f, v: vec3f, rough: f32) -> vec3f {
 }
 
 @fragment fn fsCave(i: VsOut, @builtin(front_facing) front: bool) -> FsOut {
-  // The diorama's cut: the roof and the walls' tops above it are not drawn.
-  if (i.world.y > cu.cut.x) { discard; }
-  var n = normalize(i.n);
-  // The rock's outside, seen past the cut: plain and dark, like a cut face.
-  if (!front && i.col.a < 0.5) {
-    return FsOut(vec4f(cu.rock.rgb * cu.bounce.rgb * cu.cut.y * frame.exposure, 1.0), vec4f(octEncode(-n), 0.0, 0.0));
+  // The rock between the eye and you fades out (a soft dither), so the roof and walls never hide you.
+  if (i.col.a < 0.5 && cu.you.w > 0.0) {
+    let e = frame.cameraPos;
+    let d = cu.you.xyz - e;
+    let t = clamp(dot(i.world - e, d) / max(dot(d, d), 1e-4), 0.0, 1.0);
+    let off = length(i.world - (e + d * t));
+    let fade = (1.0 - smoothstep(cu.you.w * 0.6, cu.you.w, off)) * smoothstep(0.98, 0.85, t);
+    let dither = hashToFloat(hash2(vec2u(i.pos.xy)));
+    if (fade > dither) { discard; }
   }
+  var n = normalize(i.n);
+  if (!front && i.col.a < 0.5) { n = -n; }
   let p = i.world;
+  // The rock's own grain: a bump from two scales of noise, so the light rakes across worn stone.
+  if (i.col.a < 0.5) {
+    let e = 0.012;
+    let b = vec3f(
+      bump(p + vec3f(e, 0.0, 0.0)) - bump(p - vec3f(e, 0.0, 0.0)),
+      bump(p + vec3f(0.0, e, 0.0)) - bump(p - vec3f(0.0, e, 0.0)),
+      bump(p + vec3f(0.0, 0.0, e)) - bump(p - vec3f(0.0, 0.0, e))) / (2.0 * e);
+    n = normalize(n - (b - n * dot(b, n)) * 0.06);
+  }
   let v = normalize(frame.cameraPos - p);
   var albedo: vec3f; var rough: f32;
   if (i.col.a > 0.5) {
@@ -120,13 +143,18 @@ fn wetSpec(p: vec3f, n: vec3f, v: vec3f, rough: f32) -> vec3f {
     let wet = max(1.0 - smoothstep(0.0, cu.rock.w, toPool), 1.0 - smoothstep(cu.pool.y + 0.02, cu.pool.y + 0.25, p.y));
     let up = smoothstep(0.55, 0.85, n.y);
     // Mottled and banded like limestone, darker in the hollows that face away from the light.
-    let band = 0.85 + 0.3 * vnoise(vec3f(p.x * 0.6, p.y * 7.0, p.z * 0.6));
-    let m = (0.6 + 0.8 * vnoise(p * 3.1) * vnoise(p * 0.9 + 4.0)) * band * mix(0.7, 1.0, smoothstep(-0.3, 0.6, n.y));
+    let q = local(p);
+    let band = 0.8 + 0.4 * smoothstep(0.35, 0.65, vnoise(vec3f(q.x * 0.8, q.y * 9.0, q.z * 0.8)));
+    let grain = 0.75 + 0.5 * vnoise(q * 11.0);
+    let m = (0.7 + 0.6 * smoothstep(0.3, 0.7, vnoise(q * 2.3))) * band * grain * mix(0.6, 1.0, smoothstep(-0.3, 0.6, n.y));
     albedo = mix(mix(cu.rock.rgb, cu.floorAlb.rgb, up), cu.rockWet.rgb, wet * 0.8) * m;
     rough = mix(cu.floorAlb.w, cu.rockWet.w, wet);
   }
   let e = holeLight(p, n) + sunLight(p, n);
-  var radiance = albedo * (e / PI + cu.bounce.rgb * (0.6 + 0.4 * max(n.y, 0.0))) + vec3f(cu.sunE.w);
+  // The bounce and fill gather round where the light comes in, and fade into the far corners.
+  let toLight = length(p - vec3f(cu.shaft.x, cu.pool.y, cu.shaft.z));
+  let near = 1.0 / (1.0 + toLight * toLight * 0.35);
+  var radiance = albedo * (e / PI + cu.bounce.rgb * near * (0.5 + 0.5 * max(n.y, 0.0))) + vec3f(cu.sunE.w);
   radiance += wetSpec(p, n, v, rough) * (1.0 - rough);
   return FsOut(vec4f(radiance * frame.exposure, 1.0), vec4f(octEncode(n), 0.0, select(0.0, 2.0 / 3.0, i.col.a > 0.5)));
 }
@@ -191,14 +219,14 @@ fn waterNormal(p: vec3f) -> vec3f {
 
 @fragment fn fsBeam(i: VsOut) -> @location(0) vec4f {
   // Behind the rock or the walker: nothing (the depth is read, not attached).
-  if (i.pos.z <= textureLoad(sceneDepth, vec2i(i.pos.xy), 0) || i.world.y > cu.cut.x) { discard; }
+  if (i.pos.z <= textureLoad(sceneDepth, vec2i(i.pos.xy), 0)) { discard; }
   let n = normalize(i.n);
   let v = normalize(frame.cameraPos - i.world);
   // Thickest seen face on (the shaft's middle), thin at its edges; fading toward the floor.
   let thick = pow(abs(dot(n, v)), 1.5);
   let along = clamp((cu.hole.y - i.world.y) / max(cu.hole.y - cu.pool.y, 0.5), 0.0, 1.0);
   let t = cu.bounce.w;
-  let motes = smoothstep(0.93, 1.0, vnoise(i.world * 26.0 + vec3f(0.0, t * 0.15, t * 0.05))) * 2.0;
+  let motes = smoothstep(0.93, 1.0, vnoise(local(i.world) * 26.0 + vec3f(0.0, t * 0.15, t * 0.05))) * 2.0;
   let sunK = select(0.0, 1.0, cu.sun.w > 0.5) * 3.0;
   let lux = cu.lightIn.rgb + cu.sunE.rgb * sunK;
   let c = lux * (cu.drips.z / 1000.0) * cu.drips.w * thick * (1.0 - along * 0.6) * (1.0 + motes);

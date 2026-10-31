@@ -29,7 +29,17 @@ const u01 = (seed, ...k) => (hash32(seed, ...k) >>> 8) / 16777216;
 export function caveShape(S, seed) {
   const [cx, cz] = S.centre, [rx, rz] = S.radiusM;
   const lobes = Array.from({ length: S.wobbleLobes }, (_, i) => ({ k: i + 2, a: u01(seed, 1, i) * det.PI * 2, m: (u01(seed, 2, i) - 0.5) * 2 / (i + 1) }));
-  const P = S.pool, H = S.shaft;
+  const P = S.pool, H = S.shaft, D = S.dripstone;
+  // Dripstone (seeded): hanging from the roof and rising from the floor, clear of the rope, the
+  // hole's light and the pool. Each: where (x, z), its root radius and length.
+  const drips = [];
+  for (let i = 0; i < (D ? D.hanging + D.rising : 0) * 6 && drips.length < D.hanging + D.rising; i++) {
+    const up = drips.filter((q) => q.up).length < D.rising && i % 2 === 1;
+    const x = cx + (u01(seed, 30, i) - 0.5) * 2 * rx, z = cz + (u01(seed, 31, i) - 0.5) * 2 * rz;
+    if (Math.hypot(x, z) < D.clearM || Math.hypot(x - P.at[0], z - P.at[1]) < P.radiusM + 0.25) continue;
+    if (!up && drips.filter((q) => !q.up).length >= D.hanging) continue;
+    drips.push({ x, z, up, r: D.radiusM[0] + (D.radiusM[1] - D.radiusM[0]) * u01(seed, 32, i), len: D.lengthM[0] + (D.lengthM[1] - D.lengthM[0]) * u01(seed, 33, i) });
+  }
   /** How far inside the wall a point is, in meters (negative outside the chamber). @param {number} x @param {number} z */
   function inside(x, z) {
     const dx = (x - cx) / rx, dz = (z - cz) / rz, th = det.atan2(dz, dx), e = Math.sqrt(dx * dx + dz * dz);
@@ -51,8 +61,8 @@ export function caveShape(S, seed) {
     const e = Math.max(0, inside(x, z)) / Math.min(rx, rz);
     return S.ceilingM + S.domeM * Math.min(1, e * 1.6) + (noise3(seed + 7, x * 0.9, 3.1, z * 0.9) - 0.5) * 0.3;
   }
-  /** The water over the floor (m, 0 where dry). @param {number} x @param {number} z */
-  const poolDepth = (x, z) => Math.max(0, P.levelM - floorAt(x, z));
+  /** The water over the floor (m, 0 where dry): only in the pool's basin, never in the floor's other dips. @param {number} x @param {number} z */
+  const poolDepth = (x, z) => (Math.hypot(x - P.at[0], z - P.at[1]) < P.radiusM * 1.15 ? Math.max(0, P.levelM - floorAt(x, z)) : 0);
   /**
    * The chimney: inside its radius (m, negative outside), flaring where it meets the ceiling. It runs
    * on up past the sampled box, so the mesh stays open to the sky at the top.
@@ -72,10 +82,20 @@ export function caveShape(S, seed) {
     // The chimney: from just under the ceiling up to the hole.
     const sh = Math.min(shaftIn(x, y, z), y - (ceilAt(0, 0) - 0.6));
     a = smax(a, sh, b * 0.6);
-    const wear = (noise3(seed + 3, x * S.wallNoiseScale, y * S.wallNoiseScale, z * S.wallNoiseScale) - 0.5) * 2 * S.wallNoiseM;
+    // Dripstone: rock cones out of the roof and up from the floor, taking from the air.
+    for (const q of drips) {
+      const d = Math.hypot(x - q.x, z - q.z);
+      if (d > q.r + 0.2) continue;
+      const root = q.up ? floorAt(q.x, q.z) - 0.05 : ceilAt(q.x, q.z) + 0.05, k = q.up ? (y - root) / q.len : (root - y) / q.len;
+      if (k < -0.2 || k > 1.1) continue;
+      const cone = d - q.r * Math.max(0, 1 - k) * (1 - k * 0.15);
+      a = smax(a, cone, 0.06);
+    }
+    const g = S.wallNoiseScale, f = S.fineNoiseScale ?? 0;
+    const wear = (noise3(seed + 3, x * g, y * g, z * g) - 0.5) * 2 * S.wallNoiseM + (f ? (noise3(seed + 5, x * f, y * f, z * f) - 0.5) * 2 * (S.fineNoiseM ?? 0) : 0);
     return a + wear;
   }
-  return { inside, floorAt, ceilAt, poolDepth, air, basin, shaftIn };
+  return { inside, floorAt, ceilAt, poolDepth, air, basin, shaftIn, drips };
 }
 
 /**
