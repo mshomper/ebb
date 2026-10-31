@@ -1,113 +1,34 @@
 // @ts-check
-// The test files the unit test page spreads over all cores. Each one only needs pure
-// modules and fetch, so it runs the same in a worker as on the page. Tests that need the
-// page itself (WebGPU, the worker pool, timers against the frame) stay in unit-tests.js.
+// What the test page, its workers and the Node runner (tools/run-tests.mjs) share: the list of test
+// files, loading one, the core groups, assert, eq and runOne. The list itself is
+// tools/unit-tests-index.js, written by `node tools/index-tests.mjs`; a new test file needs no
+// line here (October 31, 2026).
+
+import { TEST_FILES } from './unit-tests-index.js';
+
+export { TEST_FILES };
 
 /** @typedef {(test: (group: string, name: string, fn: () => any) => void, assert: (cond: any, msg?: string) => void, eq: (a: any, b: any, msg?: string) => void) => void} AddTests */
 
-/** @type {Record<string, () => Promise<AddTests>>} */
-export const PARALLEL = {
-  growth: () => import('./unit-tests-growth.js').then((m) => m.addGrowthTests),
-  journal: () => import('./unit-tests-journal.js').then((m) => m.addJournalTests),
-  spring: () => import('./unit-tests-spring.js').then((m) => m.addSpringTests),
-  creatures: () => import('./unit-tests-creatures.js').then((m) => m.addCreatureTests),
-  islands: () => import('./unit-tests-islands.js').then((m) => m.addIslandTests),
-  ecology: () => import('./unit-tests-ecology.js').then((m) => m.addEcologyTests),
-  frogs: () => import('./unit-tests-frogs.js').then((m) => m.addFrogTests),
-  save: () => import('./unit-tests-save.js').then((m) => m.addSaveTests),
-  away: () => import('./unit-tests-away.js').then((m) => m.addAwayTests),
-  stone: () => import('./unit-tests-stone.js').then((m) => m.addStoneTests),
-  cliff: () => import('./unit-tests-cliff.js').then((m) => m.addCliffTests),
-  reveal: () => import('./unit-tests-reveal.js').then((m) => m.addRevealTests),
-  trust: () => import('./unit-tests-trust.js').then((m) => m.addTrustTests),
-  finds: () => import('./unit-tests-finds.js').then((m) => m.addFindsTests),
-  naturalist: () => import('./unit-tests-naturalist.js').then((m) => m.addNaturalistTests),
-  pondlife: () => import('./unit-tests-pondlife.js').then((m) => m.addPondLifeTests),
-  pieces: () => import('./unit-tests-pieces.js').then((m) => m.addPiecesTests),
-  underlog: () => import('./unit-tests-under-log.js').then((m) => m.addUnderLogTests),
-  damselflies: () => import('./unit-tests-damselflies.js').then((m) => m.addDamselflyTests),
-  autumn: () => import('./unit-tests-autumn.js').then((m) => m.addAutumnTests),
-  keepsakes: () => import('./unit-tests-keepsakes.js').then((m) => m.addKeepsakeTests),
-  cove: () => import('./unit-tests-cove.js').then((m) => m.addCoveTests),
-  keepsakeArtifacts: () => import('./unit-tests-keepsake-artifacts.js').then((m) => m.addKeepsakeArtifactTests),
-  walk: () => import('./unit-tests-walk.js').then((m) => m.addWalkTests),
-  steer: () => import('./unit-tests-steer.js').then((m) => m.addSteerTests),
-  hollow: () => import('./unit-tests-hollow.js').then((m) => m.addHollowTests),
-  hollowFloors: () => import('./unit-tests-hollow-floors.js').then((m) => m.addHollowFloorTests),
-  crawler: () => import('./unit-tests-crawler.js').then((m) => m.addCrawlerTests),
-  watcher: () => import('./unit-tests-watcher.js').then((m) => m.addWatcherTests),
-  crowd: () => import('./unit-tests-crowd.js').then((m) => m.addCrowdTests),
-  figure: () => import('./unit-tests-figure.js').then((m) => m.addFigureTests),
-  figureClips: () => import('./unit-tests-figure-clips.js').then((m) => m.addFigureClipTests),
-  hen: () => import('./unit-tests-hen.js').then((m) => m.addHenTests),
-  'hen-trust': () => import('./unit-tests-hen-trust.js').then((m) => m.addHenTrustTests),
-  'hen-day': () => import('./unit-tests-hen-day.js').then((m) => m.addHenDayTests),
-  'hen-eggs': () => import('./unit-tests-hen-eggs.js').then((m) => m.addHenEggTests),
-  nets: () => import('./unit-tests-nets.js').then((m) => m.addNetsTests),
-  trails: () => import('./unit-tests-trails.js').then((m) => m.addTrailsTests),
-  forager: () => import('./unit-tests-forager.js').then((m) => m.addForagerTests),
-  format9: () => import('./unit-tests-format9.js').then((m) => m.addFormat9Tests),
-  assets: () => import('./unit-tests-assets.js').then((m) => m.addAssetTests),
-  campLock: () => import('./unit-tests-camp-lock.js').then((m) => m.addCampLockTests),
-  campGround: () => import('./unit-tests-camp-ground.js').then((m) => m.addCampGroundTests),
-  campLayout: () => import('./unit-tests-camp-layout.js').then((m) => m.addCampLayoutTests),
-  campPieces: () => import('./unit-tests-camp-pieces.js').then((m) => m.addCampPieceTests),
-  shoreSand: () => import('./unit-tests-shore-sand.js').then((m) => m.addShoreSandTests),
-  campEdge: () => import('./unit-tests-camp-edge.js').then((m) => m.addCampEdgeTests),
-  campPlants: () => import('./unit-tests-camp-plants.js').then((m) => m.addCampPlantsTests),
-  pondSpring: () => import('./unit-tests-pond-spring.js').then((m) => m.addPondSpringTests),
-  turtles: () => import('./unit-tests-turtles.js').then((m) => m.addTurtleTests),
-  rigsSpring: () => import('./unit-tests-rigs-spring.js').then((m) => m.addRigsSpringTests),
-  waterTable: () => import('./unit-tests-water-table.js').then((m) => m.addWaterTableTests),
-  underLogMeshes: () => import('./unit-tests-under-log-meshes.js').then((m) => m.addUnderLogMeshTests),
-  grace: () => import('./unit-tests-grace.js').then((m) => m.addGraceTests),
-  boat: () => import('./unit-tests-boat.js').then((m) => m.addBoatTests),
-  intro: () => import('./unit-tests-intro.js').then((m) => m.addIntroTests),
-  campFire: () => import('./unit-tests-camp-fire.js').then((m) => m.addCampFireTests),
-  campFireLook: () => import('./unit-tests-camp-fire-look.js').then((m) => m.addCampFireLookTests),
-  pack: () => import('./unit-tests-pack.js').then((m) => m.addPackTests),
-  gather: () => import('./unit-tests-gather.js').then((m) => m.addGatherTests),
-  plantRules: () => import('./unit-tests-plant-rules.js').then((m) => m.addPlantRulesTests),
-  click: () => import('./unit-tests-click.js').then((m) => m.addClickTests),
-  items: () => import('./unit-tests-items.js').then((m) => m.addItemTests),
-  herbs: () => import('./unit-tests-herbs.js').then((m) => m.addHerbTests),
-  sowing: () => import('./unit-tests-sowing.js').then((m) => m.addSowingTests),
-  planting: () => import('./unit-tests-planting.js').then((m) => m.addPlantingTests),
-  dig: () => import('./unit-tests-dig.js').then((m) => m.addDigTests),
-  digDeeper: () => import('./unit-tests-dig-deeper.js').then((m) => m.addDigDeeperTests),
-  campMaking: () => import('./unit-tests-camp-making.js').then((m) => m.addCampMakingTests),
-  campKnown: () => import('./unit-tests-camp-known.js').then((m) => m.addCampKnownTests),
-  keepsakeShelf: () => import('./unit-tests-keepsake-shelf.js').then((m) => m.addKeepsakeShelfTests),
-  campCanvas: () => import('./unit-tests-camp-canvas.js').then((m) => m.addCampCanvasTests),
-  glints: () => import('./unit-tests-glints.js').then((m) => m.addGlintsTests),
-  fireProducts: () => import('./unit-tests-fire-products.js').then((m) => m.addFireProductsTests),
-  hearth: () => import('./unit-tests-hearth.js').then((m) => m.addHearthTests),
-  sketchbook: () => import('./unit-tests-sketchbook.js').then((m) => m.addSketchbookTests),
-  kit: () => import('./unit-tests-kit.js').then((m) => m.addKitTests),
-  treats: () => import('./unit-tests-treats.js').then((m) => m.addTreatsTests),
-  pondoffer: () => import('./unit-tests-pond-offerings.js').then((m) => m.addPondOfferingsTests),
-  setpieces: () => import('./unit-tests-setpieces.js').then((m) => m.addSetpiecesTests),
-  teas: () => import('./unit-tests-teas.js').then((m) => m.addTeasTests),
-  hints: () => import('./unit-tests-hints.js').then((m) => m.addHintsTests),
-  keeper: () => import('./unit-tests-keeper.js').then((m) => m.addKeeperTests),
-  lantern: () => import('./unit-tests-lantern.js').then((m) => m.addLanternTests),
-  photo: () => import('./unit-tests-photo.js').then((m) => m.addPhotoTests),
-  // The audio tests that need no Web Audio (workers have none). The two that render sound through
-  // an OfflineAudioContext (pond and keepsake sounds) stay on tools/unit-tests-audio.html, which
-  // also still runs all of these, as does `node tools/run-audio-tests.mjs`.
-  music: () => import('./unit-tests-music.js').then((m) => m.addMusicTests),
-  chordsExtra: () => import('./unit-tests-chords-extra.js').then((m) => m.addChordExtraTests),
-  sampler: () => import('./unit-tests-sampler.js').then((m) => m.addSamplerTests),
-  voicing: () => import('./unit-tests-voicing.js').then((m) => m.addVoicingTests),
-  director: () => import('./unit-tests-director.js').then((m) => m.addDirectorTests),
-  develop: () => import('./unit-tests-develop.js').then((m) => m.addDevelopTests),
-  soundGame: () => import('./unit-tests-sound-game.js').then((m) => m.addSoundGameTests),
-  summer: () => import('./unit-tests-summer.js').then((m) => m.addSummerTests),
-  melody: () => import('./unit-tests-melody.js').then((m) => m.addMelodyTests),
-  fallsSound: () => import('./unit-tests-falls-sound.js').then((m) => m.addFallsSoundTests),
-  campSound: () => import('./unit-tests-camp-sound.js').then((m) => m.addCampSoundTests),
-  musicRender: () => import('./unit-tests-music-render.js').then((m) => m.addMusicRenderTests),
-};
+/** Groups that run on every partial run: quick, and they guard what every island depends on (tools/affected-tests.mjs). */
+export const CORE = ['rng', 'save', 'format9', 'smoke'];
+
+/**
+ * A group name to compare by, so an older camelCase link (?groups=campLock) still finds camp-lock.
+ * @param {string} g
+ */
+export const groupId = (g) => g.toLowerCase().replace(/[^a-z0-9]/g, '');
+
+/**
+ * A test file's add...Tests function, by its key (tools/unit-tests-<key>.js).
+ * @param {string} key @returns {Promise<AddTests>}
+ */
+export async function loadTestFile(key) {
+  const mod = await import(`./unit-tests-${key}.js`);
+  const add = Object.entries(mod).find(([k, v]) => /^add\w*Tests$/.test(k) && typeof v === 'function')?.[1];
+  if (!add) throw new Error(`tools/unit-tests-${key}.js exports no add...Tests function`);
+  return add;
+}
 
 /** @param {any} cond @param {string} [msg] */
 export function assert(cond, msg = 'assertion failed') {

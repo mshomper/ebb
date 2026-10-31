@@ -403,3 +403,6 @@ checkAllBtn.addEventListener('click', () => run(rows, true));
 checkAllBtn.disabled = false;
 fitFrames();
 say(statusEl, 'ok', 'Ready. Press Check all, or Check this size on any row.');
+
+// A module (the page loads it with type="module"), not a script sharing names with the others.
+export {};

@@ -1,13 +1,15 @@
-// Which unit tests a change needs (Matt, October 22, 2026): sessions run the groups a change can
-// reach while they work, and the full suite once at handoff. Node, no npm packages.
+// Which unit tests a change needs (Matt, October 22 and 31, 2026): a branch runs the groups its
+// changes reach, while it works and at handoff, with `node tools/run-tests.mjs --affected` (which
+// asks this file); the full suite runs once, on the combined tip in the orchestrator's merge queue.
+// Node, no npm packages.
 //
 //   node tools/affected-tests.mjs                  what this branch changed against origin/main
 //   node tools/affected-tests.mjs src/a.js b.json  these files instead
 //
-// It prints the groups to run, the page link (tools/unit-tests.html?groups=...), and whether
-// tools/determinism.html is needed. A group is one test file listed in tools/unit-tests-parallel.js
-// (by its key), or one group of the tests written on the test page itself (by its name, as a slug:
-// 'sky and seasons' is sky-and-seasons), or the page's WebGPU files (falls, quality).
+// It prints the groups to run, the Node command and the page link (tools/unit-tests.html?groups=...),
+// and whether tools/determinism.html is needed. A group is one test file in tools/unit-tests-index.js (by its
+// key, its file name: tools/unit-tests-<key>.js), or one group of the tests still written on the
+// test page itself (by its name, as a slug: workers, palette).
 //
 // How a group reaches a file: the test file's imports (static, dynamic and new URL(...)), followed
 // through src/ recursively, and the files its code names in strings: a recipe id ('world/walker',
@@ -29,18 +31,19 @@ import { readFileSync, readdirSync, existsSync, statSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { join, dirname, resolve, relative, posix } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { scanTests } from './index-tests.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 export const REPO = resolve(HERE, '..');
 
-/** Groups that always run: quick, and they guard what every island depends on. */
+/** Groups that always run: quick, and they guard what every island depends on (as in tools/unit-tests-parallel.js). */
 export const CORE = ['rng', 'save', 'format9', 'smoke'];
-/** Files that need no tests. */
-export const NO_TESTS = [/^docs\//, /\.md$/i, /^brand\//, /^\.claude\//, /^\.gitignore$/, /^\.gitattributes$/, /^LICENSE/i];
+/** Files that need no tests (both runners check the test list whenever they run). */
+export const NO_TESTS = [/^tools\/unit-tests-index\.js$/, /^tools\/typecheck-baseline\.json$/, /^docs\//, /\.md$/i, /^brand\//, /^\.claude\//, /^\.gitignore$/, /^\.gitattributes$/, /^LICENSE/i];
 /** Files no unit test can reach (the app shell, the DOM UI): the core runs, and a note says to check them in the game. */
 export const NO_UNIT_TESTS = [/^src\/app\.js$/, /^src\/main\.js$/, /^src\/ui\//, /^index\.html$/, /^src\/render\//, /^src\/shaders\//, /^play\.cmd$/, /^tools\/(?!unit-tests).*\.(html|js|mjs|css)$/, /^tools\/assets\/(?!models\.json)/];
 /** The test runner itself: a change here runs everything. */
-export const RUNNER = [/^tools\/unit-tests\.(js|html)$/, /^tools\/unit-tests-(parallel|worker)\.js$/, /^tools\/affected-tests\.mjs$/];
+export const RUNNER = [/^tools\/unit-tests\.(js|html)$/, /^tools\/unit-tests-(parallel|worker)\.js$/, /^tools\/affected-tests\.mjs$/, /^tools\/(run-tests|run-tests-env|run-tests-env-worker|index-tests)\.mjs$/];
 /** Changes that also need tools/determinism.html. */
 export const DETERMINISM = [/^src\/sim\//, /^src\/world\//, /^src\/save\//, /^src\/core\/rng\.js$/, /^recipes\/world\//];
 
@@ -159,7 +162,10 @@ function reach(start, cat, memo = new Map()) {
  */
 function pageGroups(cat) {
   const file = 'tools/unit-tests.js';
-  const src = readFileSync(join(REPO, file), 'utf8');
+  const whole = readFileSync(join(REPO, file), 'utf8');
+  // The tests and their helpers only: the runner below them loads every test file.
+  const cut = whole.indexOf('// ---- runner and rendering ----');
+  const src = cut > 0 ? whole.slice(0, cut) : whole;
   // Imported names -> their module.
   /** @type {Map<string, string>} */ const names = new Map();
   for (const m of src.matchAll(/import\s+([\s\S]*?)\s+from\s+['"]([^'"]+)['"]/g)) {
@@ -180,7 +186,7 @@ function pageGroups(cat) {
   tops.forEach((m, i) => helpers.set(m[1] ?? m[2], src.slice(m.index, tops[i + 1]?.index ?? src.length)));
   // Each test call's text, up to the next top-level statement.
   const calls = [...src.matchAll(/^test\((\w+|'[^']*'),/gm)];
-  const ends = [...src.matchAll(/^(?:test\(|const |let |function |async function |\/\/ ----|addFallsTests|addQualityTests)/gm)].map((m) => m.index);
+  const ends = [...src.matchAll(/^(?:test\(|const |let |function |async function |\/\/ ----)/gm)].map((m) => m.index);
   /** @type {Map<string, Set<string>>} */ const groups = new Map();
   for (const c of calls) {
     const g = c[1].startsWith("'") ? c[1].slice(1, -1) : consts.get(c[1]) ?? c[1];
@@ -229,12 +235,8 @@ export function buildMap() {
   const cat = catalog();
   const memo = new Map();
   /** @type {Map<string, Set<string>>} */ const map = new Map();
-  const par = readFileSync(join(REPO, 'tools/unit-tests-parallel.js'), 'utf8');
-  for (const m of par.matchAll(/^\s+(\w+): \(\) => import\('\.\/([^']+)'\)/gm)) map.set(m[1], reach([`tools/${m[2]}`], cat, memo));
+  for (const key of Object.keys(scanTests())) map.set(key, reach([`tools/unit-tests-${key}.js`], cat, memo));
   for (const [g, files] of pageGroups(cat)) map.set(g, reach(files, cat, memo));
-  // The page's WebGPU files.
-  map.set('falls', reach(['tools/unit-tests-falls.js'], cat, memo));
-  map.set('quality', reach(['tools/unit-tests-quality.js'], cat, memo));
   return map;
 }
 
@@ -285,7 +287,7 @@ function gitExe() {
 }
 
 /** What this branch changed against origin/main, committed or not. */
-function changedFiles() {
+export function changedFiles() {
   const git = gitExe();
   const run = (/** @type {string[]} */ args) => execFileSync(git, args, { cwd: REPO, encoding: 'utf8' }).split(/\r?\n/).filter(Boolean);
   const committed = run(['diff', '--name-only', 'origin/main...HEAD']);
@@ -304,6 +306,7 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
   if (r.full) console.log(`Full suite: ${r.why.join('; ')}.`);
   else console.log(`Groups: core (${CORE.join(', ')})${r.groups.length ? ` + ${r.groups.join(', ')}` : ' only'}.`);
   if (r.untested.length) console.log(`No unit test reaches ${r.untested.join(', ')}: check those by hand (in the game, or on their own tools page).`);
-  console.log(`Open: ${pageUrl(r)}`);
+  const how = !given.length ? ' --affected' : r.full ? '' : r.groups.length ? ` --groups=${r.groups.join(',')}` : ' --core';
+  console.log(`Run: node tools/run-tests.mjs${how} (or open ${pageUrl(r)})`);
   console.log(r.determinism ? 'Determinism: yes, open tools/determinism.html too.' : 'Determinism: not needed.');
 }

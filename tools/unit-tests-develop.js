@@ -17,7 +17,7 @@ export function addDevelopTests(test, assert, eq) {
   /** @type {Promise<any> | null} */
   let loaded = null;
   const load = () => {
-    // The browser fetches the recipe; Node (tools/run-audio-tests.mjs) reads it from disk.
+    // The browser fetches the recipe; Node (tools/run-tests.mjs) reads it from disk.
     const j = async (/** @type {string} */ p) => {
       const url = new URL(`../${p}`, import.meta.url);
       if (url.protocol === 'file:') { const fs = await import('node:fs/promises'); return JSON.parse(await fs.readFile(url, 'utf8')); }
