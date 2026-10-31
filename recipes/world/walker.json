@@ -23,6 +23,7 @@
   "camera": { "distanceM": [1.8, 5.2], "startM": 3, "pitchDeg": [-8, 45], "startPitchDeg": 14, "lookHeightM": 1.0, "minEyeHeightM": 0.28, "orbitDegPerPx": 0.1, "turnHalfLifeS": 0.16 },
   "words": {
     "down": "Go down",
+    "photo": "Photo",
     "up": "Go up",
     "barUnder": "The bar is under water.",
     "lowTideIn": "Low tide in about {h} hours.",

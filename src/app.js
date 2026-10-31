@@ -21,6 +21,8 @@ import { createExposurePass } from './render/passes/post/exposure.js';
 import { createTonemapPass } from './render/passes/post/tonemap.js';
 import { createBloomPass } from './render/passes/post/bloom.js';
 import { createPaletteBaker } from './render/passes/post/lut-bake.js';
+import { createDofPass } from './render/passes/post/dof.js';
+import { createPhotoMode } from './render/photo-mode.js';
 import { createGroundDetail } from './render/ground-detail.js';
 import { createAtmosphere } from './render/sky/atmosphere.js';
 import { createLighting } from './render/lighting.js';
@@ -448,6 +450,9 @@ export async function startApp(canvas, hooks = {}) {
   let groundRequested = false;
   const bloom = createBloomPass({ levels: tierSettings.bloomLevels, mix: postRecipe.bloom.mix, radius: postRecipe.bloom.radius, karis: postRecipe.bloom.karis });
   const tonemap = createTonemapPass({ bloom, luts: baker.views, recipe: postRecipe });
+  // Photo mode's depth of field (B2 P1): on the HDR image before exposure and bloom, only while it is open.
+  const photoRecipe = await loadRecipe('world/photo');
+  const dof = createDofPass({ recipe: photoRecipe, fovYDeg: camRecipe.fovYDeg });
   // The journal's show-where wash (store slice `wash`, src/world/journal/wash.js), painted last.
   tonemap.setWash(getStore('wash') ?? null);
   const unWash = subscribeStore('wash', (/** @type {any} */ w) => tonemap.setWash(w));
@@ -1197,6 +1202,8 @@ export async function startApp(canvas, hooks = {}) {
     camp.fx,
     // Beach glints: added light on the keepsakes and finds, after everything that could hide them.
     glints,
+    // Photo mode's lens, on the finished HDR image (passes/post/dof.js).
+    dof,
     exposure,
     bloom,
     tonemap,
@@ -1204,6 +1211,45 @@ export async function startApp(canvas, hooks = {}) {
   // The banded flame is painted in the tonemap from the fire sim's heat (camp-fire.js).
   tonemap.setFire(camp.firePass);
   await graph.setup();
+  // Photo mode (B2 P1, src/render/photo-mode.js): P or Photo on the ground bar; a free camera that
+  // never startles, world time paused, the lens, a filter and the shot. Opening it puts the shaping
+  // tools, cards and panels away.
+  const photo = createPhotoMode({
+    recipe: photoRecipe, camera, clock, dof, tonemap, device: gpu.device, format: gpu.format,
+    // The ground, a pond's surface or the sea's (the tide), whichever is highest.
+    ground: (x, z) => Math.max(terrain.sampleHeight(x, z), water.tide, water.sim.live ? water.sampleLive(x, z).surface : -Infinity),
+    island: { center: camRecipe.worldCenter ?? [0, 0], radius: camRecipe.worldRadius + camRecipe.targetMargin },
+    walker: () => { const y = walk.below ? walk.you() : null; return y ? [y[0], y[2]] : null; },
+    viewSize: () => [cssW, cssH],
+    onOpen: () => {
+      finishStroke();
+      pouring = null;
+      pieces.cancelCarry();
+      updateStore('tools', (t) => { t.tool = null; });
+      terrain.setRing({ visible: false, level: null });
+      updateStore('identify', () => null);
+      hoverOff();
+      // A seed, a gift or the net in hand is put away, so no ring lies on the ground in the picture.
+      sowing.putAway();
+      if (getStore('journalUi')?.open) dispatch({ type: 'ui.journal', open: false });
+      if (getStore('keeperUi')?.open) dispatch(/** @type {any} */ ({ type: 'ui.keeper', open: false }));
+    },
+  });
+  // `?photo` (testing, unsaved): on foot, then straight into photo mode; `?photo=soft` or
+  // `?photo=pencil` with that filter, `&stop=0` the widest aperture (recipes/world/photo.json dof.fStops).
+  if (params.has('photo')) afterGrow(() => {
+    if (!walk.below) dispatch({ type: 'walk.down', source: 'key' });
+    // Once the glide down has settled behind you (or after a few seconds in any case).
+    const t0 = performance.now();
+    const wait = setInterval(() => {
+      const t = performance.now() - t0;
+      if ((t < 2500 || !walk.below || camera.driven()) && t < 9000) return;
+      clearInterval(wait);
+      dispatch({ type: 'photo.open' });
+      const f = params.get('photo') ?? '', stop = Number.parseInt(params.get('stop') ?? '', 10);
+      dispatch({ type: 'photo.set', patch: { ...(photoRecipe.filters.list.includes(f) ? { filter: f } : {}), ...(Number.isFinite(stop) ? { stop } : {}) } });
+    }, 250);
+  });
   // Quality while playing (src/render/quality-live.js): dynamic resolution and the one automatic
   // tier step down with its calm note.
   const live = createQualityLive({
@@ -1433,6 +1479,8 @@ export async function startApp(canvas, hooks = {}) {
   let sowScreen = /** @type {number[] | null} */ (null);
   canvas.addEventListener('pointermove', (e) => {
     if (e.pointerType !== 'mouse') return;
+    // Photo mode names nothing and lifts nothing: what is under the pointer stays as it is in the picture.
+    if (getStore('photo')?.open) { hoverOff(); return; }
     const C = walkerRecipe.click;
     const ox = e.offsetX, oy = e.offsetY;
     // Something in hand (D1a): the sowing ring follows the pointer, and nothing else is named.
@@ -1474,7 +1522,7 @@ export async function startApp(canvas, hooks = {}) {
     canvas, walk, camera, recipe: walkerRecipe,
     // A card or panel over the view: keys wait, and the pointer is freed to use it.
     open: () => !!getStore('identify') || !!getStore('journalUi')?.open || !!getStore('haul') || !!getStore('shelfPending')
-      || !!getStore('sketchbookUi')?.open || !!getStore('stationView') || !!getStore('keeperUi')?.open,
+      || !!getStore('sketchbookUi')?.open || !!getStore('stationView') || !!getStore('keeperUi')?.open || !!getStore('photo')?.open,
     aiming: () => !!getStore('hand'),
     use: (x, y) => dispatch({ type: 'look.tap', x, y, source: 'mouse' }),
     hover: (x, y) => {
@@ -1710,6 +1758,8 @@ export async function startApp(canvas, hooks = {}) {
   }
 
   const unAction = onAction((a) => {
+    // Photo mode first: while it is open it takes the view actions and the rest wait.
+    if (photo.action(a)) return;
     // Below (the walker): a drag looks around you, a zoom stays on you, a tap walks there, and the
     // shaping tools are put away until you go up.
     if (walk.below) {
@@ -2201,7 +2251,8 @@ export async function startApp(canvas, hooks = {}) {
       canvas.width = devW;
       canvas.height = devH;
     }
-    const [renderW, renderH] = live.internalSize(devW, devH);   // dynamic resolution
+    // Dynamic resolution; a photo's frame is drawn at its own size (src/render/photo-mode.js).
+    const [renderW, renderH] = photo.shotSize(devW, devH) ?? live.internalSize(devW, devH);
     graph.resize(renderW, renderH);
 
     const t = clock.advance(realDt);
@@ -2210,6 +2261,7 @@ export async function startApp(canvas, hooks = {}) {
     walk.update(realDt);
     arriveForCard();
     gather.update();
+    photo.update(realDt);
     camera.update(realDt);
     presence.update(realDt);
     hen.update(realDt);
@@ -2264,7 +2316,7 @@ export async function startApp(canvas, hooks = {}) {
       lutFade: look.fade, lutFrom: look.from, lutTo: look.to, look: look.look, purkinje: look.purkinje,
       outline: look.outline, split: typeof split === 'number' ? split : -1,
     });
-    const ev100 = exposure.ev100(realDt) - (look.exposureComp ?? 0);
+    const ev100 = exposure.ev100(realDt) - (look.exposureComp ?? 0) - photo.ev();
     if (frameIndex % 15 === 0) updateStore('render', (r) => ({ ...(r ?? {}), ev100 }));
 
     graph.writeFrameUniforms(uniforms.pack({
@@ -2331,10 +2383,15 @@ export async function startApp(canvas, hooks = {}) {
       cameraPos: camera.eye, invViewProj: camera.invViewProj, view: camera.view,
     });
     baker.encode(encoder);
+    const shooting = photo.shooting;
+    photo.beforeRender(graph.size);
     graph.render(encoder);
+    photo.afterRender(encoder);
     gpu.device.queue.submit([encoder.finish()]);
     graph.afterSubmit();
-    live.afterSubmit(gpu.device.queue, frameIndex > 0 ? frameMs : 0);
+    photo.afterSubmit();
+    // A photo's large frame is not counted against the dynamic resolution.
+    live.afterSubmit(gpu.device.queue, frameIndex > 0 && !shooting ? frameMs : 0);
     sim.afterSubmit();
     exposure.afterSubmit();
     tonemap.afterSubmit();
@@ -2384,6 +2441,7 @@ export async function startApp(canvas, hooks = {}) {
     observer.disconnect();
     unAction();
     walkControls.dispose();
+    photo.dispose();
     walk.dispose();
     sowOverlay.dispose();
     unHistory();
@@ -2537,6 +2595,8 @@ export async function startApp(canvas, hooks = {}) {
     presence,
     /** The orbit camera, for tools and checks (eye, target, distance). */
     camera,
+    /** Photo mode (src/render/photo-mode.js), for tools and checks. */
+    photo,
     /** The island this world started from, and the islands there are (the badge's switch). */
     island: { current: island, list: islands },
     /** This island's save (the badge says whether it is kept, and can start it again). */

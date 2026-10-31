@@ -8,6 +8,7 @@
     "world/exposure": "world/exposure.json",
     "world/shadows": "world/shadows.json",
     "world/post": "world/post.json",
+    "world/photo": "world/photo.json",
     "world/terrain": "world/terrain.json",
     "world/water": "world/water.json",
     "world/shore": "world/shore.json",

@@ -1,13 +1,14 @@
 // @ts-check
 // Tonemap and present (docs/05): bloom add, Purkinje, AgX with the palette's look, the palette
-// LUT crossfade, the camp fire's banded flame (painted after the palette, Matt's fire study), the soft outline, the journal's show-where wash (J2b) and dither, into the canvas. Also reads back single pixels of
+// LUT crossfade, the camp fire's banded flame (painted after the palette, Matt's fire study), the soft outline, the journal's show-where wash (J2b), photo mode's filter and dither, into the canvas (or, for a photo, into a
+// texture of its own). Also reads back single pixels of
 // the final image for the palette lab's eyedropper.
 
 import { makeBuffer, makeShaderModule } from '../../../core/gpu.js';
 
 /** @typedef {import('../../frame-graph.js').PassContext} PassContext */
 
-const POST_BYTES = 352;
+const POST_BYTES = 416;
 
 /** '#rrggbb' to [r, g, b] 0..1 (display sRGB, as the palette's output). @param {string} hex */
 const rgb = (hex) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255);
@@ -33,7 +34,13 @@ export function createTonemapPass(opts) {
     purkinje: 1,
     outline: { amount: 0.35, terrainAmount: 0.1, chroma: 1.1 },
     split: -1,
+    // Photo mode's filter (B2 P1): 0 none, 1 Soft, 2 Pencil, and its numbers (recipes/world/photo.json filters).
+    filter: 0, filters: /** @type {any} */ (null),
+    // Photo mode's depth of field is drawn this frame: the HDR alpha holds each pixel's blur radius.
+    lens: false,
   };
+  /** A photo's own target for the next frame, instead of the canvas (passes/post/photo.js). @type {GPUTexture | null} */
+  let capture = null;
   // The journal's show-where wash: a 1 m map (rg8: lives, would do well), its recipe, pencil
   // circles, and a fade. The last map stays while the wash fades out.
   /** @type {GPUDevice | null} */ let device = null;
@@ -68,6 +75,9 @@ export function createTonemapPass(opts) {
 
     /** @param {Partial<typeof state>} v */
     set(v) { Object.assign(state, v); },
+
+    /** Draw the next frame into this texture (a photo) instead of the canvas; null for the canvas. @param {GPUTexture | null} t */
+    captureTo(t) { capture = t; },
 
     /** The camp fire pass whose flame is painted here. @param {{ heatView: () => GPUTextureView | null, paint: () => Float32Array }} f */
     setFire(f) { fire = f; },
@@ -169,6 +179,8 @@ export function createTonemapPass(opts) {
       if (washAmount < 0.002 && !goal) washAmount = 0;
       const px = height / 1440;
       f.fill(0, 32, 64);
+      // The lens: ink fades from 0.75 to 3 px of blur (a line is about a pixel wide).
+      if (state.lens) { f[60] = 1; f[61] = 0.75; f[62] = 3; }
       if (W && M) {
         f[32] = M.origin; f[33] = M.origin; f[34] = 1 / (M.n * M.cell); f[35] = washAmount;
         f.set(rgb(W.ink), 36); f[39] = W.liveAlpha;
@@ -178,9 +190,20 @@ export function createTonemapPass(opts) {
       }
       // The camp fire: on, halo strength, then its bands (lib-fire-bands.wgsl FireBands).
       if (fire) f.set(fire.paint(), 64); else f.fill(0, 64, 88);
+      // Photo mode's filter: Soft (lift, saturation, vignette, glow) or Pencil (colour kept, hatch
+      // spacing at the size drawn, graphite, grain, outline), on the paper's and graphite's colours.
+      f.fill(0, 88, 104);
+      const F = state.filters;
+      if (state.filter && F) {
+        const outH = capture ? capture.height : ctx.context.canvas.height;
+        f[88] = state.filter; f[89] = F.soft.lift; f[90] = F.soft.saturation; f[91] = F.soft.vignette;
+        f[92] = F.pencil.tint; f[93] = Math.max(4, F.pencil.hatchPxAt1440 * outH / 1440); f[94] = F.pencil.ink; f[95] = F.pencil.grain;
+        f.set(rgb(F.paperHex), 96); f[99] = F.pencil.outline;
+        f.set(rgb(F.pencil.graphiteHex), 100); f[103] = F.soft.glow;
+      }
       ctx.device.queue.writeBuffer(postBuffer, 0, data);
 
-      const swap = ctx.context.getCurrentTexture();
+      const swap = capture ?? ctx.context.getCurrentTexture();
       const pass = encoder.beginRenderPass({
         label: 'tonemap',
         colorAttachments: [{ view: swap.createView(), loadOp: 'clear', storeOp: 'store', clearValue: [0, 0, 0, 1] }],
@@ -193,6 +216,8 @@ export function createTonemapPass(opts) {
       pass.draw(3);
       pass.end();
 
+      // A photo's frame: the canvas keeps the last frame shown, and picks wait for the next.
+      if (capture) { capture = null; return; }
       // Eyedropper: copy single pixels of the finished frame into small mappable buffers.
       for (const p of picks) {
         const buffer = ctx.device.createBuffer({ label: 'pick', size: 256, usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST });

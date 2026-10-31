@@ -56,6 +56,11 @@ import { emit } from '../core/events.js';
  *   | { type: 'music.pass', heart: import('../audio/music/hearts.js').Heart }
  *   | { type: 'look.palette', id: string }
  *   | { type: 'look.tap', x: number, y: number, source: Source }
+ *   | { type: 'photo.open', source?: Source }
+ *   | { type: 'photo.close', source?: Source }
+ *   | { type: 'photo.toggle', source?: Source }
+ *   | { type: 'photo.set', patch: Record<string, any> }
+ *   | { type: 'photo.shot', source?: Source }
  *   | { type: 'ui.identify' }
  *   | { type: 'creature.name', id: number, name: string, sp?: string }
  *   | { type: 'ui.hideHud', hidden?: boolean, source?: Source }

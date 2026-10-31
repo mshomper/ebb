@@ -5,6 +5,8 @@
 // A short still left click with no tool is a tap (look.tap: the journal names what grows there).
 // Keys: 1 2 3 pick a tool (again returns to look), J opens or closes the journal, Esc closes the
 // journal or returns to look, [ ] resize the brush, Ctrl+Z undo, Ctrl+Shift+Z or Ctrl+Y redo.
+// P opens photo mode (src/render/photo-mode.js); while it is open, P or Esc closes it and no other
+// key here does anything (its own keys fly the camera).
 // On foot, W A S D, Shift, Space and mouse look are src/world/walk/controls.js; an Esc that frees the
 // pointer from mouse look does nothing more.
 
@@ -123,6 +125,10 @@ export function attachDesktopInput(canvas, opts, brush) {
       dispatch({ type: 'history.redo', source: 'key' });
     } else if (ctrl || e.altKey) {
       return;
+    } else if (get('photo')?.open) {
+      if (e.code === 'KeyP' || e.key === 'Escape') dispatch({ type: 'photo.close', source: 'key' });
+    } else if (e.code === 'KeyP') {
+      dispatch({ type: 'photo.open', source: 'key' });
     } else if (e.code === 'Space') {
       if (t && t.tagName === 'BUTTON') return;
       spaceHeld = true;

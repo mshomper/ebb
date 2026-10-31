@@ -81,7 +81,8 @@ export function createPresence(opts) {
         you.speed = w.speed;
         you.stillS = w.speed < stillMps ? you.stillS + realDt : 0;
         you.posture = w.posture;
-        you.gaze = w.gaze;
+        // Photo mode's free camera turns the view, not you: your gaze stays where it was.
+        if (!camera.free) you.gaze = w.gaze;
         you.ringK = opts.ringK?.() ?? 1;
         you.known = opts.known?.() ?? null;
       } else you.stillS = 0;
