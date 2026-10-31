@@ -154,7 +154,7 @@ export function createLanterns(o) {
       const t = performance.now() / 1000, F = L.light;
       return list().map((p, i) => {
         const at = standing(p).glass;
-        return { x: at[0], y: at[1], z: at[2], rangeM: F.rangeM, cd: F.cd * g * flicker(t, F.flicker, F.flickerHz, 5 + i), rgb };
+        return { key: `lantern:${p.id ?? i}`, x: at[0], y: at[1], z: at[2], rangeM: F.rangeM, cd: F.cd * g * flicker(t, F.flicker, F.flickerHz, 5 + i), rgb };
       });
     },
     /** The card a tap on a lantern opens, or null. @param {number} x @param {number} z */

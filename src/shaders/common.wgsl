@@ -38,10 +38,11 @@ struct LightUniforms {
   shadowTexel: vec4f,       // world-space texel size per cascade (xyz), w: filter taps for this tier
   weather: vec4f,           // x cloud cover, y rain, z mist, w ground wetness (all 0..1)
   aerial: vec4f,            // x aerial-perspective max distance (m), y slice count, z extra shadow normal offset on upright faces (texels), w point light count
-  points: array<vec4f, 8>,  // small lights (docs/06; the camp's fire and lantern): [2i] position (m), range (m); [2i + 1] rgb intensity (cd), w spare
+  points: array<vec4f, 16>, // small lights (docs/06; the fire, lanterns, the furnace): [2i] position (m), range (m); [2i + 1] rgb intensity (cd), w spare
 };
 
-const MAX_POINT_LIGHTS: u32 = 4u;
+// The most small lights (src/render/lighting.js MAX_POINT_LIGHTS must match; light-pick.js chooses which).
+const MAX_POINT_LIGHTS: u32 = 8u;
 
 const PI: f32 = 3.14159265358979;
 

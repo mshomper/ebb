@@ -109,6 +109,8 @@ The moon uses the same formulas with `λ☾ = λ☉ + 2π · moonPhase`. Its rig
 
 ### Lanterns and small lights
 
+**As built (October 31, 2026, the small-light picker on `m2-underground-spring`):** the small lights ride in the lighting uniforms, at most **8** (`MAX_POINT_LIGHTS` in `src/render/lighting.js` and `src/shaders/common.wgsl`; `LIGHT_UNIFORM_BYTES` 528). Every source hands over all its lights with a key (`camp-fire`, `camp-embers`, `camp-lantern`, `furnace`, `passing-boat`, `lantern:<id>`), and each frame `src/render/light-pick.js` draws the most important: intensity (luminance) over squared distance to the eye, leaving out any whose range ends more than `viewReachM` short of what the view looks at. A light entering or leaving the drawn set fades over `fadeS` (0.3 s); one going out keeps its place until it is dark, so nothing pops and the count never passes the limit. A zone's lighting (the spring's cave, doc 26) keeps its own list. Numbers: `recipes/world/small-lights.json`. Test link: `?lanterns=12&hour=20` sets a dozen lanterns round the camp at dusk. The plan below (a storage buffer of 64, tiled binning) is for when fireflies need more.
+
 - Lights live in one storage buffer: position, range, intensity (candela), color temperature, flicker seed, kind. Maximum 64.
 - Lantern default: 2,200 K, 8 cd (a small candle lantern), range 8 m, inverse-square falloff with a smooth window (Karis 2013). Flicker is a two-octave noise on intensity, ±6%, at about 3 Hz.
 - Fewer than 9 lights: shaders loop over all of them. More: a compute pass bins lights into 32×32 pixel screen tiles.

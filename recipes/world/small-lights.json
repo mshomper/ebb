@@ -1,0 +1,8 @@
+{
+  "type": "small-lights",
+  "version": 1,
+  "note": "The small lights (doc 06, Lanterns and small lights; src/render/light-pick.js): the fire, the hand lantern, the furnace, placed lanterns, the passing boat, later fireflies. The shaders take at most eight (MAX_POINT_LIGHTS in src/render/lighting.js and common.wgsl); max may ask for fewer. Each frame the lights are scored by intensity over squared distance to the eye, and any whose range ends more than viewReachM short of what the view looks at is left out; the best max are drawn. A light entering or leaving the drawn set fades over fadeS real seconds, and one fading out keeps its place until it is dark, so nothing pops and the count never passes max. A zone's lighting (the spring's cave) keeps its own list and fades.",
+  "max": 8,
+  "fadeS": 0.3,
+  "viewReachM": 25
+}

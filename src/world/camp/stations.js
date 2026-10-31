@@ -536,7 +536,7 @@ export function createStations(k) {
       if (!at || !L || !built('furnace') || furnaceNow() !== 'burning') return [];
       const d = FR.doorAt ?? [0, 0.1, 0.35], c = Math.cos(at.yaw), sn = Math.sin(at.yaw);
       const fl = 1 - (L.flicker ?? 0) * (0.5 + 0.5 * Math.sin(time * 6.283 * (L.flickerHz ?? 0.7)) * Math.sin(time * 4.1 + 1.3));
-      return [{ x: at.x + d[0] * c + (d[2] + (L.outM ?? 0.1)) * sn, y: at.y + d[1] + (L.upM ?? 0.06), z: at.z - d[0] * sn + (d[2] + (L.outM ?? 0.1)) * c, rangeM: L.rangeM, cd: L.cd * fl, rgb: L.rgb }];
+      return [{ key: 'furnace', x: at.x + d[0] * c + (d[2] + (L.outM ?? 0.1)) * sn, y: at.y + d[1] + (L.upM ?? 0.06), z: at.z - d[0] * sn + (d[2] + (L.outM ?? 0.1)) * c, rangeM: L.rangeM, cd: L.cd * fl, rgb: L.rgb }];
     },
     /** What the furnace is doing now (furnace.js furnaceState). */
     furnaceNow,

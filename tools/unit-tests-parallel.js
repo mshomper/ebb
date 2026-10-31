@@ -91,6 +91,7 @@ export const PARALLEL = {
   keeper: () => import('./unit-tests-keeper.js').then((m) => m.addKeeperTests),
   lantern: () => import('./unit-tests-lantern.js').then((m) => m.addLanternTests),
   ore: () => import('./unit-tests-ore.js').then((m) => m.addOreTests),
+  smallLights: () => import('./unit-tests-small-lights.js').then((m) => m.addSmallLightsTests),
   photo: () => import('./unit-tests-photo.js').then((m) => m.addPhotoTests),
   // The audio tests that need no Web Audio (workers have none). The two that render sound through
   // an OfflineAudioContext (pond and keepsake sounds) stay on tools/unit-tests-audio.html, which

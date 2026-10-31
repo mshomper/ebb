@@ -442,7 +442,9 @@ export async function startApp(canvas, hooks = {}) {
   const atmosphere = await createAtmosphere(gpu.device, skyRecipe, tierSettings);
   const shadowPass = createShadowPass({ terrain, recipe: shadowRecipe, terrainRecipe, tierShadows: tierSettings.shadows, worldRadius: camRecipe.worldRadius,
     getEye: () => camera.eye, cliffDetailM: tierSettings.cliffDetailM });
-  const lighting = createLighting(gpu.device, atmosphere, shadowPass.resources(gpu.device));
+  // The small lights (doc 06): up to eight, the most important to the view, fading in and out (recipes/world/small-lights.json).
+  const smallLights = await loadRecipe('world/small-lights');
+  const lighting = createLighting(gpu.device, atmosphere, shadowPass.resources(gpu.device), undefined, smallLights);
   const exposure = createExposurePass(exposureRecipe);
   const daylight = createDaylight({ sky: skyRecipe, seasons: seasonsRecipe, shadows: shadowRecipe });
 
@@ -927,7 +929,8 @@ export async function startApp(canvas, hooks = {}) {
   const cavePass = createCavePass({ active: () => zones.active() === 'spring-cave' });
   const caveBeam = cavePass.beamPass();
   const caveSH = makeBuffer(gpu.device, { label: 'cave-sh9', size: 9 * 16, usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST });
-  const caveLighting = createLighting(gpu.device, { transmittance: atmosphere.transmittance, aerial: atmosphere.aerial, sh: caveSH }, shadowPass.resources(gpu.device), lighting.layout);
+  // The cave's own lighting keeps its own small lights (none yet) apart from the island's.
+  const caveLighting = createLighting(gpu.device, { transmittance: atmosphere.transmittance, aerial: atmosphere.aerial, sh: caveSH }, shadowPass.resources(gpu.device), lighting.layout, smallLights);
   const caveSHData = new Float32Array(36);
   const caveRecipe = await loadRecipe('world/spring-cave');
   const springCave = createSpringCave({ R: caveRecipe, seed, dig, terrain, walk, pack, pass: cavePass, zones,
@@ -997,6 +1000,22 @@ export async function startApp(canvas, hooks = {}) {
         camera.setPose({ ...camera.pose(), target: [p.x, terrain.sampleHeight(p.x, p.z) + 0.5, p.z], yaw: yaw + Math.PI + 0.8, distance: 3.2, pitch: (12 * Math.PI) / 180 });
         walk.downHere();
         return;
+      }
+    } });
+  }
+  // `?lanterns=N` (a test link, unsaved; doc 06): N lanterns (up to 16) stood in a ring round the
+  // camp, more than the eight small lights the shaders take, so the picker's choice and its fades can
+  // be seen as you walk among them (add `&hour=20` for dusk).
+  if (params.has('lanterns') && !back) {
+    const want = Math.max(1, Math.min(16, Number.parseInt(params.get('lanterns') ?? '12', 10) || 12));
+    let stood = false;
+    sim.addSystem({ id: 'lanterns-test', tick() {
+      const pad = stood ? null : getStore('campPad');
+      if (!pad || !water.getSummary?.()) return;
+      stood = true;
+      for (let i = 0; i < want; i++) {
+        const a = (i / want) * 2 * Math.PI, r = (pad.r ?? 4) + 1.6 + (i % 2) * 1.4;
+        lanterns.standNear(pad.x + Math.cos(a) * r, pad.z + Math.sin(a) * r);
       }
     } });
   }
@@ -2489,7 +2508,7 @@ export async function startApp(canvas, hooks = {}) {
       gpu.device.queue.writeBuffer(caveSH, 0, caveSHData);
       // No sky haze down here: an aerial reach far past the cave leaves every distance in it clear.
       caveLighting.write({ shadow: { ...shadowPass.state, strength: 0 }, weather: { cloud: 0, rain: 0, mist: 0, wet: 0 },
-        aerial: { maxDistance: 1e7, slices: atmosphere.aerialSlices } });
+        aerial: { maxDistance: 1e7, slices: atmosphere.aerialSlices }, eye: camera.eye, target: camera.target, dt: realDt });
     }
     graph.writeFrameUniforms(uniforms.pack({
       view: camera.view, proj: camera.proj, viewProj: camera.viewProj, invViewProj: camera.invViewProj,
@@ -2514,6 +2533,7 @@ export async function startApp(canvas, hooks = {}) {
     lighting.write({
       shadow: shadowPass.state, weather: day.weather,
       aerial: { maxDistance: atmosphere.aerialMaxDistance, slices: atmosphere.aerialSlices },
+      eye: camera.eye, target: camera.target, dt: realDt,
     });
 
     /** @type {import('./sim/live-sim.js').FrameInfo} */

@@ -101,7 +101,7 @@ export function createBoatLive(o) {
   function lights() {
     if (!atAnchor()) return [];
     const l = lanternAt(animT);
-    return l ? [{ x: l[0], y: l[1], z: l[2], rangeM: Lt.rangeM, cd: Lt.cd * flicker(animT, Lt.flicker, Lt.flickerHz, 5), rgb: lightRgb }] : [];
+    return l ? [{ key: 'passing-boat', x: l[0], y: l[1], z: l[2], rangeM: Lt.rangeM, cd: Lt.cd * flicker(animT, Lt.flicker, Lt.flickerHz, 5), rgb: lightRgb }] : [];
   }
 
   // ---- choices ----
