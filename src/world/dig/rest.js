@@ -97,11 +97,15 @@ export function cleanDig(v) {
   const cache = Number.isFinite(v.cache) && v.cache >= 0 ? v.cache : null;
   const sleepers = (Array.isArray(v.sleepers) ? v.sleepers : [])
     .filter((/** @type {any} */ s) => s && int(s.c) && s.c >= 0 && int(s.y) && s.y >= 0).map((/** @type {any} */ s) => ({ c: s.c, y: s.y }));
-  return { version: 1, events, firsts, cache, sleepers };
+  // Where the ground gave way above the spring (the spring-ore plan, O2), once per island.
+  const sp = v.spring && Number.isFinite(v.spring.hour) && Number.isFinite(v.spring.x) && Number.isFinite(v.spring.z) ? { hour: v.spring.hour, x: v.spring.x, z: v.spring.z } : null;
+  return { version: 1, events, firsts, cache, sleepers, ...(sp ? { spring: sp } : {}) };
 }
 
 /**
- * @typedef {{ version: 1, events: DugEvent[], firsts: string[], cache: number | null, sleepers: { c: number, y: number }[] }} DigSection
+ * @typedef {{ version: 1, events: DugEvent[], firsts: string[], cache: number | null, sleepers: { c: number, y: number }[],
+ *   spring?: { hour: number, x: number, z: number } }} DigSection
+ *   spring: where and when the ground gave way above the spring (O2), once it has
  */
 
 /** A new island's dig section. */

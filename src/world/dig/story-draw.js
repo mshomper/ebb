@@ -102,3 +102,36 @@ export function bladeMesh(B) {
   for (let j = 0; j < k; j++) idx.push(centre, under[j], under[(j + 1) % k]);
   return { data: new Float32Array(data), indices: Uint32Array.from(idx) };
 }
+
+/**
+ * The stones round the way down (the spring-ore plan, O2; Matt, October 31, 2026: the hole wanted
+ * some 3D shape, like the spring's own stones): a few big boulders half sunk round the mouth over
+ * arcDeg of it, leaving a gap to step up to the edge, and smaller broken stones at the lip. Seeded
+ * by where the hole is, so an island always has the same ring. Pure.
+ * @param {{ x: number, z: number }} hole @param {any} M dig.json story.spring.mouth
+ * @returns {{ x: number, z: number, size: number, yaw: number, pick: number, sink: number, big: boolean }[]}
+ */
+export function mouthStones(hole, M) {
+  const key = hash32(M.seed, Math.round(hole.x * 100), Math.round(hole.z * 100));
+  const r = (/** @type {number} */ i, /** @type {number} */ k) => u01(hash32(key, i, k));
+  const gap = r(0, 0) * Math.PI * 2, arc = (M.arcDeg * Math.PI) / 180, out = [];
+  for (let i = 0; i < M.boulders; i++) {
+    const a = gap + (Math.PI * 2 - arc) / 2 + ((i + 0.2 + r(i, 1) * 0.6) / M.boulders) * arc;
+    const d = M.ringM[0] + (M.ringM[1] - M.ringM[0]) * r(i, 2), size = M.boulderM[0] + (M.boulderM[1] - M.boulderM[0]) * r(i, 3);
+    out.push({ x: hole.x + Math.cos(a) * d, z: hole.z + Math.sin(a) * d, size, yaw: r(i, 4) * Math.PI * 2, pick: r(i, 5), sink: M.sinkShare, big: true });
+  }
+  for (let i = 0; i < M.lip; i++) {
+    const a = ((i + r(i, 11)) / M.lip) * Math.PI * 2, d = M.lipRingM * (0.9 + 0.2 * r(i, 12));
+    const size = M.lipM[0] + (M.lipM[1] - M.lipM[0]) * r(i, 13);
+    out.push({ x: hole.x + Math.cos(a) * d, z: hole.z + Math.sin(a) * d, size, yaw: r(i, 14) * Math.PI * 2, pick: r(i, 15), sink: M.sinkShare * 0.6, big: false });
+  }
+  return out;
+}
+
+/**
+ * The mouth's stones as the pieces pass draws them (the loose stones' own meshes).
+ * @param {ReturnType<typeof mouthStones>} stones @param {(x: number, z: number) => number} ground @param {number} shapes
+ */
+export const mouthBeings = (stones, ground, shapes) => stones.map((s, i) => ({ x: s.x, y: ground(s.x, s.z), z: s.z, yaw: s.yaw, size: s.size,
+  mesh: `stone-${Math.floor(s.pick * shapes) % shapes}`, bone: new Float32Array([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, -s.sink * 0.4, 0, 1]),
+  slope: [0, 0], seed: i * 1.7, half: [0.35, 0.5] }));

@@ -3,7 +3,8 @@
 // their drawn icons; twisted sticks and planks at the workbench; the clay furnace built from deep
 // clay, sand and marram, dry after a night, ore and charcoal in at dusk and metal by morning, nails
 // at once; every make's parts unique and no workbench make over its three spots; the deeper clay
-// fills its own pouch.
+// fills its own pouch. O2: the way down lies just above the spring's head; the cairn trail ends
+// just short of it; the first spadeful there gives way once, into a hole that never fills.
 
 import { cleanCook, layout, partKinds } from '../src/world/camp/making.js';
 import { cleanCamp } from '../src/world/camp/model.js';
@@ -11,6 +12,13 @@ import { morningAfter, furnaceState, furnaceDry, layLoad, cleanLoad } from '../s
 import { itemIconFor, makeIcon } from '../src/ui/icons/item-registry.js';
 import { ITEM_ICON_NAMES } from '../src/ui/icons/items.js';
 import { ICON_NAMES } from '../src/ui/icons/icons.js';
+import { springSpot, trailEndFor, caveInDue } from '../src/world/dig/story.js';
+import { holeNow, closeHole, capHoles, holeAt, cleanHoleFields } from '../src/world/dig/holes.js';
+import { cleanDig } from '../src/world/dig/rest.js';
+import { mouthStones } from '../src/world/dig/story-draw.js';
+import { planTrail } from '../src/world/setpieces/cairn-rules.js';
+import { landmarks, baseSampler } from '../src/world/terrain/landform.js';
+import { subSeed } from '../src/core/rng.js';
 
 const G = 'ore';
 /** @param {string} p */
@@ -105,5 +113,56 @@ export function addOreTests(test, assert, eq) {
     eq(D.clay.kinds.deepclay, 'deep-clay', 'deeper clay is deep clay');
     eq(D.clay.kinds.clay, 'clay', 'the blue-grey is clay');
     assert(D.layers.bank.deep === 'deepclay' && D.layers.reach.blade === 3, 'it lies third under a damp bank, with the blade');
+  });
+
+  test(G, "O2: the way down lies on soil just uphill of the spring's head, the same every time; the trail ends just short of it", async () => {
+    const land = await load('land/starter-island-2'), D = (await load('world/dig')).story, C = await load('setpieces/cairns');
+    const tSeed = subSeed(12345, 'terrain');
+    const a = springSpot(land, tSeed, D), b = springSpot(land, tSeed, D);
+    assert(!!a, 'the starter island has one');
+    eq(JSON.stringify(a), JSON.stringify(b), 'the same spot from the same seed');
+    const lm = landmarks(land, tSeed), base = baseSampler(land, tSeed), sp = /** @type {any} */ (lm.spring), s0 = /** @type {any} */ (a);
+    const d = Math.hypot(s0.x - sp.x, s0.z - sp.z);
+    assert(d <= D.spring.aboveM + D.spring.searchM + 0.01 && d >= 0.5, `near the spring's head (${d.toFixed(2)} m)`);
+    assert(base(s0.x, s0.z)[0] >= base(sp.x, sp.z)[0], 'on the rise, not below the spring');
+    assert(base(s0.x, s0.z)[3] <= D.rockMax, "not on the spring's rock");
+    const camp = { x: land.camp.x, z: land.camp.z }, end = trailEndFor(s0, camp, D.spring.trailBackM);
+    eq(Math.round(Math.hypot(end.x - s0.x, end.z - s0.z) * 10) / 10, D.spring.trailBackM, 'the trail ends trailBackM short');
+    const ground = (/** @type {number} */ x, /** @type {number} */ z) => base(x, z)[0];
+    const t = planTrail(camp, ground, C.trail, 7, end);
+    assert(!!t && t.length === C.trail.count, 'a full trail toward it');
+    const last = /** @type {any} */ (t)[C.trail.count - 1];
+    assert(Math.hypot(last[0] - end.x, last[1] - end.z) < 0.6, 'the last cairn stands at the end, just below the mark');
+    return `${d.toFixed(1)} m from the spring`;
+  });
+
+  test(G, 'O2: the first spadeful by the mark gives way once, only after the letter; that hole never fills, closes or is capped', async () => {
+    const R = await load('world/dig'), SP = R.story.spring, spot = { x: 3, z: 4 };
+    assert(caveInDue(1, 3.2, 4.1, spot, true, null, SP), 'a first-layer dig beside it, once sent');
+    assert(!caveInDue(1, 3.2, 4.1, spot, false, null, SP), 'not before the letter');
+    assert(!caveInDue(2, 3.2, 4.1, spot, true, null, SP), 'only the first layer');
+    assert(!caveInDue(1, 5, 4, spot, true, null, SP), 'not away from it');
+    assert(!caveInDue(1, 3, 4, spot, true, { hour: 1, x: 3, z: 4 }, SP), 'once per island');
+    const stay = { id: 'p1', kind: 'hole', x: 3, z: 4, size: SP.hole.sizeM, depth: 1, layer: 'topsoil', cls: 'soil', dugHour: 0, closedHour: -1, wetH: 0, stays: true };
+    const n = holeNow(stay, 24 * 400, 500, R);
+    assert(n.stage === 0 && !n.gone, 'open a year later, after any rain');
+    eq(closeHole(stay, 10), stay, 'a stroke or water never closes it');
+    const others = Array.from({ length: R.fill.listCap + 3 }, (_, i) => ({ ...stay, id: `q${i}`, stays: false, x: i, dugHour: 10 }));
+    const isOpen = (/** @type {any} */ h) => holeNow(h, 11, 0, R).stage < 3;
+    const capped = capHoles([stay, ...others], isOpen, 11, R);
+    assert(capped.holes.some((h) => h.id === 'p1') && !capped.capped.includes('p1'), 'never capped or dropped');
+    eq(holeAt([stay], 3, 4, () => true, R), null, 'a press beside it never digs it deeper');
+    eq(/** @type {any} */ (cleanHoleFields(stay))?.stays, true, 'it stays through the save');
+    eq(JSON.stringify(cleanDig({ spring: { hour: 30, x: 3, z: 4 } }).spring), JSON.stringify({ hour: 30, x: 3, z: 4 }), 'the dig section keeps where it fell');
+    eq('spring' in cleanDig({}), false, 'and an older save reads as before');
+    // Boulders and broken stones round the mouth (Matt, October 31, 2026), the same for the same hole, a gap left to step up.
+    const M = SP.mouth, ring = mouthStones(stay, M);
+    eq(JSON.stringify(ring), JSON.stringify(mouthStones({ x: 3, z: 4 }, M)), 'the same stones every time');
+    eq(ring.filter((q) => q.big).length, M.boulders, 'its boulders');
+    eq(ring.filter((q) => !q.big).length, M.lip, 'and its lip stones');
+    const angles = ring.filter((q) => q.big).map((q) => Math.atan2(q.z - 4, q.x - 3)).sort((a, b) => a - b);
+    const gaps = angles.map((a, i) => (i ? a - angles[i - 1] : a + Math.PI * 2 - angles[angles.length - 1]));
+    assert(Math.max(...gaps) > Math.PI / 3, 'a gap between the boulders to step up to the edge');
+    assert(ring.every((q) => Math.hypot(q.x - 3, q.z - 4) > SP.hole.sizeM / 2), 'none in the hole');
   });
 }

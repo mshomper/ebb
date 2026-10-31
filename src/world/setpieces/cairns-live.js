@@ -22,7 +22,8 @@ const IDENTITY = new Float32Array([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 
  *   terrain: { sampleHeight: (x: number, z: number) => number, openBounds: () => { openMin: number[], openMax: number[] } },
  *   camera: { target: ArrayLike<number> }, hourIndex: () => number, trailEnd?: () => ({ x: number, z: number } | null) }} o
  *   R: recipes/setpieces/cairns.json; sp: the set pieces' live core; trailEnd: where the trail ends, when
- *   something gives one (the old keeper's cache, once the dig reports it); else the far shore
+ *   something gives one (the rise just above the spring's head, the way down: the spring-ore plan, O2);
+ *   else the far shore
  */
 export function createCairnsLive(o) {
   const R = o.R, W = R.words, L = R.look, ID = 'cairns';

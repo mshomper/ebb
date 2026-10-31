@@ -7,7 +7,9 @@
 // a flood), or when a stroke of Sculpt, Paint or Water crosses it. Nothing ticks per hole. Pure.
 //
 // A record: { id, kind: 'hole', x, z, yaw, seed, size, placedHour, depth, layer, cls, dugHour,
-// closedHour (-1 while open), wetH (rain hours since it was dug, banked as days pass), seep, side }.
+// closedHour (-1 while open), wetH (rain hours since it was dug, banked as days pass), seep, side,
+// stays }. One hole is different (the spring-ore plan, O2): where the ground gave way above the
+// spring, `stays` is true and it never fills, never closes and is never capped.
 
 /** The stages. */
 export const STAGES = /** @type {const} */ (['open', 'slumped', 'settled', 'closed']);
@@ -39,6 +41,7 @@ export function wetSince(hole, nowH, records) {
  * @returns {{ stage: number, fill: number, dark: number, closedAt: number, gone: boolean }}
  */
 export function holeNow(hole, nowH, wetH, R) {
+  if (hole.stays) return { stage: 0, fill: 0, dark: 1, closedAt: Infinity, gone: false };
   const F = R.fill;
   const dry = Math.max(0, nowH - hole.dugHour - wetH);
   const fill = Math.min(3, (dry + Math.max(0, wetH) * F.rainWeight) / F.hoursPerThird);
@@ -56,7 +59,7 @@ export function holeNow(hole, nowH, wetH, R) {
  * Close a hole now (capped, water, a stroke): its closedHour set if it is still open. Pure.
  * @param {any} hole @param {number} nowH
  */
-export const closeHole = (hole, nowH) => (hole.closedHour >= 0 ? hole : { ...hole, closedHour: nowH });
+export const closeHole = (hole, nowH) => (hole.closedHour >= 0 || hole.stays ? hole : { ...hole, closedHour: nowH });
 
 /**
  * The holes after one more is opened: at most openCap open (the oldest open settle closed at once)
@@ -69,14 +72,14 @@ export function capHoles(list, isOpen, nowH, R) {
   const F = R.fill;
   let holes = list.slice();
   /** @type {string[]} */ const capped = [];
-  const open = holes.filter(isOpen);
+  const open = holes.filter((h) => isOpen(h) && !h.stays);
   for (let i = 0; i < open.length - F.openCap; i++) {
     capped.push(open[i].id);
     holes = holes.map((h) => (h.id === open[i].id ? closeHole(h, nowH) : h));
   }
   /** @type {string[]} */ const dropped = [];
   while (holes.length > F.listCap) {
-    const shut = holes.find((h) => !isOpen(h) || capped.includes(h.id)) ?? holes[0];
+    const shut = holes.find((h) => !h.stays && (!isOpen(h) || capped.includes(h.id))) ?? holes.find((h) => !h.stays) ?? holes[0];
     dropped.push(shut.id);
     holes = holes.filter((h) => h !== shut);
   }
@@ -90,7 +93,7 @@ export function capHoles(list, isOpen, nowH, R) {
 export function holeAt(holes, x, z, isOpen, R) {
   let best = null, bd = R.hole.spacingM * R.hole.spacingM;
   for (const h of holes) {
-    if (!isOpen(h)) continue;
+    if (!isOpen(h) || h.stays) continue;
     const d = (h.x - x) * (h.x - x) + (h.z - z) * (h.z - z);
     if (d < bd) { bd = d; best = h; }
   }
@@ -105,5 +108,5 @@ export function cleanHoleFields(r) {
   const fin = (/** @type {any} */ n) => typeof n === 'number' && Number.isFinite(n);
   if (!Number.isInteger(r.depth) || r.depth < 1 || typeof r.layer !== 'string' || typeof r.cls !== 'string' || !fin(r.dugHour)) return null;
   return { depth: r.depth, layer: r.layer, cls: r.cls, dugHour: r.dugHour, closedHour: fin(r.closedHour) ? r.closedHour : -1,
-    wetH: fin(r.wetH) ? Math.max(0, r.wetH) : 0, seep: !!r.seep, side: r.side === -1 ? -1 : 1 };
+    wetH: fin(r.wetH) ? Math.max(0, r.wetH) : 0, seep: !!r.seep, side: r.side === -1 ? -1 : 1, ...(r.stays ? { stays: true } : {}) };
 }

@@ -118,6 +118,7 @@ import { createTeaReveal } from './world/creatures/tea-reveal.js';
 import { setActRate } from './world/figure/acts.js';
 import { ashMarks } from './world/gather/ashes.js';
 import { createDig } from './world/dig/index.js';
+import { trailEndFor } from './world/dig/story.js';
 import { createPerchSticks } from './world/creatures/perch-sticks.js';
 import { createLanterns } from './world/pieces/lantern-live.js';
 import { createSetpiecesLive } from './world/setpieces/live.js';
@@ -808,6 +809,7 @@ export async function startApp(canvas, hooks = {}) {
   /** The passing boat (made below), whose lantern joins the camp's lights. @type {{ lights: () => any[] } | null} */ let passingBoatRef = null;
   /** The placed lanterns (made below, B2 L1), whose lights join the camp's too. @type {{ lights: () => any[] } | null} */ let lanternsRef = null;
   /** The clay furnace's glow while a load burns (the spring-ore plan), set once the camp is made. @type {(() => any[]) | null} */ let furnaceLightsRef = null;
+  /** The dig (made below), for the boulders round the way down above the spring. @type {any} */ let digRef = null;
   const camp = createCamp({ recipe: campRecipe, seed, walk, terrain, water, clock, orbit: skyRecipe.orbit, camera, world, piles,
     // The camp sets the small lights each frame; the passing boat's lantern joins them (docs/future/14).
     seasons: seasonsRecipe, lighting: { setPoints: (/** @type {any[]} */ l) => lighting.setPoints([...l, ...(passingBoatRef?.lights() ?? []), ...(lanternsRef?.lights() ?? []), ...(furnaceLightsRef?.() ?? [])]) }, pack, shadowBias: shadowPass.bias, low: tier === 'low', tier, poses: (await loadRecipe('world/figure')).poses,
@@ -877,7 +879,9 @@ export async function startApp(canvas, hooks = {}) {
   // Solid things the walker cannot pass through (src/world/walk/solids-live.js): camp pieces, logs,
   // stones and the boat.
   const solidsLive = createSolidsLive({ walk, where: createWhere({ terrain }), benchAt: camp.stations.benchAt, rackYawDeg: campRecipe.rack?.yawDeg ?? 0,
-    strand: () => pieces.strandLogs(), boat: () => (boat.visible ? boat.mooring?.boat ?? null : null), boatSize: boatRecipe.boat.hull });
+    strand: () => pieces.strandLogs(), boat: () => (boat.visible ? boat.mooring?.boat ?? null : null), boatSize: boatRecipe.boat.hull,
+    // The boulders round the way down above the spring (the dig, made below).
+    extra: () => digRef?.story.mouthSolids() ?? [] });
   sim.addSystem({ id: 'solids', tick: (/** @type {any} */ f) => solidsLive.update(f.realDt) });
   shadowPass.addCaster(camp.props.caster);
   midges.keepClear(() => camp.smokeClear());
@@ -902,11 +906,13 @@ export async function startApp(canvas, hooks = {}) {
   const stores = createStores({ recipe: pack.recipe, piles, walk, glow: campRecipe.glow, ringLaid: () => camp.ringLaid() });
   // Digging (docs/future/13 section 10, P2c; src/world/dig): Dig and Scoop sand on the here-bar once
   // the shovel is made at the workbench; `?shovel` (testing, unsaved) puts it in the walker's kit.
-  const dig = createDig({ recipe: await loadRecipe('world/dig'), keepsakes: keepsakesRecipe, seed, world, walk, terrain, water, pieces, pack, gather, presence,
+  const digRecipe = await loadRecipe('world/dig');
+  const dig = createDig({ recipe: digRecipe, keepsakes: keepsakesRecipe, seed, world, walk, terrain, water, pieces, pack, gather, presence,
     worldT: () => clock.worldT(), test: params.has('shovel'), propsRecipe: campRecipe.props, shadowBias: shadowPass.bias, noteKept: (n) => noteKept(n),
     // Digging deeper (B1 D1): the land's story block (the old hearths, the marked stone) and `?dig=cache|hearth|sherd|sleeper|blade`.
     land: landRecipe, terrainSeed: subSeed(seed, 'terrain'), piecesRecipe: await loadRecipe('world/pieces'), testDig: back ? null : params.get('dig') });
   dig.setKeepsakeWords((n) => keepsakeWords(n, keepsakesRecipe));
+  digRef = dig;
   // A `?dig=` test link stands the walker by its spot (src/world/dig testSetUp): the view looks at it from close by.
   on('dig:test-stood', (/** @type {{ x: number, z: number, yaw: number, target: { x: number, z: number } }} */ p) => {
     const mx = (p.x + p.target.x) / 2, mz = (p.z + p.target.z) / 2;
@@ -976,7 +982,13 @@ export async function startApp(canvas, hooks = {}) {
     record: () => updateStore('world', () => world.state),
     test: params.has('setpiece') && !back ? { id: params.get('setpiece') ?? '', beat: Number.parseInt(params.get('beat') ?? '0', 10) || 0 } : null });
   sim.addSystem(setpieces);
-  const cairns = createCairnsLive({ R: spList.cairns, sp: setpieces, seed, pieces, pack, walk, terrain, camera, hourIndex: () => clock.hourIndex() });
+  // The trail ends on the rise just above the spring's head, where the way down is (the spring-ore
+  // plan, O2): a little short of it, so the last cairn stands just below the worn mark.
+  const cairnsTrailEnd = () => {
+    const sp = dig.story.spring(), pad = getStore('campPad');
+    return sp ? trailEndFor(sp, pad ? { x: pad.x, z: pad.z } : sp, digRecipe.story.spring.trailBackM) : null;
+  };
+  const cairns = createCairnsLive({ R: spList.cairns, sp: setpieces, seed, pieces, pack, walk, terrain, camera, hourIndex: () => clock.hourIndex(), trailEnd: cairnsTrailEnd });
   sim.addSystem(cairns);
   const passingBoat = createBoatLive({ R: spList.boat, sp: setpieces, seed, pieces, pack, walk, terrain, water, boatRecipe, mooring: () => boat.mooring });
   sim.addSystem(passingBoat);
