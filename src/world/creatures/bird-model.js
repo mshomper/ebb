@@ -10,6 +10,7 @@
 import { bakeBody, bodyDistance } from './body-bake.js';
 import { packMesh, skinWeights } from './bodies.js';
 import { BIRD_ROLES, birdRig, sideOf } from './bird-rig.js';
+import { decimate } from '../mesh/decimate.js';
 
 const DEG = Math.PI / 180;
 
@@ -43,7 +44,6 @@ export function bodyPrims(S) {
     { type: 'ellipsoid', c: S.tail.c, r: S.tail.r, rot: [S.tail.pitchDeg ?? 0, 0, 0], bone: 'tail', part: 'tail', k: 0.008 },
   ];
   for (const [s, side] of /** @type {const} */ ([['l', 1], ['r', -1]])) {
-    P.push({ type: 'sphere', c: sideOf(S.eye.c, side), r: S.eye.r, bone: 'head', part: 'eye', k: 0 });
     // The feathered thigh to just above the ankle, the bare shin below it, then the leg and toes.
     const hip = sideOf(L.hip, side), ankle = sideOf(L.ankle, side), foot = sideOf(L.foot, side);
     const knee = hip.map((h, a) => h + (ankle[a] - h) * 0.55);
@@ -152,9 +152,78 @@ function bakePanel(prim, cellM, colour) {
 }
 
 /**
+ * A baked piece cut to about `target` triangles by quadric edge collapse (src/world/mesh/decimate.js):
+ * each vertex's colour (and its skin weights, when it has them) rides along, so plumage edges and the
+ * joints keep their vertices; a kept vertex keeps its own colour and skin, and normals are summed
+ * again from the triangles left. A piece already under the target is left as it is.
+ * @param {{ vertices: Float32Array, indices: Uint32Array, count: number }} m @param {number} target
+ * @param {number} attrWeight @param {Uint8Array | null} [joints] @param {Uint8Array | null} [weights]
+ * @returns {{ m: { vertices: Float32Array, indices: Uint32Array, count: number }, joints: Uint8Array | null, weights: Uint8Array | null, from: Int32Array }}
+ */
+export function cutPiece(m, target, attrWeight, joints = null, weights = null) {
+  if (m.indices.length / 3 <= target) return { m, joints, weights, from: Int32Array.from({ length: m.count }, (_, i) => i) };
+  const nb = BIRD_ROLES.length, stride = 3 + (joints ? nb : 0);
+  const attr = new Float32Array(m.count * stride), pos = new Float32Array(m.count * 3);
+  for (let v = 0; v < m.count; v++) {
+    pos.set(m.vertices.subarray(v * 9, v * 9 + 3), v * 3);
+    // Colour compared by its square root, nearer how it looks: dark on dark (an eye on a brown head)
+    // differs as much as it seems to.
+    for (let k = 0; k < 3; k++) attr[v * stride + k] = Math.sqrt(Math.max(0, m.vertices[v * 9 + 6 + k]));
+    if (joints && weights) for (let s = 0; s < 4; s++) attr[v * stride + 3 + joints[v * 4 + s]] += weights[v * 4 + s] / 255;
+  }
+  const c = decimate(pos, m.indices, target, { attr, stride, weight: attrWeight });
+  const vertices = new Float32Array(c.count * 9);
+  const J = joints ? new Uint8Array(c.count * 4) : null, Wt = weights ? new Uint8Array(c.count * 4) : null;
+  for (let v = 0; v < c.count; v++) {
+    const o = c.from[v];
+    vertices.set([c.pos[v * 3], c.pos[v * 3 + 1], c.pos[v * 3 + 2]], v * 9);
+    vertices.set(m.vertices.subarray(o * 9 + 6, o * 9 + 9), v * 9 + 6);
+    if (J && joints) J.set(joints.subarray(o * 4, o * 4 + 4), v * 4);
+    if (Wt && weights) Wt.set(weights.subarray(o * 4, o * 4 + 4), v * 4);
+  }
+  // Normals: each triangle's (area-weighted) added to its corners.
+  for (let i = 0; i < c.idx.length; i += 3) {
+    const [a, b, d] = [c.idx[i], c.idx[i + 1], c.idx[i + 2]];
+    const u = [0, 1, 2].map((k) => vertices[b * 9 + k] - vertices[a * 9 + k]), w = [0, 1, 2].map((k) => vertices[d * 9 + k] - vertices[a * 9 + k]);
+    const n = [u[1] * w[2] - u[2] * w[1], u[2] * w[0] - u[0] * w[2], u[0] * w[1] - u[1] * w[0]];
+    for (const x of [a, b, d]) for (let k = 0; k < 3; k++) vertices[x * 9 + 3 + k] += n[k];
+  }
+  for (let v = 0; v < c.count; v++) {
+    const o = v * 9 + 3, l = Math.hypot(vertices[o], vertices[o + 1], vertices[o + 2]) || 1;
+    for (let k = 0; k < 3; k++) vertices[o + k] /= l;
+  }
+  return { m: { vertices, indices: c.idx, count: c.count }, joints: J, weights: Wt, from: c.from };
+}
+
+/**
+ * An eye: a small ball of its own (rings by segments), whole on the head bone, so no cut can lose it.
+ * @param {number[]} c @param {number} r @param {number[]} colour @param {number} [rings] @param {number} [segs]
+ * @returns {{ vertices: Float32Array, indices: Uint32Array, count: number }}
+ */
+export function eyeBall(c, r, colour, rings = 5, segs = 8) {
+  /** @type {number[]} */ const V = [], I = [];
+  for (let i = 0; i <= rings; i++) {
+    const th = (i / rings) * Math.PI;
+    for (let j = 0; j < segs; j++) {
+      const ph = (j / segs) * Math.PI * 2, n = [Math.sin(th) * Math.cos(ph), Math.cos(th), Math.sin(th) * Math.sin(ph)];
+      V.push(c[0] + n[0] * r, c[1] + n[1] * r, c[2] + n[2] * r, n[0], n[1], n[2], colour[0], colour[1], colour[2]);
+    }
+  }
+  for (let i = 0; i < rings; i++) for (let j = 0; j < segs; j++) {
+    const a = i * segs + j, b = i * segs + (j + 1) % segs, d = a + segs, e = b + segs;
+    if (i > 0) I.push(a, b, d);
+    if (i < rings - 1) I.push(b, e, d);
+  }
+  return { vertices: Float32Array.from(V), indices: Uint32Array.from(I), count: V.length / 9 };
+}
+
+/**
  * Worker job: bake a small bird in one plumage: its body (skinned by each piece's pull) and both
- * wings (each panel whole on its bone), packed for the creatures pass, with its skeleton.
- * @param {{ shape: any, plumage: any, wingPattern: any, cellM: number, wingCellM?: number, blendM?: number }} a
+ * wings (each panel whole on its bone), cut to `maxTris` triangles in all (the recipe's budget;
+ * none when left out), packed for the creatures pass, with its skeleton.
+ * @param {{ shape: any, plumage: any, wingPattern: any, cellM: number, wingCellM?: number, blendM?: number,
+ *   maxTris?: number, wingShare?: number, attrWeight?: number }} a
+ *   wingShare: the share of maxTris all four wing panels get (the arm 40% of a wing's, the hand 60%)
  * @returns {{ data: ArrayBuffer, indices: Uint32Array, count: number, bones: import('./bird-rig.js').Bone[], parts: Record<string, number>, __transfer: ArrayBuffer[] }}
  */
 export function bakeBird(a) {
@@ -162,24 +231,31 @@ export function bakeBird(a) {
   const rig = birdRig(S);
   const prims = bodyPrims(S);
   const body = bakeBody({ prims, albedo: { back: [0, 0, 0], eye: [0, 0, 0], eyeRing: [0, 0, 0] } }, a.cellM);
-  /** @type {Record<string, number>} */ const parts = {};
+  /** @type {string[]} */ const partOf = [];
   for (let v = 0; v < body.count; v++) {
     const o = v * 9, p = [body.vertices[o], body.vertices[o + 1], body.vertices[o + 2]];
     const part = prims[bodyDistance(prims, p).near].part;
-    parts[part] = (parts[part] ?? 0) + 1;
+    partOf.push(part);
     body.vertices.set(bodyColour(S, PL, part, p, [body.vertices[o + 3], body.vertices[o + 4], body.vertices[o + 5]]), o + 6);
   }
-  const skin = skinWeights(prims, rig.skeleton, body.vertices, body.count, a.blendM ?? 0.004);
+  const skin0 = skinWeights(prims, rig.skeleton, body.vertices, body.count, a.blendM ?? 0.004);
+  // The budget: the wing panels get their share, the body the rest.
+  const max = a.maxTris ?? Infinity, ws = (a.wingShare ?? 0.16) / 2, aw = a.attrWeight ?? 2e-6;
+  const cutBody = cutPiece(body, max * (1 - 2 * ws) - 128, aw, skin0.joints, skin0.weights);
+  const skin = { joints: /** @type {Uint8Array} */ (cutBody.joints), weights: /** @type {Uint8Array} */ (cutBody.weights) };
+  /** @type {Record<string, number>} */ const parts = {};
+  for (const o of cutBody.from) parts[partOf[o]] = (parts[partOf[o]] ?? 0) + 1;
 
   // The left wing's panels, then the right as their mirror.
   const { arm, hand, wrist } = wingPanels(S);
   const W = S.wing, wc = a.wingCellM ?? a.cellM;
-  const armM = bakePanel(arm, wc, (p, n) => wingColour(PL, WP, 'arm', (arm.c[2] + W.armM / 2 - p[2]) / W.armM, (p[1] - arm.c[1]) / arm.r[1], n[0] > 0));
-  const handM = bakePanel(hand, wc, (p, n) => {
+  const armM = cutPiece(bakePanel(arm, wc, (p, n) => wingColour(PL, WP, 'arm', (arm.c[2] + W.armM / 2 - p[2]) / W.armM, (p[1] - arm.c[1]) / arm.r[1], n[0] > 0)),
+    max * ws * 0.4, aw).m;
+  const handM = cutPiece(bakePanel(hand, wc, (p, n) => {
     const along = Math.max(0, Math.min(1, (wrist[2] - p[2]) / W.handM));
     const half = (W.handChordM[0] + (W.handChordM[1] - W.handChordM[0]) * along) / 2;
     return wingColour(PL, WP, 'hand', along, (p[1] - wrist[1]) / half, n[0] > 0);
-  });
+  }), max * ws * 0.6, aw).m;
   // The hand turned about the wrist to point at the folded tip.
   const turn = aimer([W.tip[0] - wrist[0], W.tip[1] - wrist[1], W.tip[2] - wrist[2]]);
   for (let v = 0; v < handM.count; v++) {
@@ -197,7 +273,15 @@ export function bakeBird(a) {
       m.vertices[o + 3] = cl * nx - sl * ny; m.vertices[o + 4] = sl * nx + cl * ny;
     }
   }
-  const pieces = [{ m: body, joints: skin.joints, weights: skin.weights }];
+  const pieces = [{ m: cutBody.m, joints: skin.joints, weights: skin.weights }];
+  const head = BIRD_ROLES.indexOf('head');
+  for (const side of [1, -1]) {
+    const e = eyeBall(sideOf(S.eye.c, side), S.eye.r, PL.parts.eye);
+    const joints = new Uint8Array(e.count * 4), weights = new Uint8Array(e.count * 4);
+    for (let v = 0; v < e.count; v++) { joints[v * 4] = head; weights[v * 4] = 255; }
+    pieces.push({ m: e, joints, weights });
+    parts.eye = (parts.eye ?? 0) + e.count;
+  }
   for (const [s, side] of /** @type {const} */ ([['l', 1], ['r', -1]])) {
     for (const [m, role] of /** @type {const} */ ([[armM, `wing.${s}`], [handM, `hand.${s}`]])) {
       const verts = m.vertices.slice();
@@ -209,7 +293,7 @@ export function bakeBird(a) {
       const joints = new Uint8Array(m.count * 4), weights = new Uint8Array(m.count * 4);
       const b = BIRD_ROLES.indexOf(/** @type {any} */ (role));
       for (let v = 0; v < m.count; v++) { joints[v * 4] = b; weights[v * 4] = 255; }
-      pieces.push({ m: { vertices: verts, indices: idx, count: m.count, bounds: m.bounds }, joints, weights });
+      pieces.push({ m: { vertices: verts, indices: idx, count: m.count }, joints, weights });
       parts[role] = m.count;
     }
   }

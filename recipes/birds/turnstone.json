@@ -1,18 +1,18 @@
 {
   "id": "turnstone",
   "rig": "small-bird",
-  "note": "The ruddy turnstone on the small-bird rig (B3 R1, src/world/creatures/bird-rig.js, bird-motion.js, bird-model.js). Not a species recipe: wave 2's recipes/species/turnstone.json points here for its body. SHAPE: every proportion in real metres, rest pose, head toward +z, feet on y = 0, the bird's left on +x (the rig mirrors it to the right). A real turnstone is about 0.23 m long; displayScale 2.8 draws it about 0.64 m (the findable scale, 2.5 to 3 times real), set at draw time, so the shape and every motion length stay real. The model is made in code from this shape (bird-model.js, assets/models/turnstone/CREDITS.md): blended pieces for the body, breast, neck, head, bill, tail, thighs, legs and toes, baked by surface nets; each wing is two flat panels baked on their own (the arm under the hand when folded, telescoping out to the wrist when spread). PLUMAGE: linear albedo per part (physical, the palette is applied at the tonemap), winter first (B3 is autumn and winter), breeding for spring; marks are ellipsoids in rest metres on named parts, mirrored to both sides; mottle darkens the upperparts with value noise. MOTION: tunables for the code clips, keyed to bone roles (bird-motion.js); lengths in real metres, times in real seconds.",
+  "note": "The ruddy turnstone on the small-bird rig (B3 R1, src/world/creatures/bird-rig.js, bird-motion.js, bird-model.js). Not a species recipe: wave 2's recipes/species/turnstone.json points here for its body. SHAPE: every proportion in real metres, rest pose, head toward +z, feet on y = 0, the bird's left on +x (the rig mirrors it to the right). A real turnstone is about 0.23 m long; displayScale 2.8 draws it about 0.64 m (the findable scale, 2.5 to 3 times real), set at draw time, so the shape and every motion length stay real. The model is made in code from this shape (bird-model.js, assets/models/turnstone/CREDITS.md): blended pieces for the body, breast, neck, head, bill, tail, thighs, legs and toes, baked by surface nets; each wing is two flat panels baked on their own (the arm under the hand when folded, telescoping out to the wrist when spread). BAKE: baked fine (cellM), then cut by quadric edge collapse to maxTris triangles (a single bird, as the other creatures: the hen is about 1,500, a frog 3,000 to 7,000 at distance) or flockTris (a bird in a flock); the wing panels get wingShare of it; attrWeight is what folding two different plumage colours or skin weights together costs, so colour edges and joints keep their vertices. PLUMAGE: linear albedo per part (physical, the palette is applied at the tonemap), winter first (B3 is autumn and winter), breeding for spring; marks are ellipsoids in rest metres on named parts, mirrored to both sides; mottle darkens the upperparts with value noise. MOTION: tunables for the code clips, keyed to bone roles (bird-motion.js); lengths in real metres, times in real seconds.",
   "realLengthM": 0.23,
   "displayScale": 2.8,
   "drawnLengthM": 0.64,
-  "bake": { "cellM": 0.0016, "wingCellM": 0.0014, "blendM": 0.004 },
+  "bake": { "cellM": 0.0016, "wingCellM": 0.0014, "blendM": 0.004, "maxTris": 3000, "flockTris": 1200, "wingShare": 0.16, "attrWeight": 2e-6 },
   "shape": {
     "body": { "c": [0, 0.074, -0.004], "r": [0.039, 0.035, 0.07], "pitchDeg": -7 },
     "breast": { "c": [0, 0.071, 0.04], "r": [0.036, 0.034, 0.037] },
     "neck": { "base": [0, 0.086, 0.054], "top": [0, 0.103, 0.075], "r": [0.022, 0.017] },
     "head": { "c": [0, 0.111, 0.088], "r": [0.0185, 0.0175, 0.022] },
     "bill": { "base": [0, 0.107, 0.104], "tip": [0, 0.1055, 0.13], "r": [0.0055, 0.0015], "flat": 0.72 },
-    "eye": { "c": [0.0135, 0.1155, 0.0955], "r": 0.0036 },
+    "eye": { "c": [0.0152, 0.1155, 0.0955], "r": 0.0034 },
     "tail": { "c": [0, 0.083, -0.08], "r": [0.02, 0.005, 0.03], "pitchDeg": 9 },
     "wing": {
       "shoulder": [0.03, 0.088, 0.026],
@@ -47,7 +47,7 @@
       },
       "mottle": { "scale": 210, "amount": 0.42, "color": [0.032, 0.026, 0.022], "pale": [0.16, 0.13, 0.1], "paleShare": 0.16 },
       "marks": [
-        { "on": ["body", "breast", "neck"], "c": [0, 0.07, 0.058], "r": [0.05, 0.022, 0.03], "color": "bib", "patchy": 0.22 },
+        { "on": ["body", "breast", "neck"], "c": [0, 0.07, 0.058], "r": [0.05, 0.022, 0.03], "color": "bib" },
         { "on": ["neck", "head"], "c": [0, 0.094, 0.082], "r": [0.012, 0.011, 0.02], "color": "throat", "below": true },
         { "on": ["head"], "c": [0.013, 0.108, 0.094], "r": [0.008, 0.006, 0.01], "color": "throat" },
         { "on": ["body"], "c": [0, 0.108, -0.045], "r": [0.012, 0.03, 0.03], "color": "rump" }

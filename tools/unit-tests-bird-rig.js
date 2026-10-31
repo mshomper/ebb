@@ -5,7 +5,8 @@
 // while the bird walks or runs over it; the wing telescopes open to a flat span and folds to its
 // rest; every clip poses finite bones from start to end, the stone turns all the way over, take-off
 // ends aloft with the legs tucked and landing ends on the ground with the wings folded; and the
-// turnstone bakes to a skinned mesh standing on y = 0 at its real length, every piece on its bone.
+// turnstone bakes to a skinned mesh standing on y = 0 at its real length, every piece on its bone,
+// cut to the creatures' triangle budget (a flock bird lower) without losing its eyes, bill or toes.
 
 import { birdRig, legReach, wingMoves, BIRD_ROLES } from '../src/world/creatures/bird-rig.js';
 import { poseBird, restPose, footAt, idlePose, gaitPose, peckPose, flipPose, preenPose, flyPose, takeoffPose, landPose, flapAt } from '../src/world/creatures/bird-motion.js';
@@ -156,5 +157,27 @@ export function addBirdRigTests(test, assert, eq) {
     assert(Math.abs(len - R.realLengthM) < 0.03, `real length ${len.toFixed(3)} m`);
     assert(Math.abs(len * R.displayScale - R.drawnLengthM) < 0.08 && R.displayScale >= 2.5 && R.displayScale <= 3, 'drawn at the findable scale');
     for (const part of ['body', 'head', 'bill', 'tail', 'leg', 'toe', 'wing.l', 'hand.l', 'wing.r', 'hand.r']) assert((b.parts[part] ?? 0) > 0, `has its ${part}`);
+  });
+
+  test(G, 'the turnstone keeps to the triangle budget of the other creatures, a flock bird lower, with its eyes, bill, toes and wings', async () => {
+    const R = await load(), B = R.bake;
+    // The budget itself stays in the other creatures' range (the hen is about 1,500 triangles, a
+    // frog 3,000 to 7,000 away from the camera); a flock bird comes in lower.
+    assert(B.maxTris <= 4000 && B.flockTris <= 1500 && B.flockTris < B.maxTris, `budget ${B.maxTris} / ${B.flockTris}`);
+    for (const max of [B.maxTris, B.flockTris]) {
+      const b = bakeBird({ shape: R.shape, plumage: R.plumage.winter, wingPattern: R.wingPattern, cellM: B.cellM, wingCellM: B.wingCellM,
+        blendM: B.blendM, maxTris: max, wingShare: B.wingShare, attrWeight: B.attrWeight });
+      const tris = b.indices.length / 3;
+      assert(tris <= max, `${tris} triangles, over the budget of ${max}`);
+      assert(tris > max * 0.9, `${tris} triangles: the budget is spent, not thrown away`);
+      for (const part of ['eye', 'bill', 'toe', 'leg', 'wing.l', 'hand.l', 'wing.r', 'hand.r']) assert((b.parts[part] ?? 0) > 0, `${max}: has its ${part}`);
+      const u8 = new Uint8Array(b.data);
+      for (let v = 0; v < b.count; v++) {
+        let sum = 0;
+        for (let s = 0; s < 4; s++) sum += u8[v * VERTEX_BYTES + 40 + s];
+        if (sum !== 255) { assert(false, `${max}: weights sum to ${sum}`); break; }
+      }
+      for (let i = 0; i < b.indices.length; i++) if (b.indices[i] >= b.count) { assert(false, 'an index past the end'); break; }
+    }
   });
 }

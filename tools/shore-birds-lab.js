@@ -29,8 +29,12 @@ const rig = birdRig(R.shape);
 // --- the turnstone, baked in both plumages on the worker pool ---
 const BAKE = { module: './world/creatures/bird-model.js', fn: 'bakeBird' };
 let plumage = query.get('plumage') === 'breeding' ? 'breeding' : 'winter';
-const baked = await Promise.all(['winter', 'breeding'].map((p) => run(BAKE, { shape: R.shape, plumage: R.plumage[p], wingPattern: R.wingPattern,
-  cellM: R.bake.cellM, wingCellM: R.bake.wingCellM, blendM: R.bake.blendM }).then((/** @type {any} */ m) => { stage.setMesh(p, m); return m; })));
+// Each plumage twice: a single bird (bake.maxTris) and a flock bird (bake.flockTris), named
+// `<plumage>` and `<plumage>-flock`.
+const B = R.bake;
+const baked = await Promise.all(['winter', 'breeding'].flatMap((p) => [['', B.maxTris], ['-flock', B.flockTris]].map(([tag, maxTris]) => run(BAKE, {
+  shape: R.shape, plumage: R.plumage[p], wingPattern: R.wingPattern, cellM: B.cellM, wingCellM: B.wingCellM, blendM: B.blendM,
+  maxTris, wingShare: B.wingShare, attrWeight: B.attrWeight }).then((/** @type {any} */ m) => { stage.setMesh(p + tag, m); return m; }))));
 
 // --- a flat beach stone and a clump of wrack to turn, each one bone ---
 const STONE = { len: 0.056, wide: 0.05, high: 0.016 };
@@ -238,7 +242,7 @@ function step(dt, realDt) {
       const glide = clip === 'glide' ? 1 : Math.min(1, Math.max(0, (cyc - 0.7) * 10) * Math.max(0, (1 - cyc) * 10));
       const P = flyPose(t, t * M.flap.hz * f.rate + f.beat, glide, M);
       poseSkeleton(rig.skeleton, poseBird(rig, P, M), bones, 0);
-      things.push({ mesh: plumage, place: [Math.sin(th) * rr, 0.9 + f.up - (clip === 'glide' ? 0.1 * Math.sin(t * 0.7) : 0), Math.cos(th) * rr, th + Math.PI / 2], size: k, bank: -0.4, bones: bones.slice(), shadow: 0.2 });
+      things.push({ mesh: clip === 'flock' ? `${plumage}-flock` : plumage, place: [Math.sin(th) * rr, 0.9 + f.up - (clip === 'glide' ? 0.1 * Math.sin(t * 0.7) : 0), Math.cos(th) * rr, th + Math.PI / 2], size: k, bank: -0.4, bones: bones.slice(), shadow: 0.2 });
       if (i === 0) { cam.target = [things[0].place[0], 0.6, things[0].place[2]]; }
     });
     $('doing').textContent = clip === 'glide' ? 'gliding on open wings' : 'a flock wheeling: each bird on its own beat, gliding together';
@@ -327,7 +331,7 @@ view.addEventListener('pointermove', (e) => {
 view.addEventListener('pointerup', () => { drag = null; });
 view.addEventListener('wheel', (e) => { e.preventDefault(); goal.dist = Math.max(0.5, Math.min(9, goal.dist * Math.exp(e.deltaY * 0.001))); }, { passive: false });
 
-const tris = (baked[0].indices.length / 3).toLocaleString();
+const tris = `${(baked[0].indices.length / 3).toLocaleString()} (a flock bird ${(baked[1].indices.length / 3).toLocaleString()})`;
 $('stats').innerHTML = `<dt>Bones</dt><dd>${rig.skeleton.length} roles (body, neck, head, tail, two-part wings, two-bone legs and toes)</dd>`
   + `<dt>Triangles</dt><dd>${tris}</dd><dt>Real length</dt><dd>${R.realLengthM} m</dd><dt>Drawn length</dt><dd>${(R.realLengthM * k).toFixed(2)} m (${k}x)</dd>`;
 for (const b of $('clips').querySelectorAll('button')) b.setAttribute('aria-pressed', String(/** @type {HTMLElement} */ (b).dataset.clip === clip));
