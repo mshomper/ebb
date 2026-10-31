@@ -235,25 +235,27 @@ Slot positions are in the pad's own frame, in meters: **u** points seaward along
 | `tent` | Canvas ridge tent with bedroll; the hand lantern hangs on its front pole | (-2.4, 0.1) | 2.2 x 1.6 m, ridge along u | Flap at u = -1.3, toward the ring | T1 | C-01, C-05, C-15, M-02 |
 | `ring` | Fire ring of shore stones; three hearth stones inside it for the pot | (1.5, 0) | 1.0 m across | — | T1 ring, T2 hearth stones | C-06, C-07, M-01 |
 | `hearth` | The clay pot on the hearth stones (or at the ring's side when cold) | (1.5, 0) | 0.3 m | — | T2 | C-09, M-09 |
-| `cup` | Clay cup at the ring | (1.0, -0.65) | 0.12 m | — | T2 | C-10, M-11 |
+| `cup` | Clay cup at the ring | (1.05, -0.6) | 0.12 m | — | T2 | C-10, M-11 |
 | `bowls` | Two or three clay bowls at the ring | (1.55, -0.85) | 0.3 m | — | T2 | M-12 |
-| `mortar` | Mortar and pebble at the ring | (2.05, -0.7) | 0.3 m | — | T2 | M-17 |
-| `dyepot` | Clay dye pot at the ring's edge | (2.2, 0.6) | 0.36 m | — | T4 | M-40 |
-| `seat` | Driftwood log seat | (0.4, 0), along v, up to 1.8 m long | log size | Sitting on it you look over the fire to the sea | T3 | C-11, M-25 |
-| `rack` | Herb drying rack | (-1.0, 2.55) | 1.2 x 0.5 m | Along u | T2 (resolution 14) | C-12, M-21 |
-| `sticks` | Stick pile | (-1.9, -2.6) | 0.6 m radius | — | T1 | C-21, M-03, K-15 |
-| `stones` | Stone pile | (1.3, -2.9) | 0.5 m radius | — | T1 | C-22, M-04, K-15 |
-| `clay` | Clay lump on a flat slab | (-0.3, -3.3) | 0.3 m radius | — | T2 | K-15 |
-| `heap1`, `heap2`, `heap3` | A pile of any other kind set down (kelp, rushes, herbs and so on), first free heap | (2.9, -1.9), (3.2, 1.4), (-3.35, -1.3) | 0.35 m radius | — | T1 | K-15, K-20 |
-| `gift` | Gift stone: a flat stone by the tent where named creatures' gifts are laid (built B1 C1: kind `gift-stone`) | (-0.9, -1.2) | 0.56 m | — | T3 | C-14 (resolution 8) |
-| `lamp` | Clay lamp on a flat stone by the flap | (-0.95, 1.2) | 0.16 m | — | T4 | M-33 |
-| `jar` | Sealed clay jar beside the tent | (-1.6, 1.4) | 0.24 m | — | T4 | M-35 |
-| `bath` | Bird-bath stone at the pad's edge | (1.6, 2.9) | 0.6 m | — | T4 | M-36 |
-| `chime` | Shell wind chime on a willow stick by the tent's back corner | (-3.3, 1.6) | stick 1.2 m tall | — | T6 (open question, section 15) | C-20 |
+| `mortar` | Mortar and pebble, on the apothecary bench | (0.45, 1.4) | 0.3 m | — | T2 | M-17 |
+| `dyepot` | Clay dye pot, in the herb corner beside the apothecary bench | (1.5, 2.4) | 0.36 m | — | T4 | M-40 |
+| `seat` | Driftwood log seat | (0.4, 0), along v, up to 1.2 m long | log size | Sitting on it you look over the fire to the sea | T3 | C-11, M-25 |
+| `rack` | Herb drying rack | (-0.2, 2.9) | 1.2 x 0.5 m | Along u | T2 (resolution 14) | C-12, M-21 |
+| `sticks` | Stick pile | (-2.2, -2.35) | 0.6 m radius | — | T1 | C-21, M-03, K-15 |
+| `stones` | Stone pile | (0.6, -3.05) | 0.5 m radius | — | T1 | C-22, M-04, K-15 |
+| `clay` | Clay lump on a flat slab | (-0.45, -3.3) | 0.3 m radius | — | T2 | K-15 |
+| `heap1`, `heap2`, `heap3` | A pile of any other kind set down (kelp, rushes, herbs and so on), first free heap, all three in the work corner | (2.35, -2.3), (1.6, -2.95), (2.85, -1.65) | 0.35 m radius (heap3 0.3) | — | T1 | K-15, K-20 |
+| `gift` | Gift stone: a flat stone on the landward rim, where you walk in from the island, where named creatures' gifts are laid (built B1 C1: kind `gift-stone`) | (-3.1, -1.65) | 0.56 m | — | T3 | C-14 (resolution 8) |
+| `lamp` | Clay lamp on a flat stone at the tent's door | (-1.1, 1.2) | 0.16 m | — | T4 | M-33 |
+| `jar` | Sealed clay jar in the herb corner, by the rack | (0.7, 2.95) | 0.24 m | — | T4 | M-35 |
+| `bath` | Bird-bath stone just off the pad, by the herb bed (`offPad`) | (1.25, 5.1) | 0.6 m | — | T4 | M-36 |
+| `nest` | The hen's nest box (docs/future/15 slice 4): placed when made on the pad's rim (3.55 m out) toward her home bushes, kept on its slot record; with no bushes, the home corner | rim, or (-3.35, 1.3) | 0.44 m | — | T3 | doc 15 |
+| `shelf` | Keepsake shelf (reserved; the model is a later piece): beside the tent, turned to face the middle, with 1 m kept clear in front | (-2.15, 2.5) | 1.3 x 0.45 m | The pad's middle | later | keepsake-shelf spec |
+| `chime` | Shell wind chime hung off the rack's landward end | (-1.0, 2.9) | stick 1.2 m tall | — | T6 (open question, section 15) | C-20 |
 | `bed` (off the pad) | Herb bed: a strip of ground just outside the pad where moved plants go | (-0.5, 5.0) | 2.4 x 1.2 m | — | T3 | C-24 |
 | `nettles` (off the pad) | Nettle ground: an arc just outside the pad's seaward-right edge, ash-rich from the fire | arc at 4.0 to 4.6 m, from -70 to -35 degrees | — | — | T2 to T3 | C-25 |
 
-Checked: every on-pad slot lies inside 3.7 m of the center, and none overlaps another or the tent. The lane along u from the flap to the seaward edge stays clear.
+Re-laid in corners (Matt, October 30, 2026, option A): the fire is the middle; the hearth faces the sea, work is on the right (facing the sea), herbs on the left, home at the back, and the animals' things at the edge. The drawing above is the older layout; this table is current. Checked (tools/unit-tests-camp-layout.js): every on-pad slot lies inside the pad, none overlaps another, a bench's or keep's stand spot, or the shelf's room. The lane along u from the flap to the seaward edge stays clear.
 
 - **The herb bed is ground, not a piece.** It lies outside the lock, so the shovel works there. It is drawn with a few edging pebbles once the first plant is set in it (PR-31). Built (B1 C1): the edging comes once any plant stands in the strip, set, sown or grown there, and stays. Plants there follow their own niche rules: chamomile does well on its dry end; water mint only if the player has led water near (K-28). The camp page names what grows in it.
 - **Nettles by the fire** (C-25) arrive as volunteers on the nettle ground after a season with the fire lit on at least 6 game days (an arrival with a cause, PR-40). Plant rules in section 5.

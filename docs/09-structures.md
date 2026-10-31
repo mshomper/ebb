@@ -86,11 +86,11 @@ Phase 1 fills these slots:
 |---|---|---|---|
 | `tent` | Canvas ridge tent with bedroll; the hand lantern hangs on its front pole | (-2.4, 0.1) | 2.2 x 1.6 m, ridge along u, flap at u = -1.3 toward the ring |
 | `ring` | Fire ring of shore stones | (1.5, 0) | 1.0 m across |
-| `sticks` | Stick pile | (-1.9, -2.6) | 0.6 m radius |
-| `stones` | Stone pile | (1.3, -2.9) | 0.5 m radius |
-| `heap1`, `heap2`, `heap3` | A pile of any other kind, first free heap | (2.9, -1.9), (3.2, 1.4), (-3.35, -1.3) | 0.35 m radius |
+| `sticks` | Stick pile | (-2.2, -2.35) | 0.6 m radius |
+| `stones` | Stone pile | (0.6, -3.05) | 0.5 m radius |
+| `heap1`, `heap2`, `heap3` | A pile of any other kind, first free heap | (2.35, -2.3), (1.6, -2.95), (2.85, -1.65) | 0.35 m radius |
 
-Later slots (hearth, cup, bowls, mortar, dye pot, seat, rack, clay, gift stone, lamp, jar, bird bath, chime) come with later phases; the full list is in docs/future/13, section 3.2.
+Later slots (hearth, cup, bowls, mortar, dye pot, seat, rack, clay, gift stone, lamp, jar, bird bath, chime) come with later phases; the full list is in docs/future/13, section 3.2 (re-laid in corners on October 30, 2026).
 - **New piece kinds in Phase 1:** `tent`, `ring`, `pile`, and `boat` (one, at the mooring, not walkable). They join `PIECE_KINDS` in `src/world/pieces/model.js`, so they share drawing, tapping and undo. Meshes are baked from recipes as stones and logs are; the tent and boat are new meshes. Live camp code lives in `src/world/camp/` (`index.js`, `fire.js`, `rest.js`, `layout.js`, `migrate-pad.js`).
 - **Piles.** Setting a pouch down at camp moves it onto that kind's pile slot, or the first free heap. A pile holds up to twelve handfuls, drawn as a small heap, a heap or a big heap. With no free slot, a calm line asks to take one up first; nothing is lost (docs/future/13, sections 3.7 and 4.1).
 - **Walking.** The tent, ring and piles block their cells on the walk grid. A clear lane runs from the tent flap past the ring to the pad's seaward edge and down to the boat.

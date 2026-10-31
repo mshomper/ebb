@@ -129,7 +129,7 @@
       "seed-balls": "Seed rolled into clay. Each ball will land as a little cluster, and take where a bare seed would not.",
       "lily-parcel": "Worms folded into a lily leaf and tied with cord. A parcel for the turtles, to set at the water's edge.",
       "gift-stone": "A flat stone with shells set along its edge. It stands by the tent, for what the creatures leave you.",
-      "nest-box": "A box of sticks lined with rushes, set by the tent. A hen might lay in it, if she knows you.",
+      "nest-box": "A box of sticks lined with rushes, set at the camp's edge on the side of the hen's bushes. A hen might lay in it, if she knows you.",
       "eggshell-grit": "Ground fine. A handful of eggshell grit, for the hen.",
       "lantern-pot": "A round of clay, pressed through with a pebble all over. It waits pale on the bench for the fire.",
       "fire-lantern-pot": "Set at the fire's edge. A night of fire will harden it.",
@@ -194,7 +194,8 @@
       "giftFrom": "from the {species}",
       "bed": "The herb bed",
       "bedGrows": "Growing in it:",
-      "bedEmpty": "Nothing growing in it just now."
+      "bedEmpty": "Nothing growing in it just now.",
+      "sketchNames": { "tent": "Your tent", "ring": "Fire ring", "workbench": "Workbench", "apothecary": "Apothecary bench", "rack": "Drying rack", "sticks": "Stick pile", "stones": "Stone pile", "clay": "Clay pile", "store": "Rush hamper", "gift": "Gift stone", "nest": "Nest box" }
     },
     "giftNames": { "pondweed": "Pondweed seeds", "raft": "A raft of reeds", "hen-feather": "A tail feather" },
     "pageNames": { "ring": "Fire ring", "workbench": "Workbench", "shovel": "Shovel", "woven-twigs": "Woven twigs", "rush-cord": "Rush cord", "apothecary": "Apothecary bench", "rack": "Drying rack",
