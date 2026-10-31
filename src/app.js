@@ -116,6 +116,7 @@ import { setActRate } from './world/figure/acts.js';
 import { ashMarks } from './world/gather/ashes.js';
 import { createDig } from './world/dig/index.js';
 import { createPerchSticks } from './world/creatures/perch-sticks.js';
+import { createLanterns } from './world/pieces/lantern-live.js';
 import { createSetpiecesLive } from './world/setpieces/live.js';
 import { createCairnsLive } from './world/setpieces/cairns-live.js';
 import { createBoatLive } from './world/setpieces/boat-live.js';
@@ -611,14 +612,16 @@ export async function startApp(canvas, hooks = {}) {
     const u = getStore('unlocks') ?? {};
     const reached = new Set(trailLine(firstsOf(u.earned ?? {}, 'shape'), shaperRecipe.stops, [])
       .flatMap((e) => (e.type === 'station' ? [e.stop.id] : [])));
-    for (const id of ['stones', 'steps']) {
+    for (const id of ['stones', 'steps', 'lantern']) {
       const stop = shaperRecipe.stops.find((/** @type {any} */ s) => s.id === id);
       if (shapeReached && !shapeReached.has(id) && reached.has(id) && stop?.gift) emitDeferred('progress:gifted', { ...stop.gift, icon: stop.icon, trail: 'shape' });
     }
     shapeReached = reached;
     const pondStones = reached.has('stones') || params.has('sandbox') || params.has('pondstones');
     const steps = reached.has('steps') || params.has('sandbox') || params.has('steps');
-    if (u.pondStones !== pondStones || u.steps !== steps) updateStore('unlocks', (v) => ({ ...v, pondStones, steps }));
+    // The lantern (B2 L1): the workbench makes one once the trail reaches its stop; `?lantern` too.
+    const lantern = reached.has('lantern') || params.has('sandbox') || params.has('lantern');
+    if (u.pondStones !== pondStones || u.steps !== steps || u.lantern !== lantern) updateStore('unlocks', (v) => ({ ...v, pondStones, steps, lantern }));
     // The reed raft is the turtles' gift (`unlocks.raft`, given by the spring creatures); `?sandbox`
     // or `?raft` open its Water mode early, for this visit.
     if (!u.raft && (params.has('sandbox') || params.has('raft'))) updateStore('unlocks', (v) => ({ ...v, raft: true }));
@@ -797,9 +800,10 @@ export async function startApp(canvas, hooks = {}) {
   // The keeper's camp (docs/future/13 section 3; src/world/camp): the tent and the fire ring in their
   // slots, the fire and the lantern as small lights, smoke and moths, and a night's rest in the tent.
   /** The passing boat (made below), whose lantern joins the camp's lights. @type {{ lights: () => any[] } | null} */ let passingBoatRef = null;
+  /** The placed lanterns (made below, B2 L1), whose lights join the camp's too. @type {{ lights: () => any[] } | null} */ let lanternsRef = null;
   const camp = createCamp({ recipe: campRecipe, seed, walk, terrain, water, clock, orbit: skyRecipe.orbit, camera, world, piles,
     // The camp sets the small lights each frame; the passing boat's lantern joins them (docs/future/14).
-    seasons: seasonsRecipe, lighting: { setPoints: (/** @type {any[]} */ l) => lighting.setPoints([...l, ...(passingBoatRef?.lights() ?? [])]) }, pack, shadowBias: shadowPass.bias, low: tier === 'low', tier, poses: (await loadRecipe('world/figure')).poses,
+    seasons: seasonsRecipe, lighting: { setPoints: (/** @type {any[]} */ l) => lighting.setPoints([...l, ...(passingBoatRef?.lights() ?? []), ...(lanternsRef?.lights() ?? [])]) }, pack, shadowBias: shadowPass.bias, low: tier === 'low', tier, poses: (await loadRecipe('world/figure')).poses,
     beat: () => intro.live?.intro.current?.id ?? null, cook: await loadRecipe('world/cook'), sowing: sowingRecipe });
   sim.addSystem(camp);
   ringPlace = camp.ringPlace;
@@ -906,6 +910,34 @@ export async function startApp(canvas, hooks = {}) {
   // of their pond, facing the shallows.
   const perchSticks = createPerchSticks({ recipe: await loadRecipe('world/treats'), seed, pieces, pack, walk, terrain, water });
   sim.addSystem(perchSticks);
+  // The lantern (B2 L1; src/world/pieces/lantern-live.js): the shaper's trail's gift, made at the
+  // workbench and set down from its pouch; it lights itself every dusk. `?lantern` (a test link,
+  // unsaved): the gift given, the parts for a second make's steps in the pack, and one lantern
+  // already standing a few metres off the camp with you beside it (add `&hour=20` for dusk).
+  const piecesRecipe = await loadRecipe('world/pieces');
+  const lanterns = createLanterns({ recipe: piecesRecipe.lantern, seed, pieces, pack, walk, terrain, water, camp, camera, liftM: piecesRecipe.driftwood.carry.liftM });
+  sim.addSystem(lanterns);
+  lanternsRef = lanterns;
+  if (params.has('lantern') && !back) {
+    for (const k of ['clay', 'pebbles', 'sticks', 'rushes.stems']) pack.add(k, 1);
+    let stood = false;
+    sim.addSystem({ id: 'lantern-test', tick() {
+      const pad = stood ? null : getStore('campPad');
+      if (!pad || !water.getSummary?.()) return;
+      const out = (pad.r ?? 3) + 2, ax = pad.fx ?? 0, az = pad.fz ?? 1;
+      const p = lanterns.standNear(pad.x + ax * out, pad.z + az * out);
+      if (!p) return;
+      stood = true;
+      // You a step from it, facing it, the view low behind you.
+      for (let i = 0; i < 16; i++) {
+        const a = (i / 16) * 2 * Math.PI, x = p.x + Math.sin(a) * 1.4, z = p.z + Math.cos(a) * 1.4, yaw = a + Math.PI;
+        if ((water.sampleLive(x, z)?.depth ?? 0) > 0.01 || !walk.placeAt(x, z, yaw, 'stand')) continue;
+        camera.setPose({ ...camera.pose(), target: [p.x, terrain.sampleHeight(p.x, p.z) + 0.5, p.z], yaw: yaw + Math.PI + 0.8, distance: 3.2, pitch: (12 * Math.PI) / 180 });
+        walk.downHere();
+        return;
+      }
+    } });
+  }
   if (params.has('perch') && !back) {
     pack.add('sticks', 2);
     let stood = false;
@@ -1326,6 +1358,9 @@ export async function startApp(canvas, hooks = {}) {
     // A perch stick stands up out of the water (B1 P1): the ray is tried against the stick itself.
     const stick = perchSticks.underRay(r.o, r.d);
     if (stick) return /** @type {any} */ (stick);
+    // So does a lantern on its post (B2 L1).
+    const lamp = lanterns.underRay(r.o, r.d);
+    if (lamp) return /** @type {any} */ (lamp);
     // A cairn stands up off the ground too (docs/future/14).
     const cairn = cairns.underRay(r.o, r.d);
     if (cairn) return /** @type {any} */ (cairn);
@@ -1674,8 +1709,11 @@ export async function startApp(canvas, hooks = {}) {
     const p = groundAt(x, y);
     if (!p) return;
     presence.edit(p[0], p[2]);
+    const was = pieces.carrying();
     const r = pieces.setDown(p);
     if (r.ok) updateStore('identify', () => null);
+    // A lantern set down somewhere new (B2 L1) says it still lights itself there.
+    if (r.ok && was?.kind === 'lantern') emitDeferred('island:notice', { text: piecesRecipe.lantern.words.moved, showS: 5 });
     else {
       // Water and the camp ground keep it carried, with a line saying why; the cap puts it back.
       const still = r.reason === 'water' || r.reason === 'camp';
@@ -1720,6 +1758,8 @@ export async function startApp(canvas, hooks = {}) {
         // card; a creature's card opens where you stand; grass, sand and shingle only near you.
         const point = groundAt(a.x, a.y);
         if (!point) return;
+        // Carrying (a lantern lifted on foot, B2 L1): the click sets it down there instead.
+        if (pieces.carrying()) { carryTap(a.x, a.y); return; }
         // A seed, a gift or the net in hand: the click sows, places or sets it instead (D1a).
         if (sowing.click(a.x, a.y, point)) return;
         sowing.cancelWalk();
@@ -2471,6 +2511,8 @@ export async function startApp(canvas, hooks = {}) {
     dig,
     /** Perch sticks (B1 P1): the journal asks whether a tap landed on one; tests stand and take them up. */
     perchSticks,
+    /** The lanterns (B2 L1): the journal asks whether a tap landed on one; tests set and take them up. */
+    lanterns,
     /** Set pieces (docs/future/14): the runner's live core, and the cairns' and the boat's taps and cards. */
     setpieces, cairns, passingBoat,
     /**

@@ -27,7 +27,8 @@ import { findPath, nearestOpen, isOpen } from './path.js';
 export function createWalker(R, env) {
   const G = R.grid, P = R.pace, ST = R.steer;
   /** @type {import('./path.js').WalkRules} */
-  const rules = { depth: env.depth, wadeM: G.wadeM, wadeCost: G.wadeCost, maxStepM: G.maxStepM, snapM: G.snapM };
+  const rules = { depth: env.depth, wadeM: G.wadeM, wadeCost: G.wadeCost, maxStepM: G.maxStepM, snapM: G.snapM,
+    wadeEnterCost: G.wadeEnterCost, dryM: G.dryM, footCost: G.footCost };
   const s = {
     placed: false, x: 0, z: 0, y: 0, yaw: 0, speed: 0,
     /** @type {[number, number][]} */ path: [],

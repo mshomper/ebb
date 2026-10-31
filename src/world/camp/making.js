@@ -33,8 +33,9 @@ export function cleanCook(v) {
  * @typedef {string | string[] | { group?: string, part?: string, shows?: string }} Part a kind, kinds that serve, any kind of a
  *   group (the apothecary's Dry takes any herb), or any plant's part (P2g's seed balls take any saved
  *   seed: { part: 'seed' }); shows: the kind its pencil outline wears
- * @typedef {{ filled?: (slot: string) => boolean, groupOf?: (kind: string) => string | null }} MakeCtx
- *   filled: is a camp slot built (a make's `after`); groupOf: a kind's pack group
+ * @typedef {{ filled?: (slot: string) => boolean, groupOf?: (kind: string) => string | null, unlocked?: (key: string) => boolean }} MakeCtx
+ *   filled: is a camp slot built (a make's `after`); groupOf: a kind's pack group; unlocked: is a
+ *   make's gift given and is there room for another (a make's `unlock`: the lantern, B2 L1)
  */
 
 /** The kinds that serve a part, for its pencil outline. @param {Part} part @returns {string[]} */
@@ -59,11 +60,13 @@ export function givesOf(make, id, laid) {
 export const makesAt = (cook, station) => Object.entries(cook.makes ?? {}).filter(([, m]) => /** @type {any} */ (m).at === station).map(([id]) => id);
 
 /**
- * May this make be made now: under its max, and what it waits for built (after: a camp slot, such as
- * the apothecary bench for the mortar)? @param {any} cook @param {Cook} state @param {string} id @param {MakeCtx} [ctx]
+ * May this make be made now: under its max, what it waits for built (after: a camp slot, such as
+ * the apothecary bench for the mortar), and its gift given (unlock: the lantern's, with room for
+ * another)? @param {any} cook @param {Cook} state @param {string} id @param {MakeCtx} [ctx]
  */
 export const open = (cook, state, id, ctx = {}) => (state.count[id] ?? 0) < (cook.makes[id]?.max ?? Infinity)
-  && (!cook.makes[id]?.after || !!ctx.filled?.(cook.makes[id].after));
+  && (!cook.makes[id]?.after || !!ctx.filled?.(cook.makes[id].after))
+  && (!cook.makes[id]?.unlock || !!ctx.unlocked?.(cook.makes[id].unlock));
 
 /**
  * Fit laid handfuls to a make's parts: each laid kind fills the first open part that takes it.

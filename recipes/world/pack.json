@@ -62,7 +62,9 @@
     { "id": "bowl", "name": "Clay bowls", "group": "craft", "sketch": "mound", "camp": "heap", "line": "Fired clay bowls, nested one in another. A handful is one bowl." },
     { "id": "leaf-pack", "name": "Leaf pack", "group": "craft", "sketch": "leaves", "camp": "heap", "line": "Fallen leaves bound with rush cord, to sink in still water." },
     { "id": "lily-parcel", "name": "Lily leaf parcel", "group": "craft", "sketch": "leaves", "camp": "heap", "line": "Worms wrapped in a lily leaf and tied with rush cord, for the turtles." },
-    { "id": "woven-twigs", "name": "Woven twigs", "group": "craft", "sketch": "drift", "camp": "heap", "line": "Drift twigs woven into one springy length, for a shovel's haft." }
+    { "id": "woven-twigs", "name": "Woven twigs", "group": "craft", "sketch": "drift", "camp": "heap", "line": "Drift twigs woven into one springy length, for a shovel's haft." },
+    { "id": "lantern-pot", "name": "Lantern pot", "group": "craft", "sketch": "mound", "camp": "heap", "line": "A fired clay housing, pierced all round. It wants a post and a rush wick." },
+    { "id": "post-lantern", "name": "Lantern", "group": "craft", "sketch": "sticks", "camp": "heap", "line": "A clay lantern on a short post. Set it down where you want a light at night." }
   ],
   "piles": { "handfuls": 12, "looks": [3, 8, 12], "rackBunches": 12, "rackHandfuls": 6, "bowlHandfuls": 6,
     "look": {

@@ -17,6 +17,7 @@
  * @property {Float32Array} height ground at each cell's center (m)
  * @property {Uint8Array} steep 1 where the ground is too steep to stand on
  * @property {Uint8Array} blocked 1 where a solid thing stands (solids.js mark)
+ * @property {Uint8Array} [footing] 1 where a stepping stone or a Steps slab stands over the ground (path.js: cheaper to cross)
  * @property {(x: number, z: number) => number} cellAt index of the cell under a point, or -1 off the grid
  * @property {(k: number) => [number, number]} center world x, z of a cell's center
  * @property {(x0: number, z0: number, x1: number, z1: number) => void} refresh re-read the ground in a rectangle
@@ -63,7 +64,7 @@ export function createWalkGrid(o) {
   read(0, 0, w - 1, h - 1);
 
   return {
-    cellM, w, h, minX: o.minX, minZ: o.minZ, height, steep, blocked: new Uint8Array(w * h), center,
+    cellM, w, h, minX: o.minX, minZ: o.minZ, height, steep, blocked: new Uint8Array(w * h), center, footing: onFooting,
     cellAt(x, z) {
       const i = Math.floor((x - o.minX) / cellM), j = Math.floor((z - o.minZ) / cellM);
       return i < 0 || j < 0 || i >= w || j >= h ? -1 : j * w + i;

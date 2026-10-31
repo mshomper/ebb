@@ -134,6 +134,8 @@ registerGenerator(gen);   // core/recipes.js
 
 ### The tuning panel
 
+> **Dropped from M2 (Matt, October 30, 2026, B2):** the tuning panel v1 is not being built. Tunables stay in recipes, and a small slider page under `tools/` covers anything that needs tuning. What follows is kept as the old design.
+
 Desktop: a panel docked on the right, 440 px wide, the world still visible and live. Phone: a bottom sheet at half height, draggable to full. Layout fits its pane at every width; no horizontal scrolling. Labels are 15 px or larger on desktop and 16 px or larger on phones (CLAUDE.md), numbers 16 px or larger, all icons drawn SVG.
 
 ```

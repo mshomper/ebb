@@ -406,6 +406,8 @@ export function createPieces(opts) {
       if (p.kind === 'hole') continue;
       // A perch stick is drawn by src/world/creatures/perch-sticks.js (extra beings, below).
       if (p.kind === 'perch') continue;
+      // A lantern is drawn with the camp's props by src/world/pieces/lantern-live.js.
+      if (p.kind === 'lantern') continue;
       if (p.kind === 'raft') {
         const sh = raftShapeOf(p), i = rafts.indexOf(sh), now = raftNow(p, frameDt);
         // Reeds, not stone: drawn plain (no rock scan) and with no damp ring on the water.
