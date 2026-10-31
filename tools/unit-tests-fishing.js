@@ -2,7 +2,9 @@
 // Fishing and the angler's chart (docs/future/17) for tools/unit-tests.html: the worm split (the
 // small red worm and the big dark worm in their own pouches, older saves unchanged); the fish
 // generator, catch gen 2 (species and individuals rebuild from their seeds, the grown pattern, the
-// mesh, the swim), with gen 1 catches still rebuilding.
+// mesh, the swim), with gen 1 catches still rebuilding; the line (its make, its gorse thorns, the
+// belt), the five waters, the roster, the bite's odds (conditions raise them, never gate) and the
+// fishing save section.
 
 import { cleanPack } from '../src/world/pack/model.js';
 import { digFinds } from '../src/world/dig/finds.js';
@@ -11,9 +13,17 @@ import { growField } from '../src/world/nets/living/fish-field.js';
 import { fishSkin, swimBones } from '../src/world/nets/living/fish-mesh.js';
 import { fishNumbers, fishMeshOf, fishName } from '../src/world/nets/living/fish2.js';
 import { catchMesh, catchNumbers, catchName, catchWords, catchAlpha } from '../src/world/nets/living/index.js';
+import { classifyWater, sampleWater } from '../src/world/fishing/waters.js';
+import { rosterOf, rareRoster, allFish } from '../src/world/fishing/roster.js';
+import { conditionsNow, weightOf, biteOf, bitesJob } from '../src/world/fishing/bite.js';
+import { cleanFishing, emptyFishing, sketch, glimpse, castOnce, finer, sketchedOrInked } from '../src/world/fishing/model.js';
+import { cleanCook, layout } from '../src/world/camp/making.js';
 
 const G = 'fishing';
 const GEN = 'fishing: generator';
+const LINE = 'fishing: the line';
+/** A quiet noon in summer at mid tide, no weather. */
+const NOON = { hourOfDay: 12, season: 'summer', rain: 0, mist: 0, cloud: 0, wind: 0.1, yRain: 0, yWind: 0, tideLevel: 0, tideAmp: 0.6, sign: null };
 /** @param {string} p */
 const load = async (p) => (await fetch(new URL(`../recipes/${p}.json`, import.meta.url))).json();
 
@@ -154,5 +164,110 @@ export function addFishingTests(test, assert, eq) {
     for (let k = 0; k < 4; k++) for (let i = 0; i < 16; i++) assert(Math.abs(still[k * 16 + i] - (i % 5 === 0 ? 1 : 0)) < 1e-9, 'no swim: identity');
     const moving = swimBones(0.4, n.lengthM, 1.5);
     assert(Math.abs(moving[48] - 1) > 1e-3, 'the tail turns');
+  });
+
+  test(LINE, 'the line: a withy, rush cord and gorse thorns at the workbench, a tool on the belt; its parts are its own, and gorse gives thorns all year', async () => {
+    const [C, Ga, Pk, K] = await Promise.all([load('world/cook'), load('world/gather'), load('world/pack'), load('world/kit')]);
+    const M = C.makes.line;
+    eq(M.at, 'workbench', 'at the workbench');
+    eq(M.parts.join(), 'willow.withies,rush-cord,gorse.thorns', 'three parts, one for each part spot');
+    eq(M.out, 'tool', 'a tool');
+    const lay = layout(C, 'workbench', ['willow.withies', 'rush-cord', 'gorse.thorns'], cleanCook(null));
+    assert(lay.make === 'line' && lay.complete, 'laid out, the bench makes the line');
+    eq(layout(C, 'workbench', ['willow.withies', 'rush-cord', 'rush-cord'], cleanCook(null)).make, 'basket', 'the basket keeps its own parts');
+    eq(Ga.plants.parts['gorse.thorns'].window.join(), '0,4', 'thorns all year');
+    assert(Pk.kinds.some((/** @type {any} */ k) => k.id === 'gorse.thorns'), 'thorns are a pouch kind');
+    assert(K.belt.some((/** @type {any} */ b) => b.id === 'line'), 'it hangs on the belt');
+  });
+
+  test(LINE, 'the five waters: deep past the drop-off, open past the tide band, kelp over the kelp band, the reef off rock, the flats otherwise', async () => {
+    const W = (await load('world/fishing')).waters;
+    eq(classifyWater({ depthM: 3, inBand: false, kelpShare: 0, rockShare: 0 }, W), 'deep', 'past the drop-off');
+    eq(classifyWater({ depthM: 1.5, inBand: false, kelpShare: 0.5, rockShare: 1 }, W), 'open', 'past the tide band');
+    eq(classifyWater({ depthM: 0.6, inBand: true, kelpShare: 0.4, rockShare: 0.9 }, W), 'kelp', 'over the kelp');
+    eq(classifyWater({ depthM: 0.6, inBand: true, kelpShare: 0.05, rockShare: 0.9 }, W), 'reef', 'off rock with no kelp');
+    eq(classifyWater({ depthM: 0.6, inBand: true, kelpShare: 0, rockShare: 0.1 }, W), 'sand', 'off sand');
+    // A raised rock headland: the same shallows read as the reef once the shore beside them is rock.
+    const read = (/** @type {boolean} */ rock) => ({ ground: () => -0.6, inBand: () => true, zoneAt: () => null, rockAt: () => rock });
+    eq(classifyWater(sampleWater(0, 0, read(false), W), W), 'sand', 'a sandy cove brings the flats');
+    eq(classifyWater(sampleWater(0, 0, read(true), W), W), 'reef', 'a rock headland brings the reef');
+  });
+
+  test(LINE, 'the roster: 22 ordinary species by water with unique names, the five net fish among them, the same twelve rare ones; another island, other fish', async () => {
+    const FR = await load('world/fishing');
+    const a = rosterOf(2026, FR), b = rosterOf(2026, FR), c = rosterOf(77, FR);
+    eq(a.length, 22, '22 ordinary species');
+    eq(JSON.stringify(a), JSON.stringify(b), 'the same island, the same fish');
+    for (const [w, n] of Object.entries(FR.roster.counts)) eq(a.filter((f) => f.water === w).length, n, `${n} in ${w}`);
+    eq(new Set(a.map((f) => f.name)).size, 22, 'every name its own');
+    eq(a.filter((f) => f.kind === 'named').map((f) => f.id).sort().join(), 'goby,pipefish,plaice,sandeel,wrasse', 'the five net fish are members');
+    eq(a.filter((f) => f.kind === 'named').map((f) => f.page).sort().join(), 'goby,pipefish,plaice,sandeel,wrasse', 'on their own journal pages');
+    assert(a.filter((f) => f.kind === 'ordinary').some((f, i) => f.name !== c.filter((g) => g.kind === 'ordinary')[i]?.name), 'a sister island rolls its own');
+    const r = rareRoster(FR);
+    eq(r.length, 12, 'twelve rare species');
+    eq(r.map((f) => f.id).join(), FR.rare.slice().sort((/** @type {any} */ x, /** @type {any} */ y) => x.order - y.order).map((/** @type {any} */ x) => x.id).join(), 'in riddle order');
+    const share = a.filter((f) => f.kind === 'ordinary' && f.when.length).length / a.filter((f) => f.kind === 'ordinary').length;
+    assert(share > 0.1 && share < 0.75, `some ordinary species have a condition (${share.toFixed(2)})`);
+  });
+
+  test(LINE, 'the odds: rarity sets the weight, each condition met multiplies it, the right worm doubles it, and nothing is ever gated', async () => {
+    const FR = await load('world/fishing'), O = FR.odds;
+    const nightFish = { rarity: 'rare', bait: 'big', when: ['night'] };
+    const noon = conditionsNow(NOON, FR.when), night = conditionsNow({ ...NOON, hourOfDay: 23 }, FR.when);
+    assert(!noon.has('night') && night.has('night'), 'night is read from the hour');
+    eq(weightOf(nightFish, noon, 'small', O), O.rarity.rare, 'at noon on the wrong worm: its base weight, never none');
+    eq(weightOf(nightFish, night, 'small', O), O.rarity.rare * O.condition, 'at night: times the condition');
+    eq(weightOf(nightFish, night, 'big', O), O.rarity.rare * O.condition * O.bait, 'and the right worm doubles it');
+    const two = conditionsNow({ ...NOON, hourOfDay: 2, rain: 0.6, tideLevel: -0.4 }, FR.when);
+    assert(two.has('night') && two.has('rain') && two.has('low') && two.has('summer'), 'rain, low tide and the season read too');
+    assert(conditionsNow({ ...NOON, mist: 0.5 }, FR.when).has('mist'), 'mist (the weather has no fog)');
+    assert(conditionsNow({ ...NOON, yRain: 0.8, yWind: 0.8 }, FR.when).has('storm'), 'after a storm: yesterday wet and windy');
+    assert(!conditionsNow(NOON, FR.when).has('sparkle'), 'no sparkle until the signs in the water are built');
+    assert(conditionsNow({ ...NOON, sign: 'sparkle' }, FR.when).has('sparkle'), 'the hook is there for them');
+  });
+
+  test(LINE, 'a bite: pure, one fish of the water cast into, its waits in range; every fish of a water can bite, rare ones rarely, and ?fishing=rare brings them on', async () => {
+    const FR = await load('world/fishing'), fish = allFish(99, FR);
+    // A cloudy spring noon at mid tide: none of the reef's rare fish has its conditions met.
+    const p = { seed: 5, cast: 3, water: 'reef', now: { ...NOON, season: 'spring', cloud: 0.7 }, bait: 'worms' };
+    eq(JSON.stringify(biteOf(p, fish, FR)), JSON.stringify(biteOf(p, fish, FR)), 'the same cast, the same bite');
+    /** @type {Record<string, number>} */ const got = {};
+    let rare = 0;
+    for (let c = 0; c < 6000; c++) {
+      const b = /** @type {any} */ (biteOf({ ...p, cast: c }, fish, FR));
+      const f = fish.find((x) => x.id === b.id);
+      eq(f?.water, 'reef', 'a reef fish');
+      assert(b.waitS >= FR.bite.waitS[0] && b.waitS <= FR.bite.waitS[1], 'its wait in range');
+      got[b.id] = (got[b.id] ?? 0) + 1;
+      if (f?.kind === 'rare') rare++;
+    }
+    eq(Object.keys(got).length, fish.filter((f) => f.water === 'reef').length, 'every reef species bites now and then');
+    for (const f of fish.filter((x) => x.water === 'reef' && x.kind === 'rare')) assert((got[f.id] ?? 0) / 6000 < 0.02, `${f.name} rarely out of its conditions (${((got[f.id] ?? 0) / 60).toFixed(1)} in 100)`);
+    assert(rare / 6000 < 0.1, `the six rare reef fish together under 1 in 10 (${(rare / 60).toFixed(1)} in 100)`);
+    let boosted = 0;
+    for (let c = 0; c < 400; c++) if (fish.find((x) => x.id === biteOf({ ...p, cast: c, rareBoost: FR.test.rareOdds }, fish, FR)?.id)?.kind === 'rare') boosted++;
+    assert(boosted / 400 > 0.5, 'on ?fishing=rare they bite often');
+    const job = bitesJob({ seed: 5, casts: 200, worldSeed: 99, FR, fish });
+    eq(job.hash, bitesJob({ seed: 5, casts: 200, worldSeed: 99, FR, fish }).hash, 'a run of bites hashes the same twice');
+  });
+
+  test(LINE, 'the save: a sketch per species (a redraw replaces it), glimpses kept from the first, the cast count; an older save reads as nothing sketched', async () => {
+    eq(JSON.stringify(cleanFishing(undefined)), JSON.stringify(emptyFishing()), 'no section: nothing sketched');
+    eq(JSON.stringify(cleanFishing({ version: 2 })), JSON.stringify(emptyFishing()), 'an unknown version: nothing sketched');
+    let s = sketch(emptyFishing(), 'reef-1', { seed: 9, hour: 40, cm: 20 });
+    s = sketch(s, 'reef-1', { seed: 11, hour: 60, cm: 26, morph: 'golden' });
+    eq(Object.keys(s.sketched).length, 1, 'one sketch per species');
+    eq(s.sketched['reef-1'].seed, 11, 'a redraw replaces it');
+    s = glimpse(glimpse(s, 'goby', 5), 'goby', 9);
+    eq(s.glimpsed.goby, 5, 'a glimpse keeps its first hour');
+    s = castOnce(castOnce(s));
+    eq(s.casts, 2, 'casts counted, for the bite seeds only');
+    eq(JSON.stringify(cleanFishing(JSON.parse(JSON.stringify(s)))), JSON.stringify(s), 'round trips');
+    assert(finer({ seed: 1, hour: 1, cm: 20 }, { morphId: 'golden', lengthM: 0.2 }, 1.15), 'a morph is finer');
+    assert(finer({ seed: 1, hour: 1, cm: 20 }, { morphId: null, lengthM: 0.24 }, 1.15), 'a much longer one is finer');
+    assert(!finer({ seed: 1, hour: 1, cm: 20 }, { morphId: null, lengthM: 0.21 }, 1.15), 'a little longer is not');
+    const FR = await load('world/fishing'), roster = rosterOf(3, FR);
+    const set = sketchedOrInked(emptyFishing(), roster, (page) => page === 'sandeel');
+    assert(set.has('sandeel') && set.size === 1, 'a net fish page inked from a net release counts as sketched');
   });
 }

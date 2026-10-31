@@ -82,6 +82,10 @@ export const GATHERED = {
   marram: ['fibres', `<path d="M9.6 11.8C9.2 8 7.6 5.4 4.8 4.6C3.8 4.4 3.2 5 3.2 5.8M11.2 11.8C11.2 7.8 10.2 4.6 7.2 3C6.4 2.6 5.8 3 5.8 3.6M12.8 11.8C13 7.6 14.4 4.2 17.4 3C18.2 2.7 18.8 3.2 18.6 3.9M14.4 11.8C15 8.2 16.6 5.6 19.6 5C20.4 4.9 20.9 5.4 20.7 6.1"/>
     <path d="M9.6 14.2L8.8 21.5M11.2 14.2L10.9 21.5M12.8 14.2L13.1 21.5M14.4 14.2L15.2 21.5"/>${TIE}`],
   // Willow withies: long slim rods with buds.
+  // Gorse thorns (F17): a short spiny twig, three stiff thorns off it and one loose beside.
+  'gorse-thorns': ['fibres', `<path d="M5 19.4C8.6 15.6 12.6 11 18.6 4.6"/>
+    <path d="M8.4 15.8L5.6 13.8M10.6 13.4L12.8 16M13 10.8L10.4 8.6M15.4 8.2L17.8 10.4M16.8 6.6L14.6 4.4"/>
+    <path d="M15.6 19.6L20 15.4"/>`],
   withies: ['fibres', `<path d="M9.6 21.5C9 16 9 8 9.8 2.5M12 21.5V2.5M14.4 21.5C15 16 15 8 14.2 2.5"/>
     <path d="M9.3 6.4L8 5.6M12 5L13.2 4M14.8 8.4L16 7.6M9.2 17.6L8 17M14.8 18.4L16 17.8M12 19L10.8 18.2"/>${TIE}`],
   // Reed leaves: broad flat blades.

@@ -39,7 +39,8 @@
     "eggshell-grit": { "tier": "T3", "at": "apothecary", "act": "grind", "parts": ["eggshells"], "out": "pouch", "gives": "grit", "count": 1, "after": "mortar", "src": ["docs/future/15 slice 4", "B1 H4"] },
     "lantern-pot": { "tier": "T3", "at": "workbench", "parts": ["clay", "pebbles"], "out": "shaped", "unlock": "lantern", "src": ["B2 L1, Matt, October 30, 2026"] },
     "fire-lantern-pot": { "tier": "T3", "at": "fire", "parts": ["shaped:lantern-pot"], "out": "work", "needH": 8, "gives": "lantern-pot", "count": 1, "fires": "lantern-pot", "src": ["B2 L1"] },
-    "post-lantern": { "tier": "T3", "at": "workbench", "parts": ["lantern-pot", "sticks", "rushes.stems"], "out": "pouch", "gives": "post-lantern", "count": 1, "unlock": "lantern", "src": ["B2 L1"] }
+    "post-lantern": { "tier": "T3", "at": "workbench", "parts": ["lantern-pot", "sticks", "rushes.stems"], "out": "pouch", "gives": "post-lantern", "count": 1, "unlock": "lantern", "src": ["B2 L1"] },
+    "line": { "tier": "T3", "at": "workbench", "parts": ["willow.withies", "rush-cord", "gorse.thorns"], "out": "tool", "max": 1, "src": ["F17", "October 31, 2026"] }
   },
   "lanternNote": "B2 L1 (Matt, October 30, 2026): the shaper's trail stop 'A lantern' (shaper.json, a pond of your own with no fish) gives the lantern; unlock names that gift (unlocks.lantern), and the make is offered only while the island has room for another lantern (the store slice makeRoom, from pieces.json lantern.cap, counting those standing, in the pack and on their way). Three steps: clay pressed round with pebbles to pierce it (the lantern pot, shaped, pale on the bench); a night in the star fire hardens it (fire-lantern-pot, out 'work', taken up from the ring's card into a pouch, as a bowl is); then at the workbench the fired pot goes on a stick post with a rush wick (post-lantern, into a pouch of its own). Its parts are unique: the cooking pot is clay and sand, the tea pot clay and crushed shell, the cup and bowl clay alone, seed balls clay and a seed, the mortar a flat stone and pebbles; the nest box is a stick and two handfuls of rushes, the apothecary bench two sticks and cord. The lantern stands where the pouch card's Set it here puts it (src/world/pieces/lantern-live.js).",
   "lilyParcelNote": "October 27, 2026 (Matt): the turtles' made treat. A handful of worms wrapped in a lily leaf picked in summer and tied with rush cord, one parcel; set by a basking spot at the water's edge, the turtles tear at it together (recipes/species/turtle.json treat).",
@@ -110,7 +111,7 @@
     "setDownHere": "Click a pouch to set it down. It goes to its own place first, then the hamper.",
     "emptySlot": "An empty slot",
     "laid": "Click a pouch to lay a handful. Click a laid part to take it back.",
-    "made": { "shovel": "A shovel, bound tight. It hangs on your pack.", "rush-cord": "Twisted two ways, it holds. A handful of cord.",
+    "made": { "shovel": "A shovel, bound tight. It hangs on your pack.", "line": "A fishing line: a withy, a cord and a thorn for a hook. It hangs on your belt. Worms for bait.", "rush-cord": "Twisted two ways, it holds. A handful of cord.",
       "woven-twigs": "Drift twigs woven over and under into one springy length. Stiff enough for a shovel's haft.",
       "rack": "A drying rack, lashed tight. It stands beside the bench.", "mortar": "A hollow worn in the stone. A mortar, with a pebble to grind.",
       "hamper": "A lidded hamper of coiled rushes. It goes among the stores.", "hamper2": "A second hamper, a willow lid on top. Twice the room.",

@@ -53,7 +53,7 @@ export function catchWords(n, NR, FR) {
   const cm = Math.max(1, Math.round(n.lengthM * 100));
   if (n.gen === 2) {
     const W = FR.words;
-    return `${n.morphId ? W.morph[n.morphId] : W.rarity[n.rarity] ?? ''} ${NR.sizeWord.replace('{cm}', String(cm))}`.trim();
+    return `${n.morphId ? W.morph[n.morphId] : ''} ${NR.sizeWord.replace('{cm}', String(cm))}`.trim();
   }
   const k = NR.catches.kinds[n.kind];
   const note = n.morph && k.morph?.note ? k.morph.note : k.note;

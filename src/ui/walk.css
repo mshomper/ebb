@@ -183,6 +183,10 @@
 .ebb-ground .ebb-walk__btn[aria-pressed='true'] { background: var(--wordmark-light); }
 /* An empty gift spot rests dimmed (D1a); its word says gifts come here. */
 .ebb-ground .ebb-walk__btn.is-empty { opacity: 0.5; }
+/* Ease it in (F17): shown only while the float is under, warm so it is seen at once. */
+.ebb-ground .ebb-walk__btn.ebb-walk__ease { background: var(--wordmark-light); animation: ebb-ease-pulse 0.9s ease-in-out infinite alternate; }
+@keyframes ebb-ease-pulse { from { transform: scale(1); } to { transform: scale(1.08); } }
+@media (prefers-reduced-motion: reduce) { .ebb-ground .ebb-walk__btn.ebb-walk__ease { animation: none; } }
 /* The seed tin's and the gift spot's menus (D1a, src/ui/walk.js): a small row of drawn icons over
    their own button, the same glass as the bar; from seven items two even rows (P2g, walk.js sets
    the columns). */

@@ -137,6 +137,9 @@ startApp(canvas, { onDeviceLost: (rebuilding) => showRebuildingNote(rebuilding),
         mountHaulTray(document.body, { NR: netsApp.recipe, K: netsApp.keepsakesRecipe, words });
         // Each living kind's page is traced from the first one you let go (src/ui/sketches/catch.js).
         registerCatchSketches(netsApp.recipe, () => getStore('nets')?.released ?? []);
+        // The fishing line's catch on the same tray (docs/future/17).
+        const fishingApp = /** @type {any} */ (r).fishing;
+        if (fishingApp) mountHaulTray(document.body, { NR: netsApp.recipe, K: netsApp.keepsakesRecipe, words, FR: fishingApp.recipe, slice: 'catch', act: 'fishing' });
       }
       // The Driftwood page's sketch is traced from the log you last tapped (src/ui/sketches/driftwood.js).
       setDriftwoodRecipe(await loadRecipe('world/pieces'));

@@ -33,6 +33,7 @@
     { "id": "rush-cord", "name": "Rush cord", "group": "fibres", "sketch": "coil", "camp": "heap", "line": "Two-ply cord, twisted by hand." },
     { "id": "willow.withies", "name": "Willow withies", "group": "fibres", "sketch": "coil", "camp": "heap", "line": "Long bendy willow shoots, cut in late winter." },
     { "id": "gorse.flowers", "name": "Gorse flowers", "group": "herbs", "sketch": "leaves", "camp": "rack", "line": "Yellow pea flowers that smell of coconut." },
+    { "id": "gorse.thorns", "name": "Gorse thorns", "group": "fibres", "sketch": "lichen", "camp": "heap", "line": "Stiff green gorse thorns, sharp enough for a hook." },
     { "id": "willow.bark", "name": "Willow bark", "group": "herbs", "sketch": "leaves", "camp": "rack", "line": "Strips of grey willow bark." },
     { "id": "lichen-twigs", "name": "Lichen twigs", "group": "herbs", "sketch": "lichen", "camp": "rack", "line": "Twigs grey with lichen, blown down in the wind." },
     { "id": "watermint.leaves", "name": "Water mint", "group": "herbs", "camp": "rack", "line": "Water mint leaves. They smell of mint when crushed." },

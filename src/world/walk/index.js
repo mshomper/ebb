@@ -472,6 +472,8 @@ export function createWalk(o) {
     you() {
       return below && walker.placed ? [walker.x, walker.y + (H[walker.posture] ?? H.stand), walker.z] : null;
     },
+    /** The height your feet stand at (a stepping stone's top, or the ground), or null while above (the line's long cast, F17). */
+    footY: () => (below && walker.placed ? walker.y : null),
 
     /**
      * Where your figure presses the grass now (W6): under the body, and where the last steps

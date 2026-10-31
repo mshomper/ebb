@@ -570,6 +570,14 @@ const ICONS = {
     <circle cx="17.6" cy="5" r="2.4"/>`,
   // The general net (docs/future/12, K6): two stakes, a sagging top cord and a mesh hanging from it,
   // a float in the middle, over one ripple line.
+  // The fishing line on the ground bar (F17): a rod bending out over the water, its float on a ripple.
+  line: `
+    <path d="M3.5 20.5C7.4 15 12 9.6 18.6 3.5"/>
+    <path d="M18.6 3.5C19.2 7.8 19 11.6 18.2 15"/>
+    <circle ${ACCENT} cx="18.2" cy="16.4" r="1.7"/>
+    <circle cx="18.2" cy="16.4" r="1.7"/>
+    <path d="M13.6 19.4C15.4 18.4 19.6 18.4 21.4 19.4"/>
+  `,
   net: `
     <path d="M5 4V18.5M19 4V18.5"/>
     <path d="M5 6.5C9.5 8.5 14.5 8.5 19 6.5"/>

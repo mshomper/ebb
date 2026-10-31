@@ -47,6 +47,7 @@ export function createKit(o) {
       steel: true,
       sketchbook: (get('sketchbook')?.made ?? 0) > 0,
       net: !!get('unlocks')?.nets?.general,
+      line: (get('cook')?.tools ?? []).includes('line'),
     };
     return R.belt.map((/** @type {any} */ t) => ({ id: t.id, owned: !!(/** @type {any} */ (has))[t.id] }));
   }

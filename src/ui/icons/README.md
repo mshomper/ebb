@@ -44,6 +44,7 @@ Size and color come from CSS: set `width`/`height` on `.icon` and `color` on the
 | `fish` | a slim fish side on, its tail forked, a fin on its back: the fish the nets bring up (sand eel, goby, pipefish, plaice, wrasse) |
 | `shrimp` | an arched body ringed in segments, its tail fan tucked under, long feelers: the brown shrimp from the nets |
 | `net` | two stakes, a sagging top cord and a mesh hanging from it, a float in the middle, over a ripple line: the general net (Water's Net mode, a net's card) |
+| `line` | a withy rod bending out over the water from the lower left, its line dropping to a float on a ripple: the fishing line on the ground bar (F17) |
 | `release` | an arrow down into two ripple lines: Let it go, for a living catch on the haul tray |
 | `trails` | a winding dotted line climbing the page with three stops, two inked and the next ahead open: the journal's Trails section |
 | `loosestone` | a stone tipped up on one side, a dark gap under it: the naturalist's loose stones reward |

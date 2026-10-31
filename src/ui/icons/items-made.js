@@ -28,6 +28,9 @@ export const MADE = {
   // Shovel: a stone blade lashed to a handle with a crosspiece grip.
   shovel: ['made', `<path d="M12 2.6V13.2M10.2 2.6H13.8M10.8 10.6L13.2 11.4M10.8 12L13.2 12.8"/>
     ${both('d="M8.4 13.4H15.6C16 13.4 16.2 13.8 16.1 14.2L15.2 18C14.9 19 14 19.6 13 19.6H11C10 19.6 9.1 19 8.8 18L7.9 14.2C7.8 13.8 8 13.4 8.4 13.4Z"')}${BASE}`],
+  // The fishing line (F17): a withy rod bending from the hand, its cord to a float on a ripple.
+  'fishing-line': ['made', `<path d="M4.4 20.4C8 15 12.4 9.4 19 3.6"/><path d="M19 3.6C19.4 8 19.2 12 18.4 15.6"/>
+    ${both('d="M18.4 14C19.4 14 20 14.8 20 15.8S19.4 17.6 18.4 17.6S16.8 16.8 16.8 15.8S17.4 14 18.4 14Z"')}<path d="M15.2 19.2C16.6 18.4 20.2 18.4 21.6 19.2"/>${BASE}`],
   // The keeper's blade: a ground stone blade on its unwrapped cloth.
   'keepers-blade': ['made', `<path ${A2} d="M2.8 16.4L11.4 12.6L21.2 15.8L12.4 20.4Z"/><path d="M2.8 16.4L11.4 12.6L21.2 15.8L12.4 20.4Z"/>
     <g transform="rotate(-50 12 11)">${both('d="M10 3.6H14L16 14.6C16 16.4 14.2 17.4 12 17.4S8 16.4 8 14.6Z"')}<path d="M8.6 13.8C10 14.8 14 14.8 15.4 13.8"/></g>`],
