@@ -102,7 +102,7 @@ The dig already tells the two worms apart (`src/world/dig/finds.js`: topsoil giv
 | Pack kind | From | Bait for | Other uses today |
 |---|---|---|---|
 | `worms` (the small red worm) | Topsoil | Shallow-water fish | Turtles, the hen, the lily leaf parcel |
-| `bigworms` (the big dark worm) | Subsoil | Deeper and larger fish | The lily leaf parcel takes either worm; the turtles and the hen keep to the small red worm (fishing only, October 31, 2026) |
+| `bigworms` (the big dark worm) | Subsoil | Deeper and larger fish | None: the turtles, the hen and the lily leaf parcel keep to the small red worm (fishing only, October 31, 2026) |
 
 - Each species prefers the small red worm, the big dark worm, or either. The water sets the leaning: sand and kelp fish lean small red, open and deep water fish lean big dark (the lab's weights: sand 60/10/30, kelp 50/20/30, reef 35/35/30, open 15/50/35, deep 5/70/25, as small/big/either).
 - The right worm doubles a species' odds; the wrong one doesn't stop a bite.

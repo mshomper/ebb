@@ -383,7 +383,8 @@ export function createDig(o) {
     const toPack = (kind) => { if (o.pack.room(kind)) { o.pack.add(kind, 1); return true; } full = { kind, g: { kind, x: P.x, z: P.z } }; emitDeferred('pack:full', { kind }); return false; };
     if (f.worm) {
       lines.push(W.worm[f.worm]);
-      if (toPack('worms')) lines.push(W.wormsIn);
+      // The two worms keep apart (F17): the small red worm into worms, the big dark worm into bigworms.
+      if (toPack(f.worm === 'big' ? 'bigworms' : 'worms')) lines.push(f.worm === 'big' ? W.bigWormsIn : W.wormsIn);
       emitDeferred('dig:found', { kind: 'worm', id: f.worm });
       emitDeferred('dig:detail', { id: `worm-${f.worm}` });
     }

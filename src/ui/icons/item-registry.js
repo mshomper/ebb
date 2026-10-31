@@ -31,7 +31,7 @@ export const POUCH_KINDS = /** @type {[string, string, string, string, number][]
   ['rush-cord', 'rush-cord', 'Rush cord', 'T2', 2], ['lichen-twigs', 'lichen-twigs', 'Lichen twigs', 'T4', 4],
   ['sand', 'sand', 'Sand', 'T2', 2], ['clay', 'clay', 'Clay', 'T2', 2], ['ash', 'ash', 'Wood ash', 'T1', 2],
   ['leaves', 'leaves', 'Fallen leaves', 'T2', 2], ['kelp', 'kelp', 'Cast kelp', 'T2', 2], ['wrack', 'wrack', 'Wrack', 'T1', 2],
-  ['worms', 'worms', 'Worms', 'T2', 2], ['acorns', 'acorns', 'Acorns', 'T5', 5], ['hazelnuts', 'hazelnuts', 'Hazelnuts', 'T5', 5],
+  ['worms', 'worms', 'Small red worms', 'T2', 2], ['bigworms', 'bigworms', 'Big dark worms', 'T2', 2], ['acorns', 'acorns', 'Acorns', 'T5', 5], ['hazelnuts', 'hazelnuts', 'Hazelnuts', 'T5', 5],
   ['old-comb', 'old-comb', 'Old comb', 'T4', 4], ['chanterelle', 'chanterelle', 'Chanterelle', 'T5', 5],
   ['shells', 'shells', 'Broken shells', 'T2', 2], ['crushed-shell', 'crushed-shell', 'Crushed shell', 'T2', 2],
   ['charcoal-sticks', 'charcoal-sticks', 'Charcoal sticks', 'T2', 2],
@@ -104,7 +104,7 @@ export const MAKES = /** @type {[string, string, string, string, number][]} */ (
 
 /** Treats and offerings (docs/future/13 section 8). @type {ItemRow[]} */
 export const TREATS = /** @type {[string, string, string, string, number][]} */ ([
-  ['wrack-heap', 'wrack-heap', 'Wrack heap (frogs)', 'T2', 2], ['leaf-pack', 'leaf-pack', 'Leaf pack (minnows)', 'T2', 2], ['dug-worms', 'worms', 'Worms (turtles, the robin)', 'T2', 2],
+  ['wrack-heap', 'wrack-heap', 'Wrack heap (frogs)', 'T2', 2], ['leaf-pack', 'leaf-pack', 'Leaf pack (minnows)', 'T2', 2], ['dug-worms', 'worms', 'Worms (turtles)', 'T2', 2],
   ['lily-parcel', 'lily-parcel', 'Lily leaf parcel (turtles)', 'T2', 2], ['eggshell-grit', 'grit', 'Eggshell grit (the hen)', 'T3', 3],
   ['pondweed-bundle', 'pondweed', 'Pondweed bundle (minnows)', 'T3', 3], ['lily-leaf', 'lily-leaf', 'Lily leaf (turtles)', 'T2', 2], ['perch-stick', 'perch-stick', 'Perch stick (dragonflies)', 'T3', 3],
   ['overripe-fruit', 'offered:strawberries', 'Overripe fruit (butterflies)', 'T4', 4], ['seed-cake', 'seed-cake', 'Seed cake (songbirds)', 'T5', 4],
