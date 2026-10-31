@@ -933,7 +933,7 @@ export async function startApp(canvas, hooks = {}) {
   const caveLighting = createLighting(gpu.device, { transmittance: atmosphere.transmittance, aerial: atmosphere.aerial, sh: caveSH }, shadowPass.resources(gpu.device), lighting.layout, smallLights);
   const caveSHData = new Float32Array(36);
   const caveRecipe = await loadRecipe('world/spring-cave');
-  const springCave = createSpringCave({ R: caveRecipe, seed, dig, terrain, walk, pack, pass: cavePass, zones,
+  const springCave = createSpringCave({ R: caveRecipe, seed, dig, terrain, walk, pack, pass: cavePass, zones, K: keepsakesRecipe,
     hour: () => clock.worldT() / 3600, day: () => clock.dayIndexOf(clock.worldT()), walkerCamera: walkerRecipe.camera });
   // The cave is built in a worker as soon as the ground has given way, so climbing down is quick.
   sim.addSystem({ id: 'spring-cave', tick: () => springCave.prepare() });

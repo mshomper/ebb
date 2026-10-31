@@ -72,7 +72,11 @@
     { "id": "copper", "name": "Copper", "group": "craft", "sketch": "pebbles", "camp": "heap", "line": "A small red-brown lump of copper from the furnace. It never rusts in the sea." },
     { "id": "nails", "name": "Nails", "group": "craft", "sketch": "sticks", "camp": "heap", "line": "A handful of square nails, drawn out at the furnace." },
     { "id": "twisted-sticks", "name": "Twisted sticks", "group": "craft", "sketch": "sticks", "camp": "heap", "line": "Two sticks twisted round each other and bound, stiff and straight." },
-    { "id": "planks", "name": "Planks", "group": "craft", "sketch": "flat", "camp": "heap", "line": "A short plank of twisted sticks nailed across. Kept for the dock." }
+    { "id": "planks", "name": "Planks", "group": "craft", "sketch": "flat", "camp": "heap", "line": "A short plank of twisted sticks nailed across. Kept for the dock." },
+    { "id": "ochre", "name": "Ochre", "group": "earth", "sketch": "clay", "camp": "heap", "line": "Lumps of red and yellow earth from the spring pool, stained by its iron. They rub off on your fingers." },
+    { "id": "mica", "name": "Mica", "group": "stones", "sketch": "flat", "camp": "heap", "line": "Thin glittering sheets that peel apart, washed out of the rock below. Light comes through them, warm." },
+    { "id": "ochre-slip", "name": "Ochre slip", "group": "craft", "sketch": "clay", "camp": "heap", "line": "Fine clay and ochre stirred to a thin red cream. Brushed on a pale pot, it fires to a warm red." },
+    { "id": "mica-lantern", "name": "Mica lantern", "group": "craft", "sketch": "sticks", "camp": "heap", "line": "A clay lantern on a post with mica set in its holes. Its light is warmer and steadier." }
   ],
   "piles": { "handfuls": 12, "looks": [3, 8, 12], "rackBunches": 12, "rackHandfuls": 6, "bowlHandfuls": 6,
     "look": {
@@ -80,7 +84,7 @@
       "otherModel": "heap",
       "heap": { "note": "October 29, 2026 (Matt: clay and everything set down showed as wood): a kind models does not list is a soft mound in its own colour (colors, else its pickup colour, else its group's), with a few of its own pickup pieces on top when it has a pickup shape. radiiM: the full pile's mound half-widths and height; stageScales: its size at the small, good and big heap and the full pile; heapScale: a K-21 heap's; lump, sink: as a pebble's; pieces: pickup pieces on top of a full pile.",
         "radiiM": [0.3, 0.13, 0.26], "stageScales": [0.5, 0.68, 0.85, 1], "heapScale": 0.4, "lump": 0.22, "sink": 0.2, "pieces": 6,
-        "colors": { "clay": [0.3, 0.24, 0.18], "deep-clay": [0.11, 0.12, 0.13], "iron-ore": [0.05, 0.05, 0.055], "copper-ore": [0.2, 0.26, 0.2], "iron": [0.18, 0.18, 0.19], "copper": [0.45, 0.2, 0.12], "nails": [0.2, 0.2, 0.21], "twisted-sticks": [0.25, 0.17, 0.1], "planks": [0.32, 0.23, 0.14], "sand": [0.55, 0.48, 0.36], "ash": [0.4, 0.39, 0.37], "crushed-shell": [0.6, 0.57, 0.5], "eggshells": [0.62, 0.5, 0.38], "grit": [0.66, 0.6, 0.52], "sea-salt": [0.78, 0.78, 0.76] },
+        "colors": { "clay": [0.3, 0.24, 0.18], "ochre": [0.42, 0.16, 0.07], "mica": [0.5, 0.48, 0.42], "ochre-slip": [0.45, 0.17, 0.09], "mica-lantern": [0.4, 0.3, 0.2], "deep-clay": [0.11, 0.12, 0.13], "iron-ore": [0.05, 0.05, 0.055], "copper-ore": [0.2, 0.26, 0.2], "iron": [0.18, 0.18, 0.19], "copper": [0.45, 0.2, 0.12], "nails": [0.2, 0.2, 0.21], "twisted-sticks": [0.25, 0.17, 0.1], "planks": [0.32, 0.23, 0.14], "sand": [0.55, 0.48, 0.36], "ash": [0.4, 0.39, 0.37], "crushed-shell": [0.6, 0.57, 0.5], "eggshells": [0.62, 0.5, 0.38], "grit": [0.66, 0.6, 0.52], "sea-salt": [0.78, 0.78, 0.76] },
         "groupColors": { "fuel": [0.2, 0.14, 0.09], "stones": [0.3, 0.29, 0.27], "fibres": [0.3, 0.27, 0.14], "herbs": [0.1, 0.16, 0.06], "earth": [0.22, 0.16, 0.1],
           "sea": [0.07, 0.08, 0.04], "living": [0.25, 0.08, 0.07], "craft": [0.3, 0.22, 0.12] } },
       "models3d": {},

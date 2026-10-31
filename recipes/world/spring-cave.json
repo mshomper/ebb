@@ -40,14 +40,22 @@
 
   "pan": {
     "at": [0.0, 0.0], "fromPoolM": 0.35, "radiusM": 0.2, "rimM": 0.05, "panS": 5.5, "perDay": 3, "settleH": 6,
-    "finds": { "iron-ore": 74, "copper-ore": 18, "gravel": 8 },
+    "finds": { "iron-ore": 46, "copper-ore": 12, "gravel": 14, "ochre": 9, "mica": 6, "keepsake": 10, "shrimp": 2 },
     "firstFind": "iron-ore",
-    "copperAfter": 2
+    "copperAfter": 2,
+    "keepsakes": { "crystal": 4, "crinoid": 3, "garnet": 2, "pearl": 0.8, "gold": 0.2 },
+    "pearlPerSeason": 1,
+    "goldOnce": true,
+    "keeper": [{ "id": "thimble", "at": 12 }, { "id": "button", "at": 24 }, { "id": "key", "at": 36 }],
+    "shrimpS": 2.8
   },
+  "panFindsNote": "What the pan turns up (Matt, October 31, 2026: all four groups; plan page 'What the pan turns up'). finds: one thing a pan, by weight: the ores; gravel (nothing kept); ochre and mica, useful earths into the pack; a keepsake for the shelf (keepsakes: their weights, a cave pearl at most pearlPerSeason a season, the fleck of gold once ever, goldOnce); the well shrimp, seen in the pan and tipped back (shrimpS seconds in the pan), a journal find. keeper: the old keeper's three lost things, not random: each comes up on the pan with that number ever (at), in order, the iron key last (it opens a box in the sea cave, later, doc 16).",
   "panNote": "The old keeper's pan (O3): a shallow iron pan radiusM across with a rimM rim, lying fromPoolM from the water's edge on the side nearest the light (at: its place, filled in from the pool at load). Pan at the pool is a calm kneel of panS real seconds, no minigame. perDay pans a game day; after the last, the pool needs settleH game hours before it gives again (counted from the game day's start after that). finds: weights for what a pan leaves behind (iron ore, the black sand, most often; copper ore, the green-flecked pebbles, more rarely; gravel, nothing to keep). The first pan ever is always iron ore (firstFind), and copper can come from the copperAfter-th pan on. Every pan is seeded by the island, the game day and the pan's number that day, so time away never changes it.",
 
   "stones": { "count": 34, "sizeM": [0.07, 0.26], "lump": 0.22, "albedo": [0.13, 0.125, 0.11], "seed": 5521 },
   "stonesNote": "Loose stones on the floor: gathered along the walls' foot and round the pool's edge (seeded), lumpy (lump), sizeM across, never on the rope's foot, the pan or the way from the rope to the pool.",
+  "shrimp": { "lengthM": 0.03, "color": [0.7, 0.68, 0.62] },
+  "shrimpNote": "The well shrimp in the pan (the pan finds): drawn at the findable scale, about 3 times its real 1 cm, pale and eyeless, curling and flexing until you tip it back (pan.shrimpS seconds).",
   "rope": { "radiusM": 0.018, "at": [0.18, -0.12], "sway": 0.03 },
   "ropeNote": "The old rope down from the hole (radiusM thick), its foot at `at` (m from the hole's axis), swaying a little. Its card offers Climb up.",
 
@@ -66,8 +74,15 @@
     "panned": {
       "iron-ore": "Swirl, tip, swirl. Black sand stays in the bottom of the pan, heavy and fine. Into the pack.",
       "copper-ore": "Among the gravel, a few small pebbles flecked with green. Copper. Into the pack.",
-      "gravel": "Only gravel this time. You tip it back."
+      "gravel": "Only gravel this time. You tip it back.",
+      "ochre": "Swirl, tip, swirl. Lumps of red and yellow earth stay behind, staining the pan. Ochre. Into the pack.",
+      "mica": "Thin bright sheets wink in the gravel. Mica. You lift them out, into the pack.",
+      "shrimp": "Something tiny and pale curls in the last of the water: a shrimp with no eyes. You tip it gently back into the pool."
     },
+    "keepsakeName": "In the bottom of the pan",
+    "keepsakeLine": "Something to keep, left behind when the gravel washed away.",
+    "keeperName": "The old keeper's",
+    "keeperLine": "Something of the old keeper's, dropped into the spring long ago.",
     "settled": "The pool is cloudy from the panning. It wants time to settle. Tomorrow.",
     "full": "The pack is full.",
     "first": "Swirl, tip, swirl. Black sand stays in the bottom of the pan. Heavy. Iron, I think.",

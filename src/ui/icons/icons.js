@@ -1284,6 +1284,11 @@ const ICONS = {
     <path d="M3.6 10.6C3.6 8.8 7.4 7.6 12 7.6S20.4 8.8 20.4 10.6C20.4 13.8 16.6 16 12 16S3.6 13.8 3.6 10.6Z"/>
     <path d="M2.5 19.6C4.4 18.4 6.2 18.4 8 19.6S11.6 20.8 13.4 19.6S17.2 18.4 21.5 19.4"/>
     <circle cx="11" cy="11.6" r=".6" fill="currentColor" stroke="none"/><circle cx="13" cy="12" r=".6" fill="currentColor" stroke="none"/>`,
+  // The well shrimp (the pan finds): a pale, eyeless groundwater shrimp, curled on its side, its feelers long.
+  wellshrimp: `
+    <path ${ACCENT} d="M5 14.6C5 9.6 9 6.4 13.6 6.8C17.6 7.2 19.8 10.4 19.4 13.6C17.6 12.2 15.6 11.6 13.6 12.2C11.4 12.8 10.4 15 11 17.6C8.4 18.4 5 17.6 5 14.6Z"/>
+    <path d="M5 14.6C5 9.6 9 6.4 13.6 6.8C17.6 7.2 19.8 10.4 19.4 13.6C17.6 12.2 15.6 11.6 13.6 12.2C11.4 12.8 10.4 15 11 17.6C8.4 18.4 5 17.6 5 14.6Z"/>
+    <path d="M8.4 9.4L9.8 11.4M11.4 7.6L12.2 10M14.6 7.2L14.6 9.8M11 17.6L9.6 20.2M11 17.6L12.8 20M19.4 13.6C20.8 11.2 21.6 8.4 21.4 4.6M19.4 13.6C21.2 13 22 11.4 22 9.8"/>`,
   // Climb down: a dark hole in the ground, a rope ladder hanging into it, an arrow going down.
   climbdown: `
     <path ${ACCENT} d="M3 16.6C3 14.6 7 13.2 12 13.2S21 14.6 21 16.6S17 20 12 20S3 18.6 3 16.6Z"/>

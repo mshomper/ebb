@@ -6,7 +6,8 @@
 // fills its own pouch. O2: the way down lies just above the spring's head; the cairn trail ends
 // just short of it; the first spadeful there gives way once, into a hole that never fills. O3:
 // the zone's fade swaps once while dark; the cave is the same from the same seed, walkable round a
-// pool; panning is seeded, a few a day, the first always black sand.
+// pool; panning is seeded, a few a day, the first always black sand. O4 (the pan finds): ochre,
+// mica, keepsakes, the keeper's three things in order, the well shrimp; ochre slip and the mica lantern.
 
 import { cleanCook, layout, partKinds } from '../src/world/camp/making.js';
 import { cleanCamp } from '../src/world/camp/model.js';
@@ -23,7 +24,12 @@ import { landmarks, baseSampler } from '../src/world/terrain/landform.js';
 import { subSeed } from '../src/core/rng.js';
 import { idleFade, stepFade, darkness, startFade } from '../src/world/zones/zone.js';
 import { createZones } from '../src/world/zones/live.js';
-import { cleanPans, pansLeft, panFind, panned } from '../src/world/spring/pan.js';
+import { cleanPans, pansLeft, panFind, panned, keeperDue, panKeepsake } from '../src/world/spring/pan.js';
+import { springNumbers, springMesh, SPRING_FAMILY } from '../src/world/keepsakes/families/spring.js';
+import { keepsakeMesh, keepsakeWords, keepsakeView } from '../src/world/keepsakes/families/index.js';
+import { placeFired } from '../src/world/camp/pots.js';
+import { cleanPieces } from '../src/world/pieces/model.js';
+import { makeLantern, lanternsOwned } from '../src/world/pieces/lantern.js';
 import { caveShape, caveMesh, meshHash } from '../src/world/spring/cave-field.js';
 
 const G = 'ore';
@@ -227,6 +233,60 @@ export function addOreTests(test, assert, eq) {
     for (let d = 0; d < 50; d++) assert(panFind(77, d, 0, 1, P) !== 'copper-ore' || P.copperAfter <= 2, 'no copper before copperAfter');
     eq(JSON.stringify(cleanDig({ spring: { hour: 1, x: 0, z: 0, pans: c } }).spring?.pans), JSON.stringify(c), 'the pans keep in the save');
     return `iron ${n['iron-ore']}, copper ${n['copper-ore']}, gravel ${n.gravel} of 1200`;
+  });
+
+  test(G, "O4: the pan's table: ores most, earths and keepsakes now and then, the shrimp rarely, the keeper's three things on their own pans", async () => {
+    const P = (await load('world/spring-cave')).pan;
+    const n = /** @type {Record<string, number>} */ ({});
+    for (let d = 0; d < 1000; d++) for (let i = 0; i < 3; i++) { const f = panFind(91, d, i, 10, P); n[f] = (n[f] ?? 0) + 1; }
+    for (const k of ['iron-ore', 'copper-ore', 'gravel', 'ochre', 'mica', 'keepsake', 'shrimp']) assert((n[k] ?? 0) > 0, `${k} turns up (${n[k] ?? 0})`);
+    assert(n['iron-ore'] > n.ochre && n.ochre > n.shrimp && n.keepsake > n.shrimp, 'iron most, the shrimp rarest');
+    eq(keeperDue(11, P), 'thimble', 'the thimble on the 12th pan');
+    eq(keeperDue(23, P), 'button', 'the button on the 24th');
+    eq(keeperDue(35, P), 'key', 'the key on the 36th');
+    eq(keeperDue(12, P), null, 'none between');
+    // Keepsakes: a pearl at most once a season, the gold once ever.
+    const c = cleanPans({ total: 50, pearl: 2, gold: true });
+    for (let d = 0; d < 300; d++) { const f = panKeepsake(91, d, 0, c, 2, P); assert(f !== 'pearl' && f !== 'gold', `no second pearl this season, no second gold (${f})`); }
+    let seen = new Set();
+    for (let d = 0; d < 3000; d++) seen.add(panKeepsake(91, d, 1, cleanPans(null), 0, P));
+    assert(['crystal', 'crinoid', 'garnet', 'pearl'].every((k) => seen.has(k)), `every keepsake can come (${[...seen].join(', ')})`);
+    eq(JSON.stringify(cleanPans({ day: 1, n: 1, total: 3, hour: 5, pearl: 4, gold: true })), JSON.stringify({ day: 1, n: 1, total: 3, hour: 5, pearl: 4, gold: true }), 'the pearl and gold marks keep in the save');
+    return Object.entries(n).map(([k, v]) => `${k} ${v}`).join(', ');
+  });
+
+  test(G, 'O4: each spring keepsake builds, says its line and has a side to be sketched from, in the right family', async () => {
+    const K = await load('world/keepsakes');
+    for (const form of Object.keys(SPRING_FAMILY)) {
+      const k = springNumbers(form, 1234, K);
+      eq(k.family, /** @type {any} */ (SPRING_FAMILY)[form], `${form}: ${k.family}`);
+      const m = keepsakeMesh(k, K);
+      assert(m.count > 8 && m.indices.length > 12 && [...m.vertices].every(Number.isFinite), `${form} has a clean mesh`);
+      assert(keepsakeWords(k, K).length > 10, `${form} has a line`);
+      assert(Array.isArray(keepsakeView(k)), `${form} can be sketched`);
+      eq(JSON.stringify(springMesh(k, K).vertices.slice(0, 9)), JSON.stringify(springMesh(springNumbers(form, 1234, K), K).vertices.slice(0, 9)), `${form}: the same from the same seed`);
+    }
+    eq(springNumbers('key', 1, K).gen, 'keeper', "the key is the old keeper's");
+    eq(springNumbers('gold', 1, K).rarity, 'lifetime', 'gold is once in a lifetime');
+  });
+
+  test(G, 'O4: ochre slip fires a pot red; the mica lantern is its own make and keeps its mica through the save', async () => {
+    const C = await load('world/cook'), camp = await load('world/camp'), s = cleanCook(null), ctx = { filled: () => true, unlocked: () => true };
+    eq(layout(C, 'workbench', ['ochre', 'clay'], s, ctx).make, 'ochre-slip', 'ochre and clay stir into slip');
+    eq(layout(C, 'workbench', ['clay', 'sand'], s, ctx).make, 'cooking-pot', 'the cooking pot keeps its parts');
+    eq(layout(C, 'fire', ['shaped:cooking-pot', 'ochre-slip'], s, ctx).make, 'slip-fire-cooking-pot', 'a pale pot with slip fires red');
+    eq(layout(C, 'fire', ['shaped:cooking-pot'], s, ctx).make, 'fire-cooking-pot', 'without slip, as before');
+    eq(layout(C, 'workbench', ['lantern-pot', 'mica', 'rush-cord'], s, ctx).make, 'mica-lantern', 'pot, mica and cord: the mica lantern');
+    eq(layout(C, 'workbench', ['lantern-pot', 'sticks', 'rushes.stems'], s, ctx).make, 'post-lantern', 'the lantern on a post keeps its parts');
+    const H = camp.hearth, c0 = cleanCamp({ slots: [] });
+    const red = placeFired(c0, 'cup', 10, 3, H, true), plain = placeFired(c0, 'cup', 10, 3, H);
+    eq(red.slots.find((q) => q.kind === 'cup')?.slip, true, 'a slipped cup is marked');
+    eq(plain.slots.find((q) => q.kind === 'cup')?.slip, undefined, 'a plain one is not');
+    eq(cleanCamp(red).slots.find((q) => q.kind === 'cup')?.slip, true, 'the slip keeps through the save');
+    const L = (await load('world/pieces')).lantern, lam = makeLantern(7, 3, 1, 2, 10, L, true);
+    eq(cleanPieces({ list: [lam], nextId: 4 }).list[0].mica, true, 'the mica keeps through the save');
+    eq(lanternsOwned({ standing: 0, pouches: [['mica-lantern', 1], ['post-lantern', 1]], shaped: [], work: [] }), 2, 'a mica lantern counts toward the cap');
+    assert(L.mica.cd > 1 && L.mica.flicker < 1, 'its light is brighter and steadier');
   });
 }
 

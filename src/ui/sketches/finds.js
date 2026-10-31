@@ -329,3 +329,29 @@ export function moonjelly(p, scale) {
   p.scale(30, cy - ry, cy + ry, scale);
   return p.svg(380, 245, 'Field sketch of a moon jelly stranded on the sand, its four violet rings seen through the bell');
 }
+
+/**
+ * The well shrimp (the pan finds, October 31, 2026): a pale, eyeless groundwater shrimp from the
+ * spring's pool, curled on its side in the last of the water in a pan, its feelers long.
+ * @param {import('./pen.js').Pen} p @param {string} [scale]
+ */
+export function wellshrimp(p, scale) {
+  // The pan's bottom and the last of its water.
+  p.tint('M30 90C80 60 300 60 350 90C330 220 50 220 30 90Z', WASH.water, 0.25);
+  p.fine('M44 100C110 84 270 84 336 100M62 180C140 196 240 196 318 180', 0.8, 0.4);
+  // The body: a curled crescent of segments, pale.
+  p.shape('M110 160C100 120 136 92 184 92C232 92 268 116 270 148C248 136 222 132 200 138C176 144 164 162 168 186C140 192 116 184 110 160Z', '#E6DFD2', 0.55, 1.4);
+  p.fine('M134 112L146 134M156 100L162 128M180 94L182 124M204 94L200 124M228 102L218 128', 0.8, 0.55);
+  // Legs under the curl, and the tail fan.
+  p.line('M150 150L140 176M170 146L166 174M192 140L194 166M214 138L222 162', 1.2);
+  p.line('M168 186L150 206M168 186L176 210M168 186L162 212', 1.2);
+  // The feelers: two long, two short, sweeping up from the head.
+  p.line('M270 148C292 120 304 92 300 60M270 148C296 140 316 124 330 102', 1.1);
+  p.line('M266 142C276 130 280 120 280 110', 1);
+  p.label('feelers', 52, 62, 300, 70);
+  p.label('noeyes', 52, 132, 262, 140);
+  p.label('legs', 52, 196, 160, 166);
+  p.label('tail', 52, 226, 164, 204);
+  p.scale(30, 92, 206, scale);
+  return p.svg(380, 245, 'Field sketch of a well shrimp curled in the last of the water in a pan');
+}

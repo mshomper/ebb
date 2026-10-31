@@ -39,6 +39,19 @@ export const METAL = {
   // Planks: a short plank of twisted sticks laid side by side, a nailed batten across.
   'planks': ['made', `${both('d="M4 9.6H20V17.6H4Z"')}<path d="M4 12.3H20M4 15H20" opacity=".55"/>
     <path ${A2} d="M10.6 8.4H13.4V18.8H10.6Z"/><path d="M10.6 8.4H13.4V18.8H10.6Z"/>${dot(12, 10.6, 0.6)}${dot(12, 16.6, 0.6)}${BASE}`],
+  // Ochre (the pan finds): a heap of earth in two tones, a lump broken open on its slope.
+  'ochre': ['earth', `${both('d="M3.5 19.5C5.5 14 8.6 11.5 12 11.5S18.5 14 20.5 19.5Z"')}<path ${A2} d="M12 11.5C15.4 11.5 18.5 14 20.5 19.5H12Z"/>
+    ${both('d="M9.4 9.4L11.6 7.4L14.2 8.4L13.6 11L10.6 11.4Z"')}${GROUND}`],
+  // Mica: thin sheets fanned on the ground, light catching their edges.
+  'mica': ['stones', `${both('d="M4.4 19.2L9.2 12.4L13.4 14.6L8.6 20.6Z"')}${both('d="M9.6 18.6L13.8 10.2L18.8 12.4L14.6 20.2Z"')}
+    <path d="M12.2 13.6L15.8 15.2M11.6 16.2L14.8 17.6" opacity=".55"/><path d="M17.6 6.4V8.6M16.5 7.5H18.7" opacity=".7"/>${GROUND}`],
+  // Ochre slip: a small pot of thin red cream, a brush leaning in it.
+  'ochre-slip': ['made', `${both('d="M6.4 11.6H17.6L16.6 19C16.5 19.6 16 20 15.4 20H8.6C8 20 7.5 19.6 7.4 19Z"')}
+    <path ${A2} d="M7.2 13.4H16.8"/><path d="M7.2 13.4H16.8"/><path d="M13.4 13L17.8 4.4M17.2 3.6L19 4.6L18.2 6.2L16.4 5.2Z"/>${BASE}`],
+  // The mica lantern: the fired pot on its post, its holes windowed bright, a cord loop at its top.
+  'mica-lantern': ['made', `${both('d="M9.6 4.8H14.4C16.2 5.8 16.8 7.6 16.4 9.2C16 10.8 14.4 11.6 12 11.6S8 10.8 7.6 9.2C7.2 7.6 7.8 5.8 9.6 4.8Z"')}
+    <rect ${A2} x="9.2" y="7" width="2" height="2.2" rx=".4"/><rect ${A2} x="12.8" y="7" width="2" height="2.2" rx=".4"/><path d="M10.8 3.4C10.8 2.2 13.2 2.2 13.2 3.4"/>
+    <path d="M12 11.6V21.2M8.4 21.2H15.6"/>`],
   // The clay furnace: a waist-high clay chimney narrowing upward, its round-topped tapping arch at
   // the foot, a clay air pipe on one side, a ring of flat stones round it.
   'clay-furnace': ['made', `${both('d="M6.4 19.6L8.2 6.4C8.4 5.4 9.4 4.8 12 4.8S15.6 5.4 15.8 6.4L17.6 19.6Z"')}
@@ -56,6 +69,8 @@ export const METAL_POUCH_ROWS = [
   ['deep-clay', 'deep-clay', 'Deep clay', 'T3', 3], ['iron-ore', 'iron-ore', 'Iron ore', 'T3', 3], ['copper-ore', 'copper-ore', 'Copper ore', 'T3', 3],
   ['iron', 'iron', 'Iron', 'T3', 3], ['copper', 'copper', 'Copper', 'T3', 3], ['nails', 'nails', 'Nails', 'T3', 3],
   ['twisted-sticks', 'twisted-sticks', 'Twisted sticks', 'T3', 3], ['planks', 'planks', 'Planks', 'T3', 3],
+  // The pan finds (October 31, 2026): the useful earths and what they make.
+  ['ochre', 'ochre', 'Ochre', 'T3', 3], ['mica', 'mica', 'Mica', 'T3', 3], ['ochre-slip', 'ochre-slip', 'Ochre slip', 'T3', 3], ['mica-lantern', 'mica-lantern', 'Mica lantern', 'T3', 3],
 ];
 /** @type {[string, string, string, string, number][]} */
 export const METAL_MAKE_ROWS = [['clay-furnace', 'clay-furnace', 'Clay furnace', 'T3', 3], ['keepers-pan', 'keepers-pan', "The old keeper's pan", 'T3', 3]];

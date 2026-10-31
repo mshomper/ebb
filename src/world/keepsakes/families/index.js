@@ -22,6 +22,7 @@ import { coralNumbers, coralMesh, coralWords } from './coral.js';
 import { bivalveNumbers, bivalveMesh, bivalveWords } from './bivalve.js';
 import { artifactNumbers, artifactMesh, artifactWords } from './artifact.js';
 import { sherdNumbers, sherdMesh, sherdWords } from './sherd.js';
+import { isSpring, springMesh, springWords } from './spring.js';
 
 /**
  * @typedef {{ salt: number, numbers: (h0: number, rarity: any, K: any) => any,
@@ -60,9 +61,9 @@ export function rollKeepsake(family, seed, n, K, cond, force) {
   return F.numbers(h0, rarity, K);
 }
 
-/** A keepsake's mesh from its numbers. @param {any} n @param {any} K */
-export const keepsakeMesh = (n, K) => FAMILIES[n.family].mesh(n, K);
+/** A keepsake's mesh from its numbers (the spring pool's forms are their own, spring.js). @param {any} n @param {any} K */
+export const keepsakeMesh = (n, K) => (isSpring(n) ? springMesh(n, K) : FAMILIES[n.family].mesh(n, K));
 /** A keepsake's card line. @param {any} n @param {any} K */
-export const keepsakeWords = (n, K) => FAMILIES[n.family].words(n, K);
+export const keepsakeWords = (n, K) => (isSpring(n) ? springWords(n, K) : FAMILIES[n.family].words(n, K));
 /** The side a keepsake's sketch is traced from. @param {any} n */
 export const keepsakeView = (n) => FAMILIES[n.family].view(n);

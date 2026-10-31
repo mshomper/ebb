@@ -43,7 +43,7 @@ struct Prop {
   tilt: vec4f,      // x pitch about its own x (its +y toward its +z), y roll about its own z, both before the yaw (a held tool); z dry 0..1 (a herb bunch); w spare
   burn: vec4f,      // x its length along its own x (1 as made); y burnt from its -x end this far along it (0: char rises from the bottom instead); z the model's half length along x (m); w raw clay 0..1
   wear: vec4f,      // the tent's weathering (src/world/camp/canvas.js): x canvas fade 0..1, y poles' silver 0..1, z patches sewn on, w 1: the canvas check's sort view
-  dye: vec4f,       // a dyed canvas (Phase 4's hook, section 9.3): rgb its tint on the cloth (linear, faded: canvas.js dyeTint), w 1 when dyed (0: undyed)
+  dye: vec4f,       // a dyed canvas (Phase 4's hook, section 9.3): rgb its tint on the cloth (linear, faded: canvas.js dyeTint), w 1 when dyed (0: undyed); w 2: a pot fired with ochre slip, its clay times rgb
 };
 
 @group(0) @binding(0) var<uniform> frame: FrameUniforms;
@@ -230,6 +230,8 @@ fn fsProp(in: VsOut) -> FsOut {
   let raw = pd.raw.rgb * mix(1.0, clamp(lum / 0.12, 0.4, 1.8), pd.raw.w);
   var albedo = mix(mix(dried, raw, pr.burn.w), pd.charCol.rgb, charred * charK);
   if (pr.wear.x + pr.wear.y + pr.wear.z > 0.0) { albedo = weather(albedo, pr, vec3f(in.localX, in.localY, in.localZ)); }
+  // A pot fired with ochre slip (the pan finds): the clay takes the slip's warm red.
+  if (pr.dye.w > 1.5) { albedo = albedo * pr.dye.rgb * 1.6; }
   let rough = mix(clamp(mr.g * pr.look.y, 0.04, 1.0), 1.0, pr.burn.w);
 
   let viewDist = distance(in.world, frame.cameraPos);

@@ -70,4 +70,8 @@ the hole: a disc of sky, the sun down the shaft only when it lines up, the light
 walls, and a soft fill (Matt allowed fake light for the ambience). The pool's water refracts the
 stones under it and reflects the bright hole. The old keeper's pan lies by the water: Pan the pool
 gives iron ore (black sand) most often and copper ore more rarely, a few pans a game day, seeded so
-time away never changes it (`pan.js`). Test link: `?spring=cave`.
+time away never changes it (`pan.js`). Since the pan finds (Matt, October 31, 2026) it also turns up
+ochre and mica (into the pack), keepsakes for the shelf (a rock crystal, crinoid beads, garnet sand, a
+cave pearl once a season at most, a fleck of gold once ever), the old keeper's three lost things on
+the 12th, 24th and 36th pans (a copper thimble, a bone button, a small iron key), and now and then a
+well shrimp, curling in the pan before you tip it back (a journal find). Test link: `?spring=cave`.

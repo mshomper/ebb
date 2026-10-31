@@ -132,7 +132,10 @@ pool that feeds the spring (`docs/26-zones.md`). The old keeper's pan by the poo
 (black sand) often and copper ore rarely, a few pans a game day. A clay furnace at camp (deep clay,
 deep clay, sand, marram; it dries a night) smelts ore with willow charcoal overnight into iron or
 copper, and draws a lump of either into nails. Twisted sticks (sticks, sticks) and nails make
-planks, kept for the dock where the boat will land. Star-iron stays the special metal (F14).
+planks, kept for the dock where the boat will land. Star-iron stays the special metal (F14). The pan
+also turns up ochre (an ochre slip that fires a pot red, the first colour on a pot), mica (a mica
+lantern with a warmer, steadier light), keepsakes, the old keeper's three lost things in order, and
+the well shrimp (Matt, October 31, 2026).
 
 ### The year, season by season (agreed with Matt, October 20, 2026)
 

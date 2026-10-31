@@ -45,8 +45,14 @@
     "planks": { "tier": "T3", "at": "workbench", "parts": ["twisted-sticks", "nails"], "out": "pouch", "gives": "planks", "count": 1, "src": ["spring-ore plan, Matt, October 30, 2026"] },
     "smelt-iron": { "tier": "T3", "at": "furnace", "act": "smelt", "parts": ["iron-ore", "charcoal-sticks"], "out": "smelt", "gives": "iron", "count": 1, "src": ["spring-ore plan"] },
     "smelt-copper": { "tier": "T3", "at": "furnace", "act": "smelt", "parts": ["copper-ore", "charcoal-sticks"], "out": "smelt", "gives": "copper", "count": 1, "src": ["spring-ore plan"] },
-    "nails": { "tier": "T3", "at": "furnace", "act": "draw", "parts": [["iron", "copper"]], "out": "pouch", "gives": "nails", "count": 1, "src": ["spring-ore plan: copper nails and iron nails both count as nails"] }
+    "nails": { "tier": "T3", "at": "furnace", "act": "draw", "parts": [["iron", "copper"]], "out": "pouch", "gives": "nails", "count": 1, "src": ["spring-ore plan: copper nails and iron nails both count as nails"] },
+    "ochre-slip": { "tier": "T3", "at": "workbench", "parts": ["ochre", "clay"], "out": "pouch", "gives": "ochre-slip", "count": 1, "src": ["pan finds, Matt, October 31, 2026"] },
+    "slip-fire-cooking-pot": { "tier": "T3", "at": "fire", "parts": ["shaped:cooking-pot", "ochre-slip"], "out": "work", "needH": 8, "gives": "cooking-pot", "count": 1, "fires": "cooking-pot", "slip": true, "src": ["pan finds"] },
+    "slip-fire-tea-pot": { "tier": "T3", "at": "fire", "parts": ["shaped:tea-pot", "ochre-slip"], "out": "work", "needH": 8, "gives": "tea-pot", "count": 1, "fires": "tea-pot", "slip": true, "src": ["pan finds"] },
+    "slip-fire-cup": { "tier": "T3", "at": "fire", "parts": ["shaped:cup", "ochre-slip"], "out": "work", "needH": 8, "gives": "cup", "count": 1, "fires": "cup", "slip": true, "src": ["pan finds"] },
+    "mica-lantern": { "tier": "T3", "at": "workbench", "parts": ["lantern-pot", "mica", "rush-cord"], "out": "pouch", "gives": "mica-lantern", "count": 1, "unlock": "lantern", "src": ["pan finds"] }
   },
+  "panFindsNote": "The pan's useful earths (Matt, October 31, 2026). Ochre slip: a handful of ochre and one of clay, stirred at the workbench into a pouch of slip. Laid at the fire with a pale cooking pot, tea pot or cup (slip-fire-<kind>), the slip goes on as it fires and the piece comes out a warm ochre red (slip: true; camp.json hearth.slip), the island's first colour on a pot. The mica lantern: a fired lantern pot, mica set in its holes and a rush cord to hang it, set down like the lantern; its light is warmer and steadier (pieces.json lantern.mica). Every set of parts is its own (the cooking pot is clay and sand, seed balls clay and a seed; the lantern on a post is the pot, a stick and rushes).",
   "springNote": "The underground spring (spring-ore plan, Matt, October 30, 2026; src/world/camp/furnace.js). The clay furnace is a camp build in the work corner from two handfuls of deep clay (the third dig layer on a damp bank, with the keeper's blade), a handful of sand and a handful of marram (builds.furnace). It stands one night to dry before its first use. At the furnace: Smelt lays a handful of ore and a handful of willow charcoal sticks in at the top (out 'smelt'); it burns through the night and the metal is ready by morning (furnace.readyHour), taken up from the furnace's card; one load at a time. Draw out turns one copper or one iron into a handful of nails at once (copper nails and iron nails both count as nails). At the workbench: twisted sticks (two handfuls of sticks, wound and bound; the twin of woven twigs) and planks (twisted sticks and nails), kept for the dock. Every set of parts is its own: no other make takes two handfuls of sticks alone (the apothecary bench adds cord, the rack cord, the nest box rushes), and nothing else takes ore, metal or nails.",
   "furnace": { "readyHour": 7, "minH": 8, "dryMinH": 8, "light": { "cd": 18, "rangeM": 3.5, "rgb": [1.0, 0.42, 0.12], "flickerHz": 0.7, "flicker": 0.25, "outM": 0.12, "upM": 0.06 }, "glowAt": [0, 0.15, 0], "doorAt": [0, 0.08, 0.34] },
   "furnaceNote": "The clay furnace's night (src/world/camp/furnace.js, pure): a load laid at laidHour is ready at the first readyHour (game hour of the day) at least minH game hours later, so ore in at dusk is metal by morning; the furnace itself is dry the same way, dryMinH after it was built. While a load burns the furnace glows out of its tapping arch: a small light (cd, rangeM, rgb, flickering by the flicker share at flickerHz) outM in front of the arch (doorAt) and upM over it. glowAt and doorAt are the model's empties glow and tap_door (m, the model's frame, from Matt's clay-furnace.glb).",
@@ -150,7 +156,12 @@
       "planks": "Twisted sticks laid side by side, a batten nailed across. A plank, kept for the dock.",
       "smelt-iron": "Black sand and charcoal in at the top. It will burn through the night.",
       "smelt-copper": "Green-flecked ore and charcoal in at the top. It will burn through the night.",
-      "nails": "Heated and drawn out, cut and headed. A handful of nails." },
+      "nails": "Heated and drawn out, cut and headed. A handful of nails.",
+      "ochre-slip": "Clay and ochre stirred thin, a red cream. Brush it on a pale pot at the fire.",
+      "slip-fire-cooking-pot": "Brushed with ochre slip and set at the fire's edge. It will fire red.",
+      "slip-fire-tea-pot": "Brushed with ochre slip and set at the fire's edge. It will fire red.",
+      "slip-fire-cup": "Brushed with ochre slip and set at the fire's edge. It will fire red.",
+      "mica-lantern": "Mica pressed into every hole of the fired pot, hung on cord. A lantern with windows." },
     "benchFull": "The bench is full of pieces waiting for the fire. Fire one first.",
     "onBench": "On the workbench",
     "benchWaiting": "Waiting for the fire",
@@ -160,7 +171,7 @@
     "shapedNoRing": "Shaped, still pale and soft. It wants a night in a fire.",
     "shapedHint": "It wants a night in the fire.",
     "shapedNames": { "cooking-pot": "Unfired cooking pot", "tea-pot": "Unfired tea pot", "cup": "Unfired cup", "bowl": "Unfired bowl", "lantern-pot": "Unfired lantern pot" },
-    "workWaitings": { "fire-cooking-pot": "A pale pot at the fire's edge, firing.", "fire-tea-pot": "A pale tea pot at the fire's edge, firing.",
+    "workWaitings": { "slip-fire-cooking-pot": "A slipped pot at the fire's edge, firing red.", "slip-fire-tea-pot": "A slipped tea pot at the fire's edge, firing red.", "slip-fire-cup": "A slipped cup at the fire's edge, firing red.", "fire-cooking-pot": "A pale pot at the fire's edge, firing.", "fire-tea-pot": "A pale tea pot at the fire's edge, firing.",
       "fire-cup": "A pale cup at the fire's edge, firing.", "fire-bowl": "A pale bowl at the fire's edge, firing.", "fire-lantern-pot": "A pale lantern pot at the fire's edge, firing." },
     "workDones": { "fire-bowl": "A fired bowl at the fire's edge.", "fire-lantern-pot": "A fired lantern pot at the fire's edge, light shows through every hole." },
     "furnaceTakes": { "iron": "Take up the iron", "copper": "Take up the copper" },
@@ -224,7 +235,8 @@
       "satchel": "Rush satchel, eight pouches", "basket": "Willow basket, ten pouches", "seed-balls": "Seed balls", "lily-parcel": "Lily leaf parcel",
       "gift-stone": "Gift stone", "nest-box": "Nest box", "eggshell-grit": "Eggshell grit", "meal": "An egg, cooked on the hearth",
       "lantern-pot": "Lantern pot, shaped", "fire-lantern-pot": "Lantern pot, fired", "post-lantern": "A lantern on a post",
-      "furnace": "Clay furnace", "twisted-sticks": "Twisted sticks", "planks": "A plank", "smelt-iron": "First iron, smelted", "smelt-copper": "First copper, smelted", "nails": "Nails" },
+      "furnace": "Clay furnace", "twisted-sticks": "Twisted sticks", "planks": "A plank", "smelt-iron": "First iron, smelted", "smelt-copper": "First copper, smelted", "nails": "Nails",
+      "ochre-slip": "Ochre slip", "slip-fire-cooking-pot": "A red cooking pot", "slip-fire-tea-pot": "A red tea pot", "slip-fire-cup": "A red cup", "mica-lantern": "A mica lantern" },
     "pageParts": { "ring": "Sticks and stones", "workbench": "Two flat stones", "shovel": "Woven twigs or a stick, a flat stone, cord", "woven-twigs": "Two handfuls of drift twigs, woven", "rush-cord": "Rushes, reed leaves or marram, twisted",
       "apothecary": "Sticks lashed with cord", "rack": "Withies or sticks, cord", "mortar": "A flat stone and a pebble", "hamper": "Rushes coiled, stitched with cord",
       "hamper2": "Rushes, cord, a willow lid", "dry": "A handful of herbs, hung", "grind": "Broken shells, ground", "willow-charcoal": "Withies, a night in the fire",
@@ -233,7 +245,8 @@
       "leaf-pack": "Fallen leaves, rush cord", "satchel": "Rushes plaited, a cord strap", "basket": "Withies woven, two cord straps", "seed-balls": "Clay and saved seed, rolled", "lily-parcel": "Worms, a lily leaf, rush cord",
       "gift-stone": "A flat stone, two handfuls of shells", "nest-box": "Sticks, two handfuls of rushes", "eggshell-grit": "The eggshells from a breakfast", "meal": "An egg from the hen",
       "lantern-pot": "Clay, pierced with a pebble; it wants a night in the fire", "fire-lantern-pot": "A night in the fire", "post-lantern": "The fired pot, a stick post, a rush wick",
-      "furnace": "Deep clay, sand and marram, built up in courses", "twisted-sticks": "Two handfuls of sticks, wound together", "planks": "Twisted sticks and nails", "smelt-iron": "Black sand and willow charcoal, a night in the furnace", "smelt-copper": "Copper ore and willow charcoal, a night in the furnace", "nails": "One iron or one copper, drawn out at the furnace" }
+      "furnace": "Deep clay, sand and marram, built up in courses", "twisted-sticks": "Two handfuls of sticks, wound together", "planks": "Twisted sticks and nails", "smelt-iron": "Black sand and willow charcoal, a night in the furnace", "smelt-copper": "Copper ore and willow charcoal, a night in the furnace", "nails": "One iron or one copper, drawn out at the furnace",
+      "ochre-slip": "Ochre and clay, stirred thin", "slip-fire-cooking-pot": "Ochre slip, a night in the fire", "slip-fire-tea-pot": "Ochre slip, a night in the fire", "slip-fire-cup": "Ochre slip, a night in the fire", "mica-lantern": "The fired pot, mica, rush cord" }
   },
   "wordsNote": "Every line the stations and the camp page say. <slot>Slot: a bench's ground card (name, line, needs, and its Build label); builtLines: the line after a build other than the workbench's (built). acts: the apothecary's actions. hamper: the stations' row of what the hamper holds; takeUp, setDownHere, emptySlot: the hamper's and the rack's cards. made: the line after a first make, by make id. workFull, workTake, workWaiting, workDone: the overnight work at the fire (the ring's card). pageNames, pageParts: the camp page's first-made lines, in the walker's hand: name, what it was made of, and the date."
 }

@@ -15,7 +15,9 @@ import { run } from '../../core/workers.js';
 import { dispatch, onAction } from '../../input/actions.js';
 import { registerCardAction } from '../../ui/card-actions.js';
 import { caveShape } from './cave-field.js';
-import { cleanPans, pansLeft, panFind, panned } from './pan.js';
+import { cleanPans, pansLeft, panFind, panned, keeperDue, panKeepsake } from './pan.js';
+import { springNumbers } from '../keepsakes/families/spring.js';
+import { DAYS_PER_SEASON } from '../../core/clock.js';
 import { cleanDig } from '../dig/rest.js';
 
 const ID = 'spring-cave';
@@ -79,9 +81,10 @@ function join(parts) {
 /**
  * @param {{ R: any, seed: number, dig: any, terrain: { sampleHeight: (x: number, z: number) => number }, walk: any, pack: any,
  *   pass: ReturnType<typeof import('../../render/passes/cave.js').createCavePass>, zones: any, hour: () => number, day: () => number,
- *   walkerCamera: any }} o
+ *   walkerCamera: any, K?: any }} o
  *   R: recipes/world/spring-cave.json; zones: src/world/zones/live.js; hour: game hours; day: the game day;
- *   walkerCamera: recipes/world/walker.json camera (the cave's view keeps closer)
+ *   walkerCamera: recipes/world/walker.json camera (the cave's view keeps closer); K: recipes/world/keepsakes.json
+ *   (the pan's keepsakes, the pan finds)
  */
 export function createSpringCave(o) {
   const R = o.R, W = R.words, S = R.shape, P = R.pan;
@@ -155,7 +158,7 @@ export function createSpringCave(o) {
   function things(held) {
     const at = origin();
     if (!at) return;
-    const key = held ? held.x.toFixed(2) + held.y.toFixed(2) + held.z.toFixed(2) + held.tilt.toFixed(2) : 'lying';
+    const key = (held ? held.x.toFixed(2) + held.y.toFixed(2) + held.z.toFixed(2) + held.tilt.toFixed(2) : 'lying') + (shrimpT > 0 ? `s${Math.round(shrimpT * 30)}` : '');
     if (key === thingsKey) return;
     thingsKey = key;
     const L = R.look, r = P.radiusM, rim = P.rimM;
@@ -173,7 +176,18 @@ export function createSpringCave(o) {
     for (let k = 0; k <= 12; k++) { const t = k / 12; pts.push([at.x + (fx - at.x) * t + Math.sin(t * Math.PI) * 0.04, at.top + 0.05 + (fy - at.top - 0.05) * t, at.z + (fz - at.z) * t]); }
     pts.push([fx + 0.12, fy, fz + 0.05], [fx + 0.2, fy, fz - 0.06]);
     const rope = tube(pts, R.rope.radiusM, 6, L.rope);
-    o.pass.setMesh('things', join([pan, rope, stones()]));
+    // The well shrimp in the lying pan: a tiny pale curl, flexing (cheap motion for a tiny creature,
+    // the creature rule), until it is tipped back.
+    const parts = [pan, rope, stones()];
+    if (shrimpT > 0 && !held) {
+      const t = shrimpT * 9, len = R.shrimp?.lengthM ?? 0.03, sp = [];
+      for (let k = 0; k <= 7; k++) {
+        const a = (k / 7 - 0.5) * (1.6 + 0.9 * Math.sin(t + k * 0.5));
+        sp.push([px + Math.sin(a) * len, py + 0.012 + Math.cos(a) * len * 0.3 - len * 0.25, pz + (k / 7 - 0.5) * len * 0.6]);
+      }
+      parts.push(tube(sp, /** @type {any} */ ([0.002, 0.004, 0.005, 0.005, 0.0045, 0.004, 0.003, 0.0015]), 5, R.shrimp?.color ?? [0.7, 0.68, 0.62]));
+    }
+    o.pass.setMesh('things', join(parts));
   }
 
   /** @type {{ data: number[], idx: number[] } | null} */ let stoneMesh = null;
@@ -249,20 +263,45 @@ export function createSpringCave(o) {
     o.walk.kneelToward(at.x + p.at[0], at.z + p.at[1], P.panS, 'gather');
     panning = { t: 0 };
   }
+  /** The well shrimp in the pan, curling, until it is tipped back (live only). @type {number} */
+  let shrimpT = 0;
+  /**
+   * What the pan turned up: an ore or an earth into the pack; a keepsake, or one of the old keeper's
+   * lost things, on a card to keep (the dig's Keep and Leave); the well shrimp, curling in the pan
+   * before you tip it back. Seeded by the island, the day and the pan's number (pan.js).
+   */
   function panDone() {
-    const c = pans(), day = o.day(), i = c.day === day ? c.n : 0;
-    const find = panFind(panSeed, day, i, c.total, P);
-    update('dig', (d) => { const s = cleanDig(d); return s.spring ? { ...s, spring: { ...s.spring, pans: panned(c, day, o.hour()) } } : s; });
+    const c = pans(), day = o.day(), i = c.day === day ? c.n : 0, at = /** @type {NonNullable<typeof O>} */ (origin());
+    const keeper = keeperDue(c.total, P);
+    const find = keeper ? `keeper:${keeper}` : panFind(panSeed, day, i, c.total, P);
+    let next = panned(c, day, o.hour());
+    /** @type {any} */ let keep = null;
+    if (find === 'keepsake' || keeper) {
+      const season = Math.floor(day / DAYS_PER_SEASON), form = keeper ?? panKeepsake(panSeed, day, i, c, season, P);
+      if (form === 'pearl') next = { ...next, pearl: season };
+      if (form === 'gold') next = { ...next, gold: true };
+      if (o.K?.spring?.[form]) keep = springNumbers(form, subSeed(panSeed, `${day}:${i}`), o.K);
+    }
+    update('dig', (d) => { const s = cleanDig(d); return s.spring ? { ...s, spring: { ...s.spring, pans: next } } : s; });
     let line = W.panned[find] ?? '';
-    if (find !== 'gravel') {
+    if (['iron-ore', 'copper-ore', 'ochre', 'mica'].includes(find)) {
       if (o.pack.room(find)) o.pack.add(find, 1);
       else { o.pack.heapHere?.(find, 1); line = W.full; }
     }
+    if (find === 'shrimp') shrimpT = P.shrimpS;
+    if (keeper) dispatch(/** @type {any} */ ({ type: 'journal.flag', flag: `setpiece:cairns:${keeper}` }));
     if (c.total === 0) {
       line = W.first;
       dispatch(/** @type {any} */ ({ type: 'journal.flag', flag: 'setpiece:cairns:panned' }));
     }
-    emitDeferred('spring:panned', { find, day, i, hour: o.hour() });
+    emitDeferred('spring:panned', { find, day, i, hour: o.hour(), keepsake: keep?.form ?? null });
+    if (keep) {
+      // A thing to keep: its card, with the dig's Keep and Leave (src/world/dig keepIt, leaveIt).
+      const p = { x: at.x + panAt.x, z: at.z + panAt.z };
+      update('identify', () => ({ sp: 'spring:pool', name: keeper ? W.keeperName : W.keepsakeName, sub: null, icon: 'pan', text: `${keeper ? W.keeperLine : W.keepsakeLine} ${o.K.spring[keep.form].word}`,
+        wx: p.x, wz: p.z, r: 0.3, stage: -1, dig: true, digKeepsake: keep, digHole: `pan:${day}:${i}`, canCarry: false, at: performance.now() }));
+      return;
+    }
     emit('island:notice', { text: line, showS: 6 });
   }
 
@@ -388,6 +427,7 @@ export function createSpringCave(o) {
 
   /** Each frame while down here: the pan's kneel, and the pan in your hands. @param {number} dt */
   function tick(dt) {
+    if (shrimpT > 0) shrimpT = Math.max(0, shrimpT - dt);
     if (!panning) { if (built) things(null); return; }
     panning.t += dt;
     const hr = o.walk.hand('r'), hl = o.walk.hand('l');

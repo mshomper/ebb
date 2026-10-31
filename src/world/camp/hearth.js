@@ -50,6 +50,10 @@ export function createHearth(k) {
   /** A seeded turn for a piece, so each sits its own way. @param {number} seed */
   const turnOf = (seed) => (((seed >>> 8) % 1000) / 1000) * 2 * Math.PI;
 
+  /** A pot fired with ochre slip wears its warm red (the pan finds; camp.json hearth.slip, the props' dye in slip mode). @param {any} p its slot record */
+  const slipOf = (p) => (p?.slip && H.slip ? [...H.slip, 2] : undefined);
+  /** Was a fire make laid with ochre slip (cook.json makes slip)? @param {string} make */
+  const slippedBy = (make) => !!k.cook.makes?.[make]?.slip;
   /** The fire make that fires a shaped kind (cook.json makes, out 'work', fires: kind). @param {string} make */
   const firesOf = (make) => k.cook.makes?.[make]?.fires ?? null;
 
@@ -75,7 +79,7 @@ export function createHearth(k) {
     if (r && hearth) {
       out.push({ key: 'hearth-stones', x: r.x, y: r.y, z: r.z, yaw: r.yaw });
       const p = onIt ? pieceOf(c, onIt) : null;
-      if (p && !held) out.push({ key: modelOf(onIt), x: r.x, y: r.y + H.stonesTopM, z: r.z, yaw: r.yaw + turnOf(p.seed), shade: [0, 0, 0] });
+      if (p && !held) out.push({ key: modelOf(onIt), x: r.x, y: r.y + H.stonesTopM, z: r.z, yaw: r.yaw + turnOf(p.seed), shade: [0, 0, 0], dye: slipOf(p) });
     }
     // The pots and the cup in their own slots, unless on the hearth (or in your arms).
     for (const [kind, slot] of Object.entries(H.slots)) {
@@ -84,10 +88,10 @@ export function createHearth(k) {
       // The cup in your hands while you sip (P2e), not in its place.
       if (kind === 'cup' && k.cupInHand?.()) {
         const hr = k.walk.hand?.('r'), hl = k.walk.hand?.('l');
-        if (hr && hl) out.push({ key: modelOf(kind), x: (hl.x + hr.x) / 2, y: (hl.y + hr.y) / 2 + (H.cupInHandM ?? 0.01), z: (hl.z + hr.z) / 2, yaw: hr.yaw, shade: M[modelOf(kind)]?.shade });
+        if (hr && hl) out.push({ key: modelOf(kind), x: (hl.x + hr.x) / 2, y: (hl.y + hr.y) / 2 + (H.cupInHandM ?? 0.01), z: (hl.z + hr.z) / 2, yaw: hr.yaw, shade: M[modelOf(kind)]?.shade, dye: slipOf(p) });
         continue;
       }
-      out.push({ key: modelOf(kind), x: s.x, y: s.y, z: s.z, yaw: s.yaw + turnOf(p.seed), shade: M[modelOf(kind)]?.shade });
+      out.push({ key: modelOf(kind), x: s.x, y: s.y, z: s.z, yaw: s.yaw + turnOf(p.seed), shade: M[modelOf(kind)]?.shade, dye: slipOf(p) });
     }
     // The dye pot's stand: a flat stone in the herb corner, waiting for Phase 4's dyes.
     const d = k.where.slotAt(H.slots['dye-pot']);
@@ -113,7 +117,7 @@ export function createHearth(k) {
         // Between your hands, turned your way (a hand's yaw is your facing: +z of the walker's frame).
         const yaw = hl.yaw, A = H.carryAt;
         const fx = Math.sin(yaw), fz = Math.cos(yaw);
-        out.push({ key: modelOf(onIt), x: (hl.x + hr.x) / 2 + fx * A[2], y: (hl.y + hr.y) / 2 + A[1], z: (hl.z + hr.z) / 2 + fz * A[2], yaw });
+        out.push({ key: modelOf(onIt), x: (hl.x + hr.x) / 2 + fx * A[2], y: (hl.y + hr.y) / 2 + A[1], z: (hl.z + hr.z) / 2 + fz * A[2], yaw, dye: slipOf(pieceOf(c, onIt)) });
       }
     }
     return out;
@@ -292,7 +296,7 @@ export function createHearth(k) {
     if (!due.length) return;
     k.change((c) => {
       let x = { ...c, work: c.work.filter((p) => !(toSlot(p) && workDone(p, c.fire, hour, F))) };
-      for (const p of due) x = placeFired(x, /** @type {string} */ (firesOf(p.id)), hour, hash32(k.campSeed, 60, Math.round(p.laidHour * 60)), H);
+      for (const p of due) x = placeFired(x, /** @type {string} */ (firesOf(p.id)), hour, hash32(k.campSeed, 60, Math.round(p.laidHour * 60)), H, slippedBy(p.id));
       return x;
     });
     for (const p of due) {
