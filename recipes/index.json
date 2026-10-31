@@ -56,6 +56,8 @@
     "world/pack": "world/pack.json",
     "world/gather": "world/gather.json",
     "world/dig": "world/dig.json",
+    "world/zones": "world/zones.json",
+    "world/spring-cave": "world/spring-cave.json",
     "world/highlight": "world/highlight.json",
     "world/figure": "world/figure.json",
     "world/intro": "world/intro.json",

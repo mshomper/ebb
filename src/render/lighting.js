@@ -31,9 +31,11 @@ export function createLightingLayout(device) {
  * @param {GPUDevice} device
  * @param {{ transmittance: GPUTexture, aerial: GPUTexture, sh: GPUBuffer }} atmosphere
  * @param {{ view: GPUTextureView, sampler: GPUSampler }} shadow
+ * @param {GPUBindGroupLayout} [sharedLayout] another lighting's layout to build on (a zone's own light, src/world/zones: the
+ *   same pipelines take either group)
  */
-export function createLighting(device, atmosphere, shadow) {
-  const layout = createLightingLayout(device);
+export function createLighting(device, atmosphere, shadow, sharedLayout) {
+  const layout = sharedLayout ?? createLightingLayout(device);
   const buffer = makeBuffer(device, { label: 'light-uniforms', size: LIGHT_UNIFORM_BYTES, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
   const lutSampler = device.createSampler({ label: 'lut-linear', magFilter: 'linear', minFilter: 'linear', addressModeU: 'clamp-to-edge', addressModeV: 'clamp-to-edge', addressModeW: 'clamp-to-edge' });
   /** @param {{ view: GPUTextureView, sampler: GPUSampler }} s */

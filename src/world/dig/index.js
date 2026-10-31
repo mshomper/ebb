@@ -641,6 +641,19 @@ export function createDig(o) {
     marks: (focus) => holeMarks(holes().map((h) => ({ hole: slumping?.holeId === h.id ? { ...h, size: slumpNow().size } : h, ...now(h) })).filter((e) => !e.gone), focus, R),
     /** The hole above the spring, once the ground has given way (the way down, O2), or null. */
     springHole: () => holes().find((h) => h.stays) ?? null,
+    /** Tests and the test links: the ground above the spring given way at once, quietly (`?spring=cave`). */
+    debug: {
+      caveInNow() {
+        if (state().spring) return;
+        const at = story.spring();
+        if (!at) return;
+        const t = nowH(), s = get('pieces'), n = s?.nextId ?? 1;
+        const hole = { id: `p${n}`, kind: 'hole', x: at.x, z: at.z, yaw: 0, seed: hash32(seed, n), size: SP.hole.sizeM, placedHour: t,
+          depth: 1, layer: 'topsoil', cls: 'soil', dugHour: t, closedHour: -1, wetH: 0, seep: false, side: 1, stays: true };
+        if (s) update('pieces', () => ({ ...s, list: [...s.list, hole], nextId: n + 1 }));
+        change((st) => ({ ...st, spring: { hour: Math.floor(t), x: at.x, z: at.z } }));
+      },
+    },
 
     /**
      * The card a tap on an open hole opens: the layer it reaches in words, and Dig deeper on foot

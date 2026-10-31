@@ -1,0 +1,75 @@
+{
+  "type": "zone",
+  "version": 1,
+  "id": "spring-cave",
+  "note": "The underground spring (the spring-ore plan, O3; src/world/spring): the island's first zone, the small cave around the pool that feeds the spring, under the hole where the ground gave way above it. Its shape is a seeded field (src/world/spring/cave-field.js) meshed by surface nets (src/world/mesh/surface-nets.js), lit by the shaft from the hole and drawn by src/render/passes/cave.js. Loaded through the zone system (src/world/zones, docs/26-zones.md).",
+
+  "seed": 20261031,
+  "depthM": 4.2,
+  "depthNote": "How far below the island's ground at the hole the cave's floor lies (m). The cave sits right under the hole, in the island's own meters.",
+
+  "shape": {
+    "centre": [-0.7, 0.2], "radiusM": [3.0, 2.4], "wobbleM": 0.45, "wobbleLobes": 5,
+    "floorNoiseM": 0.12, "floorRiseM": 0.55, "ceilingM": 2.3, "domeM": 0.9,
+    "pool": { "at": [0.9, 0.6], "radiusM": 1.15, "depthM": 0.55, "levelM": 0.04 },
+    "shaft": { "radiusM": 0.42, "flareM": 0.25 },
+    "wallNoiseM": 0.1, "wallNoiseScale": 1.6, "blendM": 0.35,
+    "cellM": 0.08, "boundsM": [-4.2, -0.8, -3.6, 4.2, 5.0, 3.6]
+  },
+  "shapeNote": "In the cave's own frame, meters from the hole's axis (x, z), y up from the cave's floor level. centre: the chamber's middle, set off from the hole so the light falls near the pool; radiusM: its half widths along x and z, wobbled by wobbleM over wobbleLobes seeded lobes; floorNoiseM: the floor's bumps; floorRiseM: how far it rises into the walls; ceilingM: the ceiling's height at the walls and domeM more at the middle. pool: its middle, radius, how deep the basin is and the water's level over the floor. shaft: the round chimney from the ceiling up to the hole, flaring flareM wider where it meets the ceiling. wallNoiseM, wallNoiseScale: the seeded 3D noise that wears the rock; blendM: the smooth corners where floor, wall and ceiling meet. cellM: the mesher's sample spacing; boundsM: the sampled box [x0, y0, z0, x1, y1, z1].",
+
+  "view": { "cutM": 1.95, "cutDark": 0.35, "camera": { "distanceM": [3.2, 7], "startM": 4.8, "pitchDeg": [38, 72], "startPitchDeg": 52, "minEyeHeightM": 1.2, "orbitDegPerPx": 0.1, "turnHalfLifeS": 0.16, "lookHeightM": 1.0 } },
+  "viewNote": "The cave is seen as a diorama, cut away (Matt's island is a diorama too): nothing of the rock is drawn above cutM over the cave's floor level, so the view looks down into it from over the walker's shoulder (camera: the view below in here, the fields of walker.json camera). The rock's outside, seen past the cut, is plain and dark (cutDark of its lit colour). The light is still the hole's, worked out as if the roof were there.",
+  "walk": { "cellM": 0.2, "wallM": 0.35, "wadeM": 0.12 },
+  "walkNote": "The walker's ground below: the floor in cells of cellM, closed within wallM of the walls; the pool is water, waded only where under wadeM deep (the walker's own rules decide the rest).",
+
+  "light": {
+    "skyShare": 0.25, "cloudCut": 0.75, "holeRadiusM": 0.4, "bounce": 0.35, "fill": 0.003, "minNits": 0.004, "exposureBiasEV": 2.0,
+    "beam": { "nits": 0.12, "scatter": 0.05, "spread": 1.2 },
+    "figure": { "share": 1.0, "ambientShare": 1.0 }
+  },
+  "lightNote": "Physical light, painted last (the look rule). The hole is a disc of sky, holeRadiusM across its top: its radiance is the outside light falling on level ground (the sun's, plus skyShare more for the sky, less cloudCut of it under cloud) over pi, and it lights what can see it past the shaft's rim, falling off as the inverse square. The sun itself shines straight down the shaft only when it stands high enough to pass the rim, a bright moving patch. bounce: the share of the light that comes in that is bounced round the cave (its albedo carries it on), the soft fill everywhere; fill (Matt, October 31, 2026: fake light is fine for ambience): a soft extra fill everywhere, this share of the outside light, so the cave reads in the day and still dims at dusk and goes dark at night. minNits keeps the darkest corners from black. exposureBiasEV: the eye adapts to the dark, but not all the way: the picture stays this much darker than the meter asks, so the cave reads as a cave and the shaft of light is not blown out. beam: the dust in the shaft scattering the light toward you (scatter per meter) at nits per 1000 lux, the cone spread times wider at the floor than at the hole. figure: how the walker is lit (the frame's sun is the light from the hole on it, ambientShare of the bounce as its fill).",
+
+  "look": {
+    "rock": [0.16, 0.15, 0.13], "rockWet": [0.07, 0.07, 0.065], "floor": [0.12, 0.11, 0.095], "wetNearM": 0.6,
+    "roughness": [0.85, 0.3], "pan": [0.05, 0.048, 0.045], "rope": [0.32, 0.25, 0.16],
+    "water": { "absorption": [0.42, 0.12, 0.09], "f0": 0.02, "ripple": 0.04, "drips": 3, "dripS": 4.5, "tint": [0.02, 0.035, 0.04] }
+  },
+  "lookNote": "Linear albedos (the palette paints them at the tonemap): rock, the walls; rockWet, wet rock by the pool and under the drips (within wetNearM of the water), smoother (roughness dry to wet); floor; pan, the old keeper's iron pan; rope, the old rope hanging from the hole. water: absorption per meter (rgb, red goes first), f0 its reflectance head on, ripple the ripples' slope, drips seeded spots where water drips from the ceiling every dripS seconds, tint the light the water itself scatters.",
+
+  "pan": {
+    "at": [0.0, 0.0], "fromPoolM": 0.35, "radiusM": 0.2, "rimM": 0.05, "panS": 5.5, "perDay": 3, "settleH": 6,
+    "finds": { "iron-ore": 74, "copper-ore": 18, "gravel": 8 },
+    "firstFind": "iron-ore",
+    "copperAfter": 2
+  },
+  "panNote": "The old keeper's pan (O3): a shallow iron pan radiusM across with a rimM rim, lying fromPoolM from the water's edge on the side nearest the light (at: its place, filled in from the pool at load). Pan at the pool is a calm kneel of panS real seconds, no minigame. perDay pans a game day; after the last, the pool needs settleH game hours before it gives again (counted from the game day's start after that). finds: weights for what a pan leaves behind (iron ore, the black sand, most often; copper ore, the green-flecked pebbles, more rarely; gravel, nothing to keep). The first pan ever is always iron ore (firstFind), and copper can come from the copperAfter-th pan on. Every pan is seeded by the island, the game day and the pan's number that day, so time away never changes it.",
+
+  "rope": { "radiusM": 0.018, "at": [0.18, -0.12], "sway": 0.03 },
+  "ropeNote": "The old rope down from the hole (radiusM thick), its foot at `at` (m from the hole's axis), swaying a little. Its card offers Climb up.",
+
+  "sound": { "waterSlow": 0.85, "under": 1 },
+  "soundNote": "The cave's sound bed (recipes/audio/ambience.json): the island's beds fall away underground (under) and the trickle plays as slow water near you (waterSlow).",
+
+  "words": {
+    "name": "The spring's pool",
+    "pool": "Clear, cold water, still but for the drips. It rises here and finds its way out to the spring.",
+    "panName": "The old keeper's pan",
+    "pan": "A shallow iron pan, rusted at the rim, left on the stones by the water. Someone panned here.",
+    "ropeName": "An old rope",
+    "rope": "A rope hangs down from the light, knotted for hands. It holds.",
+    "panAct": "Pan the pool",
+    "climbUp": "Climb up",
+    "panned": {
+      "iron-ore": "Swirl, tip, swirl. Black sand stays in the bottom of the pan, heavy and fine. Into the pack.",
+      "copper-ore": "Among the gravel, a few small pebbles flecked with green. Copper. Into the pack.",
+      "gravel": "Only gravel this time. You tip it back."
+    },
+    "settled": "The pool is cloudy from the panning. It wants time to settle. Tomorrow.",
+    "full": "The pack is full.",
+    "first": "Swirl, tip, swirl. Black sand stays in the bottom of the pan. Heavy. Iron, I think.",
+    "below": "Down the rope into the cool. A small cave around a pool, lit by the light from the hole.",
+    "up": "Up the rope and out into the air.",
+    "woke": "You climbed back up into the light before you rested."
+  }
+}

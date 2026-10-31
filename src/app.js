@@ -3,7 +3,7 @@
 // input, history and the frame loop.
 // Shared by index.html (through main.js) and the tools pages, so they measure the same code.
 
-import { initGpu, onDeviceLost } from './core/gpu.js';
+import { initGpu, onDeviceLost, makeBuffer } from './core/gpu.js';
 import * as clock from './core/clock.js';
 import { flushDeferred, emit, emitDeferred, on } from './core/events.js';
 import { get as getStore, update as updateStore, subscribe as subscribeStore } from './core/store.js';
@@ -118,6 +118,9 @@ import { createTeaReveal } from './world/creatures/tea-reveal.js';
 import { setActRate } from './world/figure/acts.js';
 import { ashMarks } from './world/gather/ashes.js';
 import { createDig } from './world/dig/index.js';
+import { createZones } from './world/zones/live.js';
+import { createSpringCave } from './world/spring/cave-live.js';
+import { createCavePass } from './render/passes/cave.js';
 import { trailEndFor } from './world/dig/story.js';
 import { createPerchSticks } from './world/creatures/perch-sticks.js';
 import { createLanterns } from './world/pieces/lantern-live.js';
@@ -407,7 +410,9 @@ export async function startApp(canvas, hooks = {}) {
   const camera = createOrbitCamera(camRecipe);
   if (back?.view) camera.setPose(back.view);   // the view you left
   // The ground, or the water's surface where it stands higher, so a close-up never dips under a pond.
-  camera.setGroundProbe((x, z) => Math.max(terrain.sampleHeight(x, z), water.sim.live ? water.sampleLive(x, z).surface : -Infinity));
+  /** A zone's floor under a point while you are in one (src/world/zones), else null: the view keeps above it, not the island over it. @type {((x: number, z: number) => number) | null} */
+  let zoneGround = null;
+  camera.setGroundProbe((x, z) => (zoneGround ? zoneGround(x, z) : Math.max(terrain.sampleHeight(x, z), water.sim.live ? water.sampleLive(x, z).surface : -Infinity)));
   // The view, for the UI (store slice `view`): the ground point in the middle of the screen, and
   // where a ground point lands on screen in CSS pixels (behind: it is behind the camera, and x, y
   // are mirrored so they still say which way to turn).
@@ -913,6 +918,47 @@ export async function startApp(canvas, hooks = {}) {
     land: landRecipe, terrainSeed: subSeed(seed, 'terrain'), piecesRecipe: await loadRecipe('world/pieces'), testDig: back ? null : params.get('dig') });
   dig.setKeepsakeWords((n) => keepsakeWords(n, keepsakesRecipe));
   digRef = dig;
+  // Zones (docs/26-zones.md, src/world/zones): places below the island you go to and come back from,
+  // through a fade. The island keeps simulating; only what is drawn, walked and heard swaps. The
+  // first is the spring's cave (src/world/spring, the spring-ore plan O3), under the hole where the
+  // ground gave way: its own pass (drawn first while it is the zone, so it clears the frame), its
+  // own light (a lighting group on the same layout: the bounce as its fill, no sun and no shadows).
+  const zones = createZones({ R: await loadRecipe('world/zones'), host: canvas.parentElement });
+  const cavePass = createCavePass({ active: () => zones.active() === 'spring-cave' });
+  const caveBeam = cavePass.beamPass();
+  const caveSH = makeBuffer(gpu.device, { label: 'cave-sh9', size: 9 * 16, usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST });
+  const caveLighting = createLighting(gpu.device, { transmittance: atmosphere.transmittance, aerial: atmosphere.aerial, sh: caveSH }, shadowPass.resources(gpu.device), lighting.layout);
+  const caveSHData = new Float32Array(36);
+  const caveRecipe = await loadRecipe('world/spring-cave');
+  const springCave = createSpringCave({ R: caveRecipe, seed, dig, terrain, walk, pack, pass: cavePass, zones,
+    hour: () => clock.worldT() / 3600, day: () => clock.dayIndexOf(clock.worldT()), walkerCamera: walkerRecipe.camera });
+  // The cave is built in a worker as soon as the ground has given way, so climbing down is quick.
+  sim.addSystem({ id: 'spring-cave', tick: () => springCave.prepare() });
+  /** A card down in a zone, opened once you arrive beside it. @type {{ card: any, x: number, y: number } | null} */
+  let zoneCardOnArrival = null;
+  /** A tap in a zone: walk on its floor, or to a card of its own and open it there. @param {number} sx @param {number} sy */
+  function zoneTap(sx, sy) {
+    const z = zones.zone(), r = camera.ray(sx, sy), p = z?.groundAt?.(r.o, r.d) ?? null;
+    if (!z || !p) return;
+    const card = z.cardAt?.(p[0], p[2]) ?? null;
+    zoneCardOnArrival = null;
+    if (card) {
+      const reach = card.reachR ?? 0.5;
+      if (walk.distTo(card.wx, card.wz) <= reach + 0.15) updateStore('identify', () => ({ ...card, x: sx, y: sy, at: performance.now() }));
+      else if (walk.tap(sx, sy, [card.wx, p[1], card.wz], reach)) zoneCardOnArrival = { card, x: sx, y: sy };
+      return;
+    }
+    updateStore('identify', () => null);
+    walk.tap(sx, sy, p);
+  }
+  // `?spring=cave` (a test link, unsaved): the ground above the spring given way, and you straight down in the cave.
+  if (params.get('spring') === 'cave' && !back) afterGrow(() => {
+    const spot = dig.story.spring();
+    if (!spot) return;
+    dig.debug.caveInNow();
+    if (walk.placeAt(spot.x + 1.2, spot.z, -Math.PI / 2, 'stand')) walk.downHere();
+    zones.goNow('spring-cave');
+  });
   // A `?dig=` test link stands the walker by its spot (src/world/dig testSetUp): the view looks at it from close by.
   on('dig:test-stood', (/** @type {{ x: number, z: number, yaw: number, target: { x: number, z: number } }} */ p) => {
     const mx = (p.x + p.target.x) / 2, mz = (p.z + p.target.z) / 2;
@@ -1224,7 +1270,20 @@ export async function startApp(canvas, hooks = {}) {
   const fallsPass = createFallsPass({ water, terrain, recipe: waterRecipe.falls, getTime: () => clock.animT(), tier: tierSettings,
     absorption: waterRecipe.look.absorptionPond, atmosphere, getEye: () => camera.eye, getProjY: () => camera.proj[5],
     getOpaqueDepth: () => waterPass.opaqueDepth });
-  const graph = createFrameGraph(gpu, [
+  // In a zone only the zone's own passes, the walker and the post passes run (src/world/zones); its
+  // lighting group stands in for the island's.
+  const ZONE_PASSES = new Set([walk.pass, exposure, bloom, tonemap, dof, cavePass, caveBeam]);
+  /** @param {import('./render/frame-graph.js').Pass[]} list */
+  const zoned = (list) => list.map((p) => {
+    if (ZONE_PASSES.has(p)) return p;
+    const on = p.enabled.bind(p);
+    p.enabled = (t) => !zones.active() && on(t);
+    return p;
+  });
+  const zoneLighting = { layout: lighting.layout, get group() { return zones.active() ? caveLighting.group : lighting.group; } };
+  const graph = createFrameGraph(gpu, zoned([
+    // The spring's cave (drawn only while you are down in it; it clears the frame).
+    cavePass,
     shadowPass,
     terrainPass,
     grassPass,
@@ -1233,6 +1292,8 @@ export async function startApp(canvas, hooks = {}) {
     walk.printsPass,
     creatures.pass,
     walk.pass,
+    // The beam of light down the cave's shaft, over the walker.
+    caveBeam,
     hen.pass,
     // The gathering knife on the walker's belt (the forager's trail).
     belt.pass,
@@ -1275,7 +1336,7 @@ export async function startApp(canvas, hooks = {}) {
     exposure,
     bloom,
     tonemap,
-  ], { tier, lighting });
+  ]), { tier, lighting: zoneLighting });
   // The banded flame is painted in the tonemap from the fire sim's heat (camp-fire.js).
   tonemap.setFire(camp.firePass);
   await graph.setup();
@@ -1374,7 +1435,7 @@ export async function startApp(canvas, hooks = {}) {
     // Shadows, bloom and the midges follow too. A texture's size is fixed once made, so a new
     // shadow map size re-makes only that map and the lighting group that binds it; new bloom levels
     // re-make the bloom chain at the next resize, which invalidate() forces.
-    if (shadowPass.setTier(tierSettings.shadows, gpu.device, tierSettings.cliffDetailM)) lighting.setShadow(shadowPass.resources(gpu.device));
+    if (shadowPass.setTier(tierSettings.shadows, gpu.device, tierSettings.cliffDetailM)) { lighting.setShadow(shadowPass.resources(gpu.device)); caveLighting.setShadow(shadowPass.resources(gpu.device)); }
     if (bloom.setLevels(tierSettings.bloomLevels)) graph.invalidate();
     midges.setBudget(tierSettings.boids ?? 4096);
     for (const s of schools) s.setBudget(tierSettings.liveCreatures ?? 120);
@@ -1492,7 +1553,7 @@ export async function startApp(canvas, hooks = {}) {
    * @returns {{ id: string, name: string, x: number, z: number } | null}
    */
   function sketchSubject() {
-    if (!walk.below || !cards) return null;
+    if (!walk.below || !cards || zones.active()) return null;
     const w = canvas.clientWidth, h = canvas.clientHeight, s = sketchRecipe.viewSampleSpreadPx ?? 70;
     for (let ring = 0; ring <= 4; ring++) {
       for (let k = 0; k < (ring ? 8 : 1); k++) {
@@ -1526,7 +1587,7 @@ export async function startApp(canvas, hooks = {}) {
    * @returns {{ key: string, name: string, wx: number, wz: number, lift: import('./render/lift.js').LiftTarget[] } | null}
    */
   function hoverPick(ox, oy) {
-    if (!walk.below || !cards) return null;
+    if (!walk.below || !cards || zones.active()) return null;
     const p = groundAt(ox, oy);
     const pc = p ? pieceUnderTap(ox, oy, p) : null;
     const q = pc && p ? [pc.x, p[1], pc.z] : p;
@@ -1834,6 +1895,13 @@ export async function startApp(canvas, hooks = {}) {
   const unAction = onAction((a) => {
     // Photo mode first: while it is open it takes the view actions and the rest wait.
     if (photo.action(a)) return;
+    // A zone (src/world/zones): mid-fade, taps and walking wait; down in one, a tap walks its floor
+    // and opens its own cards, and Go up climbs back to the island.
+    if (zones.busy() && (a.type === 'look.tap' || a.type.startsWith('walk.'))) return;
+    if (zones.active() && walk.below) {
+      if (a.type === 'look.tap') { zoneTap(a.x, a.y); return; }
+      if (a.type === 'walk.up') { zones.back(); return; }
+    }
     // Below (the walker): a drag looks around you, a zoom stays on you, a tap walks there, and the
     // shaping tools are put away until you go up.
     if (walk.below) {
@@ -2293,11 +2361,14 @@ export async function startApp(canvas, hooks = {}) {
       near.falls = fallsNear(falls, camera.target[0], camera.target[1], camera.target[2], soundRecipe.falls);
     }
     const frogs = world.state?.creatures?.frogs?.frogs ?? [];
+    // Down in a zone: its own sound bed (the island's beds quiet, its own water near you).
+    const zs = zones.zone()?.sound?.() ?? null;
     updateStore('sound', () => ({
       displayT: display, season: season.index, seasonPhase: season.phase,
-      weather: { cloud: weather.cloud, rain: weather.rain, mist: weather.mist, wind: weatherAt(world.state?.weather, display, seasonsRecipe).wind },
+      weather: zs ? { cloud: 0, rain: 0, mist: 0, wind: 0 } : { cloud: weather.cloud, rain: weather.rain, mist: weather.mist, wind: weatherAt(world.state?.weather, display, seasonsRecipe).wind },
+      under: zs?.under ?? 0,
       tidePhase: tideState(display / clock.SECONDS_PER_HOUR, tideP).phase01,
-      eye: [...camera.eye], target: [...camera.target], near,
+      eye: [...camera.eye], target: [...camera.target], near: zs?.near ?? near,
       residents: frogs.length ? ['frog'] : [],
       // For the music (doc 24): the frogs own dusk while they call; a time preview starts no piece.
       worldT: clock.worldT(), sunAltDeg: (day.sm.sunAlt * 180) / Math.PI,
@@ -2335,7 +2406,19 @@ export async function startApp(canvas, hooks = {}) {
     camera.setViewport(cssW, cssH);
     walkControls.update(realDt);
     walk.update(realDt);
-    arriveForCard();
+    zones.tick(realDt);
+    const zoneNow = zones.zone();
+    zoneGround = zoneNow ? (x, z) => springCave.ground(x, z) : null;
+    camera.setFloor(zoneNow ? -Infinity : 0);
+    camera.setRoom(zoneNow?.viewRoom ? zoneNow.viewRoom(camera.target, camera.eye) : Infinity);
+    // The eye adapts to a zone's dark, but not all the way (spring-cave.json light.exposureBiasEV).
+    exposure.setBias(zoneNow ? -(caveRecipe.light.exposureBiasEV ?? 0) : 0);
+    if (zoneCardOnArrival && !walk.busy()) {
+      const c = zoneCardOnArrival;
+      zoneCardOnArrival = null;
+      if (zoneNow) updateStore('identify', () => ({ ...c.card, x: c.x, y: c.y, at: performance.now() }));
+    }
+    if (!zoneNow) arriveForCard();
     gather.update();
     photo.update(realDt);
     camera.update(realDt);
@@ -2395,6 +2478,19 @@ export async function startApp(canvas, hooks = {}) {
     const ev100 = exposure.ev100(realDt) - (look.exposureComp ?? 0) - photo.ev();
     if (frameIndex % 15 === 0) updateStore('render', (r) => ({ ...(r ?? {}), ev100 }));
 
+    // Down in a zone, its own light: the cave's uniforms, its fill as the lighting group's sky, and
+    // the walker lit from the hole as the frame's sun (no moon, no shadows down here).
+    const zl = zoneNow?.light ? zoneNow.light({ sunDir: day.sm.sunDir, sunIlluminance: day.sunIlluminance, cloud: day.weather.cloud, time: t.animT }) : null;
+    if (zl) {
+      cavePass.setUniforms(zl.uniforms);
+      const b = zl.uniforms.slice(20, 23);
+      caveSHData.fill(0);
+      for (let c = 0; c < 3; c++) { caveSHData[c] = (b[c] * 0.7) / 0.282095; caveSHData[4 + c] = (b[c] * 0.3) / 0.488603; }
+      gpu.device.queue.writeBuffer(caveSH, 0, caveSHData);
+      // No sky haze down here: an aerial reach far past the cave leaves every distance in it clear.
+      caveLighting.write({ shadow: { ...shadowPass.state, strength: 0 }, weather: { cloud: 0, rain: 0, mist: 0, wet: 0 },
+        aerial: { maxDistance: 1e7, slices: atmosphere.aerialSlices } });
+    }
     graph.writeFrameUniforms(uniforms.pack({
       view: camera.view, proj: camera.proj, viewProj: camera.viewProj, invViewProj: camera.invViewProj,
       prevViewProj, cameraPos: camera.eye, near: camera.near,
@@ -2406,8 +2502,8 @@ export async function startApp(canvas, hooks = {}) {
       seasonPhase: season.phase,
       moonPhase: day.sm.moonPhase,
       ev100,
-      sunDir: day.sm.sunDir, sunIlluminance: day.sunIlluminance,
-      moonDir: day.sm.moonDir, moonIlluminance: day.moonIlluminance,
+      sunDir: zl ? zl.sunDir : day.sm.sunDir, sunIlluminance: zl ? zl.sunIlluminance : day.sunIlluminance,
+      moonDir: day.sm.moonDir, moonIlluminance: zl ? [0, 0, 0] : day.moonIlluminance,
       tierFlags: tier === 'ultra' || tier === 'high' ? 2 : tier === 'medium' ? 1 : 0,
       frameIndex,
     }));
@@ -2587,6 +2683,8 @@ export async function startApp(canvas, hooks = {}) {
     lift,
     /** Autumn's fungi and webs (counts() for tools). */
     autumn,
+    /** Zones (src/world/zones) and the spring's cave (src/world/spring), for tools and testing. */
+    zones, springCave,
     /** The walker: the walk grid, your feet, Go down and Go up (tools and testing). */
     walk,
     /** The walker's kit (src/world/kit): the Walker page reads and wears through it. */
