@@ -7,6 +7,7 @@ export const TEST_FILES = {
   'assets': '',
   'autumn': '',
   'away': '',
+  'bird-rig': '',
   'boat': '',
   'camp-canvas': '',
   'camp-edge': '',
