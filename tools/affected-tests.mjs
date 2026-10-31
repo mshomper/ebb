@@ -1,11 +1,13 @@
-// Which unit tests a change needs (Matt, October 22, 2026): sessions run the groups a change can
-// reach while they work, and the full suite once at handoff. Node, no npm packages.
+// Which unit tests a change needs (Matt, October 22 and 31, 2026): a branch runs the groups its
+// changes reach, while it works and at handoff, with `node tools/run-tests.mjs --affected` (which
+// asks this file); the full suite runs once, on the combined tip in the orchestrator's merge queue.
+// Node, no npm packages.
 //
 //   node tools/affected-tests.mjs                  what this branch changed against origin/main
 //   node tools/affected-tests.mjs src/a.js b.json  these files instead
 //
-// It prints the groups to run, the page link (tools/unit-tests.html?groups=...), and whether
-// tools/determinism.html is needed. A group is one test file in tools/unit-tests-index.js (by its
+// It prints the groups to run, the Node command and the page link (tools/unit-tests.html?groups=...),
+// and whether tools/determinism.html is needed. A group is one test file in tools/unit-tests-index.js (by its
 // key, its file name: tools/unit-tests-<key>.js), or one group of the tests still written on the
 // test page itself (by its name, as a slug: workers, palette).
 //
@@ -304,6 +306,7 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
   if (r.full) console.log(`Full suite: ${r.why.join('; ')}.`);
   else console.log(`Groups: core (${CORE.join(', ')})${r.groups.length ? ` + ${r.groups.join(', ')}` : ' only'}.`);
   if (r.untested.length) console.log(`No unit test reaches ${r.untested.join(', ')}: check those by hand (in the game, or on their own tools page).`);
-  console.log(`Open: ${pageUrl(r)}`);
+  const how = !given.length ? ' --affected' : r.full ? '' : r.groups.length ? ` --groups=${r.groups.join(',')}` : ' --core';
+  console.log(`Run: node tools/run-tests.mjs${how} (or open ${pageUrl(r)})`);
   console.log(r.determinism ? 'Determinism: yes, open tools/determinism.html too.' : 'Determinism: not needed.');
 }
