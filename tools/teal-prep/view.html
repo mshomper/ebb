@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Teal model view</title>
+<style>
+  html, body { margin: 0; background: #e9e4d8; font: 16px Nunito, system-ui, sans-serif; color: #33302a; }
+  canvas { display: block; width: 100%; height: 100vh; }
+  #info { position: fixed; left: 16px; top: 12px; }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="info"></div>
+<script type="module">
+// A plain WebGL2 look at a GLB for model prep (not the game renderer). Query: f = file,
+// yaw and pitch in degrees (a positive pitch looks up from below), zoom, flat=1 for no texture,
+// show=normal paints the normal map instead of the colour, backs=1 tints back faces pink, cut=y draws a red line at that height, at=x,y,z centres the view.
+import { readGlb, materialMaps } from '../../src/render/gltf.js';
+
+const q = new URLSearchParams(location.search);
+const file = q.get('f') ?? '../../assets/models/teal/teal.glb';
+const yaw = +(q.get('yaw') ?? 90) * Math.PI / 180, pitch = +(q.get('pitch') ?? 10) * Math.PI / 180;
+const zoom = +(q.get('zoom') ?? 1), flat = q.get('flat') === '1';
+
+const canvas = /** @type {HTMLCanvasElement} */ (document.getElementById('c'));
+const dpr = devicePixelRatio || 1;
+canvas.width = innerWidth * dpr; canvas.height = innerHeight * dpr;
+const gl = /** @type {WebGL2RenderingContext} */ (canvas.getContext('webgl2', { antialias: true, preserveDrawingBuffer: true }));
+
+const glb = readGlb(await (await fetch(file)).arrayBuffer());
+const prim = glb.json.meshes[0].primitives[0];
+const P = /** @type {Float32Array} */ (glb.accessor(prim.attributes.POSITION));
+const N = /** @type {Float32Array} */ (glb.accessor(prim.attributes.NORMAL));
+const UV = /** @type {Float32Array} */ (glb.accessor(prim.attributes.TEXCOORD_0));
+const I = glb.accessor(prim.indices);
+const lo = [1e9, 1e9, 1e9], hi = [-1e9, -1e9, -1e9];
+for (let i = 0; i < P.length; i++) { lo[i % 3] = Math.min(lo[i % 3], P[i]); hi[i % 3] = Math.max(hi[i % 3], P[i]); }
+const mid = q.has('at') ? q.get('at').split(',').map(Number) : lo.map((v, i) => (v + hi[i]) / 2);
+const rad = Math.hypot(hi[0] - lo[0], hi[1] - lo[1], hi[2] - lo[2]) / 2;
+document.getElementById('info').textContent = `${I.length / 3} triangles, ${P.length / 3} vertices, size ${hi.map((v, i) => (v - lo[i]).toFixed(3)).join(' x ')} m`;
+
+const vs = `#version 300 es
+in vec3 p; in vec3 n; in vec2 uv; uniform mat4 m; out vec3 vn; out vec2 vuv; out float vy;
+void main(){ gl_Position = m * vec4(p,1.0); vn = n; vuv = uv; vy = p.y; }`;
+const fs = `#version 300 es
+precision highp float; in vec3 vn; in vec2 vuv; in float vy; uniform sampler2D t; uniform float flat_; uniform float cut; uniform float backs; out vec4 o;
+void main(){ vec3 n = normalize(vn); if(!gl_FrontFacing) n = -n;
+  float l = 0.35 + 0.65*max(dot(n, normalize(vec3(0.4,0.8,0.5))),0.0);
+  vec3 c = flat_ > 0.5 ? vec3(0.8) : texture(t, vuv).rgb; c *= l;
+  if (!gl_FrontFacing && backs > 0.5) c = mix(c, vec3(0.9,0.2,0.6), 0.6);
+  if (abs(vy - cut) < 0.003) c = vec3(1.0,0.0,0.0);
+  o = vec4(c,1.0); }`;
+const sh = (type, src) => { const s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s); if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s)); return s; };
+const prog = gl.createProgram(); gl.attachShader(prog, sh(gl.VERTEX_SHADER, vs)); gl.attachShader(prog, sh(gl.FRAGMENT_SHADER, fs)); gl.linkProgram(prog); gl.useProgram(prog);
+const attr = (name, data, size) => { const b = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, b); gl.bufferData(gl.ARRAY_BUFFER, data, gl.STATIC_DRAW); const l = gl.getAttribLocation(prog, name); gl.enableVertexAttribArray(l); gl.vertexAttribPointer(l, size, gl.FLOAT, false, 0, 0); };
+attr('p', P, 3); attr('n', N, 3); attr('uv', UV, 2);
+const ib = gl.createBuffer(); gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, ib); gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint32Array(I), gl.STATIC_DRAW);
+
+const maps = materialMaps(glb);
+if (q.get('show') === 'normal') maps.baseColor = maps.normal;
+if (maps.baseColor) {
+  const bmp = await createImageBitmap(new Blob([maps.baseColor.bytes], { type: maps.baseColor.mimeType }), { imageOrientation: 'none' });
+  const tex = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, tex);
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, bmp); gl.generateMipmap(gl.TEXTURE_2D);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
+}
+gl.uniform1f(gl.getUniformLocation(prog, 'flat_'), flat || !maps.baseColor ? 1 : 0);
+gl.uniform1f(gl.getUniformLocation(prog, 'backs'), q.get('backs') === '1' ? 1 : 0);
+gl.uniform1f(gl.getUniformLocation(prog, 'cut'), q.has('cut') ? +q.get('cut') : 1e9);
+
+// Orthographic camera orbiting the middle: yaw about Y, pitch about X.
+const s = zoom / rad, asp = canvas.width / canvas.height;
+const cy = Math.cos(yaw), sy = Math.sin(yaw), cp = Math.cos(pitch), sp = Math.sin(pitch);
+// rows of the view rotation (right, up, forward)
+const r = [cy, 0, -sy], f = [sy * cp, -sp, cy * cp], u = [sy * sp, cp, cy * sp];
+const m = new Float32Array(16);
+for (let i = 0; i < 3; i++) { m[i * 4 + 0] = r[i] * s / asp; m[i * 4 + 1] = u[i] * s; m[i * 4 + 2] = -f[i] * s * 0.5; }
+m[12] = -(r[0] * mid[0] + r[1] * mid[1] + r[2] * mid[2]) * s / asp;
+m[13] = -(u[0] * mid[0] + u[1] * mid[1] + u[2] * mid[2]) * s;
+m[14] = (f[0] * mid[0] + f[1] * mid[1] + f[2] * mid[2]) * s * 0.5; m[15] = 1;
+gl.uniformMatrix4fv(gl.getUniformLocation(prog, 'm'), false, m);
+gl.viewport(0, 0, canvas.width, canvas.height);
+gl.clearColor(0.914, 0.894, 0.847, 1); gl.enable(gl.DEPTH_TEST); gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+gl.drawElements(gl.TRIANGLES, I.length, gl.UNSIGNED_INT, 0);
+document.body.dataset.ready = '1';
+</script>
+</body>
+</html>
