@@ -1,6 +1,6 @@
 # F20 — Meadow stories: the skep, the first wing, the robin, the rye, the marker stone and the kite
 
-> The meadow islet's three creatures each arrive with a short story. Every story has the same shape: a **first sign**, a **visit**, a **home the player makes**, and **the gift**. The bees are honeybees that need a skep the player weaves and daubs with clay, and they give honey, which the walker brews with herbs into honeyed teas to carry into the Hollow. The butterflies come as eggs on the nettles and open their wings for the first time on the islet. The robin turns up beside the shovel, as robins do for anyone who digs, and stays once there's a hedge to nest in and a wall to sing from. Three more stories aren't about creatures: a strip of **rye** sown from a parcel the boat leaves and cut at summer's end, a **marker stone** whose midsummer shadow points to something buried, and a **kite** that washes up after a gale and flies from the islet's top. Drafted from Matt's session on November 1, 2026.
+> The meadow islet's three creatures each arrive with a short story. Every story has the same shape: a **first sign**, a **visit**, a **home the player makes**, and **the gift**. The bees are honeybees that need a skep the player weaves and daubs with clay, and they give honey, which the walker brews with herbs into honeyed teas to carry into the Hollow. The butterflies come as eggs on the nettles and open their wings for the first time on the islet. The robin turns up beside the shovel, as robins do for anyone who digs, and stays once there's a hedge to nest in and a wall to sing from. Three more stories aren't about creatures: a strip of **rye** sown from a few wild stalks by an old stone and cut at summer's end, the **marker stone** itself, whose midsummer light points to the sickle buried for it, and a **kite** that washes up after a gale and flies from the islet's top. Drafted from Matt's session on November 1, 2026.
 
 **Status:** Decided (direction, November 1, 2026). Nothing built. The honeyed teas' effects are Leaning: proposals to react to. The three stories without creatures (rye, the marker stone, the kite) were added the same day.
 
@@ -19,7 +19,9 @@ Matt, November 1, 2026:
 - **Honey combines with the herbs** into different boons for the walker to take into the Hollow.
 - **Three stories that aren't about creatures** sit alongside: the rye (the first cut), the marker stone and the kite. Matt likes all three.
 - **Rye is the islet's crop.** Hay isn't planned for the islet, and amaranth doesn't belong on a machair; rye is machair's traditional crop and its straw is the classic skep material. Flax stays planned for cloth.
-- **The first rye seed comes in a parcel** from the passing boat (F14).
+- ~~The first rye seed comes in a parcel from the passing boat (F14).~~ Changed the same day (Matt): the boat only answers parcels the player leaves, so the first seed comes from **a few rye stalks gone wild beside the marker stone** when the islet rises, and the **sickle blade lies in the pot under the stone's midsummer spot**.
+- **The marker stone's mystery waits** (Matt, November 1, 2026). The islet rises in autumn and the player doesn't need the stone's secret right away: the light through the notch is first found at midsummer of the next year.
+- **Bowls stay as they are** (Matt, November 1, 2026). Fired bowls nest in a pouch, one bowl a handful, and spare bowls stand in a heap at camp; nothing limits how many a keeper owns.
 
 ## The shape every meadow story follows
 
@@ -78,8 +80,8 @@ A spot that won't work can still take the skep; the line just says why the bees 
 
 - **When.** From late summer, the real harvest time. Bees need what they store to see them through winter, so only the **surplus** can be taken.
 - **How it shows.** The skep's card draws how full it is, as the pack's pouches do: never a number. **Take honey** appears only when there's surplus.
-- **Into a bowl.** Honey goes into a fired clay bowl from the pack. A bowl of honey is one pouch. A strong hive in a good summer gives a few bowls; a thin year gives one or none.
-- **More bowls.** The workbench's bowl limit (three today, `cook.json`) is raised so a keeper can keep a few bowls for honey as well as for the hearth (a recipe value, eight to start).
+- **Into a bowl.** Honey goes into a fired clay bowl from the pack. A bowl of honey is one pouch, and it can be set down at camp in its bowl, the way acorns, hazelnuts and old comb are kept there now (pack kinds with `camp: "bowl"`). A strong hive in a good summer gives a few bowls; a thin year gives one or none.
+- **Bowls are already plentiful.** Fired bowls nest in a pouch and spare ones heap at camp, with no cap on how many a keeper owns; the workbench's `max` in `cook.json` only limits unfired pieces waiting on its slab, so nothing needs raising.
 - **Never for creatures.** F13's real-food rule stands: no honey or beeswax for any creature. Honey is the walker's.
 
 ### Honeyed teas for the Hollow (Leaning, proposals)
@@ -139,6 +141,10 @@ Picking nettle tops for tea still works: the walker leaves the leaves with eggs 
 | The robin at the shovel | After the islet rises | Year 1 |
 | The robins nest | Spring, once the hedge has grown | Spring year 3 |
 | Honey | Late summer, with surplus | Late summer year 2 |
+| The marker stone and the wild rye | With the islet | Autumn, year 1 |
+| The first rye sown | Before the frost | Autumn, year 1 |
+| The light through the notch: the sickle | Midsummer (summer day 0) | Summer, year 2 |
+| The first cut | Late summer, the rye gold | Late summer, year 2 |
 
 ## The threads
 
@@ -164,14 +170,14 @@ One thread per species in `recipes/world/threads.json`, in the keeper's voice (A
 - *The birds started singing before it was light this morning.*
 
 **The rye** (icon: a sheaf)
-- *A parcel from the boat: rye seed and an old sickle blade, for the islet.*
+- *A few rye stalks gone wild beside the old stone on the islet. Somebody grew it here once. I saved the seed.*
 - *I sowed a strip of rye on the islet before the frost.*
 - *The rye is gold. I cut it and stood the sheaves up to dry.*
 - *Where the rye grew last year, the islet is thick with flowers.*
 
 **The marker stone** (icon: a standing stone with a notch)
 - *An old standing stone came up with the islet. There's a notch cut in its top.*
-- *At noon on midsummer, the light through the notch fell on one spot. I dug there.*
+- *At noon on midsummer, the light through the notch fell on one spot. I dug there: an old pot, and a sickle blade inside.*
 - *The stone keeps the year. I can read the season by its shadow now.*
 
 **The kite** (icon: a kite)
@@ -190,16 +196,16 @@ These three follow F14's shape for a set piece (a trigger, beats, a choice by do
 
 **The beats:**
 
-1. **The parcel.** The first autumn after the islet rises, the passing boat's return parcel (F14) holds a handful of rye seed and an old sickle blade, wrapped in sacking, with a pencil note: *"For that sandy islet of yours. Sow it before the frost, cut it when it's gold."* The seed goes to the seed tin, with the island's other saved seed. The blade is fitted at the workbench, as the keeper's blade fits the shovel.
+1. **The wild stalks.** When the islet rises (late summer or early autumn), a few rye stalks stand gone wild beside the marker stone, their heads ripe: left from whoever set the stone and grew rye here once. Their card: *"Rye, gone wild. Somebody grew it here once. Sow it before the frost, cut it when it's gold."* Gathering the heads gives a handful of rye seed, which goes to the seed tin with the island's other saved seed.
 2. **Sowing.** On one of the islet's grassy patches, the walker sows the rye in autumn: one handful makes a strip about 2 by 6 m. A rye strip's card says what it needs and when: *"Sown before the frost, it comes up in spring and turns gold by late summer."* Sown in another season, the seed waits in the ground until autumn.
 3. **Growing.** It comes up green in late autumn, rests through winter, and grows tall through spring and summer, a strip of blue-green turning gold, moving in the wind.
-4. **The cut.** In late summer, with the strip gold, the walker cuts it with the sickle and stands the sheaves in **stooks** to dry. They dry over three sunny game days, longer in rain, as the herb rack does.
+4. **The cut.** In late summer, with the strip gold, the walker cuts it with the sickle (its blade from the pot under the marker stone's midsummer spot, below) and stands the sheaves in **stooks** to dry. They dry over three sunny game days, longer in rain, as the herb rack does.
 5. **What it gives.** Taking up the stooks gives **rye straw** and **rye seed** to save. A strip gives enough straw for a few makes and enough seed for two strips next autumn.
 6. **The lasting change.** The cut patch is left to rest the next year, and it flowers more thickly than the rest of the islet: clover, trefoil, bedstraw and harebell. This is why real machair is so rich in flowers, and it feeds the bees and butterflies.
 
 **The choice by doing.** Which patch to sow, and how much to sow each autumn. The player can keep a strip going every year, rotate it across the islet, or let it go.
 
-**The sickle.** The blade (from the parcel), a stick for the handle and rush cord. No other make uses that set. It hangs on the pack as a tool.
+**The sickle.** The old blade (from the pot under the marker stone), a stick for the handle and rush cord. No other make uses that set. It hangs on the pack as a tool.
 
 **Rye straw**, a new pack kind, is used for:
 - **A coiled straw skep,** a second way to make one: rye straw and rush cord, coiled and bound. (The wicker skep stays.)
@@ -207,14 +213,14 @@ These three follow F14's shape for a set piece (a trigger, beats, a choice by do
 - **Bedding** for the hen's nest box.
 - Later: thatch, if a living space comes (F14's boat as a home).
 
-**A safety net.** Seed in the tin can't be tipped out of the pack. If a player still ends up with no rye seed and no rye growing (a strip never cut, a season missed), a later boat parcel brings another handful, so the story never dead-ends.
+**A safety net.** Seed in the tin can't be tipped out of the pack. The wild stalks by the stone come back every year and can be gathered every late summer and autumn, so a player with no rye seed and no rye growing (a strip never cut, a season missed) always has more, and the story never dead-ends.
 
 ### The marker stone
 
-1. **It surfaces with the islet.** A tall standing stone, crusted in lichen, leaning a little, stands on the islet's dome when it rises. A notch is cut in its top. Its card: *"An old stone, set up by hand. There's a notch in its top."* (An islet that rose before this is built gets the stone on its next load.)
+1. **It surfaces with the islet.** A tall standing stone, crusted in lichen, leaning a little, stands on the islet's dome when it rises, with the wild rye at its foot. A notch is cut in its top. Its card: *"An old stone, set up by hand. There's a notch in its top."* (An islet that rose before this is built gets the stone and the rye on its next load.) Nothing more happens that autumn or winter: the mystery waits for the year to turn (Matt, November 1, 2026).
 2. **A hint in spring.** In the islet's first spring, a morning line: *"The notch in the stone lines up with something. Maybe the sun?"*
-3. **Midsummer noon.** On the longest day of the year (summer day 7 of 14), at noon, the stone's shadow points across the islet, and through the notch a bright spot of sunlight falls on one patch of ground. The walker's line if they're on the islet then: *"The light through the notch is on the ground over there."* The spot keeps a faint mark until the next morning, so a player who arrives late that day can still find it.
-4. **Digging.** A dig at the spot turns up something old in a pot (what it holds is an open question; see below). The stone's card then reads: *"It marks midsummer. Someone kept the year by it."*
+3. **Midsummer noon.** On the longest day of the year, at noon: in the game's sky (`src/world/sky/sun-moon.js`) the year starts at the spring equinox, so the longest day is **summer day 0**, the first of summer, about a season before the rye turns gold. the stone's shadow points across the islet, and through the notch a bright spot of sunlight falls on one patch of ground. The walker's line if they're on the islet then: *"The light through the notch is on the ground over there."* The spot keeps a faint mark until the next morning, so a player who arrives late that day can still find it.
+4. **Digging.** A dig at the spot turns up an old pot, and inside it an old sickle blade, wrapped in rotten sacking: the tool for the rye at the stone's foot. The stone's card then reads: *"It marks midsummer. Someone kept the year by it."*
 5. **The lasting change.** The stone becomes a calendar: from then on its card tells the season by its noon shadow (*"The shadow is shortest now. High summer."*), and each midsummer the light through the notch falls in the same place, where something small now grows (a harebell, or something the player planted there).
 
 **A player who misses midsummer** waits for the next one, with the spring hint repeating. Nothing is lost by missing it.
@@ -233,19 +239,17 @@ No reward beyond the view and the sketch: it's a small joy, and the first time t
 
 - **Doc 12:** the bees are honeybees: Kind (a colony that swarms in late spring), Shelter (a skep the player makes, sunny and out of the wind, in place of "a sunny bare bank or stone wall"), Signature (a swarm cluster; bees at the skep's entrance). Songbirds' shelter needs both a hawthorn hedge and a stone wall within reach. Butterflies' food names nettles as the host plant.
 - **Doc 13:** the gift chain is unchanged. The meadow's arrivals follow the shape above; the songbirds' needs make them the meadow's last.
-- **F13:** the skep make (workbench); the bowl limit raised; honey as a pouch kind in a bowl; Take honey on the skep; honeyed teas at the tea pot as a Hollow boon, one at a time.
+- **F13:** the skep make (workbench); honey as a pouch kind in a bowl, kept at camp in its bowl like acorns; Take honey on the skep; honeyed teas at the tea pot as a Hollow boon, one at a time.
 - **F16:** honeyed teas as a supply for a trip below, drunk at camp or at the lantern hook.
 - **Doc 25:** the dawn chorus once robins nest; the swarm's hum.
 - **Doc 10 and the flora recipes:** rye as a sown crop on the islet: a strip that comes up in autumn, rests in winter, turns gold in late summer, is cut, and leaves a rested patch that flowers more the next year.
 - **F13:** the sickle (a blade, a stick, rush cord), stooks drying at the cut, rye straw as a pack kind, the coiled straw skep, the hackle, straw bedding for the nest box; the kite mend.
-- **F14:** the passing boat's parcels include the rye seed and the sickle blade, and a handful more if the rye has run out.
-- **The islet's land recipe:** the marker stone, placed on its dome when it rises, and the midsummer spot found from the stone's notch and the sun.
+- **The islet's land recipe:** the marker stone and its wild rye, placed on the dome when it rises, and the midsummer spot found from the stone's notch and the sun (summer day 0), where the sickle blade lies.
 - **Doc 15 and doc 16:** the kite's high view as a camera mode, with photo mode.
 - **CLAUDE.md's creature list** applies to each species as it's built: model and rig, species recipe, journal page, sketchbook, icon, Show me, sound, seasons, saves and test links.
 
 ## Open questions
 
-- What is in the pot under the marker stone's midsummer spot?
 - Can the kite be flown from the main island too, or only from the islet?
 - Should rye grain be used for anything (bread at the fire, feed for the hen), or is rye only straw and seed?
 
