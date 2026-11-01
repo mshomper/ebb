@@ -8,6 +8,7 @@
 
 import { initGpu, onDeviceLost } from './core/gpu.js';
 import { SYSTEMS } from './app/systems.js';
+import { emit } from './core/events.js';
 import { result as appResult } from './app/api.js';
 
 /**
@@ -40,7 +41,9 @@ export async function startApp(canvas, hooks = {}) {
 
   /** @type {import('./app/context.js').AppContext} */
   const ctx = { canvas, hooks, gpu: result.gpu };
-  for (const step of SYSTEMS) {
+  for (const [i, step] of SYSTEMS.entries()) {
+    // The loading screen's line follows the steps (src/ui/loading.js).
+    emit('boot:step', { i, n: SYSTEMS.length });
     // A step that does not wait on anything runs straight on, as the code did before it was split.
     const ran = step(ctx);
     const early = ran instanceof Promise ? await ran : ran;

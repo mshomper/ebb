@@ -66,7 +66,7 @@
       "deepclay": [0.09, 0.105, 0.115],
       "charcoal": [0.035, 0.03, 0.028]
     },
-    "spoil": {"sizeM": 0.34, "fromM": 0.36, "byStage": [1, 0.55, 0, 0], "shapes": 3, "seed": 6131, "cellM": 0.012},
+    "spoil": {"sizeM": 0.34, "fromM": 0.36, "byStage": [1, 0.55, 0, 0], "shapes": 3, "seed": 6131, "cellM": 0.024},
     "mouth": {"dark": 0.85, "byStage": [1, 0.6, 0.25, 0]},
     "fresh": {"darken": 0.35, "ringM": 0.35, "seep": [0.05, 0.07, 0.08]},
     "nearM": 30,
