@@ -157,7 +157,7 @@ export function coarseStep(state, hourIndex, env) {
 
   // Grass and the other cover plants (cover.js).
   g.grass = grassHour(prev, hab, env);
-  const cov = coverHour(prev, hab, env, hourIndex);
+  const cov = coverHour(prev, hab, env, hourIndex, season);
   if (cov) {
     g.cover = cov.cover;
     const took = cov.took;

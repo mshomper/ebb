@@ -1012,6 +1012,8 @@
     "trefoil": {
       "name": "Bird's-foot trefoil",
       "icon": "trefoil",
+      "kind": "cover",
+      "amountBy": "area",
       "plural": "trefoil mats",
       "plantable": false,
       "field": [
@@ -1084,19 +1086,19 @@
       "amount": [
         [
           1,
-          "A single trefoil mat"
-        ],
-        [
-          2,
-          "A few trefoil mats"
+          "A small trefoil mat"
         ],
         [
           6,
-          "Trefoil over the sand"
+          "A few trefoil mats"
         ],
         [
-          16,
-          "Trefoil yellow all over the islet"
+          25,
+          "Trefoil scattered over the sand"
+        ],
+        [
+          80,
+          "Trefoil mats all over the islet"
         ]
       ],
       "place": "on the islet's open sand",
@@ -1107,12 +1109,7 @@
       "spreading": "seeding over the sand",
       "receding": "thinning out",
       "stages": [
-        "A trefoil seed, waiting in the sand",
-        "A new trefoil shoot",
-        "A young trefoil mat",
-        "A trefoil mat",
-        "A trefoil mat in yellow flower",
-        "A trefoil mat, brown for winter"
+        "A mat of bird's-foot trefoil"
       ],
       "seasons": {
         "grow": [
@@ -1176,11 +1173,21 @@
         "drown": "Some trefoil drowned where the tide reached it.",
         "seed": "A trefoil seed found no open sand to take in.",
         "gone": "The last of the trefoil is gone."
-      }
+      },
+      "bloom": [
+        0.9,
+        2.2
+      ],
+      "rest": [
+        3.05,
+        3.95
+      ]
     },
     "thyme": {
       "name": "Wild thyme",
       "icon": "thyme",
+      "kind": "cover",
+      "amountBy": "area",
       "plural": "thyme mats",
       "plantable": false,
       "field": [
@@ -1252,19 +1259,19 @@
       "amount": [
         [
           1,
-          "A single thyme mat"
-        ],
-        [
-          2,
-          "A few thyme mats"
+          "A small thyme mat"
         ],
         [
           6,
+          "A few thyme mats"
+        ],
+        [
+          25,
           "Thyme over the dry sand"
         ],
         [
-          16,
-          "Thyme in cushions all over the islet"
+          80,
+          "Thyme in drifts all over the islet"
         ]
       ],
       "place": "on the islet's driest sand",
@@ -1275,12 +1282,7 @@
       "spreading": "creeping over the sand",
       "receding": "thinning out",
       "stages": [
-        "A thyme seed, waiting in the sand",
-        "A new thyme shoot",
-        "A young thyme mat",
-        "A thyme mat",
-        "A thyme mat in purple flower",
-        "A thyme mat, low and dark for winter"
+        "A mat of wild thyme"
       ],
       "seasons": {
         "grow": [
@@ -1344,12 +1346,22 @@
         "drown": "Some thyme drowned where the tide reached it.",
         "seed": "A thyme seed found no dry sand to take in.",
         "gone": "The last of the thyme is gone."
-      }
+      },
+      "bloom": [
+        1.0,
+        2.2
+      ],
+      "rest": [
+        3.05,
+        3.95
+      ]
     },
     "clover": {
       "name": "Red clover",
       "icon": "clover",
-      "plural": "clover patches",
+      "kind": "cover",
+      "amountBy": "area",
+      "plural": "clover beds",
       "plantable": false,
       "field": [
         {
@@ -1420,19 +1432,19 @@
       "amount": [
         [
           1,
-          "A single clover"
+          "A small clover patch"
         ],
         [
-          2,
+          8,
           "A few clover patches"
         ],
         [
-          6,
-          "Clover in the grassy patches"
+          40,
+          "A bed of clover"
         ],
         [
-          16,
-          "Clover pink all over the islet's turf"
+          150,
+          "Wide beds of clover"
         ]
       ],
       "place": "in the islet's grassy patches",
@@ -1440,15 +1452,10 @@
       "none": "No red clover grows on the island now.",
       "flowering": "in pink flower",
       "dormant": "low for winter",
-      "spreading": "seeding through the turf",
+      "spreading": "spreading into beds",
       "receding": "thinning out",
       "stages": [
-        "A clover seed, waiting in the turf",
-        "A new clover shoot",
-        "A young clover",
-        "A clover patch",
-        "A clover patch in pink flower",
-        "A clover patch, low for winter"
+        "A bed of red clover"
       ],
       "seasons": {
         "grow": [
@@ -1512,7 +1519,15 @@
         "drown": "Some clover drowned where the tide reached it.",
         "seed": "A clover seed found no turf to take in.",
         "gone": "The last of the clover is gone."
-      }
+      },
+      "bloom": [
+        0.8,
+        2.4
+      ],
+      "rest": [
+        3.05,
+        3.95
+      ]
     },
     "bedstraw": {
       "name": "Lady's bedstraw",

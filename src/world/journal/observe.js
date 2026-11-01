@@ -12,6 +12,7 @@
 // from recipes/world/journal.json ("words") and recipes/world/journal-island.json ("island").
 
 import { STAGE } from '../growth/coarse.js';
+import { inWindow } from '../growth/ground.js';
 import { HABITAT_ORIGIN } from '../growth/habitat.js';
 import { openBox } from '../ecology/fields.js';
 import { seasonOf, SECONDS_PER_HOUR } from '../../core/clock.js';
@@ -130,7 +131,13 @@ export function measure(sp, state, hab, rec) {
       for (let j = B.j0; j <= B.j1; j++) for (let k = j * hab.n + B.i0; k <= j * hab.n + B.i1; k++) {
         if (coverShare(sp, state, hab, k) > COVER_HAS) spots.push({ x: HABITAT_ORIGIN + (k % hab.n) + 0.5, z: HABITAT_ORIGIN + Math.floor(k / hab.n) + 0.5 });
       }
-      return { count: spots.length, value: spots.length, flowering: 0, dormant: 0, mature: 0, plants: [], spots };
+      // A mat (the meadow islet's thyme, clover, trefoil) flowers and rests by its page's bloom and
+      // rest windows (season units, as its flora recipe's flowering and dormant), all of it at once.
+      const pos = (state?.seasons?.index ?? 0) + (state?.seasons?.phase ?? 0);
+      const n = spots.length;
+      const flowering = rec.bloom && inWindow(pos, rec.bloom) ? n : 0;
+      const dormant = rec.rest && inWindow(pos, rec.rest) ? n : 0;
+      return { count: n, value: n, flowering, dormant, mature: rec.bloom ? n : 0, plants: [], spots };
     }
     let land = 0, covered = 0;
     const B = openBox(hab);

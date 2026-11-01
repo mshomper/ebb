@@ -192,7 +192,8 @@ export function plantCover(state, sp, x, z, env) {
   const hab = env.habitat?.();
   const rec = env.recipes.covers?.[sp];
   const g = state.growth ?? initialGrowth();
-  const cur = g.cover?.[sp];
+  // A mat (cover.js isMat) has no map until its first clump goes in.
+  const cur = g.cover?.[sp] ?? (rec?.spread?.planted && hab ? new Uint8Array(hab.n * hab.n) : null);
   if (!hab || !rec || !cur) return { state, ok: false, reason: 'unknown' };
   const k = habitatCell(x, z);
   if (k < 0 || !hab.open[k]) return { state, ok: false, reason: 'outside' };

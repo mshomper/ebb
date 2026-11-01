@@ -3,51 +3,26 @@
   "id": "clover",
   "name": "Red clover",
   "schema": 1,
-  "version": 1,
+  "version": 2,
   "seed": 8461,
   "tags": [
     "tier2",
-    "machair"
+    "machair",
+    "cover",
+    "mat"
   ],
-  "generator": "blades",
-  "layer": "individual",
-  "draw": "thrift",
+  "generator": "mat",
+  "layer": "cover",
   "plantTool": false,
-  "note": "Red clover, Trifolium pratense: leaves of three leaflets with a pale chevron, round pink-purple heads all summer (more purple and lower than sea thrift's pale pink balls, so the two read apart). The bumblebees' plant; it takes on the islet's grassier patches. A machair plant of the meadow islet (B3a, Matt's pick of October 31, 2026; recipes/land/meadow-islet.json starters): it comes to the island only with the islet, planted on its sandy turf when it rises, and spreads from there by seed. Not in the volunteers' order and not offered by the Plant tool (plantTool false), so it stays the islet's own. Drawn with the thrift shader (draw: thrift; flora-thrift.wgsl): its keys are the thrift's (see chamomile.json's note for head forms). drawScale: drawn this many times real size, so it can be found (the shape numbers already include it). habitat: shoreM is height above mean sea level; sand the painted sand share (the islet is mostly sand with sparse grassy patches).",
-  "index": 17,
-  "drawScale": 1.5,
-  "shape": {
-    "bladesPerCushion": [
-      20,
-      60
-    ],
-    "cushionRadius": 0.16,
-    "cushionHeight": 0.09,
-    "bladeWidth": 0.016,
-    "flowersPerCushion": [
-      3,
-      10
-    ],
-    "stalkHeight": 0.12,
-    "stalkWidth": 0.003,
-    "headRadius": 0.034
-  },
-  "crown": {
-    "albedo": [
-      0.11,
-      0.09,
-      0.05
-    ],
-    "heightShare": 0.5
-  },
+  "note": "Red clover, Trifolium pratense: leaves of three leaflets with a pale chevron, round pink heads on stalks above them from late spring to autumn; the long-tongued bumblebees' flower. How it spreads: a tufted plant, not a creeper (white clover is the one that runs); a bed grows because its heavy seed falls close to the parent and comes up thick around it, and birds, wind and feet carry some a few meters further; its roots fix nitrogen, so the turf it grows in richens. On machair, where the turf closes over the shell sand, it makes the wide pink clover beds the bumblebees work all summer. In the game: the fastest of the three mats and the one that makes beds, filling the grassy patches and reaching thinner into the sandy turf around them (habitat sand to 0.6, loosely, so thinner clover reaches out over the sandy turf); a bed widens about a meter every day or two in spring and summer, about half that in autumn, so one clump makes a patch of some 50 square meters by its first winter and a bed of some 600 by the end of the next summer (tools/mat-growth-sim.mjs), and rests low in winter; seeds start new patches several meters off, mostly in summer and autumn. Grass stays in it (grassYield low). heads: the round pink heads stand above the mat on stalks (perM2 at full cover while in flower, stalkM height range, headR head radius, m). A mat: a cover plant (recipes/world/growth.json cover), so a share per square meter rather than plants one by one (src/world/growth/cover.js matHour), drawn as a low carpet of stacked shells (mat-shells.wgsl, src/render/passes/mats.js). A machair plant of the meadow islet (B3a, Matt's pick of October 31, 2026): it comes only with the islet, planted as clumps on its turf when it rises (recipes/land/meadow-islet.json starters), never volunteers and is not in the Plant tool, so it stays the islet's own. habitat: shoreM is height above mean sea level; sand the painted sand share. growth: each square fills ratePerH of the gap toward how well the mat likes the ground each game hour, times seasonRate [spring, summer, autumn, winter] (it rests in winter). spread: planted (only ever planted, so its map is absent until the first clump); it creeps only into a square beside one at least fromShare full; with chance jumpPerH an hour, times jumpSeason (seed is set after flowering), a seed lands 2 to jumpM meters off a stand (jumpTries landings tried) and starts a patch jumpStart of full where the ground suits it at least jumpMinSuit; plantStart is how full a planted square starts; shadedBy lowers its target where the painted turf is thick (grass shades it out); grassYield is how much the grass gives way where it is full. Mats share the ground: one never grows past the room the others leave, and the first to hold a square keeps it. mat (the look, findable scale, about 1.5 times real): heightM the carpet's height at full cover; leafM the size of one leaf clump in the pattern; flowerM the size of a flower spot and flowerShare how many of the top spots flower while in flower (flowering, in season units 0 spring .. 4); edgeM the size of the wobble at a patch's edge; farTint how much its flowers tint it far off while in flower (from above it reads as a drift of their color). season: physical albedo (linear) per season, blended through the year; flower the flowers' albedo. dormant: in season units, when it sits low and dark.",
   "habitat": {
     "sand": [
       0,
-      0.5,
-      0.2
+      0.6,
+      0.25
     ],
     "moisture": [
-      0.05,
+      0,
       0.6,
       0.15
     ],
@@ -73,75 +48,64 @@
     ]
   },
   "growth": {
-    "ratePerH": 0.04,
+    "ratePerH": 0.012,
     "seasonRate": [
       1,
-      0.8,
-      0.45,
+      1,
+      0.5,
       0
-    ],
-    "floor": 0.5,
-    "stages": {
-      "sproutH": 4,
-      "youngSize": 0.25,
-      "matureSize": 0.7
-    },
-    "lowSuit": 0.15,
-    "lowHours": 48,
-    "shrinkPerH": 0.004,
-    "seedDieHours": 24,
-    "drownDepthM": 0.03,
-    "drownHours": 48
-  },
-  "flowering": [
-    0.8,
-    2.4
-  ],
-  "dormant": [
-    3.05,
-    3.95
-  ],
-  "phenology": {
-    "jitterDays": 2,
-    "note": "each plant keeps its own calendar, offset from the species by up to jitterDays game days either way (hash of the plant id; src/world/growth/phenology.js)"
+    ]
   },
   "spread": {
-    "kind": "seed",
-    "everyH": 48,
-    "distanceM": [
-      0.5,
-      2.0
+    "planted": true,
+    "fromShare": 0.5,
+    "jumpPerH": 0.02,
+    "jumpSeason": [
+      0.3,
+      1,
+      0.8,
+      0
     ],
-    "minSuit": 0.6,
-    "minSpacingM": 0.45,
-    "maxCount": 30
+    "jumpM": 10,
+    "jumpTries": 10,
+    "jumpMinSuit": 0.45,
+    "jumpStart": 60,
+    "plantStart": 160,
+    "shadedBy": 0,
+    "grassYield": 0.25,
+    "creepChance": 0.1,
+    "patchM": 6,
+    "patchiness": 0.5
   },
-  "starter": {
-    "count": 3,
-    "minSuit": 0.8,
-    "spacingM": 1.5
+  "mat": {
+    "heightM": 0.1,
+    "leafM": 0.03,
+    "flowerM": 0.0,
+    "flowerShare": 0.0,
+    "edgeM": 0.5,
+    "farTint": 0.25
   },
   "season": {
     "albedo": {
       "spring": [
-        0.07,
-        0.14,
-        0.05
+        0.1,
+        0.21,
+        0.07
       ],
       "summer": [
-        0.07,
-        0.13,
-        0.05
+        0.1,
+        0.19,
+        0.065
       ],
       "autumn": [
-        0.08,
-        0.11,
-        0.05
+        0.12,
+        0.16,
+        0.07
       ],
       "winter": [
-        0.08,
-        0.09,
-        0.05
+        0.1,
+        0.12,
+        0.07
       ]
     },
     "flower": [
@@ -155,23 +119,25 @@
       0.05
     ]
   },
+  "flowering": [
+    0.8,
+    2.4
+  ],
+  "dormant": [
+    3.05,
+    3.95
+  ],
   "outputs": {
     "cover": {
       "clover": 1
     }
   },
-  "wind": {
-    "sway": 0.3
-  },
-  "look": {
-    "sproutM": 0.03,
-    "seedBlades": 6,
-    "heightVar": 0.3,
-    "radiusMin": 0.35,
-    "gustM": 6,
-    "gustSpeed": 2.5,
-    "rootShade": 0.45,
-    "wetDarken": 0.8,
-    "pixelWidth": 1.0
+  "heads": {
+    "perM2": 14,
+    "stalkM": [
+      0.09,
+      0.16
+    ],
+    "headR": 0.018
   }
 }

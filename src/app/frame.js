@@ -14,7 +14,7 @@ import { ashMarks } from '../world/gather/ashes.js';
 
 /** @param {import('./context.js').AppContext} ctx */
 export function start(ctx) {
-  const { aimAt, arriveForCard, atmosphere, baker, camera, camp, campRecipe, canvas, caveLighting, cavePass, caveRecipe, caveSH, caveSHData, creatures, daylight, dig, exposure, finds, fishing, fishingOverlay, flora, floraPass, gather, gpu, graph, grassPass, grassRecipe, groundDetail, growthRecipe, hen, intro, lighting, live, params, photo, pieces, plantTool, presence, prevViewProj, publishSound, runHistory, rushPass, seasonsRecipe, shadowPass, sim, sowOverlay, sowing, spreadOf, springCave, stores, terrain, terrainPass, tonemap, tools, uniforms, updatePour, updateRing, walk, walkControls, water, waterPass, world, ww, zones } = ctx;
+  const { aimAt, arriveForCard, atmosphere, baker, camera, camp, campRecipe, canvas, caveLighting, cavePass, caveRecipe, caveSH, caveSHData, creatures, daylight, dig, exposure, finds, fishing, fishingOverlay, flora, floraPass, gather, gpu, graph, grassPass, grassRecipe, groundDetail, growthRecipe, hen, intro, lighting, live, params, photo, pieces, plantTool, presence, prevViewProj, publishSound, runHistory, rushPass, matsPass, seasonsRecipe, shadowPass, sim, sowOverlay, sowing, spreadOf, springCave, stores, terrain, terrainPass, tonemap, tools, uniforms, updatePour, updateRing, walk, walkControls, water, waterPass, world, ww, zones } = ctx;
   // The input's shared state (src/app/pointer.js) and the canvas size (src/app/quality.js); the tier
   // is read from ctx each frame, since a tier switch changes it.
   const S = ctx.input, size = ctx.size;
@@ -178,11 +178,13 @@ export function start(ctx) {
     const pushes = walk.pushes();
     grassPass.setPushes(pushes);
     rushPass.setPushes(pushes);
+    matsPass.setPushes(pushes);
     // Short, worn grass on the camp pad (CP-16; rushes never stand there).
     grassPass.setPad(getStore('campPad') ?? null, campRecipe?.grass?.thinWithWear ?? 0);
     // Wet-to-dry grass (lush.js): the ground's grass layer takes the blades' tint this season.
     terrainPass.setLush(grassRecipe.lush ? lushLook(grassRecipe, bladeFrame.season) : null);
     rushPass.update(bladeFrame);
+    matsPass.update({ ...bladeFrame, eye: camera.eye });
     const floraFrame = ctx.floraFrame = { time: t.animT, wind: windNow, windDir: world.state?.weather?.today?.windDir ?? 0 };
     floraPass.update({ ...floraFrame, season: season.index + season.phase, pressed: creatures.pressedPads() });
     // `?ripplerain=1` rains ripples in any weather, to judge rings in sunshine (tools, tuning).
