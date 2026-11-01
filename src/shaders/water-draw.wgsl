@@ -39,7 +39,7 @@ struct WaterDraw {
   dry: f32,
   floorY: f32,                // the island's sea floor height at the edge of the opened area (m)
   floorSlope: f32,            // how fast the open sea floor deepens beyond it (m per m)
-  seabed: vec4f,              // rgb wet sand albedo for the sea floor beyond the terrain, w wet darkening
+  seabed: vec4f,              // rgb wet sand albedo for the sea floor beyond the terrain (times openFloorAlbedo), w wet darkening
   filmDepth: vec4f,            // xy depth range (m) over which a broken film becomes a coherent surface; zw over which moving water turns glossy
   debugView: f32,             // ?waterdbg=1 sea or grid, 2 reflection, 3 transmitted, 4 Fresnel/path/depth, 5 island hits, 6 ripple slope
   detailFadeM: f32,           // ripples calm and move into roughness by this distance (quality tier)
@@ -53,7 +53,7 @@ struct WaterDraw {
   foam: vec4f,                // x lace size (m), y foam albedo, z most of a pixel foam covers, w boil speed (cells/s)
   marsh: vec4f,               // rgb sigma_a per meter of shallow, still marsh water (peat-stained)
   marsh2: vec4f,              // xy depths (m) over which it gives way to pond water, zw speeds (m/s) over which moving water clears it
-  calm: vec4f,                // x share of the ripple layers on still fresh water now (follows the wind); waterfalls (M2): y cos of the steepest wall face kept (0: off), z surface drop (m) that makes a lip, w spare
+  calm: vec4f,                // x share of the ripple layers on still fresh water now (follows the wind); waterfalls (M2): y cos of the steepest wall face kept (0: off), z surface drop (m) that makes a lip, w height (m) over which the flat open floor fades to the stand-in
 };
 
 @group(0) @binding(0) var<uniform> frame: FrameUniforms;
@@ -456,17 +456,24 @@ fn fsWater(in: VsOut) -> FsOut {
     // are a dark wall, so anything there counts as open sea floor instead.
     useScene = all(sceneP.xz > lo2) && all(sceneP.xz < hi2);
   }
+  // Beyond the terrain the floor is a flat stand-in (below). Where the terrain is that same flat
+  // floor it fades to the stand-in over the last openFloorFadeM of height, so the opened area's
+  // edge leaves no square on the sea while shore slopes keep their real ground.
+  let standIn = wd.seabed.rgb * lightIn * frame.exposure;
   if (useScene) {
     L = distance(sceneP, P);
     // The open sea plane carries no depth of its own; over terrain it takes the real one.
     if (in.bed < -40.0) { d = max(P.y - sceneP.y, 0.0); }
+    let open = 1.0 - smoothstep(wd.floorY, wd.floorY + wd.calm.w, sceneP.y);
+    scene = mix(scene, standIn, open);
+    sceneHere = mix(sceneHere, standIn, open);
   } else {
     // Beyond the terrain: the island's sea floor continues and slowly deepens into open sea.
     // (Out here the depth copy can only hold the terrain's edge skirts, never the floor itself.)
     let floorY = wd.floorY - wd.floorSlope * length(out2);
     L = (P.y - floorY) / max(v.y, 0.02);
     d = max(P.y - floorY, 0.0);
-    scene = wd.seabed.rgb * lightIn * frame.exposure;
+    scene = standIn;
     sceneHere = scene;
   }
 
