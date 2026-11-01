@@ -8,7 +8,7 @@
   "art": { "frogs": "frog", "toads": "toad", "minnows": "minnow", "dragonflies": "dragonfly", "damselflies": "damselfly", "turtles": "turtle", "midges": "midge", "slowworms": "slowworm", "lizards": "lizard" },
   "subjects": [
     "frogs", "toads", "minnows", "dragonflies", "damselflies", "turtles", "midges", "slowworms", "lizards",
-    "reeds", "rushes", "lilies", "pondweed", "iris", "marigold", "thrift", "campion", "willow", "gorse", "watermint", "meadowsweet", "nettle", "chamomile", "marram",
+    "reeds", "rushes", "lilies", "pondweed", "iris", "marigold", "thrift", "campion", "willow", "gorse", "watermint", "meadowsweet", "nettle", "chamomile", "marram", "harebell", "trefoil", "thyme", "clover", "bedstraw",
     "anemone", "periwinkle", "lugworm", "hermitcrab", "ediblecrab", "shorecrab", "shells", "driftwood", "barnacles", "mussels", "sanddollars", "moonjelly",
     "pondskaters", "fungi", "webs", "frogspawn", "woodlice", "groundbeetle", "loosestone", "sandeel", "goby", "pipefish", "plaice", "wrasse", "shrimp"
   ],

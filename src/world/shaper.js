@@ -57,14 +57,14 @@ export function placesNow(inp, C) {
 }
 
 /**
- * Has some pond (still fresh water of reedPondM2 or more) reeds, rushes or iris along reedShare of
- * its edge (the land squares beside its water, a plant counting within one square)? Pure.
- * @param {any} hab @param {{ sp: string, x: number, z: number }[]} plants @param {Uint8Array | null} rushes @param {any} C
+ * The squares a margin plant reaches (its own and the eight around it): reeds and iris where they
+ * grow, and rushes where their cover is above rushCover (0..255). Also read by the teal's reed
+ * cover (ecology/shaped.js). Pure.
+ * @param {number} n @param {{ sp: string, x: number, z: number }[]} plants @param {Uint8Array | null} rushes
+ * @param {string[]} [kinds] @param {number} [rushCover]
  */
-export function reedMargin(hab, plants, rushes, C) {
-  const n = hab.n, N = n * n;
-  const water = (/** @type {number} */ k) => hab.open[k] && !hab.sea[k] && hab.depthCm[k] > 0 && hab.still[k];
-  // Squares a margin plant reaches (its own and the eight around it).
+export function marginReach(n, plants, rushes, kinds = MARGIN_PLANTS, rushCover = 38) {
+  const N = n * n;
   const near = new Uint8Array(N);
   const mark = (/** @type {number} */ i, /** @type {number} */ j) => {
     for (let dj = -1; dj <= 1; dj++) for (let di = -1; di <= 1; di++) {
@@ -72,8 +72,20 @@ export function reedMargin(hab, plants, rushes, C) {
       if (a >= 0 && b >= 0 && a < n && b < n) near[b * n + a] = 1;
     }
   };
-  for (const p of plants) if (MARGIN_PLANTS.includes(p.sp)) mark(Math.floor(p.x - HABITAT_ORIGIN), Math.floor(p.z - HABITAT_ORIGIN));
-  if (rushes) for (let k = 0; k < N; k++) if (rushes[k] > 38) mark(k % n, Math.floor(k / n));
+  for (const p of plants) if (kinds.includes(p.sp)) mark(Math.floor(p.x - HABITAT_ORIGIN), Math.floor(p.z - HABITAT_ORIGIN));
+  if (rushes) for (let k = 0; k < N; k++) if (rushes[k] > rushCover) mark(k % n, Math.floor(k / n));
+  return near;
+}
+
+/**
+ * Has some pond (still fresh water of reedPondM2 or more) reeds, rushes or iris along reedShare of
+ * its edge (the land squares beside its water, a plant counting within one square)? Pure.
+ * @param {any} hab @param {{ sp: string, x: number, z: number }[]} plants @param {Uint8Array | null} rushes @param {any} C
+ */
+export function reedMargin(hab, plants, rushes, C) {
+  const n = hab.n, N = n * n;
+  const water = (/** @type {number} */ k) => hab.open[k] && !hab.sea[k] && hab.depthCm[k] > 0 && hab.still[k];
+  const near = marginReach(n, plants, rushes);
   // Each pond in turn: its squares, then its edge.
   const seen = new Uint8Array(N);
   for (let k0 = 0; k0 < N; k0++) {

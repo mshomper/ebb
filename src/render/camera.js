@@ -48,6 +48,8 @@ export function createOrbitCamera(r) {
   let viewH = 1;
   let sinceInput = Infinity;
   let worldRadius = r.worldRadius;
+  /** Further ground the view may roam over: capsules from a to b, r wide (new land, src/world/islet; addReach). @type {{ ax: number, az: number, bx: number, bz: number, r: number }[]} */
+  const reaches = [];
   /** How far back the view may sit (setRoom), and the lowest the ground can be (the sea, 0; a zone's floor below it). */
   let room = Infinity, floor0 = 0;
   /** @type {(x: number, z: number) => number} */
@@ -211,14 +213,22 @@ export function createOrbitCamera(r) {
   }
 
   function clampTarget() {
-    // Around the island's center (the larger island's is not the world origin).
+    // Around the island's center (the larger island's is not the world origin), or over new land
+    // risen beside it (each reach a capsule): to the nearest of them when outside them all.
     const max = worldRadius + r.targetMargin;
     const [ox, oz] = r.worldCenter ?? [0, 0];
-    const d = Math.hypot(goal.target[0] - ox, goal.target[2] - oz);
-    if (d > max) {
-      goal.target[0] = ox + (goal.target[0] - ox) * max / d;
-      goal.target[2] = oz + (goal.target[2] - oz) * max / d;
+    const px = goal.target[0], pz = goal.target[2];
+    let best = null, bestOut = Infinity;
+    for (const c of [{ ax: ox, az: oz, bx: ox, bz: oz, r: max }, ...reaches]) {
+      const vx = c.bx - c.ax, vz = c.bz - c.az, l2 = vx * vx + vz * vz;
+      const t = l2 > 0 ? Math.max(0, Math.min(1, ((px - c.ax) * vx + (pz - c.az) * vz) / l2)) : 0;
+      const qx = c.ax + vx * t, qz = c.az + vz * t, d = Math.hypot(px - qx, pz - qz);
+      if (d <= c.r) return;
+      if (d - c.r < bestOut) { bestOut = d - c.r; best = { qx, qz, d, r: c.r }; }
     }
+    if (!best) return;
+    goal.target[0] = best.qx + (px - best.qx) * best.r / best.d;
+    goal.target[2] = best.qz + (pz - best.qz) * best.r / best.d;
   }
 
   /** Ray from the current camera through a CSS pixel, hit with the plane y = target height. */
@@ -416,6 +426,11 @@ export function createOrbitCamera(r) {
     setClose(limits) { close = limits; },
     /** @param {number} radius */
     setWorldRadius(radius) { worldRadius = radius; },
+    /**
+     * Let the view roam over more ground: a capsule from (ax, az) to (bx, bz), r wide (the meadow
+     * islet and the water out to it, src/world/islet). @param {{ ax: number, az: number, bx: number, bz: number, r: number }} c
+     */
+    addReach(c) { reaches.push({ ...c }); },
     get eye() { return eye; },
     get view() { return view; },
     get proj() { return proj; },

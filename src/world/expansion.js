@@ -14,8 +14,8 @@
 // journal note of kind 'gift', which the island shows as a quiet card (src/ui/island-notes.js).
 //
 // The model is pure (naturalistLine, due, grant); createProgress wires it to the store and bus.
-// Land pieces (doc 13's tier milestones) will join here when M3 brings the meadow islet: a species
-// being happy (`<species>:happy`) now counts only toward those.
+// Land pieces (doc 13's tier milestones): milestoneReached says when a tier's land is earned (the
+// meadow islet, src/world/islet); a species being happy (`<species>:happy`) counts only toward those.
 
 import { emitDeferred } from '../core/events.js';
 import { get, update, subscribe } from '../core/store.js';
@@ -126,6 +126,15 @@ export function due(p) {
 
 /** @param {string} s */
 const lower = (s) => s.charAt(0).toLowerCase() + s.slice(1);
+
+/**
+ * A tier milestone (doc 13): reached once `need` of its species are happy (their journal flags,
+ * `<species>:happy`, set for good). The meadow islet reads the first (recipes/land/meadow-islet.json
+ * milestone, src/world/islet). @param {string[]} flags @param {{ flags: string[], need: number }} m
+ */
+export function milestoneReached(flags, m) {
+  return m.flags.filter((f) => flags.includes(f)).length >= m.need;
+}
 
 /**
  * The saved unlocks with a grant merged in, for good. Pure: a new object.

@@ -382,7 +382,7 @@ export function createTerrainPass(opts) {
       /** @type {number[][]} */ const byLod = [[], [], []];
       for (let cz = CHUNK_MIN; cz < CHUNK_MIN + 6; cz++) {
         for (let cx = CHUNK_MIN; cx < CHUNK_MIN + 6; cx++) {
-          if (terrain.chunkState(cx, cz) !== 'open') continue;
+          if (terrain.chunkState(cx, cz) === 'sea') continue;
           const d = Math.hypot(eye[0] - cx * CHUNK_SIZE, eye[1] - 2, eye[2] - cz * CHUNK_SIZE) - CHUNK_SIZE * 0.5;
           let lod = d < lodDistances[0] ? 0 : d < lodDistances[1] ? 1 : 2;
           while (LODS[lod] > maxQuads && lod < 2) lod++;

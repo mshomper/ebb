@@ -34,6 +34,8 @@ export function createShoreLive(device, opts) {
   let dirty = false;
   /** @type {ReturnType<typeof shoreZones> | null} */ let last = null;
   const unStroke = on('terrain:stroke-ended', () => { dirty = true; });
+  // New land risen (the islet) changes the shore too.
+  const unRaised = on('terrain:raised', () => { dirty = true; });
 
   function rebuild() {
     const material = getStore('terrainLive')?.mirror?.material;
@@ -70,7 +72,7 @@ export function createShoreLive(device, opts) {
       if (s && s !== summary) { summary = s; dirty = true; }
       if (dirty) { dirty = false; rebuild(); }
     },
-    dispose() { unStroke(); texture.destroy(); },
+    dispose() { unStroke(); unRaised(); texture.destroy(); },
   };
 }
 

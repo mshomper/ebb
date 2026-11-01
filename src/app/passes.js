@@ -16,6 +16,7 @@ export const passes = (c) => [
   c.terrainPass,
   c.grassPass,
   c.rushPass,
+  c.matsPass,
   c.floraPass,
   c.walk.printsPass,
   c.creatures.pass,

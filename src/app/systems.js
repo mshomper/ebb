@@ -7,6 +7,7 @@
 import * as boot from './boot.js';
 import * as world from './world.js';
 import * as view from './view.js';
+import * as islet from './islet.js';
 import * as light from './light.js';
 import * as ground from './ground.js';
 import * as creatures from './creatures.js';
@@ -24,6 +25,7 @@ import * as fixtures from './fixtures.js';
 import * as setpieces from './setpieces.js';
 import * as kit from './kit.js';
 import * as fishing from './fishing.js';
+import * as shaped from './shaped.js';
 import * as graph from './graph.js';
 import * as photo from './photo.js';
 import * as quality from './quality.js';
@@ -41,8 +43,10 @@ export const SYSTEMS = [
   boot.start,
   world.land,
   testLinks.startTime,
+  islet.land,
   world.start,
   view.start,
+  islet.start,
   light.start,
   ground.start,
   creatures.start,
@@ -70,6 +74,8 @@ export const SYSTEMS = [
   setpieces.start,
   kit.start,
   fishing.start,
+  shaped.start,
+  shaped.tests,
   testLinks.packs,
   testCamp.camp,
   testCamp.teas,

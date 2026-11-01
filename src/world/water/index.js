@@ -40,7 +40,9 @@ export async function createWater(gpu, opts) {
   const stepS = simRecipe.stepS[opts.tier] ?? simRecipe.stepS.high;
   const nudgeK = 1 - Math.exp(-stepS / recipe.nudge.tauS);
   const sim = await createWaterSim(device, terrain.gpu);
-  const rect = rectForBounds(terrain.openBounds());
+  // The simulated rect: the open land, and any new land risen beside it (extendTo). Grown in place,
+  // so every reader of water.rect sees the new one.
+  const rect = rectForBounds(terrain.landBounds?.() ?? terrain.openBounds());
 
   // Springs: the island's own from the land recipe (fixed; the first keeps the id 'starter'), then
   // any the player placed.
@@ -249,6 +251,31 @@ export async function createWater(gpu, opts) {
       if (summary) for (let i = 0; i < depth.length; i++) depth[i] = Math.max(depth[i], summary.targetMm[i] * 0.001);
       sim.seed(rect, depth);
       acc = 0;
+    },
+
+    /**
+     * Grow the simulated rect to hold new land (the meadow islet rising, `terrain:land-grew`): the
+     * cells it gains start as the sea at the tide now, the cells it had keep their water. Returns
+     * whether it grew. @param {{ openMin: number[], openMax: number[] }} b world meters
+     */
+    extendTo(b) {
+      const n = rectForBounds(b), old = { ...rect };
+      const x0 = Math.min(old.x, n.x), y0 = Math.min(old.y, n.y);
+      const x1 = Math.max(old.x + old.w, n.x + n.w), y1 = Math.max(old.y + old.h, n.y + n.h);
+      if (x0 === old.x && y0 === old.y && x1 === old.x + old.w && y1 === old.y + old.h) return false;
+      Object.assign(rect, { x: x0, y: y0, w: x1 - x0, h: y1 - y0 });
+      // What it gained, as up to four strips round the old rect: the rows above and below it, full
+      // width, then the columns either side of it, its height.
+      const strips = [
+        { x: x0, y: y0, w: x1 - x0, h: old.y - y0 }, { x: x0, y: old.y + old.h, w: x1 - x0, h: y1 - old.y - old.h },
+        { x: x0, y: old.y, w: old.x - x0, h: old.h }, { x: old.x + old.w, y: old.y, w: x1 - old.x - old.w, h: old.h },
+      ].filter((s) => s.w > 0 && s.h > 0);
+      for (const s of strips) {
+        const bed = bedHeights((x, z) => terrain.sampleHeight(x, z), s);
+        sim.seed(s, initialDepths(bed, s, { tide, minDepth: Infinity, minArea: Infinity }));
+      }
+      requestSummary();
+      return true;
     },
 
     /** Sea level now (m), at display time. */

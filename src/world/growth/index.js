@@ -9,7 +9,7 @@ import { on, emitDeferred } from '../../core/events.js';
 import { get as getStore, subscribe as subscribeStore } from '../../core/store.js';
 import { hash32 } from '../../core/rng.js';
 import { WORLD_CELLS } from '../terrain/grid.js';
-import { buildHabitat, HABITAT_CELLS } from './habitat.js';
+import { buildHabitat, HABITAT_CELLS, HABITAT_ORIGIN } from './habitat.js';
 import { suitability, plantSeed, plantCover, liftPlant, settleGrowth } from './coarse.js';
 import { lushField } from './lush.js';
 import { plantHash } from './phenology.js';
@@ -50,6 +50,18 @@ export function createGrowth(device, opts) {
   writeCover();
   /** The lush field (lush.js), rebuilt with the habitat. @type {Uint8Array | null} */ let lush = null;
   const coverIds = /** @type {string[]} */ (recipes.growth.cover ?? []);
+  // The mats (cover.js isMat: the meadow islet's thyme, clover and trefoil), one channel each in
+  // growth.json `cover` order, for the mat pass (src/render/passes/mats.js). matBox is the world box
+  // of every square holding one, or null while none grows, so nothing is drawn before the islet.
+  const matIds = coverIds.filter((sp) => recipes.covers?.[sp]?.spread?.planted).slice(0, 4);
+  const matTex = makeTexture(device, {
+    label: 'plant-mats', size: [HABITAT_CELLS, HABITAT_CELLS], format: 'rgba8unorm',
+    usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST,
+  });
+  const matData = new Uint8Array(HABITAT_CELLS * HABITAT_CELLS * 4);
+  const writeMats = () => device.queue.writeTexture({ texture: matTex }, matData, { bytesPerRow: HABITAT_CELLS * 4 }, [HABITAT_CELLS, HABITAT_CELLS]);
+  writeMats();
+  /** @type {{ x0: number, z0: number, x1: number, z1: number } | null} */ let matBox = null;
   const data = new Float32Array(cap * PLANT_FLOATS);
   const speciesIndex = (/** @type {string} */ sp) => recipes.flora[sp]?.index ?? 0;
   /** growth.json bury: depths and the seat (bury.js). */
@@ -135,7 +147,7 @@ export function createGrowth(device, opts) {
    * The reveal's time-lapse (S7c): every plant, of whatever species, and the drawn cover grow from
    * the island before catch-up to the island now, each starting a little apart (by its hash) so
    * growth ripples rather than snaps. Plants gone while away shrink out.
-   * @type {null | { t: number, dur: number, spread: number, size: Map<number, number>, gone: any[], grass: Uint8Array | null, rush: Uint8Array | null }}
+   * @type {null | { t: number, dur: number, spread: number, size: Map<number, number>, gone: any[], grass: Uint8Array | null, rush: Uint8Array | null, mats?: (Uint8Array | null)[] }}
    */
   let lapse = null;
   /** How far along one thing is (0..1), starting `spread` of the way apart by hash. @param {number} h 0..1 */
@@ -187,6 +199,29 @@ export function createGrowth(device, opts) {
       }
       writeCover();
     }
+    // The mats, eased in from where they were through a time-lapse like the cover.
+    const maps = matIds.map((sp) => g.cover?.[sp] ?? null);
+    if (maps.some(Boolean) || matBox) {
+      const N = HABITAT_CELLS;
+      let i0 = N, j0 = N, i1 = -1, j1 = -1;
+      matData.fill(0);
+      maps.forEach((m, c) => {
+        if (!m) return;
+        const was = lapse?.mats?.[c] ?? null;
+        for (let k = 0; k < m.length; k++) {
+          const v = was ? lerp(was[k], m[k], along(hash32(k, 0x3a75) / 4294967296)) : lapse ? m[k] * along(hash32(k, 0x3a75) / 4294967296) : m[k];
+          if (v < 1) continue;
+          matData[4 * k + c] = v;
+          const i = k % N, j = (k - i) / N;
+          if (i < i0) i0 = i;
+          if (i > i1) i1 = i;
+          if (j < j0) j0 = j;
+          if (j > j1) j1 = j;
+        }
+      });
+      matBox = i1 < 0 ? null : { x0: HABITAT_ORIGIN + i0 - 1, z0: HABITAT_ORIGIN + j0 - 1, x1: HABITAT_ORIGIN + i1 + 2, z1: HABITAT_ORIGIN + j1 + 2 };
+      writeMats();
+    }
   }
 
   return {
@@ -199,6 +234,12 @@ export function createGrowth(device, opts) {
     range: (index) => ranges[index] ?? [0, 0],
     /** Cover 0..1 on the 1 m world grid (rgba8unorm, 192 x 192 from -80 m): r grass, g rushes, b lush (look). */
     coverTex,
+    /** The mats 0..1 on the same grid, one channel each in `matIds` order (rgba8unorm). */
+    matTex,
+    /** The mats' species, in matTex channel order. */
+    matIds,
+    /** The world box (m) the mats cover now, padded a square, or null while none grows. */
+    matBox: () => matBox,
     /** The lush field (lush.js), 0..255 a square, or null before the first habitat. */
     lush: () => lush,
     /** The current habitat grid, or null before the first water summary. */
@@ -227,6 +268,7 @@ export function createGrowth(device, opts) {
         size: new Map((before.plants ?? []).map((/** @type {any} */ p) => [p.id, p.size])),
         gone: (before.plants ?? []).filter((/** @type {any} */ p) => !now.has(p.id)).map((/** @type {any} */ p) => ({ ...p, gone: true })),
         grass: before.grass ?? null, rush: coverIds.length ? before.cover?.[coverIds[0]] ?? null : null,
+        mats: matIds.map((sp) => before.cover?.[sp] ?? null),
       };
       shown = null;
     },
@@ -240,7 +282,7 @@ export function createGrowth(device, opts) {
      * @param {string} sp @param {number} x @param {number} z
      */
     suitabilityAt(sp, x, z) {
-      const rec = recipes.flora[sp];
+      const rec = recipes.flora[sp] ?? recipes.covers?.[sp];
       if (!habitat || !rec) return { suit: 0, worst: 'outside' };
       return suitability(rec, habitat, x, z);
     },
@@ -315,6 +357,7 @@ export function createGrowth(device, opts) {
       for (const u of unPad) u();
       instances.destroy();
       coverTex.destroy();
+      matTex.destroy();
     },
   };
 }

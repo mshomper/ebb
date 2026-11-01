@@ -499,6 +499,8 @@ export function createJournal(opts) {
     on('progress:gifted', (/** @type {any} */ g) => commit(noteGift(journal, g, { state: world.state, hour: hourIndex(), words }))),
     // The camp became a known place (B1 C1, src/world/camp/gift-stone.js): written once.
     on('camp:known-rose', (/** @type {{ text: string }} */ p) => commit(noteOnce(journal, 'camp:known', p.text, { state: world.state, hour: hourIndex(), words }))),
+    // The meadow islet first showed (src/world/islet): written once, and its flag starts its thread.
+    on('islet:rose', (/** @type {{ text: string }} */ p) => commit(noteOnce(journal, 'setpiece:islet:rose', p.text, { state: world.state, hour: hourIndex(), words }, 'land'))),
     // The walker's first meal, an egg cooked on the hearth (docs/future/15 slice 4, cookpot.js).
     on('meal:eaten', (/** @type {{ text?: string }} */ p) => { if (p?.text) commit(noteOnce(journal, 'meal:first', p.text, { state: world.state, hour: hourIndex(), words })); }),
     // Watching a frog (or a school) from close by finds it too (src/world/creatures/index.js, schools.js).

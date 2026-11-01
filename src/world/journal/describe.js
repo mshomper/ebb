@@ -129,7 +129,9 @@ export function describe(journal, sp, state, hab, words, hour = journal.last) {
         status = `${amountOf(rec.amount, m.count)} ${rec.place}${where ? ` ${where}` : ''}${clause ? `, ${clause}` : ''}.`;
       } else if (rec.kind === 'cover') {
         const where = rec.compass ? whereWords(m.spots ?? [], hab, words) : '';
-        status = `${amountOf(rec.amount, m.count)}${rec.place ? ` ${rec.place}` : ''}${where ? ` ${where}` : ''}${trend ? `, ${trend}` : ''}.`;
+        // A mat says when it rests or flowers (its bloom and rest windows), else how it is spreading.
+        const clause = m.dormant > 0 && rec.dormant ? resting : m.flowering > 0 && rec.flowering ? rec.flowering : trend;
+        status = `${amountOf(rec.amount, m.count)}${rec.place ? ` ${rec.place}` : ''}${where ? ` ${where}` : ''}${clause ? `, ${clause}` : ''}.`;
       }
       else {
         const where = rec.compass ? whereWords(m.plants, hab, words) : '';

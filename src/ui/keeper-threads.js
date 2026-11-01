@@ -10,7 +10,7 @@
 import { iconSvg } from './icons/icons.js';
 import { dateOfHour } from '../world/journal/observe.js';
 import { threadsOf } from '../world/threads/model.js';
-import { shownOf, testHolds, showMeOf } from '../world/hints/morning.js';
+import { shownOf, hintDone, showMeOf } from '../world/hints/morning.js';
 
 /** @param {any} s */
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c] ?? c);
@@ -29,7 +29,7 @@ const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<
 export function triesOf(o) {
   const shown = shownOf(o.H, o.s.journal?.flags ?? []);
   return (o.H?.hints ?? []).filter((/** @type {any} */ h) => shown.has(h.id)).map((/** @type {any} */ h) => {
-    const done = testHolds(o.H, h.done, o.s);
+    const done = hintDone(o.H, h, o.s);
     const sp = done ? null : showMeOf(h, o.s);
     return { id: h.id, text: String(h.text ?? ''), day: /** @type {number} */ (shown.get(h.id)), done, sp: sp && (!o.canShow || o.canShow(sp)) ? sp : null };
   }).sort((a, b) => b.day - a.day);

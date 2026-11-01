@@ -84,6 +84,9 @@ export async function createWaterWorld(gpu, opts) {
   });
   // The summary follows the ground: rebuild after every settled stroke, undo and redo.
   const unStroke = on('terrain:stroke-ended', () => water.requestSummary());
+  // New land rising (the meadow islet, src/world/islet): the water reaches it, and follows its ground.
+  const unRaised = on('terrain:raised', () => water.requestSummary());
+  const unGrew = on('terrain:land-grew', (/** @type {{ bounds: { openMin: number[], openMax: number[] } }} */ p) => water.extendTo(p.bounds));
 
   return {
     water, foam, ripples, wetness, moss, shore,
@@ -144,7 +147,7 @@ export async function createWaterWorld(gpu, opts) {
       ripples.setCenter(target[0], target[2]);
     },
 
-    dispose() { unStroke(); shore.dispose(); },
+    dispose() { unStroke(); unRaised(); unGrew(); shore.dispose(); },
   };
 }
 

@@ -81,6 +81,7 @@ Size and color come from CSS: set `width`/`height` on `.icon` and `color` on the
 | `gorse` | a dense, rounded mound on the ground line, short spines standing off its rim, three small filled pea flowers on it: species chip |
 | `grass` | five blades of different heights on the ground line: the grass journal page |
 | `rushes` | a tussock of stiff straight stems splaying from one base, a small flower tuft on the middle stem: the rushes journal page |
+| `harebell`, `trefoil`, `thyme`, `clover`, `bedstraw` | two wiry stems each nodding a bell; a low mat with a crown of pea flowers and pods splayed like a bird's foot; a woody creeping stem with short shoots under round heads; a round head over a three-leaflet leaf; a stem ringed by needle whorls under a froth of tiny flowers: the machair plants' species chips on the meadow islet (B3a) |
 | `journal` | bound book with a ribbon marker and a pressed leaf on the cover: the journal button |
 | `season-spring`, `season-summer`, `season-autumn`, `season-winter` | a bud, a sun, a falling leaf, a frost star: the journal's season boxes |
 | `soil`, `sand`, `rock`, `moss`, `shore` | a mound with clods and a sprout, wind ripples, a faceted boulder, soft cushions, waves over a sandy curve: the journal's Ground pages |
@@ -93,6 +94,7 @@ Size and color come from CSS: set `width`/`height` on `.icon` and `color` on the
 | `midges` | a loose cloud of dots over a reed tip: the midges journal page |
 | `pool` | water held in a hollow between two rocks: a rock pool, in the journal's Web |
 | `strandline` | a line of torn litter along the shore with the sea below: the strandline, in the Web |
+| `islet` | a low mound standing out of the sea with a tuft of meadow, water lines below: the meadow islet's thread (B3a) |
 | `wrack` | a bladderwrack frond forking twice, with paired bladders: wrack, in the Web |
 | `kelp` | two broad blades with a midrib lying downslope from a holdfast: kelp, in the Web |
 | `lichen` | dark crust patches on a splash rock, a little spray above: black lichen, in the Web |

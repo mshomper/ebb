@@ -84,7 +84,12 @@
       { "id": "water", "test": "fishWater", "text": "One stretch of water is all inked on the chart. I know what lives there now, and what it takes." },
       { "id": "rare", "test": "fishRare", "text": "I caught one of the fish from the riddles. I drew it twice to be sure, and still let it go." },
       { "id": "full", "test": "chartFull", "text": "Every fish of these waters is on the chart. I inked the frame and the title last." }
-    ], "pencil": "Every fish I sketch, the chart fills in a little.", "end": ["chartFull"] }
+    ], "pencil": "Every fish I sketch, the chart fills in a little.", "end": ["chartFull"] },
+    { "id": "islet", "title": "The meadow islet", "icon": "islet", "lines": [
+      { "id": "rose", "test": "isletRose", "text": "At the big low tide a pale shoal showed offshore, where there was only sea before." },
+      { "id": "risen", "test": "isletRisen", "text": "By the next low water it stood above the high tide: a little meadow islet, with a sandbar to our shore." },
+      { "id": "walked", "test": "isletWalked", "text": "I walked out over the bar at low tide and stood on the islet. The ground there is dry and sunny, meadow, not pond." }
+    ], "pencil": "The bar is dry only around low tide. I watch the tide when I go.", "end": ["isletWalked"] }
   ],
   "tests": { "lineMade": [{"made": ["line"]}], "fishFirst": [{"flag": "fishing:sketch"}], "fishRiddle": [{"flag": "fishing:riddle:1"}], "fishWater": [{"prefix": "fishing:water:"}], "fishRare": [{"flag": "fishing:rare"}], "chartFull": [{"flag": "fishing:chart:full"}],
     "stoneShown": [{ "flag": "dig:marked-stone" }],
@@ -109,6 +114,9 @@
     "boatLetter4": [{ "flag": "keeper:boat-4" }],
     "boatLetter8": [{ "flag": "keeper:boat-8" }],
     "keeperFirst": [{ "flag": "keeper:first" }],
-    "keeperTend": [{ "flag": "keeper:tend" }]
+    "keeperTend": [{ "flag": "keeper:tend" }],
+    "isletRose": [{ "flag": "setpiece:islet:rose" }],
+    "isletRisen": [{ "flag": "setpiece:islet:risen" }],
+    "isletWalked": [{ "flag": "setpiece:islet:walked" }]
   }
 }

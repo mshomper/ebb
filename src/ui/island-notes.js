@@ -179,7 +179,7 @@ export function mountIslandNotes(parent, words, naturalist = null) {
     morning.classList.remove('is-in');
     setTimeout(() => { if (!morning.classList.contains('is-in')) morning.classList.remove('is-shown'); }, 650);
   }
-  const offMorning = on('morning:hint', (/** @type {{ text: string, sp: string | null, opens: string | null, showS: number }} */ p) => {
+  const offMorning = on('morning:hint', (/** @type {{ text: string, sp: string | null, at?: { x: number, z: number } | null, opens: string | null, showS: number }} */ p) => {
     morning.innerHTML = `<button type="button" class="ebb-notes__hint-text" title="${p.opens ? 'Open the journal' : 'Tuck this away'}"></button>`;
     const text = /** @type {HTMLButtonElement} */ (morning.firstElementChild);
     text.textContent = p.text;
@@ -192,7 +192,8 @@ export function mountIslandNotes(parent, words, naturalist = null) {
       show.type = 'button';
       show.className = 'ebb-notes__show';
       show.innerHTML = `${iconSvg('find')}<span>${esc(words.showMe?.button ?? 'Show me')}</span>`;
-      show.addEventListener('click', () => dispatch({ type: 'journal.showMe', sp: /** @type {string} */ (p.sp) }));
+      // A visit hint rings where its visitor showed itself (src/world/ecology/visits.js).
+      show.addEventListener('click', () => dispatch(p.at ? { type: 'journal.showMe', sp: /** @type {string} */ (p.sp), at: p.at, text: p.text } : { type: 'journal.showMe', sp: /** @type {string} */ (p.sp) }));
       morning.appendChild(show);
     }
     root.insertBefore(morning, hint.nextSibling);

@@ -11,7 +11,7 @@ import { createFrameUniformWriter } from '../render/frame-uniforms.js';
 
 /** @param {import('./context.js').AppContext} ctx */
 export async function start(ctx) {
-  const { bloom, camp, canvas, caveLighting, fallsPass, gpu, graph, grassPass, groundDetail, lighting, midges, rushPass, schools, shadowPass, terrainPass, waterPass } = ctx;
+  const { bloom, camp, canvas, caveLighting, fallsPass, gpu, graph, grassPass, groundDetail, lighting, matsPass, midges, rushPass, schools, shadowPass, terrainPass, waterPass } = ctx;
   // The tier, its settings and the probe are read from ctx each time: a tier switch changes them.
   // Quality while playing (src/render/quality-live.js): dynamic resolution and the one automatic
   // tier step down with its calm note.
@@ -62,6 +62,7 @@ export async function start(ctx) {
     terrainPass.setTier({ ...tierSettings, name: t });
     grassPass.setTier(tierSettings);
     rushPass.setTier(tierSettings);
+    matsPass.setTier(tierSettings);
     waterPass.setDetailFade(tierSettings.waterDetailFadeM);
     waterPass.setSSR(tierSettings.waterSSR ?? null);
     if (fallsPass.setTier(tierSettings)) graph.invalidate();

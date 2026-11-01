@@ -255,6 +255,71 @@ const ICONS = {
     <path d="M16.2 7m-1.3 0a1.3 1.3 0 1 0 2.6 0a1.3 1.3 0 1 0 -2.6 0M16.2 4V2.6M16.2 10V11.4M13.2 7H11.8M19.2 7H20.6M14.1 4.9L13.1 3.9M18.3 4.9L19.3 3.9M14.1 9.1L13.1 10.1M18.3 9.1L19.3 10.1"/>
     <circle cx="16.2" cy="7" r="1.3" fill="currentColor" stroke="none"/>`,
 
+  // Harebell (species chip): two wiry stems from the ground line arching over at the top, a bell
+  // nodding from each, thin stem leaves and one round leaf at the foot.
+  harebell: `
+    <path d="M3.5 20.5H20.5"/>
+    <path d="M11 20.5C11 14.5 10.6 9.6 9.4 6.8C8.6 5 7 4.4 5.6 5.6M12.8 20.5C13 15 13.8 10.6 15.4 7.8C16.4 6.2 18 6.4 18.6 8"/>
+    <path d="M10.9 15.8L8.8 14.2M13.2 14.4L15.4 13"/>
+    <path d="M11 20.4C9.6 20.4 8.4 19.6 8.2 18.4C9.6 18.2 10.6 19 11 20.4Z"/>
+    <path ${ACCENT} d="M4.8 5.6C4 6.4 3.8 8 3.6 9.6L3.2 10.6Q4.4 9.9 5.6 10.6Q6.8 9.9 8 10.6L7.6 9.6C7.4 8 7.2 6.4 6.4 5.6ZM17.8 8C17 8.8 16.8 10.4 16.6 12L16.2 13Q17.4 12.3 18.6 13Q19.8 12.3 21 13L20.6 12C20.4 10.4 20.2 8.8 19.4 8Z"/>
+    <path d="M4.8 5.6C4 6.4 3.8 8 3.6 9.6L3.2 10.6Q4.4 9.9 5.6 10.6Q6.8 9.9 8 10.6L7.6 9.6C7.4 8 7.2 6.4 6.4 5.6Z"/>
+    <path d="M17.8 8C17 8.8 16.8 10.4 16.6 12L16.2 13Q17.4 12.3 18.6 13Q19.8 12.3 21 13L20.6 12C20.4 10.4 20.2 8.8 19.4 8Z"/>`,
+
+  // Bird's-foot trefoil (species chip): a low mat on the ground line, a crown of three pea flowers
+  // on one stalk and, on another, three pods splayed like a bird's toes.
+  trefoil: `
+    <path ${ACCENT} d="M3.5 20.5C4.4 18.4 7.8 17.4 12 17.4S19.6 18.4 20.5 20.5Z"/>
+    <path d="M3.5 20.5C4.4 18.4 7.8 17.4 12 17.4S19.6 18.4 20.5 20.5"/>
+    <path d="M2.5 20.5H21.5"/>
+    <path d="M9 17.6C8.8 14.6 8.4 12.4 8 10.4M14.6 17.4C15 15 15.6 12.6 16.2 10.6"/>
+    <path ${ACCENT} d="M8 10.4C6.6 10.4 4.6 9 3.8 7.4C5.6 6.8 7.4 8.4 8 10.4ZM8 10.4C7.2 9 7.2 6.2 8 4C8.8 6.2 8.8 9 8 10.4ZM8 10.4C8.6 8.4 10.4 6.8 12.2 7.4C11.4 9 9.4 10.4 8 10.4Z"/>
+    <path d="M8 10.4C6.6 10.4 4.6 9 3.8 7.4C5.6 6.8 7.4 8.4 8 10.4Z"/>
+    <path d="M8 10.4C7.2 9 7.2 6.2 8 4C8.8 6.2 8.8 9 8 10.4Z"/>
+    <path d="M8 10.4C8.6 8.4 10.4 6.8 12.2 7.4C11.4 9 9.4 10.4 8 10.4Z"/>
+    <path d="M16.2 10.6L13.6 4.6M16.2 10.6L16.8 3.8M16.2 10.6L19.8 5"/>`,
+
+  // Wild thyme (species chip): a woody stem creeping along the ground line, three short upright
+  // shoots with paired tiny leaves, a round flower head on each tip.
+  thyme: `
+    <path ${ACCENT} d="M3 20.5C3 19.4 21 18.4 21 20.5Z"/>
+    <path d="M2.5 20.5H21.5"/>
+    <path d="M3 19.6C5.6 18.8 7 20 9.4 19.2S13.6 18.4 16 19.2S19.4 19.6 21 18.8"/>
+    <path d="M5.8 19.4V14.6M12 18.8V11M18.2 19.2V13.6"/>
+    <path d="M5.8 17.2L4.4 16.2M5.8 17.2L7.2 16.2M12 16.6L10.6 15.6M12 16.6L13.4 15.6M12 13.8L10.6 12.8M12 13.8L13.4 12.8M18.2 16.8L16.8 15.8M18.2 16.8L19.6 15.8"/>
+    <circle ${ACCENT} cx="5.8" cy="12.6" r="2"/>
+    <circle cx="5.8" cy="12.6" r="2"/>
+    <circle ${ACCENT} cx="12" cy="8.8" r="2.2"/>
+    <circle cx="12" cy="8.8" r="2.2"/>
+    <circle ${ACCENT} cx="18.2" cy="11.6" r="2"/>
+    <circle cx="18.2" cy="11.6" r="2"/>`,
+
+  // Red clover (species chip): a round flower head on a stem with two small leaves under it, and
+  // a leaf of three oval leaflets on a long stalk from the foot.
+  clover: `
+    <path d="M3.5 20.5H20.5"/>
+    <path d="M14.4 20.5C14.6 16.4 14.8 13.4 15 10.8M13.4 20.5C12 18.2 9.8 16.2 7.4 15.2"/>
+    <path d="M7.4 15.2A2.5 1.2 -165 1 0 2.57 13.91A2.5 1.2 -165 1 0 7.4 15.2ZM7.4 15.2A2.5 1.2 -105 1 0 6.11 10.37A2.5 1.2 -105 1 0 7.4 15.2ZM7.4 15.2A2.5 1.2 -45 1 0 10.94 11.66A2.5 1.2 -45 1 0 7.4 15.2Z"/>
+    <path d="M15 10.8C13.8 11.6 12.2 11.4 11.6 10.4C12.8 9.8 14.2 10 15 10.8ZM15 10.8C16.2 11.6 17.8 11.4 18.4 10.4C17.2 9.8 15.8 10 15 10.8Z"/>
+    <ellipse ${ACCENT} cx="15" cy="6.4" rx="3.6" ry="3.9"/>
+    <ellipse cx="15" cy="6.4" rx="3.6" ry="3.9"/>
+    <path d="M12.9 5.2L14 6.2L15 5.2L16 6.2L17.1 5.2M14 7.8L15 8.8L16 7.8" opacity="0.7"/>`,
+
+  // Lady's bedstraw (species chip): an upright wiry stem from the ground line ringed by two whorls
+  // of needle leaves, a loose froth of tiny flowers on fine branches at the top.
+  bedstraw: `
+    <path d="M3.5 20.5H20.5"/>
+    <path d="M12 20.5V8.6M12 8.6L8.4 6.4M12 8.6L15.8 6.4M12 8.6V4.8"/>
+    <path d="M8.6 15L15.4 17.2M8.6 17.2L15.4 15M9.6 11.2L14.4 12.8M9.6 12.8L14.4 11.2"/>
+    <ellipse ${ACCENT} cx="12" cy="5.4" rx="6" ry="3.6"/>
+    <circle cx="7.4" cy="6.4" r="1" fill="currentColor" stroke="none"/>
+    <circle cx="9.4" cy="4.2" r="1" fill="currentColor" stroke="none"/>
+    <circle cx="12" cy="3.2" r="1" fill="currentColor" stroke="none"/>
+    <circle cx="14.6" cy="4.2" r="1" fill="currentColor" stroke="none"/>
+    <circle cx="16.6" cy="6.4" r="1" fill="currentColor" stroke="none"/>
+    <circle cx="10.6" cy="6.6" r="1" fill="currentColor" stroke="none"/>
+    <circle cx="13.4" cy="6.6" r="1" fill="currentColor" stroke="none"/>`,
+
   // Grass (journal page): five blades of different heights rising from the ground line.
   grass: `
     <path d="M3.5 20.5H20.5"/>
@@ -342,6 +407,14 @@ const ICONS = {
     <path d="M3 13.5C5 12 7 12 9 13.5S13 15 15 13.5S19 12 21 13.5"/>
     <path ${ACCENT} d="M2.5 20.5C8 17.5 16 17.5 21.5 20.5Z"/>
     <path d="M2.5 20.5C8 17.5 16 17.5 21.5 20.5"/>`,
+
+  // Islet: a low mound of land standing out of the sea, a tuft of meadow on it, water lines below.
+  islet: `
+    <path ${ACCENT} d="M3.5 15.5C6 11.5 9 10 12.5 10S18.5 12 20.5 15.5Z"/>
+    <path d="M3.5 15.5C6 11.5 9 10 12.5 10S18.5 12 20.5 15.5"/>
+    <path d="M11 10V7.5M11 8.5L9.5 7M11 8.5L12.5 7"/>
+    <path d="M2.5 15.5H21.5"/>
+    <path d="M5 19C6.5 18 8 18 9.5 19S12.5 20 14 19S17.5 18 19 19"/>`,
 
   // Almanac: a calendar page with a crescent moon on it.
   almanac: `
