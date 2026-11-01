@@ -123,6 +123,9 @@ export function createSchools(opts) {
     // Plants a turtle grazes (lily leaves, pondweed: motion.habits.grazeOn).
     food: () => (world.state?.growth?.plants ?? []).filter((/** @type {any} */ p) => M.habits?.grazeOn?.[p.sp] && p.stage >= 1)
       .map((/** @type {any} */ p) => ({ x: p.x, z: p.z, sp: p.sp })),
+    // Flax steeping in the shallows (F1, gather.steepAvoid published by src/app/pack.js as the
+    // store slice steepAvoid): a school keeps clear of it. Minnows only: motion.avoidSteeping.
+    avoid: () => M.avoidSteeping ? getStore('steepAvoid') ?? [] : [],
     // Where you are, for a turtle at the periscope to turn and face: on foot, or the camera's eye.
     viewer: () => opts.you?.() ?? camera.eye,
   };

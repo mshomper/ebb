@@ -134,6 +134,11 @@ export function createJournal(opts) {
    *   dragonfly is found along the line from the eye through it, since it is not on the ground
    */
   function cardAt(x, z, y) {
+    // Flax steeping in the shallows (F1) first: a tap that close is about the bundle, not the minnows
+    // or the water. A thing out in the water, opened from the bank, with Lift out once retted.
+    const G = /** @type {any} */ (opts).gather, sb = G?.steepNear?.(x, z) ? G.decorate({ ground: true, text: '' }, x, z) : null;
+    if (sb?.steep) return { ...sb, ground: false, sp: 'retting', name: sb.steepName, sub: null, icon: 'steep', noPage: true, suits: null, suitsPencil: null, gatherOnly: true,
+      wx: sb.steepAt[0], wz: sb.steepAt[1], r: 0.4, reachR: 1.6 };
     const card = cardBase(x, z, y);
     // Terrain (the ground itself, grass and rushes) never pops up a card (Matt, October 22, 2026):
     // a click on it walks. Only what lies there to gather shows, as its own card: named for the
@@ -420,6 +425,13 @@ export function createJournal(opts) {
     // A plant not to pick, met for the first time (gather/index.js): its page learns why.
     on('pick:refused', (/** @type {{ species: string }} */ p) =>
       commit(learn(journal, p.species, 'pick:refused', { state: world.state, hour: hourIndex(), words }))),
+    // Flax (F1): pulled by hand, then steeped and lifted out as fibre (src/world/gather/retting.js).
+    on('plant:picked', (/** @type {{ sp: string }} */ p) => { if (p?.sp === 'flax') commit(learn(journal, 'flax', 'pulled', { state: world.state, hour: hourIndex(), words })); }),
+    on('retting:lifted', () => {
+      const r = learn(journal, 'flax', 'retted', { state: world.state, hour: hourIndex(), words });
+      // The flag inks flax's "gives" line (what its fibre is for).
+      commit(r.journal.flags?.includes('flax:retted') ? r : { ...r, journal: { ...r.journal, flags: [...(r.journal.flags ?? []), 'flax:retted'] } });
+    }),
     // Catch-up wrote the hours you were away (src/sim/away.js): its journal is the journal now. Its
     // notes are not posted, so they wait under "You may have missed".
     on('journal:replaced', (/** @type {{ journal: any }} */ p) => {

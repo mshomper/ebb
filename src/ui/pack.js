@@ -68,6 +68,9 @@ export function mountPack(row, words, sketchOf) {
   // Wood ash (P2i): Spread here tips a handful where you stand, below (src/world/gather ashes).
   registerCardAction({ id: 'spreadash', icon: 'spread', order: 11, main: true, label: words.spread ?? 'Spread here',
     when: (c) => c.sp === 'pouch' && c.kindId === 'ash' && !c.atCamp, action: () => ({ type: 'gather.spreadAsh' }) });
+  // Flax stems (F1): Steep here lays the pouch in a pond's shallows as one bundle (src/world/gather/retting.js).
+  registerCardAction({ id: 'steepflax', icon: 'steep', order: 11, main: true, label: words.steep ?? 'Steep here',
+    when: (c) => c.sp === 'pouch' && c.kindId === 'flax.stems' && !c.atCamp, action: () => ({ type: 'gather.steep' }) });
   // A treat some creature likes (P2h, src/world/creatures/treats.js; store slice treatKinds): Set out
   // puts a handful down in front of you, as Feed does.
   registerCardAction({ id: 'setout', icon: 'feed', order: 11, main: true, label: words.setOut ?? 'Set out',

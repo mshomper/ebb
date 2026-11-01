@@ -55,6 +55,7 @@
     "thyme": { "label": "Wild thyme", "kind": "plants", "icon": "thyme", "page": "thyme" },
     "clover": { "label": "Red clover", "kind": "plants", "icon": "clover", "page": "clover" },
     "bedstraw": { "label": "Lady's bedstraw", "kind": "plants", "icon": "bedstraw", "page": "bedstraw" },
+    "flax": { "label": "Flax", "kind": "plants", "icon": "flax", "page": "flax" },
     "anemone": { "label": "Beadlet anemone", "kind": "small", "icon": "anemone", "page": "anemone" },
     "periwinkle": { "label": "Periwinkle", "kind": "small", "icon": "periwinkle", "page": "periwinkle" },
     "lugworm": { "label": "Lugworm casts", "kind": "small", "icon": "lugworm", "page": "lugworm" },
@@ -238,6 +239,9 @@
     { "a": "woodlice", "b": "toads", "ink": "seen:woodlice&seen:toads", "note": "The toad eats woodlice on its night walks." },
     { "a": "logs", "b": "groundbeetle", "ink": "seen:groundbeetle", "note": "A violet ground beetle hides under a log by day." },
     { "a": "grass", "b": "groundbeetle", "ink": "seen:groundbeetle", "note": "The beetle hunts through the grass at night." },
-    { "a": "you", "b": "woodlice", "ink": "seen:woodlice", "note": "Woodlice came to live under a log you carried up from the shore." }
+    { "a": "you", "b": "woodlice", "ink": "seen:woodlice", "note": "Woodlice came to live under a log you carried up from the shore." },
+    { "a": "soil", "b": "flax", "ink": "grows:soil:flax", "note": "Flax stands on the islet's grassy patches, where turf has closed over the sand." },
+    { "a": "flax", "b": "you", "ink": "flag:flax:retted", "note": "Flax steeped in a pond gives long fibre, and the fibre weaves into linen at the bench." },
+    { "a": "fresh", "b": "flax", "ink": "flag:flax:retted", "note": "Flax is steeped in a pond's shallows. The minnows keep away while it lies there." }
   ]
 }

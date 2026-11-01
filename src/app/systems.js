@@ -37,6 +37,7 @@ import * as frame from './frame.js';
 import * as save from './save.js';
 import * as testLinks from './test-links.js';
 import * as testCamp from './test-links-camp.js';
+import * as testFlax from './test-links-flax.js';
 
 /** @type {import('./context.js').StartStep[]} */
 export const SYSTEMS = [
@@ -80,6 +81,7 @@ export const SYSTEMS = [
   testCamp.camp,
   testCamp.teas,
   testCamp.spring,
+  testFlax.flax,
   kit.teaReveal,
   testLinks.autumn,
   testLinks.frogScale,

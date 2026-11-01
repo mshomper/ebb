@@ -43,6 +43,7 @@ export const TEST_FILES = {
   'finds': '',
   'fire-products': '',
   'fishing': '',
+  'flax': '',
   'forager': '',
   'format9': '',
   'frogs': '',

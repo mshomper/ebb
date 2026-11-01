@@ -13,6 +13,7 @@
 // waters just before the world's first hour), so the save's number[] holds it as it is.
 
 import { cleanAshes } from './ashes.js';
+import { cleanRetting } from './retting.js';
 import { cleanTreats } from '../creatures/treat-rules.js';
 
 /** Period tags, in a period's low three bits. New tags go at the end. */
@@ -97,12 +98,13 @@ const isInt = (v) => typeof v === 'number' && Number.isInteger(v);
  * (a key that is not a uint32, a period that is not an integer, a count under 1) is dropped, and a
  * trailing part-triple too. Triples written as nested [key, period, taken] arrays are flattened.
  * The ash patches spread on the ground (P2i, ashes.js) ride along as `ashes` once there are any.
- * @param {any} v @returns {{ version: 1, events: number[], ashes?: import('./ashes.js').AshPatch[] }}
+ * Flax steeping in the shallows (F1, retting.js) as `retting`.
+ * @param {any} v @returns {{ version: 1, events: number[], ashes?: import('./ashes.js').AshPatch[], retting?: import('./retting.js').Bundle[] }}
  */
 export function cleanGather(v) {
-  const ashes = cleanAshes(v?.ashes), treats = cleanTreats(v?.treats);
-  // Treats set out and lying (P2h, creatures/treats.js).
-  return { ...cleanEvents(v), ...(ashes.length ? { ashes } : {}), ...(treats.length ? { treats } : {}) };
+  const ashes = cleanAshes(v?.ashes), treats = cleanTreats(v?.treats), retting = cleanRetting(v?.retting);
+  // Treats set out and lying (P2h, creatures/treats.js); flax steeping in the shallows (F1, retting.js).
+  return { ...cleanEvents(v), ...(ashes.length ? { ashes } : {}), ...(treats.length ? { treats } : {}), ...(retting.length ? { retting } : {}) };
 }
 
 /** @param {any} v @returns {{ version: 1, events: number[] }} */

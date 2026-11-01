@@ -287,7 +287,7 @@ export function createPackDraw(o) {
 
   let dirty = true, clock = 0, since = 0;
   /** @type {number[] | null} */ let lastAt = null;
-  const offs = ['gather:done', 'pack:changed', 'pack:set-down', 'pile:changed', 'camp:stamped', 'camp:placed', 'treat:changed'].map((ev) => on(ev, () => { dirty = true; }));
+  const offs = ['gather:done', 'pack:changed', 'pack:set-down', 'pile:changed', 'camp:stamped', 'camp:placed', 'treat:changed', 'retting:laid', 'retting:lifted'].map((ev) => on(ev, () => { dirty = true; }));
 
   /** Where to draw near: you, below; else the view's middle. */
   function focus() {
@@ -395,6 +395,23 @@ export function createPackDraw(o) {
         const mesh = `${t.kind}-${Math.floor(u(5) * P.variants)}${t.pale > 0.4 && P.treatPale ? '-pale' : ''}`;
         out.push({ x, y: ground(x, z) + lift, z, yaw: u(3) * 2 * Math.PI, size: (P.scale ?? 1) * (P.treatScale ?? 1) * (0.85 + 0.3 * u(4)) * (1 - 0.4 * t.pale), mesh });
       }
+    }
+    // Flax steeping in the shallows (F1, src/world/gather/retting.js): straw stems side by side on the
+    // bed under a flat stone, gone grey once retted.
+    const RL = o.gather?.rettingRecipe?.look;
+    for (const b of RL ? o.gather.steepingNow() : []) {
+      if ((b.x - f[0]) ** 2 + (b.z - f[1]) ** 2 > P.nearM * P.nearM) continue;
+      const key = hash32(Math.round(b.x * 100), Math.round(b.z * 100), 0xf1a8), kind = b.ready ? 'flax-fibre' : 'flax.stems';
+      const head = u01(hash32(key, 0)) * 2 * Math.PI, cx = Math.cos(head), sx = Math.sin(head);
+      const n = Math.max(3, Math.round(RL.stems * Math.min(1, b.handfuls / 3)));
+      for (let i = 0; i < n && out.length < P.max; i++) {
+        const u = (/** @type {number} */ k) => u01(hash32(key, i + 1, k));
+        // Across the bundle (perpendicular to its heading), and a little along it.
+        const across = (i / Math.max(1, n - 1) - 0.5) * RL.spreadM * 2, along = (u(1) - 0.5) * 0.04;
+        const x = b.x - sx * across + cx * along, z = b.z + cx * across + sx * along;
+        out.push({ x, y: ground(x, z) + RL.riseM, z, yaw: head + (u(2) - 0.5) * 2 * RL.jitterDeg * Math.PI / 180, size: (P.scale ?? 1) * (0.9 + 0.2 * u(3)), mesh: `${kind}-${Math.floor(u(4) * P.variants)}` });
+      }
+      if (out.length < P.max) out.push({ x: b.x, y: ground(b.x, b.z) + RL.riseM * 2, z: b.z, yaw: head, size: (P.scale ?? 1) * RL.stoneScale, mesh: `flat-stones-${key % P.variants}` });
     }
     // A mound set down at camp wears a few of its own pieces on top, when its kind has a pickup shape.
     const top = (HP.radiiM ?? [0.3, 0.13, 0.26])[1] * (1 - (HP.sink ?? 0.2));
