@@ -40,7 +40,7 @@
       { "sp": "clover", "count": 3 },
       { "sp": "bedstraw", "count": 3 },
       { "sp": "bedstraw", "count": 2 },
-      { "sp": "flax", "count": 4, "note": "Flax's slot (wave 2, F1 builds the plant): skipped until recipes/flora/flax.json is in growth's list, then planted on the next summary." }
+      { "sp": "flax", "count": 4, "note": "Flax (F1, recipes/flora/flax.json): on the grassy patches; an islet that rose before F1 plants it on the next summary." }
     ],
     "spreadM": 1.2,
     "sizeShare": 0.8,

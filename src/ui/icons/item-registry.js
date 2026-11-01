@@ -17,6 +17,7 @@ import { ICON_NAMES } from './icons.js';
 import { DYES } from './items-made.js';
 import { CAMP_ROWS } from './items-camp.js';
 import { METAL_POUCH_ROWS, METAL_MAKE_ROWS } from './items-metal.js';
+import { FLAX_POUCH_ROWS, FLAX_PART_ROWS } from './items-flax.js';
 
 /**
  * @typedef {{ id: string, icon: string, name: string, tier: string, phase: number }} ItemRow
@@ -50,6 +51,8 @@ export const POUCH_KINDS = /** @type {[string, string, string, string, number][]
   ['egg', 'egg', 'Eggs', 'T3', 3], ['eggshells', 'eggshells', 'Eggshells', 'T3', 3], ['grit', 'grit', 'Eggshell grit', 'T3', 3], ['sea-salt', 'sea-salt', 'Sea salt', 'T2', 3],
   // The underground spring (spring-ore plan): its ores, the furnace's metal, nails, and the dock's first parts.
   ...METAL_POUCH_ROWS,
+  // Flax and linen (F1): the fibre from steeped flax, and the cloth woven from it.
+  ...FLAX_POUCH_ROWS,
 ]).map(row);
 
 /** Plant parts, '<species>.<part>' (docs/future/13 sections 4.1 and 5.3). @type {ItemRow[]} */
@@ -71,6 +74,7 @@ export const PLANT_PARTS = /** @type {[string, string, string, string, number][]
   ['bramble.berries', 'blackberries', 'Blackberries', 'T5', 5], ['strawberry.fruit', 'strawberries', 'Wild strawberries', 'T5', 5], ['juniper.berries', 'juniper', 'Juniper berries', 'T6', 5],
   ['hazel.nuts', 'hazelnuts', 'Hazelnuts', 'T5', 5], ['oak.acorns', 'acorns', 'Acorns', 'T5', 5],
   ['lilies.leaf', 'lily-leaf', 'Lily leaf', 'T2', 2], ['pondweed.strands', 'pondweed', 'Pondweed', 'T3', 3],
+  ...FLAX_PART_ROWS,
 ]).map(row);
 
 /** Species named two ways in the docs (doc 13's pouch table against the flora recipe ids). */

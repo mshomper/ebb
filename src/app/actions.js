@@ -66,6 +66,13 @@ export function start(ctx) {
       if (a.type === 'gather.heapHere') { gather.heapHere(); walk.gesture('heapHere'); return; }
       if (a.type === 'gather.leaveBe') { updateStore('identify', () => null); return; }
       if (a.type === 'gather.spreadAsh') { if (gather.spreadAsh()) { walk.gesture('empty'); updateStore('identify', () => null); } return; }
+      // Steep flax in the shallows (F1, src/world/gather/retting.js): laid, or the line saying where it goes.
+      if (a.type === 'gather.steep') {
+        const line = gather.steep();
+        updateStore('identify', () => null);
+        if (line) emitDeferred('island:notice', { text: line, showS: walkerRecipe.words.noticeS });
+        return;
+      }
       // Set out a treat (P2h): its line on the island, as Feed's.
       if (a.type === 'treats.setOut') {
         const line = treats.setOut(a.kind);

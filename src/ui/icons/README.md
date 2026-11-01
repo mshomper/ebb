@@ -204,3 +204,7 @@ pouch.innerHTML = itemPouchSvg(icon, handfuls);   // 0 flat .. 3 full and tied
 | `cond-low` | a wave line with an arrow down under it: at low tide (F17) |
 | `cond-high` | a wave line with an arrow up over it: at high tide (F17) |
 | `cond-sparkle` | a four-pointed glint: near a sparkle in the water (F17) |
+| `flax` | three slender stems with short narrow leaves, a flat five-petal flower on two tips and a seed boll on the third: the flax species chip on the meadow islet (F1) |
+| `weave` | three warp threads hung from a bar, the weft passing over and under them: the workbench's Weave (F1 cloth) |
+| `steep` | a bundle of stems on a pond's bed under a stone, the water line above: Steep here on the flax pouch card (F1) |
+

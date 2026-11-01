@@ -18,7 +18,8 @@ import { stream } from '../../core/rng.js';
  *   phase: number, roll: number, pitch: number, rise: number }} Fish
  *   phase: tail beat (radians); roll, pitch: radians, eased; rise: seconds left rising (0: not)
  * @typedef {{ water: (x: number, z: number) => { surface: number, depth: number },
- *   ring?: (x: number, z: number) => void }} SchoolEnv
+ *   ring?: (x: number, z: number) => void, avoid?: () => { x: number, z: number, r: number }[] }} SchoolEnv
+ *   avoid: places the school keeps clear of (flax steeping in the shallows, F1)
  */
 
 /**
@@ -43,10 +44,11 @@ export function createSchool(o) {
 
   /** A point in water at least `min` deep within `r` of (cx, cz), from the stream; else (cx, cz). */
   function pick(/** @type {number} */ cx, /** @type {number} */ cz, /** @type {number} */ r, /** @type {number} */ min) {
+    const keepOff = env.avoid?.() ?? [];
     for (let i = 0; i < 10; i++) {
       const a = rng.next() * Math.PI * 2, d = Math.sqrt(rng.next()) * r;
       const x = cx + Math.cos(a) * d, z = cz + Math.sin(a) * d;
-      if (at(x, z).depth >= min) return { x, z };
+      if (at(x, z).depth >= min && !keepOff.some((p) => Math.hypot(x - p.x, z - p.z) < p.r)) return { x, z };
     }
     return { x: cx, z: cz };
   }
@@ -126,6 +128,8 @@ export function createSchool(o) {
       const maxV = cruise * 1.6;
       const sep = M.sepBodies * L, view = M.viewBodies * L;
       const W = M.weights;
+      // Flax steeping in the shallows (F1): each fish turns away inside its ring.
+      const keepOff = env.avoid?.() ?? [];
       for (let i = 0; i < fish.length; i++) {
         const f = fish[i];
         let ax = 0, ay = 0, az = 0;
@@ -152,6 +156,10 @@ export function createSchool(o) {
         if (ahead.depth < M.minDepthM) {
           const hx = deep.x - f.x, hz = deep.z - f.z, hd = Math.hypot(hx, hz) || 1;
           ax += (hx / hd) * W.shore; az += (hz / hd) * W.shore;
+        }
+        for (const p of keepOff) {
+          const dx = f.x - p.x, dz = f.z - p.z, d = Math.hypot(dx, dz);
+          if (d < p.r && d > 1e-6) { const k = (1 - d / p.r) * (W.avoid ?? W.shore); ax += (dx / d) * k; az += (dz / d) * k; }
         }
         // The depth they want, gently.
         ay += (wantY(f.x, f.z, f) - f.y) * W.depth;

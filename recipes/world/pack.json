@@ -78,7 +78,10 @@
     { "id": "ochre", "name": "Ochre", "group": "earth", "sketch": "clay", "camp": "heap", "line": "Lumps of red and yellow earth from the spring pool, stained by its iron. They rub off on your fingers." },
     { "id": "mica", "name": "Mica", "group": "stones", "sketch": "flat", "camp": "heap", "line": "Thin glittering sheets that peel apart, washed out of the rock below. Light comes through them, warm." },
     { "id": "ochre-slip", "name": "Ochre slip", "group": "craft", "sketch": "clay", "camp": "heap", "line": "Fine clay and ochre stirred to a thin red cream. Brushed on a pale pot, it fires to a warm red." },
-    { "id": "mica-lantern", "name": "Mica lantern", "group": "craft", "sketch": "sticks", "camp": "heap", "line": "A clay lantern on a post with mica set in its holes. Its light is warmer and steadier." }
+    { "id": "mica-lantern", "name": "Mica lantern", "group": "craft", "sketch": "sticks", "camp": "heap", "line": "A clay lantern on a post with mica set in its holes. Its light is warmer and steadier." },
+    { "id": "flax.stems", "name": "Flax stems", "group": "fibres", "sketch": "coil", "camp": "heap", "line": "Flax pulled by the root, the stems gone the colour of straw. Steeped in a pond, they give up their fibre." },
+    { "id": "flax-fibre", "name": "Flax fibre", "group": "fibres", "sketch": "coil", "camp": "heap", "line": "Long pale fibre from steeped flax, soft as hair and stronger than it looks." },
+    { "id": "cloth", "name": "Linen cloth", "group": "craft", "sketch": "flat", "camp": "heap", "line": "A length of linen, woven tight. Kept for a hat one day." }
   ],
   "piles": { "handfuls": 12, "looks": [3, 8, 12], "rackBunches": 12, "rackHandfuls": 6, "bowlHandfuls": 6,
     "look": {
@@ -119,6 +122,8 @@
       "leaf-pack": { "shape": "pebble", "count": [1, 1], "sizeM": [0.07, 0.09], "heightShare": [0.45, 0.6], "lump": 0.3, "sink": 0.1, "color": [0.22, 0.13, 0.05], "spreadM": 0 },
       "worms": { "shape": "stick", "count": [3, 5], "lenM": [0.05, 0.09], "radiusM": [0.0025, 0.004], "bend": [0.35, 0.7], "color": [0.3, 0.11, 0.09], "spreadM": 0 },
       "lily-parcel": { "shape": "pebble", "count": [1, 1], "sizeM": [0.08, 0.1], "heightShare": [0.4, 0.5], "lump": 0.2, "sink": 0.1, "color": [0.05, 0.13, 0.04], "spreadM": 0 },
+      "flax.stems": { "shape": "stick", "count": [1, 1], "lenM": [0.18, 0.23], "radiusM": [0.0022, 0.003], "bend": [0.02, 0.08], "color": [0.34, 0.27, 0.13], "spreadM": 0 },
+      "flax-fibre": { "shape": "stick", "count": [1, 1], "lenM": [0.18, 0.23], "radiusM": [0.0022, 0.003], "bend": [0.02, 0.08], "color": [0.2, 0.19, 0.16], "spreadM": 0 },
       "lilies.leaf": { "shape": "flat", "count": [1, 1], "sizeM": [0.09, 0.12], "heightShare": [0.06, 0.1], "lump": 0.1, "sink": 0.05, "color": [0.05, 0.15, 0.04], "spreadM": 0 },
       "pondweed.strands": { "shape": "stick", "count": [4, 7], "lenM": [0.12, 0.22], "radiusM": [0.003, 0.005], "bend": [0.35, 0.7], "color": [0.05, 0.09, 0.03], "spreadM": 0.06 },
       "grit": { "shape": "pebble", "count": [5, 8], "sizeM": [0.008, 0.015], "heightShare": [0.4, 0.7], "lump": 0.25, "sink": 0.1, "color": [0.66, 0.6, 0.52], "spreadM": 0.1 }
@@ -143,7 +148,7 @@
   "ui": { "pouchPx": 48, "gapPx": 6, "drawPx": 36 },
   "words": {
     "stage": ["Empty.", "A few.", "Half full.", "Full."],
-    "setDown": "Set down", "empty": "Empty", "spread": "Spread here", "setOut": "Set out", "takeUp": "Take up", "emptied": "You tip it out. The island takes it back.",
+    "setDown": "Set down", "empty": "Empty", "spread": "Spread here", "steep": "Steep here", "setOut": "Set out", "takeUp": "Take up", "emptied": "You tip it out. The island takes it back.",
     "full": "No room in the pack.", "setDownHere": "Set down here", "leaveIt": "Leave it", "heap": "A small heap you left here.",
     "pile": ["A small heap.", "A good heap.", "A big heap."], "pileFull": "This heap is as big as it gets.",
     "noSlot": "The camp has all it needs. Set something aside first.",
