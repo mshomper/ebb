@@ -253,7 +253,6 @@
     { "a": "frogspawn", "b": "eels", "ink": "seen:frogspawn&flag:eels:seen", "note": "Eels hunt the tadpoles that hatch from the spawn." },
     { "a": "midges", "b": "eels", "ink": "flag:midges:seen&flag:eels:seen", "note": "Eels eat the midge larvae on the pond floor." },
     { "a": "you", "b": "eels", "ink": "flag:eels:home&flag:eels:seen", "note": "Eels came to the pond you dug long ago near the shore." },
-    { "a": "you", "b": "woodlice", "ink": "seen:woodlice", "note": "Woodlice came to live under a log you carried up from the shore." },
     { "a": "soil", "b": "flax", "ink": "grows:soil:flax", "note": "Flax stands on the islet's grassy patches, where turf has closed over the sand." },
     { "a": "flax", "b": "you", "ink": "flag:flax:retted", "note": "Flax steeped in a pond gives long fibre, and the fibre weaves into linen at the bench." },
     { "a": "fresh", "b": "flax", "ink": "flag:flax:retted", "note": "Flax is steeped in a pond's shallows. The minnows keep away while it lies there." }

@@ -22,7 +22,6 @@
     { "id": "islet", "text": "Where the sea was, a little islet stands offshore now. Its sandbar dries around low tide: walk across then, and back before the tide comes in.", "done": "isletWalked", "when": "isletRose" },
     { "id": "turnstone-visit", "visit": "turnstones", "text": "Small birds ran the strandline yesterday, turning the weed over with their bills. Wrack left lying on the strand, not gathered, might keep them." },
     { "id": "eel-visit", "visit": "eels", "done": "eelsCame", "text": "Something long and dark came up out of the sea in the night and nosed along the shore, then slipped back. An old pond near the sea, with wet grass between, might keep it." },
-    { "id": "islet", "text": "Where the sea was, a little islet stands offshore now. Its sandbar dries around low tide: walk across then, and back before the tide comes in.", "done": "isletWalked", "when": "isletRose" },
     { "id": "flax", "text": "Flax won't give up its fibre dry. Lay the stems in the shallows of a still pond, and lift them out in three days.", "done": "flaxRetted", "when": "flaxPulled" }
   ],
   "tests": {
@@ -47,7 +46,6 @@
     "isletRose": [{ "flag": "setpiece:islet:rose" }],
     "isletWalked": [{ "flag": "setpiece:islet:walked" }],
     "eelsCame": [{ "flag": "eels:home" }, { "flag": "eels:sign" }],
-    "isletWalked": [{ "flag": "setpiece:islet:walked" }],
     "flaxPulled": [{ "learned": "pulled" }],
     "flaxRetted": [{ "learned": "retted" }]
   },
