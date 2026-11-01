@@ -88,6 +88,7 @@
     "lizards": { "label": "Common lizard", "kind": "small", "icon": "lizard", "page": "lizards" },
     "woodlice": { "label": "Woodlice", "kind": "small", "icon": "woodlice", "page": "woodlice" },
     "groundbeetle": { "label": "Violet ground beetle", "kind": "small", "icon": "groundbeetle", "page": "groundbeetle" },
+    "eels": { "label": "Eels", "kind": "animals", "icon": "eel", "page": "eels", "flag": "eels:seen" },
     "you": { "label": "You", "kind": "animals", "icon": "you", "always": true }
   },
   "links": [
@@ -238,6 +239,14 @@
     { "a": "woodlice", "b": "toads", "ink": "seen:woodlice&seen:toads", "note": "The toad eats woodlice on its night walks." },
     { "a": "logs", "b": "groundbeetle", "ink": "seen:groundbeetle", "note": "A violet ground beetle hides under a log by day." },
     { "a": "grass", "b": "groundbeetle", "ink": "seen:groundbeetle", "note": "The beetle hunts through the grass at night." },
-    { "a": "you", "b": "woodlice", "ink": "seen:woodlice", "note": "Woodlice came to live under a log you carried up from the shore." }
+    { "a": "you", "b": "woodlice", "ink": "seen:woodlice", "note": "Woodlice came to live under a log you carried up from the shore." },
+    { "a": "shore", "b": "eels", "ink": "flag:eels:seen", "note": "Eels come up out of the sea on rainy autumn nights, looking for a pond." },
+    { "a": "grass", "b": "eels", "ink": "flag:eels:seen&flag:eels:sign", "note": "Eels cross the wet grass between the shore and the pond." },
+    { "a": "fresh", "b": "eels", "ink": "flag:eels:seen&flag:eels:settled", "note": "Eels live for years in a still pond, hiding by day and hunting by night." },
+    { "a": "pondweed", "b": "eels", "ink": "flag:eels:seen&seen:pondweed", "note": "Eels lie under the pondweed by day." },
+    { "a": "lilies", "b": "eels", "ink": "flag:eels:seen&seen:lilies", "note": "Eels hide in the shade under the lily pads." },
+    { "a": "frogspawn", "b": "eels", "ink": "seen:frogspawn&flag:eels:seen", "note": "Eels hunt the tadpoles that hatch from the spawn." },
+    { "a": "midges", "b": "eels", "ink": "flag:midges:seen&flag:eels:seen", "note": "Eels eat the midge larvae on the pond floor." },
+    { "a": "you", "b": "eels", "ink": "flag:eels:home&flag:eels:seen", "note": "Eels came to the pond you dug long ago near the shore." }
   ]
 }

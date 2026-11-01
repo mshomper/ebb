@@ -35,6 +35,7 @@ export const TEST_FILES = {
   'dig': '',
   'director': '',
   'ecology': '',
+  'eels': '',
   'events': '',
   'falls-sound': '',
   'falls': 'webgpu',

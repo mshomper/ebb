@@ -1,0 +1,62 @@
+{
+  "type": "species",
+  "id": "eel",
+  "key": "eels",
+  "name": "European eel",
+  "version": 1,
+  "note": "European eels (B3 wave 2; docs 11 'Visits and shaped homes', 13 'The year, season by season' and 'Shaped, not found'; Matt's B3 calls of October 30, 2026). A few at a time in one pond, never named: a school on the swarm model (src/world/creatures/swarms.js), watching only. HOME (shaped, not found): a pond the player dug, at least a year old (56 game days), within 30 m of the sea, with wet grass between (ecology.visit.home, read by src/world/ecology/shaped.js homeOf; src/app/eels.js writes the result into the world state as homes.eels at each hourly look, with the pond's middle). VISIT: before the home is made, in autumn, now and then at night (visit.hours), one eel comes in from the sea at the shore, noses up the wet ground and slips back (show kind shore-nose, again every againS real seconds for lastsH game hours; src/world/creatures/schools.js, eel-swim.js visit); the next morning a hint. ARRIVAL (ecology.arrival, swarms.js): as the minnows', with a gate: they come and grow only in the gate's seasons (autumn), on a day with rain, at comeAtH (22:00), once the home is made, and only into the pool at the home (its deep spot within homeM of the home's middle). Up to company n[2] in the pool (one per m2PerOne square meters). They never start in another pool (newPoolChance 0). Seen arriving, they come up out of the sea on the land square on the waterline nearest the pond and cross the grass to it, one after another (motion cross*). DORMANCY: in the pond mud through the winter (recipes/world/seasons.json dormancy eels). TRUST (doc 23): watching only, ceiling Tolerant, like the damselflies: no treats, no name, no gift (Matt: only the teal give one), and they never count toward a tier milestone (doc 13).",
+  "_look": "LOOK. body: built in code (src/world/creatures/eel.js eelBody) from these numbers, real meters: a long round body lengthM from snout to tail, radiusM at its thickest a third along, tapering to tipShare at the tail, on a chain of `segments` bones (seg.0 the head); a fin ridge finM high along the back from finFrom and under the belly from finUnder, meeting round the tail; two small fins behind the head; eyes high on the flat head. displayScale 1.6 (findable under the water; an eel is long already, so less than the small creatures' 2.5 to 3). albedo (physical, linear; the palette comes at the tonemap): a dark olive-brown back, the yellow eel's pale yellowish belly (below bellyBelowNormalY), darker fins, small dark eyes. wetSpecular: their slimy skin, glossy. MOTION (src/world/creatures/eel-swim.js, live only; kind eel): one wave of `waves` whole waves along the body, its size growing from headShare at the head to the tail (eel.js poseEel). By night (outside activity.hours) each eel hunts low along the bed (huntLiftM over it) at huntMps, nosing to a new spot within leashM of home every huntEveryS seconds; by day it swims slowly (shiftMps) to a spot within restM of the deep spot and lies there with only a slow ripple (restAmpM at restWaveHz), shifting every restEveryS. Swimming, the wave runs back faster than the eel goes (slip: the eel's speed over the wave's); it turns at most turnRad a second; a walker fast and close sends it down to the deep spot at dartMps for dartS seconds. Crossing ground the wave stays put on the ground while the body slides through it (even, crossAmpM wide), at crossMps along a line that wanders up to crossWanderM to one side, eels crossGapS seconds apart. A visitor noses noseM up past the shore square. minDepthM: the least water they swim in. PRESENCE, FIND, REVEAL: as the damselflies'.",
+  "body": {
+    "lengthM": 0.45, "radiusM": 0.011, "segments": 14, "tipShare": 0.3, "finFrom": 0.33, "finUnder": 0.55, "finM": 0.006,
+    "scaleReal": [0.35, 0.55],
+    "displayScale": 1.6,
+    "sizeJitter": 0.15,
+    "contactShadow": 0,
+    "variants": 1,
+    "variation": 0,
+    "albedo": { "back": [0.045, 0.042, 0.022], "belly": [0.3, 0.27, 0.12], "fin": [0.06, 0.054, 0.03], "blotch": [0.035, 0.032, 0.018],
+                "eye": [0.02, 0.02, 0.02], "eyeRing": [0.34, 0.3, 0.14] },
+    "blotch": { "scale": 160, "amount": 0.25 },
+    "bellyBelowNormalY": -0.2,
+    "wetSpecular": { "roughness": 0.18, "strength": 1 },
+    "skin": { "blendM": 0.012 }
+  },
+  "bake": { "cellM": 0.002, "lods": [{ "cellM": 0.0018, "toM": 2 }, { "cellM": 0.0032, "toM": 6 }, { "cellM": 0.0055 }] },
+  "motion": {
+    "kind": "eel", "stepHz": 30,
+    "waves": 1.2, "headShare": 0.15, "slip": 0.7,
+    "restAmpM": 0.006, "restWaveHz": 0.25, "swimAmpM": 0.028, "dartAmpM": 0.04,
+    "huntMps": 0.12, "shiftMps": 0.05, "dartMps": 0.55, "dartS": 5, "turnRad": 1.6,
+    "leashM": 3, "restM": 1.2, "huntEveryS": [6, 14], "restEveryS": [40, 90], "huntLiftM": 0.04, "minDepthM": 0.15,
+    "crossMps": 0.18, "crossAmpM": 0.045, "crossStepM": 0.6, "crossWanderM": 1.2, "crossGapS": 6,
+    "noseM": 0.5
+  },
+  "presence": { "ringM": 1.2, "ringTrustShrink": 0.5, "ringMinM": 0.4, "calmSpeed": 0.6, "editReachM": 2,
+    "watch": { "reachM": 3, "minS": 20, "capS": 600, "trustPerMin": 0.003, "stillMps": 0.05, "sitBoost": 2 },
+    "multipliers": { "posture": { "stand": 1, "kneel": 0.8, "sit": 0.65 }, "gaze": { "watch": 1.15, "away": 0.9 }, "gazeConeDeg": 30, "light": 1.3 },
+    "feedTrust": 0, "ceiling": "tolerant", "bands": [0.2, 0.45, 0.65, 0.85] },
+  "find": { "tapM": 0.5, "tapPerM": 0.05, "lookM": 1.2, "lookDistM": 4.5, "holdS": 3 },
+  "reveal": { "return": "thicken", "growS": 0.6 },
+  "ecology": {
+    "kind": "swarm",
+    "dormancy": "eels",
+    "activity": { "pattern": "nocturnal", "hours": [7, 19] },
+    "needs": {
+      "water": { "depthM": [0.15, 2], "damp": false, "body": { "minM2": 8 }, "okM": 0, "maxM": 1, "w": 0.4 },
+      "food": { "fields": { "tadpoles": 1, "midges": 0.5 }, "radiusM": 6, "per": 0.3, "w": 0.1 },
+      "shelter": { "cover": { "pondweed": 1, "lilies": 0.9, "reeds": 0.6, "rushes": 0.5, "iris": 0.4 }, "radiusM": 3, "from": 0.1, "full": 0.4, "w": 0.3 },
+      "quiet": { "w": 0.1 },
+      "company": { "n": [2, 4, 8], "alone": 0.8, "crowded": 0.6, "w": 0.1 }
+    },
+    "scored": { "where": "water" },
+    "arrival": { "rightScore": 0.35, "rightHoldH": 1, "scoutAfterH": 1, "comeAtH": 22, "scoutChance": 0.6, "maxWaitDays": 3,
+                 "startCount": 2, "m2PerOne": 6, "settleAfterH": 24, "settleMood": 0.35, "rescoutAfterH": 24,
+                 "growShare": 0.5, "growMood": 0.4, "growSeasons": [0, 0, 1, 0], "newPoolChance": 0,
+                 "moodEase": 0.2, "leaveMood": 0.2, "leaveAfterH": 72, "leaveGraceDays": 3, "shrinkShare": 0.3,
+                 "happyMin": 4, "happyMood": 0.6, "happyHoldH": 48,
+                 "gate": { "seasons": [2], "rain": true, "home": true, "homeM": 12 } },
+    "visit": { "sp": "eels", "seasons": [2], "everyDays": 6, "chance": 0.6, "hours": [20, 24],
+      "show": { "kind": "shore-nose", "lastsH": 2, "where": "shore", "againS": 40 },
+      "home": { "check": "pond", "need": { "ageDays": 56, "wetGrass": true }, "max": { "seaM": 30 } } }
+  }
+}
