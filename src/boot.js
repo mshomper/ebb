@@ -5,5 +5,5 @@
 
 import { isTouchFirst, showDesktopOnly } from './ui/desktop-only.js';
 
-if (isTouchFirst()) showDesktopOnly();
+if (isTouchFirst()) { document.getElementById('ebb-loading')?.remove(); showDesktopOnly(); }
 else import('./main.js');

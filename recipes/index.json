@@ -17,6 +17,7 @@
     "world/save": "world/save.json",
     "world/hud": "world/hud.json",
     "world/desktop-only": "world/desktop-only.json",
+    "world/loading": "world/loading.json",
     "world/ground-sources": "world/ground-sources.json",
     "world/sowing": "world/sowing.json",
     "land/starter-island": "land/starter-island.json",

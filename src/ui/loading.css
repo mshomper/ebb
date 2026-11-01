@@ -1,0 +1,26 @@
+/* The loading screen (src/ui/loading.js): the wordmark on the dusk colour while the island is made,
+   one quiet line under it, fading out when the island shows. In index.html so it is there at once. */
+
+.ebb-loading {
+  position: fixed; inset: 0; z-index: 50; display: flex; flex-direction: column; align-items: center;
+  justify-content: center; padding: 24px 16px; background: var(--ui-night); color: var(--ui-cream);
+  text-align: center; overflow: hidden; opacity: 1; transition: opacity 0.9s ease;
+}
+.ebb-loading--gone { opacity: 0; pointer-events: none; }
+.ebb-loading__mark {
+  font-family: var(--font-ui); font-weight: 800; font-size: 56px; line-height: 1.1;
+  letter-spacing: -0.015em; color: var(--wordmark-dark);
+}
+.ebb-loading__tagline {
+  margin: 2px 0 36px; font-family: var(--font-voice); font-style: italic; font-weight: 400;
+  font-size: 20px; color: var(--tagline-dark);
+}
+.ebb-loading__line {
+  margin: 0; min-height: 1.5em; font-family: var(--font-voice); font-style: italic; font-size: 18px;
+  color: var(--tagline-dark);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root:not(.ebb-motion-full) .ebb-loading { transition: none; }
+}
+:root.ebb-motion-calm .ebb-loading { transition: none; }
