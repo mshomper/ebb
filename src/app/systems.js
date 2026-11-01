@@ -26,6 +26,7 @@ import * as setpieces from './setpieces.js';
 import * as kit from './kit.js';
 import * as fishing from './fishing.js';
 import * as shaped from './shaped.js';
+import * as turnstones from './turnstones.js';
 import * as graph from './graph.js';
 import * as photo from './photo.js';
 import * as quality from './quality.js';
@@ -76,6 +77,7 @@ export const SYSTEMS = [
   fishing.start,
   shaped.start,
   shaped.tests,
+  turnstones.start,
   testLinks.packs,
   testCamp.camp,
   testCamp.teas,

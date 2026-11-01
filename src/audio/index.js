@@ -57,11 +57,11 @@ if (typeof window !== 'undefined') {
  * @returns {Promise<{ mixer: () => import('./mixer.js').Mixer | null, ambience: () => any, voices: () => any, music: () => any, dispose: () => void }>}
  */
 export async function startAudio(store) {
-  const [mixerRecipe, ambRecipe, procRecipe, gameRecipe, skyRecipe, frogRecipe, midgeRecipe, dragonflyRecipe, minnowRecipe, keepsakeRecipe, introRecipe, campRecipe, gatherRecipe, digRecipe, henRecipe] = await Promise.all([
+  const [mixerRecipe, ambRecipe, procRecipe, gameRecipe, skyRecipe, frogRecipe, midgeRecipe, dragonflyRecipe, minnowRecipe, keepsakeRecipe, introRecipe, campRecipe, gatherRecipe, digRecipe, henRecipe, turnstoneRecipe] = await Promise.all([
     loadAudioRecipe('audio/mixer'), loadAudioRecipe('audio/ambience'), loadAudioRecipe('audio/procedural'),
     loadAudioRecipe('audio/game'), loadRecipe('world/sky'), loadRecipe('species/frog'), loadRecipe('species/midge'),
     loadRecipe('species/dragonfly'), loadRecipe('species/minnow'), loadAudioRecipe('audio/keepsakes'), loadAudioRecipe('audio/intro'),
-    loadAudioRecipe('audio/camp'), loadAudioRecipe('audio/gather'), loadAudioRecipe('audio/dig'), loadAudioRecipe('audio/hen'),
+    loadAudioRecipe('audio/camp'), loadAudioRecipe('audio/gather'), loadAudioRecipe('audio/dig'), loadAudioRecipe('audio/hen'), loadAudioRecipe('audio/turnstone'),
   ]);
 
   /** @type {import('./mixer.js').Mixer | null} */ let mixer = null;
@@ -137,7 +137,7 @@ export async function startAudio(store) {
     mixer = createMixer(mixerRecipe);
     ambience = createAmbience(mixer, ambRecipe, procRecipe, seed);
     voices = createVoices(mixer, { frog: frogRecipe.voice, midge: midgeRecipe.voice, proc: procRecipe, plop: gameRecipe.frogs.plop,
-      dragonfly: wingRecipe(dragonflyRecipe), minnow: minnowRecipe.voice, hen: henRecipe }, seed);
+      dragonfly: wingRecipe(dragonflyRecipe), minnow: minnowRecipe.voice, hen: henRecipe, turnstone: turnstoneRecipe }, seed);
     animals = createCreatureSound(mixer, voices, store, gameRecipe.frogs, gameRecipe.pond);
     soundState = createSoundState(gameRecipe, seed, (t) => sunMoon(t, skyRecipe.orbit).sunAlt * DEG, ambRecipe.seasonEdge);
     keepsakeSounds = createKeepsakeSounds(mixer, keepsakeRecipe);

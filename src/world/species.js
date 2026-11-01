@@ -9,7 +9,7 @@
  * have no needs: spring's markers, run by src/world/creatures/spring.js after the swarms. The slow
  * worm and the common lizard are finds worked out live (src/world/creatures/sun-finds.js).
  */
-export const SPECIES = Object.freeze(['frog', 'midge', 'minnow', 'dragonfly', 'damselfly', 'turtle', 'frogspawn', 'toad', 'slowworm', 'lizard']);
+export const SPECIES = Object.freeze(['frog', 'midge', 'minnow', 'dragonfly', 'damselfly', 'turtle', 'frogspawn', 'toad', 'slowworm', 'lizard', 'turnstone']);
 
 /** The world's key for a species recipe. @param {{ id: string, key?: string }} rec */
 export const keyOf = (rec) => rec.key ?? `${rec.id}s`;

@@ -88,7 +88,8 @@
     "lizards": { "label": "Common lizard", "kind": "small", "icon": "lizard", "page": "lizards" },
     "woodlice": { "label": "Woodlice", "kind": "small", "icon": "woodlice", "page": "woodlice" },
     "groundbeetle": { "label": "Violet ground beetle", "kind": "small", "icon": "groundbeetle", "page": "groundbeetle" },
-    "you": { "label": "You", "kind": "animals", "icon": "you", "always": true }
+    "you": { "label": "You", "kind": "animals", "icon": "you", "always": true },
+    "turnstones": { "label": "Turnstones", "kind": "animals", "icon": "turnstone", "page": "turnstones", "flag": "turnstones:seen" }
   },
   "links": [
     { "a": "rock", "b": "moss", "ink": "mossOnRock", "note": "Moss has found a hold on the rock." },
@@ -238,6 +239,9 @@
     { "a": "woodlice", "b": "toads", "ink": "seen:woodlice&seen:toads", "note": "The toad eats woodlice on its night walks." },
     { "a": "logs", "b": "groundbeetle", "ink": "seen:groundbeetle", "note": "A violet ground beetle hides under a log by day." },
     { "a": "grass", "b": "groundbeetle", "ink": "seen:groundbeetle", "note": "The beetle hunts through the grass at night." },
-    { "a": "you", "b": "woodlice", "ink": "seen:woodlice", "note": "Woodlice came to live under a log you carried up from the shore." }
+    { "a": "you", "b": "woodlice", "ink": "seen:woodlice", "note": "Woodlice came to live under a log you carried up from the shore." },
+    { "a": "wrack", "b": "turnstones", "ink": "flag:turnstones:seen&flag:turnstones:settled", "note": "Turnstones flip the wrack left lying to eat the sandhoppers under it." },
+    { "a": "strandline", "b": "turnstones", "ink": "flag:turnstones:seen", "note": "Turnstones run the strandline and wait out the high tide above it." },
+    { "a": "you", "b": "turnstones", "ink": "flag:turnstones:known", "note": "The turnstones came to know you, and feed around your boots." }
   ]
 }

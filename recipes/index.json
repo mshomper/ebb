@@ -126,6 +126,8 @@
     "music/instruments/strings-violas": "music/instruments/strings-violas.json",
     "music/instruments/strings-celli": "music/instruments/strings-celli.json",
     "music/instruments/strings-basses": "music/instruments/strings-basses.json",
-    "music/names": "music/names.json"
+    "music/names": "music/names.json",
+    "species/turnstone": "species/turnstone.json",
+    "audio/turnstone": "audio/turnstone.json"
   }
 }

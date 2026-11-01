@@ -922,6 +922,19 @@ const ICONS = {
     <path d="M3.5 15C6 11.8 11 11.4 15 14.2L19.8 11.6V18.4L15 15.8C11 18.6 6 18.2 3.5 15Z"/>
     <circle cx="6.9" cy="14.3" r="0.9" fill="currentColor" stroke="none"/>
     <path d="M10.5 13.4C11.2 14.4 11.2 15.6 10.5 16.6"/>`,
+  // Ruddy turnstone (B3, a winter flock): from the side, low and plump on short legs, head down,
+  // its short wedge bill tipping a pebble over, the dark breast band and the folded wing.
+  turnstone: `
+    <path ${ACCENT} d="M3.5 9.6C6 9.8 8 10.6 9.6 11.2C11.4 9.6 14.2 9.2 16.4 10.6C17.4 11.2 18 12 18.3 12.8C18 15.2 16 16.6 13 16.6C10 16.6 7.6 15 6.8 13Z"/>
+    <path d="M3.5 9.6C6 9.8 8 10.6 9.6 11.2C11.4 9.6 14.2 9.2 16.4 10.6C17.4 11.2 18 12 18.3 12.8C18 15.2 16 16.6 13 16.6C10 16.6 7.6 15 6.8 13L3.5 9.6Z"/>
+    <path d="M18.3 12.8L20.6 14.6"/>
+    <circle cx="16.4" cy="11.9" r="0.55" fill="currentColor" stroke="none"/>
+    <path d="M14.6 11.2C15 13 15.6 14.2 16.8 14.8"/>
+    <path d="M8.6 12.2C10.6 13.8 13 13.8 14.6 12.6"/>
+    <path d="M11.6 16.6L11 20.5M14 16.4L14.8 20.5"/>
+    <path ${ACCENT} d="M18.8 20.5C18.8 18.6 21.6 18.2 21.6 20.5Z"/>
+    <path d="M18.8 20.5C18.8 18.6 21.6 18.2 21.6 20.5"/>
+    <path d="M2.5 20.5H18.4"/>`,
 
   // The Web's shore features (journal-web.json). Rock pool: water held between two rocks.
   pool: `

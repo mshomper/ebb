@@ -495,6 +495,11 @@ export function createJournal(opts) {
       if (!journal.species.toads?.ever) commit(foundFind(journal, 'toads', ctx));
       commit(learn(journal, 'toads', 'asleep', ctx));
     }),
+    // Something a known animal was seen doing (the turnstones' flush and roost, src/world/turnstones):
+    // its page learns the lines that wait for it.
+    on('creature:learned', (/** @type {{ species: string, trigger: string }} */ p) => {
+      if (journal.species[p.species]?.ever) commit(learn(journal, p.species, p.trigger, { state: world.state, hour: hourIndex(), words }));
+    }),
     // The island gave you something (src/world/expansion.js): written once, shown as a card.
     on('progress:gifted', (/** @type {any} */ g) => commit(noteGift(journal, g, { state: world.state, hour: hourIndex(), words }))),
     // The camp became a known place (B1 C1, src/world/camp/gift-stone.js): written once.

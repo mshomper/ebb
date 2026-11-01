@@ -35,7 +35,9 @@ export function addHintsTests(test, assert, eq) {
     for (const h of R.hints) {
       assert(!ids.has(h.id), `${h.id} is listed once`); ids.add(h.id);
       assert(!h.id.includes('@') && !h.id.includes(':'), `${h.id}: no @ or : in an id (the flag is hint:<id>@<day>)`);
-      assert(Array.isArray(R.tests[h.done]), `${h.id}: its done test ${h.done} is in tests`);
+      // A visit hint (S0) is done by its visitor's home or arrival, with no done test of its own.
+      if (!h.visit || h.done) assert(Array.isArray(R.tests[h.done]), `${h.id}: its done test ${h.done} is in tests`);
+      if (h.visit) assert(W.species[h.visit], `${h.id}: its visitor ${h.visit} has a page`);
       if (h.when) assert(Array.isArray(R.tests[h.when]), `${h.id}: its trigger ${h.when} is in tests`);
       // Show me rings animals, plants, covers and grounds; a find has no spot (describe.js showMeSpot).
       for (const sp of h.showMe ?? []) assert((W.species[sp] && W.species[sp].kind !== 'find') || I.ground?.[sp], `${h.id}: Show me ${sp} is a page Show me can ring`);
