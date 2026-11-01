@@ -32,6 +32,7 @@
 | [F15 The hen](15-the-hen.md) | Seed | A feral hen who comes to trust the walker, roosts at camp, follows you, and lays eggs for the walker's first meal; chicks if Matt wants them |
 | [F16 The sea cave and the Hollow](16-the-sea-cave.md) | Leaning (Matt's design; for a later date) | An optional cave: a fixed mouth, a rubble passage to the sleeping bear, and an arch that needs a made weapon, leading to the Hollow's changing floors. Enemies scale to four skill tracks and the gear you've made; the lantern is the limit. Pools of weapons, lanterns and coats; its own trail |
 | [F17 Fishing and the angler's chart](17-fishing-and-the-anglers-chart.md) | Decided (direction; nothing built) | A made line, two worms as bait, fish sketched and let go, one generator for every fish, a fixed roster per island, twelve rare species, and a chart that inks in as you sketch and hands out riddles; the aquarium waits for a living space |
+| [F18 Visiting keepers](18-visiting-keepers.md) | Decided (direction; nothing built) | A friend comes by invite code to tend your island with you: the host's browser runs the island, the visitor's actions change it, trust is the island's, what the visitor finds and wins in the Hollow goes home with them, both opt into bed, and the host can disconnect or restore to before the visit |
 
 ## How they connect
 
@@ -69,6 +70,9 @@ flowchart TB
   F02 --> F13
   F10 --> F13
   F12 --> F13
+  F13 --> F18[F18 Visiting keepers]
+  F16 --> F18
+  F18 --> F02
 ```
 
 ## Working rule
