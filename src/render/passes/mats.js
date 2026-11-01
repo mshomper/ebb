@@ -3,7 +3,8 @@
 // carpets (mat-shells.wgsl), drawn after the grass into the same HDR, normal and depth targets.
 // Where they grow comes from the growth step's mat map (world/growth matTex and matBox): nothing is
 // drawn while no mat grows, so the island looks as it did until the islet's clumps go in. Shells
-// stand near the eye (the tier's matLayers copies, fewer with distance, one flat copy far off);
+// stand near the eye (the tier's matLayers copies, fewer with distance, one flat copy far off),
+// each marching down through the gap to the copy below at a low look (the tier's matSteps);
 // clover's round heads stand on stalks above its mat while it flowers. Look values come from each
 // mat's flora recipe (`mat`, `season`, `flowering`, `dormant`, clover's `heads`); nothing here is
 // simulated.
@@ -34,7 +35,7 @@ function windowShare(pos, w, soft) {
 /**
  * @param {{ growth: { matTex: GPUTexture, matIds: string[], matBox: () => ({ x0: number, z0: number, x1: number, z1: number } | null) },
  *   terrain: import('../../world/terrain/index.js').Terrain, recipes: Record<string, any>, seed: number,
- *   tier: { matLayers?: number, grassDistance: number } }} opts
+ *   tier: { matLayers?: number, matSteps?: number, grassDistance: number } }} opts
  *   recipes: the mats' flora recipes by species id (growth.json `cover`)
  */
 export function createMatsPass(opts) {
@@ -51,16 +52,18 @@ export function createMatsPass(opts) {
   // `?mats=0` turns the mats off for side-by-side checks.
   const off = new URLSearchParams(location.search).get('mats') === '0';
 
-  /** Copies near the eye and how far they reach: from the tier. @param {{ matLayers?: number, grassDistance: number }} t */
+  /** Copies near the eye, how far they reach and the march's steps: from the tier. @param {{ matLayers?: number, matSteps?: number, grassDistance: number }} t */
   function setTier(t) {
     layers = Math.max(1, Math.round(t.matLayers ?? 6));
     f[5] = layers;
     f[6] = Math.min(16, t.grassDistance * 0.4); f[7] = Math.min(40, t.grassDistance);
     f[111] = Math.min(30, t.grassDistance * 0.6);
+    // `?matsteps=` overrides the march for side-by-side checks (1 turns it off).
+    f[14] = Math.max(1, Math.round(Number(new URLSearchParams(location.search).get('matsteps') ?? t.matSteps ?? 1)));
   }
   setTier(opts.tier);
   f[4] = 0.25;   // cell size (m): the terrain's own, so the copies follow the ground closely
-  f[15] = (opts.seed >>> 0) % 100000;
+  f[11] = (opts.seed >>> 0) % 100000;
   if (clover) {
     const H = clover.heads;
     f.set([1 / Math.sqrt(H.perM2), H.stalkM[0], H.stalkM[1], H.headR], 80);
@@ -117,7 +120,7 @@ export function createMatsPass(opts) {
         f.set([...rec.season.flower, bloom], o + 4);
         f.set([rec.mat.leafM, rec.mat.flowerM, rec.mat.flowerShare, rec.mat.edgeM], o + 8);
         // Far off, the flowers tint the flat copy by farTint of their color while in flower.
-        f[o + 12] = 1; f[o + 13] = (rec.mat.farTint ?? 0) * bloom;
+        f[o + 12] = 1; f[o + 13] = (rec.mat.farTint ?? 0) * bloom; f[o + 14] = rec.mat.flowerR ?? 0.34; f[o + 15] = rec.mat.stepLeaf ?? 0.5;
       });
       if (clover) {
         f.set(clover.season.flower, 84); f[87] = windowShare(u.season, clover.flowering, 0.08);

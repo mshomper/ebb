@@ -3,7 +3,8 @@
 // copy (an instance) a little higher, on a world grid built from vertex_index over the mats' box.
 // Each copy keeps only the pixels where a leaf clump would reach that height: clumps are domes on a
 // jittered cell grid, so together the copies make a lumpy carpet with real depth, and the lowest
-// copy is the mat's flat color, all that is left far away. Flowers are spots on the top copies
+// copy is the mat's flat color, all that is left far away. At a low look each copy marches down
+// through the gap to the copy below, so the gaps never show as bands. Flowers are spots on the top copies
 // while in flower. The same file draws clover's round heads on their stalks (vsHead/fsHead), from
 // the clover share, a few per square meter. Lit like the grass; no palette colors here (docs/05).
 
@@ -18,14 +19,14 @@ struct MatLook {
   albedo: vec4f,   // rgb albedo this season (linear), w carpet height at full cover now (m)
   flower: vec4f,   // rgb flower albedo, w how much it is in flower now (0..1)
   shape: vec4f,    // x leaf clump size (m), y flower spot size (m), z share of spots that flower, w patch edge wobble size (m)
-  extra: vec4f,    // x 1 when this channel holds a mat, y how much its flowers tint it far off now (0..1)
+  extra: vec4f,    // x 1 when this channel holds a mat, y how much its flowers tint it far off now (0..1), z flower head radius (share of a spot), w a march step's reach (leaf clumps)
 };
 
 struct MatDraw {
   box: vec4f,                    // x, z of the grid's corner (m), cells across x and z
   grid: vec4f,                   // x cell size (m), y most copies, z full copies within (m), w one copy past (m)
   misc: vec4f,                   // x real seconds, y wind 0..1, z the sea's level now plus its waves (m), w seed
-  misc2: vec4f,                  // xy direction the wind blows toward
+  misc2: vec4f,                  // xy direction the wind blows toward, z most march steps per copy (1 none)
   mats: array<MatLook, 4>,       // per channel of matTex
   heads: vec4f,                  // clover heads: x spacing (m), y, z stalk height range (m), w head radius (m)
   headColor: vec4f,              // rgb head albedo, w how much clover is in flower now (0 draws none)
@@ -46,6 +47,7 @@ struct ShellOut {
   @location(1) groundN: vec3f,
   @location(2) t: f32,           // 0 the flat copy on the ground .. 1 the top copy
   @location(3) press: f32,       // how hard the walker presses here
+  @location(4) slab: vec2f,      // x the carpet's height here (m), y the step in t down to the copy below (0 the flat copy)
 };
 
 struct FsOut {
@@ -79,7 +81,7 @@ fn pressAt(xz: vec2f) -> f32 {
 fn shellNothing() -> ShellOut {
   var o: ShellOut;
   o.pos = vec4f(0.0, 0.0, -2.0, 1.0);   // outside the clip volume: the triangle is dropped
-  o.world = vec3f(0.0); o.groundN = vec3f(0.0, 1.0, 0.0); o.t = 0.0; o.press = 0.0;
+  o.world = vec3f(0.0); o.groundN = vec3f(0.0, 1.0, 0.0); o.t = 0.0; o.press = 0.0; o.slab = vec2f(0.0);
   return o;
 }
 
@@ -96,12 +98,14 @@ fn vsShell(@builtin(vertex_index) vi: u32, @builtin(instance_index) layer: u32) 
   let s = md.grid.x;
   let xz = md.box.xy + (cell + CORNERS6[vi % 6u]) * s;
   // Copies past the distance's count are dropped before any texture is read (the mats lie about a
-  // meter above the sea; the exact height comes after).
-  let flatDist = distance(vec3f(xz.x, 1.0, xz.y), frame.cameraPos);
+  // meter above the sea; the exact height comes after). The count is the quad's, from its middle,
+  // so a quad is kept or dropped whole and its copies stay flat.
+  let q0 = md.box.xy + cell * s;
+  let mid = q0 + 0.5 * s;
+  let flatDist = distance(vec3f(mid.x, 1.0, mid.y), frame.cameraPos);
   let n = copiesAt(flatDist);
   if (f32(layer) >= n) { return shellNothing(); }
   // A quad with no mat at any corner is dropped whole.
-  let q0 = md.box.xy + cell * s;
   let m00 = matsAt(q0); let m10 = matsAt(q0 + vec2f(s, 0.0)); let m01 = matsAt(q0 + vec2f(0.0, s)); let m11 = matsAt(q0 + vec2f(s, s));
   let mx = max(max(m00, m10), max(m01, m11));
   if (max(max(mx.x, mx.y), max(mx.z, mx.w)) < 0.02) { return shellNothing(); }
@@ -126,6 +130,7 @@ fn vsShell(@builtin(vertex_index) vi: u32, @builtin(instance_index) layer: u32) 
   o.groundN = nG;
   o.t = t;
   o.press = press;
+  o.slab = vec2f(height, select(1.0 / max(n - 1.0, 1.0), 0.0, layer == 0u));
   return o;
 }
 
@@ -146,6 +151,54 @@ fn cellular(q: vec2f, seed: u32) -> vec4f {
   return vec4f(best.x, best.y, best.z, atan2(off.y, off.x));
 }
 
+struct CarpetHit {
+  hit: bool,
+  flower: f32,     // 1 on a flower head
+  n: vec3f,        // the leaf dome's or flower's normal
+  tone: f32,       // the clump's own shade (0..1)
+  tint: f32,       // the flower's own shade (0..1)
+  top: f32,        // the clump's top, as a share of the carpet's height
+  t: f32,          // the height tested, as a share of the carpet's height
+  world: vec3f,
+};
+
+/**
+ * Is there carpet at this point and height (t, 0 the floor .. 1 the top) for mat `pick` at cover
+ * `cov`? Leaf clumps are domes on a jittered grid, lower and fewer where the cover is thin; flowers
+ * are small round heads on the carpet's top while in flower (and spots on the flat copy far off).
+ */
+fn carpetAt(xz: vec2f, t: f32, cov: f32, pick: i32, groundN: vec3f) -> CarpetHit {
+  let seedU = u32(md.misc.w);
+  let L = md.mats[pick];
+  let lc = cellular(xz / L.shape.x, seedU + 101u + u32(pick) * 31u);
+  let top = mix(0.45, 1.0, lc.y) * mix(0.5, 1.0, cov);
+  let keepClump = lc.z < mix(0.35, 1.0, cov);
+  var o = CarpetHit(true, 0.0, groundN, lc.y, 0.0, top, t, vec3f(0.0));
+  if (L.flower.w > 0.0 && L.shape.y > 0.0) {
+    let fc = cellular(xz / L.shape.y, seedU + 211u + u32(pick) * 13u);
+    let open = fc.y < L.shape.z * L.flower.w * cov;
+    let ft = (t - 0.84) / 0.16;
+    let fr = select(md.mats[pick].extra.z * sqrt(max(0.0, 1.0 - ft * ft)), 0.3, t == 0.0);
+    if (open && fc.x < fr) {
+      let tilt = vec2f(cos(fc.w), sin(fc.w)) * (fc.x / max(fr, 1e-3));
+      o.flower = 1.0; o.tint = lc.z;
+      o.n = normalize(groundN + vec3f(tilt.x, 0.0, tilt.y) * 0.8);
+      return o;
+    }
+  }
+  if (t > 0.0) {
+    let r = 0.78 * sqrt(max(0.0, 1.0 - (t / top) * (t / top)));
+    if (!keepClump || t > top || lc.x > r) { o.hit = false; return o; }
+    // The dome's slope tilts the normal outward from the clump's middle.
+    let tilt = vec2f(cos(lc.w), sin(lc.w)) * (lc.x / max(r, 1e-3));
+    o.n = normalize(groundN + vec3f(tilt.x, 0.0, tilt.y) * 0.9);
+  } else if (cov < 0.5 && lc.z > cov * 2.0) {
+    // The flat copy thins with the cover at a patch's rim (dithered by the clumps).
+    o.hit = false;
+  }
+  return o;
+}
+
 @fragment
 fn fsShell(in: ShellOut) -> FsOut {
   let xz = in.world.xz;
@@ -163,58 +216,51 @@ fn fsShell(in: ShellOut) -> FsOut {
   }
   if (pick < 0 || cov <= 0.01) { discard; }
   let L = md.mats[pick];
-  let t = in.t;
-  // Leaf clumps: domes on a jittered grid. A clump stands at this copy's height if the pixel is
-  // inside its dome there; thin cover makes the clumps lower and fewer.
-  let lc = cellular(xz / L.shape.x, seedU + 101u + u32(pick) * 31u);
-  let top = mix(0.45, 1.0, lc.y) * mix(0.5, 1.0, cov);
-  let keepClump = lc.z < mix(0.35, 1.0, cov);
-  var albedo = L.albedo.rgb;
-  var n = in.groundN;
-  // Flowers: small round heads sitting on the carpet's top while in flower, each a little dome over
-  // the upper copies (and a spot on the flat copy far off), standing clear of the leaves below.
-  var flower = 0.0;
-  if (L.flower.w > 0.0 && L.shape.y > 0.0) {
-    let fc = cellular(xz / L.shape.y, seedU + 211u + u32(pick) * 13u);
-    let open = fc.y < L.shape.z * L.flower.w * cov;
-    let ft = (t - 0.84) / 0.16;
-    let fr = select(0.34 * sqrt(max(0.0, 1.0 - ft * ft)), 0.3, t == 0.0);
-    if (open && fc.x < fr) {
-      flower = 1.0;
-      let tilt = vec2f(cos(fc.w), sin(fc.w)) * (fc.x / max(fr, 1e-3));
-      n = normalize(in.groundN + vec3f(tilt.x, 0.0, tilt.y) * 0.8);
-    }
+  // March down through the gap to the copy below, in steps no longer than a share of a leaf clump
+  // across the ground, so at a low angle the gap between two copies is filled by the clumps' own
+  // domes instead of showing as a band; from above one step (this copy's own height) is enough.
+  var steps = 1u;
+  var dLen = 0.0;
+  var dT = 0.0;
+  let view = normalize(in.world - frame.cameraPos);
+  let down = -dot(view, in.groundN);
+  if (in.slab.y > 0.0 && down > 1e-3 && md.misc2.z > 1.0) {
+    let drop = in.slab.x * in.slab.y;
+    let run = drop / down * sqrt(max(0.0, 1.0 - down * down));
+    steps = u32(clamp(ceil(run / (L.shape.x * L.extra.w)), 1.0, md.misc2.z));
+    dLen = drop / down / f32(steps);
+    dT = in.slab.y / f32(steps);
   }
-  if (t > 0.0 && flower == 0.0) {
-    if (!keepClump || t > top) { discard; }
-    let r = 0.78 * sqrt(max(0.0, 1.0 - (t / top) * (t / top)));
-    if (lc.x > r) { discard; }
-    // The dome's slope tilts the normal outward from the clump's middle.
-    let tilt = vec2f(cos(lc.w), sin(lc.w)) * (lc.x / max(r, 1e-3));
-    n = normalize(in.groundN + vec3f(tilt.x, 0.0, tilt.y) * 0.9);
-  } else if (t == 0.0 && cov < 0.5) {
-    // The flat copy thins with the cover at a patch's rim (dithered by the clumps).
-    if (lc.z > cov * 2.0) { discard; }
+  var hit = CarpetHit(false, 0.0, in.groundN, 0.0, 0.0, 1.0, in.t, in.world);
+  for (var i = 0u; i < steps; i++) {
+    let p = in.world + view * (dLen * f32(i));
+    hit = carpetAt(p.xz, in.t - dT * f32(i), cov, pick, in.groundN);
+    hit.world = p;
+    if (hit.hit) { break; }
   }
+  if (!hit.hit) { discard; }
+  let t = hit.t;
+  let n = hit.n;
+  let flower = hit.flower;
   // Self-shade: the carpet's floor is dark, clump tops catch the light; each clump a little apart.
-  let viewDist = distance(in.world, frame.cameraPos);
-  let ao = mix(0.6, 1.08, select(t / max(top, 1e-3), 0.75, t == 0.0));
-  albedo = albedo * (0.86 + 0.3 * lc.y) * ao;
-  albedo = mix(albedo, L.flower.rgb * (0.85 + 0.3 * lc.z), flower);
+  let viewDist = distance(hit.world, frame.cameraPos);
+  let ao = mix(0.6, 1.08, select(t / max(hit.top, 1e-3), 0.75, t == 0.0));
+  var albedo = L.albedo.rgb * (0.86 + 0.3 * hit.tone) * ao;
+  albedo = mix(albedo, L.flower.rgb * (0.85 + 0.3 * hit.tint), flower);
   if (t == 0.0) {
     // Far off only the flat copy is left: lit as the carpet's tops and tinted by its flowers, so
     // from above the mats read as soft drifts of their flowers' color over the sand.
     let far = smoothstep(md.grid.z, md.grid.w, viewDist);
-    albedo = mix(albedo, mix(L.albedo.rgb * (0.9 + 0.25 * lc.y), L.flower.rgb, L.extra.y), far);
+    albedo = mix(albedo, mix(L.albedo.rgb * (0.9 + 0.25 * hit.tone), L.flower.rgb, L.extra.y), far);
   }
   albedo *= mix(1.0, 0.8, light.weather.w);
-  let vis = shadowVisibility(in.world, in.groundN, viewDist, in.pos.xy);
+  let vis = shadowVisibility(hit.world, in.groundN, viewDist, in.pos.xy);
   let casterIsSun = dot(light.shadowDir, frame.sunDir) > 0.999;
   let sunVis = select(1.0, vis, casterIsSun);
   let moonVis = select(vis, 1.0, casterIsSun);
   let sunNl = clamp(dot(n, frame.sunDir) * 0.8 + 0.2, 0.0, 1.0);
   let moonNl = clamp(dot(n, frame.moonDir) * 0.8 + 0.2, 0.0, 1.0);
-  let radiance = albedo * ((frame.sunIlluminance * sunNl * sunVis + frame.moonIlluminance * moonNl * moonVis + pointIllum(in.world, n, 0.2)) / PI
+  let radiance = albedo * ((frame.sunIlluminance * sunNl * sunVis + frame.moonIlluminance * moonNl * moonVis + pointIllum(hit.world, n, 0.2)) / PI
                            + skyAmbient(n) * mix(0.6, 1.0, max(t, smoothstep(md.grid.z, md.grid.w, viewDist))));
   let color = applyAerial(radiance * frame.exposure, in.pos.xy * frame.invRenderSize, viewDist);
   // normalId: the ground's normal and the terrain's outline group, so the mats never get outlines.
