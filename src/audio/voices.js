@@ -22,6 +22,7 @@ import { createWingVoice } from './voices/dragonfly.js';
 import { normBlend } from './ambience/curves.js';
 import { plop as plopSound, dropWith } from './procedural/one-shots.js';
 import { henCall } from './voices/hen.js';
+import { turnstoneCall } from './voices/turnstone.js';
 
 /**
  * @typedef {Object} VoiceRecipes
@@ -30,6 +31,7 @@ import { henCall } from './voices/hen.js';
  * @property {any} [dragonfly] recipes/species/dragonfly.json `voice`, with its motion's wingHz and dartMps
  * @property {any} [minnow] recipes/species/minnow.json `voice` (the sip needs `proc` too)
  * @property {any} [hen]   recipes/audio/hen.json (the hen's murmur, alarm and the distant crow)
+ * @property {any} [turnstone] recipes/audio/turnstone.json (the flock's chatter, a feeding bird's tuk, the roost's twitter)
  * @property {any} [proc]  recipes/audio/procedural.json, for the frog's plop into water
  * @property {{sizeCm: number[], gainDb: number[]}} [plop]  the plop's size and level ranges
  */
@@ -186,6 +188,25 @@ export function createVoices(mixer, voiceRecipes, seed, opts = {}) {
     return true;
   }
 
+  // ---- The turnstones (B3 wave 2) ---------------------------------------------------------------
+  const TS = voiceRecipes.turnstone;
+  let turnstoneCount = 0;
+
+  /**
+   * One of the turnstones' sounds, placed where it comes from: the flock's chatter, a tuk, a twitter.
+   * @param {'chatter'|'tuk'|'murmur'} kind @param {number[]} pos [x, y, z] @param {number} [when] audio time
+   * @returns {boolean} whether it sounds (false without their recipe)
+   */
+  function turnstone(kind, pos, when) {
+    if (!TS) return false;
+    const chain = placedChain(ctx, out, { ...spatial, refDistance: TS.spatial.refDistance, rolloff: TS.spatial.rolloff });
+    const t = Math.max(when ?? ctx.currentTime, ctx.currentTime);
+    chain.place(pos, ear, t);
+    const end = turnstoneCall(ctx, chain.input, kind, TS, stream(hash32(seed >>> 0, 0x7a5), turnstoneCount++), t);
+    setTimeout(() => chain.dispose(), (end - ctx.currentTime + 1) * 1000);
+    return true;
+  }
+
   // ---- Dragonflies -----------------------------------------------------------------------------
   const D = voiceRecipes.dragonfly;
   /** @type {Map<string|number, ReturnType<typeof createWingVoice>>} */
@@ -290,6 +311,7 @@ export function createVoices(mixer, voiceRecipes, seed, opts = {}) {
     /** A frog's lasting pitch and rhythm factors. @param {string|number} id */
     individualOf: (id) => { const i = individual(id); return { pitch: i.pitch, rhythm: i.rhythm }; },
     hen,
+    turnstone,
     /** Calls sounding now. */
     liveCount: () => { prune(); return live.length; },
     /** Midge swarms heard now: id, distance from the eye, density. */

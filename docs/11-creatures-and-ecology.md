@@ -241,6 +241,10 @@ Visit days come from the seed alone, so a visit that fell while the island was a
 
 **Test links**: `?shape=bar`, `wall`, `pond`, `wrack` (or several, joined by commas) shape that ground with real strokes; `?shape=pond` makes the pond a game year old (`&pondAge=N` for another age), `?shape=wrack` thickens the strandline's wrack and says it has lain 4 days. `?visit=<sp>` makes that species' visit now and dates it yesterday, so the morning hint can come. `tools/shaped-lab.html` shows every check on the starter island.
 
+### Flocks on shaped ground (B3: the turnstones)
+
+Plain language: a flock whose home is ground the player shaped (the turnstones' wrack left lying; next the purple sandpipers' sea wall) lives the minnows' life in the hourly tick (sign, settling, growing, uneasy, leaving), with its home standing in for the pool. Recipe `ecology.kind: "flock"` (`src/world/creatures/flock.js`). Each shaped look records the home on the flock's state (`state.creatures.<key>.home`: met, how much, where; the app's own module, `src/app/turnstones.js`), and each hour hands it to `swarms.js swarmStep` as one pool: met scores 1, and its amount is the room (`arrival.m2PerOne` is then metres of wrack a bird). A home gone starts the A9 grace (why: `wrack`). Seasons away are a dormancy window in `recipes/world/seasons.json`. Nothing runs until a home is first met, so an island without one keeps its hash. While you play, the live flock (`src/world/turnstones/`) joins the schools list, so taps, Show me and the reveal find it. Each frame an interference check (`live.js separate`, recipe `life.bodyHalfM`) keeps any two bodies from overlapping, side on or nose to tail.
+
 ### Fish on the line (F17)
 
 Fish caught on the line are catches, not simulated creatures: each is one individual made from a seed when it bites (`src/world/fishing/`, the generator in `src/world/nets/living/fish2.js`), shown, sketched if it is a species' first, and let go. They need no presence or trust and keep no group records. They still move like living things: a hooked fish wriggles on a skinned swim at the end of the line, and on the tray it swims in place.

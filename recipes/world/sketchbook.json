@@ -5,9 +5,9 @@
   "placeholderArt": true,
   "reachM": 8, "sketchS": 3, "offerEveryS": 0.3, "viewSampleSpreadPx": 70,
   "wearPer": 3, "loose": 3, "fullConfidence": 40, "ageDays": 56,
-  "art": { "frogs": "frog", "toads": "toad", "minnows": "minnow", "dragonflies": "dragonfly", "damselflies": "damselfly", "turtles": "turtle", "midges": "midge", "slowworms": "slowworm", "lizards": "lizard" },
+  "art": { "frogs": "frog", "toads": "toad", "minnows": "minnow", "dragonflies": "dragonfly", "damselflies": "damselfly", "turtles": "turtle", "midges": "midge", "slowworms": "slowworm", "lizards": "lizard", "turnstones": "turnstone" },
   "subjects": [
-    "frogs", "toads", "minnows", "dragonflies", "damselflies", "turtles", "midges", "slowworms", "lizards",
+    "frogs", "toads", "minnows", "dragonflies", "damselflies", "turtles", "midges", "slowworms", "lizards", "turnstones",
     "reeds", "rushes", "lilies", "pondweed", "iris", "marigold", "thrift", "campion", "willow", "gorse", "watermint", "meadowsweet", "nettle", "chamomile", "marram", "harebell", "trefoil", "thyme", "clover", "bedstraw",
     "anemone", "periwinkle", "lugworm", "hermitcrab", "ediblecrab", "shorecrab", "shells", "driftwood", "barnacles", "mussels", "sanddollars", "moonjelly",
     "pondskaters", "fungi", "webs", "frogspawn", "woodlice", "groundbeetle", "loosestone", "sandeel", "goby", "pipefish", "plaice", "wrasse", "shrimp"

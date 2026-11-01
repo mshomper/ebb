@@ -23,6 +23,8 @@ export function createCreatureSound(mixer, voices, store, recipe, pond) {
   let lastPlop = -1;
   /** The last hen sound played, by its number; -1 until the first look. */
   let lastHen = -1;
+  /** The last turnstone sound played, by its number; -1 until the first look. */
+  let lastTurnstone = -1;
   /** The last rise played, by species, by its number; absent until the first look at that species. @type {Map<string, number>} */
   const lastRise = new Map();
   /** Where the ears are, and when (performance.now) a frog last called close to them. */
@@ -35,6 +37,7 @@ export function createCreatureSound(mixer, voices, store, recipe, pond) {
     const feed = store.get('creatureSound');
     if (feed?.schools && pond) pollRises(feed.schools());
     if (feed?.hens) pollHen(feed.hens());
+    if (feed?.turnstones) pollTurnstones(feed.turnstones());
     if (!feed?.frogs) return;
     const heard = feed.frogs(since ?? Infinity);
     const first = since === null;
@@ -71,6 +74,18 @@ export function createCreatureSound(mixer, voices, store, recipe, pond) {
     lastHen = Math.max(lastHen, newest);
     if (from < 0 || mixer.ctx.state !== 'running') { if (from < 0) lastHen = Math.max(0, newest); return; }
     for (const c of calls) if (c.n > from) voices.hen(c.kind, c.pos);
+  }
+
+  /**
+   * The turnstones' sounds since the last look (B3 wave 2), as the hen's: the first look plays
+   * nothing, nothing plays before the first touch. @param {{ n: number, kind: 'chatter'|'tuk'|'murmur', pos: number[] }[]} calls
+   */
+  function pollTurnstones(calls) {
+    const newest = calls.length ? calls[calls.length - 1].n : lastTurnstone;
+    const from = lastTurnstone;
+    lastTurnstone = Math.max(lastTurnstone, newest);
+    if (from < 0 || mixer.ctx.state !== 'running') { if (from < 0) lastTurnstone = Math.max(0, newest); return; }
+    for (const c of calls) if (c.n > from) voices.turnstone(c.kind, c.pos);
   }
 
   /**

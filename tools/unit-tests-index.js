@@ -113,6 +113,7 @@ export const TEST_FILES = {
   'trails': '',
   'treats': '',
   'trust': '',
+  'turnstones': '',
   'turtles': '',
   'under-log-meshes': '',
   'under-log': '',
