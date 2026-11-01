@@ -164,12 +164,17 @@ export function createIslet(o) {
       const key = `${n}:${c.sp}`;
       if (planted.includes(key) || !hasPlant(c.sp)) return;
       const r = stream(o.seed, 77, n);
-      // Spots across it, the first its habitat suits (thyme and trefoil find the open sand, clover
-      // and bedstraw the grassy patches), then the rest of the clump round it.
+      // Spots across it, the one its habitat suits best (thyme and trefoil find the open sand,
+      // clover and bedstraw the grassy patches), then the rest of the clump round it.
+      /** @type {{ x: number, z: number, suit: number }[]} */ const spots = [];
       for (let t = 0; t < S.tries; t++) {
         const a = r.range(-1, 1) * L.A, b = r.range(-1, 1) * L.B;
         const x = L.x + a * L.tx + b * L.ux, z = L.z + a * L.tz + b * L.uz;
         if (shape.heightAt(x, z) < S.minHeightM || terrain.sampleHeight(x, z) < S.minHeightM) continue;
+        spots.push({ x, z, suit: growth.suitabilityAt?.(c.sp, x, z).suit ?? 0 });
+      }
+      spots.sort((p, q) => q.suit - p.suit);
+      for (const { x, z } of spots) {
         if (!growth.plant(c.sp, x, z, { size: S.sizeShare }).ok) continue;
         for (let k = 1; k < c.count; k++) {
           const ang = r.range(0, 2 * Math.PI), d = r.range(0.4, 1) * S.spreadM;

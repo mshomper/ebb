@@ -3,43 +3,18 @@
   "id": "trefoil",
   "name": "Bird's-foot trefoil",
   "schema": 1,
-  "version": 1,
+  "version": 2,
   "seed": 8231,
   "tags": [
     "tier2",
-    "machair"
+    "machair",
+    "cover",
+    "mat"
   ],
-  "generator": "blades",
-  "layer": "individual",
-  "draw": "thrift",
+  "generator": "mat",
+  "layer": "cover",
   "plantTool": false,
-  "note": "Bird's-foot trefoil, Lotus corniculatus: a low sprawling mat with clusters of yellow pea flowers, red in bud, then pods splayed like a bird's foot. The common blue butterfly's food plant, for the meadow tier. A machair plant of the meadow islet (B3a, Matt's pick of October 31, 2026; recipes/land/meadow-islet.json starters): it comes to the island only with the islet, planted on its sandy turf when it rises, and spreads from there by seed. Not in the volunteers' order and not offered by the Plant tool (plantTool false), so it stays the islet's own. Drawn with the thrift shader (draw: thrift; flora-thrift.wgsl): its keys are the thrift's (see chamomile.json's note for head forms). drawScale: drawn this many times real size, so it can be found (the shape numbers already include it). habitat: shoreM is height above mean sea level; sand the painted sand share (the islet is mostly sand with sparse grassy patches).",
-  "index": 15,
-  "drawScale": 1.5,
-  "shape": {
-    "bladesPerCushion": [
-      30,
-      90
-    ],
-    "cushionRadius": 0.2,
-    "cushionHeight": 0.05,
-    "bladeWidth": 0.01,
-    "flowersPerCushion": [
-      4,
-      16
-    ],
-    "stalkHeight": 0.08,
-    "stalkWidth": 0.003,
-    "headRadius": 0.02
-  },
-  "crown": {
-    "albedo": [
-      0.11,
-      0.09,
-      0.05
-    ],
-    "heightShare": 0.5
-  },
+  "note": "Bird's-foot trefoil, Lotus corniculatus: a low sprawling mat of small leaves with clusters of yellow pea flowers, tipped red in bud, then pods splayed like a bird's foot; food for the common blue butterfly and for bees. How it spreads: each plant sprawls from a deep taproot, its stems lying out across the turf, and does not root as it goes; it spreads by seed, the ripe pods twisting open in late summer and flinging seed a few meters. So it grows as many small mats scattered over the sandy turf rather than one bed. In the game: a mat widens about a meter every four or five days in spring and summer and rests in winter; seeds start new mats up to five meters off often through summer, less in autumn. A mat: a cover plant (recipes/world/growth.json cover), so a share per square meter rather than plants one by one (src/world/growth/cover.js matHour), drawn as a low carpet of stacked shells (mat-shells.wgsl, src/render/passes/mats.js). A machair plant of the meadow islet (B3a, Matt's pick of October 31, 2026): it comes only with the islet, planted as clumps on its turf when it rises (recipes/land/meadow-islet.json starters), never volunteers and is not in the Plant tool, so it stays the islet's own. habitat: shoreM is height above mean sea level; sand the painted sand share. growth: each square fills ratePerH of the gap toward how well the mat likes the ground each game hour, times seasonRate [spring, summer, autumn, winter] (it rests in winter). spread: planted (only ever planted, so its map is absent until the first clump); it creeps only into a square beside one at least fromShare full; with chance jumpPerH an hour, times jumpSeason (seed is set after flowering), a seed lands 2 to jumpM meters off a stand (jumpTries landings tried) and starts a patch jumpStart of full where the ground suits it at least jumpMinSuit; plantStart is how full a planted square starts; shadedBy lowers its target where the painted turf is thick (grass shades it out); grassYield is how much the grass gives way where it is full. Mats share the ground: one never grows past the room the others leave, and the first to hold a square keeps it. mat (the look, findable scale, about 1.5 times real): heightM the carpet's height at full cover; leafM the size of one leaf clump in the pattern; flowerM the size of a flower spot and flowerShare how many of the top spots flower while in flower (flowering, in season units 0 spring .. 4); edgeM the size of the wobble at a patch's edge; farTint how much its flowers tint it far off while in flower (from above it reads as a drift of their color). season: physical albedo (linear) per season, blended through the year; flower the flowers' albedo. dormant: in season units, when it sits low and dark.",
   "habitat": {
     "sand": [
       0.35,
@@ -73,25 +48,71 @@
     ]
   },
   "growth": {
-    "ratePerH": 0.04,
+    "ratePerH": 0.009,
     "seasonRate": [
       1,
-      0.8,
-      0.45,
+      1,
+      0.4,
+      0
+    ]
+  },
+  "spread": {
+    "planted": true,
+    "fromShare": 0.55,
+    "jumpPerH": 0.02,
+    "jumpSeason": [
+      0,
+      1,
+      0.6,
       0
     ],
-    "floor": 0.5,
-    "stages": {
-      "sproutH": 4,
-      "youngSize": 0.25,
-      "matureSize": 0.7
+    "jumpM": 5,
+    "jumpTries": 8,
+    "jumpMinSuit": 0.6,
+    "jumpStart": 50,
+    "plantStart": 150,
+    "shadedBy": 0.4,
+    "grassYield": 0.5,
+    "creepChance": 0.06,
+    "patchM": 2.5,
+    "patchiness": 0.75
+  },
+  "mat": {
+    "heightM": 0.08,
+    "leafM": 0.018,
+    "flowerM": 0.026,
+    "flowerShare": 0.4,
+    "edgeM": 0.4,
+    "farTint": 0.3
+  },
+  "season": {
+    "albedo": {
+      "spring": [
+        0.11,
+        0.18,
+        0.06
+      ],
+      "summer": [
+        0.11,
+        0.17,
+        0.06
+      ],
+      "autumn": [
+        0.13,
+        0.15,
+        0.06
+      ],
+      "winter": [
+        0.1,
+        0.11,
+        0.06
+      ]
     },
-    "lowSuit": 0.15,
-    "lowHours": 48,
-    "shrinkPerH": 0.004,
-    "seedDieHours": 24,
-    "drownDepthM": 0.03,
-    "drownHours": 48
+    "flower": [
+      0.78,
+      0.55,
+      0.05
+    ]
   },
   "flowering": [
     0.9,
@@ -101,77 +122,9 @@
     3.05,
     3.95
   ],
-  "phenology": {
-    "jitterDays": 2,
-    "note": "each plant keeps its own calendar, offset from the species by up to jitterDays game days either way (hash of the plant id; src/world/growth/phenology.js)"
-  },
-  "spread": {
-    "kind": "seed",
-    "everyH": 48,
-    "distanceM": [
-      0.5,
-      2.0
-    ],
-    "minSuit": 0.6,
-    "minSpacingM": 0.45,
-    "maxCount": 30
-  },
-  "starter": {
-    "count": 3,
-    "minSuit": 0.8,
-    "spacingM": 1.5
-  },
-  "season": {
-    "albedo": {
-      "spring": [
-        0.07,
-        0.13,
-        0.05
-      ],
-      "summer": [
-        0.07,
-        0.12,
-        0.045
-      ],
-      "autumn": [
-        0.09,
-        0.1,
-        0.05
-      ],
-      "winter": [
-        0.08,
-        0.08,
-        0.05
-      ]
-    },
-    "flower": [
-      0.78,
-      0.55,
-      0.05
-    ],
-    "stalk": [
-      0.08,
-      0.1,
-      0.05
-    ]
-  },
   "outputs": {
     "cover": {
       "trefoil": 1
     }
-  },
-  "wind": {
-    "sway": 0.2
-  },
-  "look": {
-    "sproutM": 0.03,
-    "seedBlades": 6,
-    "heightVar": 0.3,
-    "radiusMin": 0.35,
-    "gustM": 6,
-    "gustSpeed": 2.5,
-    "rootShade": 0.45,
-    "wetDarken": 0.8,
-    "pixelWidth": 1.0
   }
 }

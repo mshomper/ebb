@@ -10,6 +10,7 @@ import { createWaterPass } from '../render/passes/water.js';
 import { createFallsPass } from '../render/passes/falls.js';
 import { createGrassPass } from '../render/passes/grass.js';
 import { createFloraPass } from '../render/passes/flora.js';
+import { createMatsPass } from '../render/passes/mats.js';
 
 /** @param {import('./context.js').AppContext} ctx */
 export function start(ctx) {
@@ -38,9 +39,11 @@ export function start(ctx) {
     terrain, recipe: covers.rushes, terrainRecipe, seed: subSeed(seed, 'rushes'), tier: tierSettings, kind: 'rushes',
     water: { depthTextures: water.sim.depthTextures, current: () => water.sim.current }, cover: growth.coverTex,
   });
+  // The meadow islet's mats (B3a): thyme, clover and trefoil as low carpets, where the mat map holds them.
+  const matsPass = createMatsPass({ growth, terrain, recipes: covers, seed: subSeed(seed, 'mats'), tier: tierSettings });
   // Plants (docs 10): every species from the growth step's instances, after the grass.
   const floraPass = createFloraPass({ growth, terrain, water: { depthTextures: water.sim.depthTextures, current: () => water.sim.current }, recipes: flora, looks: growthRecipe.looks });
-  Object.assign(ctx, { terrainPass, grassPass, rushPass, floraPass });
+  Object.assign(ctx, { terrainPass, grassPass, rushPass, matsPass, floraPass });
 }
 
 /** @param {import('./context.js').AppContext} ctx */

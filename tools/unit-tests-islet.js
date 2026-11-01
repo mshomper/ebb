@@ -11,6 +11,9 @@ import { cleanIslet, emptyIslet } from '../src/world/islet/model.js';
 import { milestoneReached } from '../src/world/expansion.js';
 import { SECTIONS9, clean9 } from '../src/save/migrate-format9.js';
 import { tideParams, amplitude } from '../src/world/tide.js';
+import { coverHour } from '../src/world/growth/cover.js';
+import { HABITAT_CELLS } from '../src/world/growth/habitat.js';
+import { testMachair, grow } from './mat-machair.js';
 
 const G = 'islet';
 /** @param {string} p */
@@ -157,7 +160,10 @@ export function addIsletTests(test, assert, eq) {
     for (const sp of machair) {
       const rec = await load(`flora/${sp}`);
       eq(rec.id, sp, `${sp} has its recipe`);
-      assert(Gr.species.includes(sp), `${sp} is in growth's list`);
+      const mat = ['thyme', 'clover', 'trefoil'].includes(sp);
+      // Thyme, clover and trefoil are mats (cover plants drawn as shells); harebell and bedstraw plants.
+      assert(mat ? Gr.cover.includes(sp) && rec.spread.planted === true : Gr.species.includes(sp), `${sp} is in growth's ${mat ? 'cover' : 'species'} list`);
+      if (mat) eq(J.species[sp].kind, 'cover', `${sp}'s page is a cover page`);
       assert(!Gr.volunteers.order.includes(sp), `${sp} never volunteers on the pond island`);
       eq(rec.plantTool, false, `${sp} is not in the Plant tool`);
       assert(J.species[sp] && J.order.includes(sp), `${sp} has a journal page`);
@@ -167,5 +173,49 @@ export function addIsletTests(test, assert, eq) {
     // None of the pond island's own plants are planted on it: its biome is its own.
     const own = R.starters.clumps.map((/** @type {any} */ c) => c.sp).filter((/** @type {string} */ sp) => sp !== 'flax');
     assert(own.every((/** @type {string} */ sp) => machair.includes(sp)), 'only machair plants as its starters');
+  });
+
+  test(G, 'the mats: none until planted, then thyme, clover and trefoil spread by the season, sharing the ground', async () => {
+    const growth = await load('world/growth');
+    const covers = Object.fromEntries(await Promise.all(growth.cover.map(async (/** @type {string} */ sp) => [sp, await load(`flora/${sp}`)])));
+    const env = { seed: 7, recipes: { growth: { ...growth, cover: growth.cover.filter((/** @type {string} */ s) => s !== 'rushes') }, covers } };
+    const hab = testMachair();
+    // Nothing planted: no mat map at all, so the pond island's growth state is as it was.
+    const none = coverHour({ cover: {} }, hab, env, 100, 1);
+    eq(Object.keys(none?.cover ?? {}).length, 0, 'no mat map before any is planted');
+    const N = HABITAT_CELLS;
+    /** @type {Record<string, Uint8Array>} */ const maps = {};
+    const plant = (/** @type {string} */ sp, /** @type {number} */ i, /** @type {number} */ j) => {
+      const m = new Uint8Array(N * N);
+      for (const [di, dj] of [[0, 0], [1, 0], [0, 1]]) m[(j + dj) * N + i + di] = covers[sp].spread.plantStart;
+      maps[sp] = m;
+    };
+    plant('thyme', 50, 66); plant('trefoil', 55, 84); plant('clover', 85, 75);
+    const area = (/** @type {Uint8Array} */ m) => m.reduce((a, v) => a + (v > 64 ? 1 : 0), 0);
+    const autumn = grow(hab, env, maps, 27, 15);
+    const winter = grow(hab, env, autumn, 42, 14);
+    const summer = grow(hab, env, winter, 56, 28);
+    for (const sp of ['thyme', 'clover', 'trefoil']) {
+      assert(area(autumn[sp]) > 3, `${sp} spreads through its first autumn`);
+      eq(area(winter[sp]), area(autumn[sp]), `${sp} rests through winter`);
+      assert(area(summer[sp]) > 2 * area(autumn[sp]), `${sp} spreads on through spring and summer`);
+    }
+    // Clover makes the beds: it outgrows the others and fills most of the grassy patch by summer.
+    assert(area(summer.clover) > area(summer.thyme) && area(summer.clover) > area(summer.trefoil), 'clover spreads fastest');
+    assert(area(summer.clover) > 450, `clover makes a bed of hundreds of square meters by its second summer (${area(summer.clover)})`);
+    // Thyme keeps to the open sand (grass shades it out); nothing grows off the open ground.
+    let thymeInPatch = 0, outside = 0, over = 0;
+    for (let k = 0; k < N * N; k++) {
+      const i = k % N;
+      if (summer.thyme[k] > 64 && i >= 72 && hab.open[k]) thymeInPatch++;
+      if (!hab.open[k] && (summer.thyme[k] || summer.clover[k] || summer.trefoil[k])) outside++;
+      if (summer.thyme[k] + summer.clover[k] + summer.trefoil[k] > 255) over++;
+    }
+    eq(thymeInPatch, 0, 'no thyme mat in the grassy patch');
+    eq(outside, 0, 'no mat off the open ground');
+    eq(over, 0, 'mats never hold more than a whole square between them');
+    // The same island grows the same way.
+    const again = grow(hab, env, maps, 27, 15);
+    eq(Array.from(again.clover).join(), Array.from(autumn.clover).join(), 'seeded: the same clover again');
   });
 }
