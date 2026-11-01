@@ -1,0 +1,14 @@
+{
+  "type": "loading",
+  "version": 1,
+  "note": "The loading screen (src/ui/loading.js, index.html) while the island is made. lines: [share of the start-up steps done (src/app/systems.js), the line shown from then]; the first line is also written in index.html so it shows before anything loads. fadeS: how long the screen takes to fade once the island shows (kept in step with loading.css).",
+  "lines": [
+    [0, "Raising the island"],
+    [0.12, "Filling the sea"],
+    [0.22, "Waking the creatures"],
+    [0.3, "Laying out the shore"],
+    [0.5, "Setting out the camp"],
+    [0.85, "Lighting the sky"]
+  ],
+  "fadeS": 0.9
+}

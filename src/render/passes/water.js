@@ -57,7 +57,11 @@ export function createWaterPass(opts) {
     });
     f[52] = opts.seaExtent; f[53] = recipe.sim.dryDepthM;
     f[54] = opts.seabed.y; f[55] = L.openSeaFloorSlope;
-    f.set(opts.seabed.albedo, 56); f[59] = opts.seabed.wetDarkening;
+    // The stand-in floor beyond the terrain, scaled to match the shaded terrain where they meet;
+    // the flat terrain floor fades to it over openFloorFadeM (f[107]).
+    const albedoK = L.openFloorAlbedo ?? 1;
+    f.set(opts.seabed.albedo.map((/** @type {number} */ a) => a * albedoK), 56); f[59] = opts.seabed.wetDarkening;
+    f[107] = L.openFloorFadeM ?? 0.5;
     f[60] = L.coherentDepthM[0]; f[61] = L.coherentDepthM[1];
     f[62] = L.glossyDepthM[0]; f[63] = L.glossyDepthM[1];
     f[66] = L.sheetDepthM[0]; f[67] = L.sheetDepthM[1];

@@ -1,7 +1,7 @@
 {
   "type": "quality-tiers",
   "version": 1,
-  "note": "Quality tiers (docs/19). ebb is desktop and laptop only (October 21, 2026): medium (laptops, integrated graphics) is the floor the auto-pick chooses and the design target for the lightest machine; low is never picked at startup and stays only as the emergency fallback the live step down can reach, tuned for 60 fps on a weak laptop. ultra is for strong desktop GPUs: picked when a discrete GPU passes the startup probe (GPU p95 under probeMaxMs while the island fades in), else high. lodDistances: terrain mesh LOD switch distances (m); fallsMax, fallsRows: the most waterfall lips drawn and the rows down each curtain (M2, water.json falls); fallsFluid: droplets for the volumetric falls near the eye, how near (m; 0 particles: curtains only), and the share of the render size its images are drawn at; cliffDetailM: chunks holding a cliff face (M2 Cliff tool) draw and cast shadows at full mesh detail within this distance (m); waterDetailFadeM: ripples and glints calm down by this distance. waterSSR: screen-space reflection of the island in water (null: sky probe only); steps along the ray plus refine bisection steps. skyProbeSize: sky probe cube face size (px). causticLayers: caustic pattern layers on underwater ground (0 off). matLayers: copies of the ground drawn for the meadow islet's mats near the eye (mat-shells.wgsl; 1 is the flat color only).",
+  "note": "Quality tiers (docs/19). ebb is desktop and laptop only (October 21, 2026): medium (laptops, integrated graphics) is the floor the auto-pick chooses and the design target for the lightest machine; low is never picked at startup and stays only as the emergency fallback the live step down can reach, tuned for 60 fps on a weak laptop. ultra is for strong desktop GPUs: picked when a discrete GPU passes the startup probe (GPU p95 under probeMaxMs while the island fades in), else high. lodDistances: terrain mesh LOD switch distances (m); fallsMax, fallsRows: the most waterfall lips drawn and the rows down each curtain (M2, water.json falls); fallsFluid: droplets for the volumetric falls near the eye, how near (m; 0 particles: curtains only), and the share of the render size its images are drawn at; cliffDetailM: chunks holding a cliff face (M2 Cliff tool) draw and cast shadows at full mesh detail within this distance (m); waterDetailFadeM: ripples and glints calm down by this distance. waterSSR: screen-space reflection of the island in water (null: sky probe only); steps along the ray plus refine bisection steps. skyProbeSize: sky probe cube face size (px). causticLayers: caustic pattern layers on underwater ground (0 off). matLayers: copies of the ground drawn for the meadow islet's mats near the eye (mat-shells.wgsl; 1 is the flat color only). matSteps: the most steps each copy marches down through the gap to the copy below at a low look, so the gaps never show as bands (1 off; from above one step is always enough).",
   "probe": { "seconds": 2, "settleFrames": 30 },
   "dynamicRes": {
     "note": "Dynamic resolution (docs 04, 19): the render scale drops by step after overFrames frames in a row over the tier's gpuBudgetMs, and climbs back by step after recoverFrames frames in a row under recoverBelow times the budget, between the tier's renderScaleMin and renderScale. Below a scale of 1 the internal size snaps to snapPx pixels so textures are not re-made every frame. GPU time comes from timestamps, else from onSubmittedWorkDone round trips; if neither has reported for staleFrames frames, the frame time is judged against the tier's frame period times frameSlack. stepDown: after atMinSeconds at the minimum scale with the last overFrames frames mostly over budget, the tier steps down once a session, with a calm note shown noteSeconds (medium to low is the last step).",
@@ -16,7 +16,7 @@
     "worth": { "note": "Each step down must earn its blur (S8d-2): after a step, settleFrames are skipped, then the median GPU time over frames frames is compared with the frames before the step; a step that saved less than minGain (a fraction) is undone and no lower scale is tried for holdSeconds. Where the cost is in what is drawn rather than in pixels, a smaller picture only looks worse.", "settleFrames": 10, "frames": 45, "minGain": 0.06, "holdSeconds": 120 }
   },
   "tiers": {
-    "ultra": { "matLayers": 10,
+    "ultra": { "matLayers": 10, "matSteps": 8,
       "targetFps": 60, "calmFps": 30, "gpuBudgetMs": 12, "probeMaxMs": 4,
       "renderScale": 1.0, "renderScaleMin": 0.67,
       "maxDpr": 2, "maxMegapixels": 8.3,
@@ -30,7 +30,7 @@
       "lodDistances": [120, 240], "cliffDetailM": 90, "fallsMax": 4096, "fallsRows": 12, "fallsFluid": { "particles": 49152, "nearM": 45, "scale": 1 }, "waterDetailFadeM": 250, "waterSSR": { "steps": 24, "refine": 5 }, "skyProbeSize": 64, "causticLayers": 2,
       "ground": { "mapSize": 1024, "hexTiling": true, "triplanar": true, "specular": "full", "puddles": true, "anisotropy": 16, "detailFadeMeters": 260 }
     },
-    "high": { "matLayers": 8,
+    "high": { "matLayers": 8, "matSteps": 6,
       "targetFps": 60, "calmFps": 30, "gpuBudgetMs": 12,
       "renderScale": 1.0, "renderScaleMin": 0.67,
       "maxDpr": 2, "maxMegapixels": 3.7,
@@ -44,7 +44,7 @@
       "lodDistances": [45, 95], "cliffDetailM": 60, "fallsMax": 2048, "fallsRows": 10, "fallsFluid": { "particles": 32768, "nearM": 35, "scale": 0.75 }, "waterDetailFadeM": 140, "waterSSR": { "steps": 16, "refine": 4 }, "skyProbeSize": 64, "causticLayers": 2,
       "ground": { "mapSize": 1024, "hexTiling": true, "triplanar": true, "specular": "full", "puddles": true, "anisotropy": 16, "detailFadeMeters": 140 }
     },
-    "medium": { "matLayers": 5,
+    "medium": { "matLayers": 5, "matSteps": 4,
       "targetFps": 60, "calmFps": 30, "gpuBudgetMs": 13,
       "renderScale": 0.85, "renderScaleMin": 0.6,
       "maxDpr": 2, "maxMegapixels": 2.1,
@@ -58,7 +58,7 @@
       "lodDistances": [45, 95], "cliffDetailM": 45, "fallsMax": 1024, "fallsRows": 8, "fallsFluid": { "particles": 16384, "nearM": 25, "scale": 0.5 }, "waterDetailFadeM": 120, "waterSSR": null, "skyProbeSize": 32, "causticLayers": 2,
       "ground": { "mapSize": 1024, "hexTiling": true, "triplanar": true, "specular": "full", "puddles": true, "anisotropy": 8, "detailFadeMeters": 60 }
     },
-    "low": { "matLayers": 1,
+    "low": { "matLayers": 1, "matSteps": 1,
       "targetFps": 60, "calmFps": 30, "gpuBudgetMs": 14,
       "renderScale": 0.75, "renderScaleMin": 0.5,
       "maxDpr": 2, "maxMegapixels": 1.2,

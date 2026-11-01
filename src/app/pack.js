@@ -61,6 +61,14 @@ export async function start(ctx) {
   // The knife on the walker's belt, once given.
   const belt = createForagerBelt({ recipe: foragerRecipe, figure: figureRecipe, walk, has: hasKnife });
   sim.addSystem({ id: 'forager-belt', tick() { belt.update(); } });
+  // Flax steeping in the shallows (F1): where a minnow school keeps clear, for school.js.
+  let avoidKey = '';
+  const publishAvoid = () => {
+    const a = gather.steepAvoid(), k = JSON.stringify(a);
+    if (k !== avoidKey) { avoidKey = k; updateStore('steepAvoid', () => a); }
+  };
+  publishAvoid();
+  subscribeStore('gather', publishAvoid);
   on('world:ticked', () => gather.expire());
   on('world:caught-up', () => gather.expire());
   Object.assign(ctx, { piles, pack, gather, belt });

@@ -22,6 +22,8 @@ import { createReturn } from './reveal-return.js';
 import { createSchool, poseSchool } from './school.js';
 import { createPatrol, posePatrol } from './patrol.js';
 import { createBask, poseBask } from './bask.js';
+import { eelBody, poseEel } from './eel.js';
+import { createEelSwim, shoreNear } from './eel-swim.js';
 import { cellCenter } from '../ecology/habitat.js';
 import { keyOf } from '../species.js';
 import { turtleId } from './bonds.js';
@@ -70,7 +72,10 @@ export function qmul(p, q) {
 export function createSchools(opts) {
   const { world, recipe, water, ripples, camera } = opts;
   const key = keyOf(recipe);
-  const body = recipe.body, M = recipe.motion, P = recipe.presence, find = recipe.find;
+  // Eels (eel.js) are built in code from a few numbers; their motion reads the body's length and girth.
+  const eel = recipe.motion.kind === 'eel';
+  const body = eel ? eelBody(recipe.body) : recipe.body, P = recipe.presence, find = recipe.find;
+  const M = eel ? { ...recipe.motion, lengthM: body.lengthM, radiusM: body.radiusM } : recipe.motion;
   const variants = Math.max(1, body.variants ?? 1);
   const lods = recipe.bake.lods ?? [{ cellM: recipe.bake.cellM }];
   // Wet eyes for a body whose recipe lists eye bones (the turtle's).
@@ -123,6 +128,9 @@ export function createSchools(opts) {
     // Plants a turtle grazes (lily leaves, pondweed: motion.habits.grazeOn).
     food: () => (world.state?.growth?.plants ?? []).filter((/** @type {any} */ p) => M.habits?.grazeOn?.[p.sp] && p.stage >= 1)
       .map((/** @type {any} */ p) => ({ x: p.x, z: p.z, sp: p.sp })),
+    // Flax steeping in the shallows (F1, gather.steepAvoid published by src/app/pack.js as the
+    // store slice steepAvoid): a school keeps clear of it. Minnows only: motion.avoidSteeping.
+    avoid: () => M.avoidSteeping ? getStore('steepAvoid') ?? [] : [],
     // Where you are, for a turtle at the periscope to turn and face: on foot, or the camera's eye.
     viewer: () => opts.you?.() ?? camera.eye,
   };
@@ -132,6 +140,41 @@ export function createSchools(opts) {
   // school rises to meet you at the bank, or a dragonfly comes and rests on your hat. On foot only;
   // above, the note says it.
   const K = recipe.known ?? {};
+  // Eels that come (`creature:arrived`, `creature:joined`) come up out of the sea on the nearest
+  // shore and cross the grass to their pond (eel-swim.js cross), watched or not yet drawn.
+  /** Eels still to cross, by group id. @type {Map<number, number>} */ const crossing = new Map();
+  const crossNow = (/** @type {number} */ id) => {
+    const s = /** @type {any} */ (schools.get(id)), n = crossing.get(id);
+    if (!s || !n) return;
+    crossing.delete(id);
+    const c = s.centre(), from = shoreNear(world.env.habitat?.(), c.x, c.z);
+    if (from) s.cross(Math.min(n, s.fish.length), from);
+  };
+  // An eel's visit (B3 S0, `visit:start` with its show block): one eel comes in from the sea at
+  // the shore spot, noses up the wet ground and slips back, again every show.againS seconds until
+  // the show's lastsH game hours are over (eel-swim.js visit).
+  /** @type {{ swim: any, land: { x: number, z: number }, sea: { x: number, z: number }, untilH: number, againS: number, waitS: number } | null} */
+  let visitor = null;
+  if (eel) on('visit:start', (/** @type {any} */ v) => {
+    if (v?.sp !== key) return;
+    const land = { x: v.x, z: v.z };
+    let sea = null;
+    for (let r = 0.6; r <= 3 && !sea; r += 0.3) for (let k = 0; k < 16 && !sea; k++) {
+      const a = (k / 16) * Math.PI * 2, x = land.x + Math.cos(a) * r, z = land.z + Math.sin(a) * r;
+      if (water.sampleLive(x, z).depth >= M.minDepthM * 2) sea = { x, z };
+    }
+    if (!sea) return;
+    const swim = createEelSwim({ id: -1, seed: world.env.seed ^ hash32(v.day ?? 0, 0xee5), count: 1, home: sea, deep: sea, size: body.displayScale ?? 1, M, env });
+    swim.visit(land, sea);
+    visitor = { swim, land, sea, untilH: (v.hour ?? hourIndex()) + (v.show?.lastsH ?? 1), againS: v.show?.againS ?? 30, waitS: 0 };
+  });
+  if (eel) on('world:ticked', (/** @type {{ events?: any[] }} */ p) => {
+    for (const e of p.events ?? []) {
+      if (e.payload?.species !== key || (e.name !== 'creature:arrived' && e.name !== 'creature:joined')) continue;
+      crossing.set(e.payload.id, (crossing.get(e.payload.id) ?? 0) + (e.payload.added ?? e.payload.count ?? 1));
+      crossNow(e.payload.id);
+    }
+  });
   on('world:ticked', (/** @type {{ events?: any[] }} */ p) => {
     if (!(p.events ?? []).some((e) => e.name === 'creature:known' && e.payload?.species === key)) return;
     const me = opts.you?.() ?? null;
@@ -174,10 +217,11 @@ export function createSchools(opts) {
     for (const g of groups) {
       const n = Math.max(1, Math.floor(g.count * share));
       const s = schools.get(g.id);
-      if (s) { s.rehome({ x: g.x, z: g.z }, deepOf(g)); if (s.fish.length !== n) s.resize(n); continue; }
-      const make = M.kind === 'patrol' ? createPatrol : M.kind === 'bask' ? createBask : createSchool;
+      if (s) { s.rehome({ x: g.x, z: g.z }, deepOf(g)); if (s.fish.length !== n) s.resize(n); crossNow(g.id); continue; }
+      const make = M.kind === 'patrol' ? createPatrol : M.kind === 'bask' ? createBask : eel ? createEelSwim : createSchool;
       schools.set(g.id, /** @type {any} */ (make)({ id: g.id, seed: world.env.seed ^ hash32(key.length, 0x5c), count: n, home: { x: g.x, z: g.z },
         deep: deepOf(g), size: body.displayScale ?? 1, M, env, bones: body.bones }));
+      crossNow(g.id);
     }
   }
 
@@ -195,11 +239,11 @@ export function createSchools(opts) {
     /** @type {import('../../render/passes/creatures.js').Being[]} */ const beings = [];
     const eye = camera.eye;
     const size = body.displayScale ?? 1;
-    for (const s of schools.values()) {
-      const back = comeBack.at(s.id, t);
+    for (const s of visitor ? [...schools.values(), visitor.swim] : schools.values()) {
+      const back = s === visitor?.swim ? { k: 1 } : comeBack.at(s.id, t);
       if (back.k <= 0) continue;
       s.fish.forEach((f, i) => {
-        if (beings.length >= budget) return;
+        if (beings.length >= budget || /** @type {any} */ (f).mode === 'wait' || /** @type {any} */ (f).mode === 'gone') return;
         const id = s.id * 1000 + i;
         const v = hash32(id, 0x7a) % variants;
         const rig = rigs[v] ?? rigs.find((r) => r) ?? null;
@@ -216,6 +260,7 @@ export function createSchools(opts) {
           let moves;
           if (M.kind === 'patrol') moves = posePatrol(rig, /** @type {any} */ (f), M, q, axisAngle);
           else if (M.kind === 'bask') moves = poseBask(rig, /** @type {any} */ (f), M, q, axisAngle);
+          else if (eel) moves = poseEel(rig, /** @type {any} */ (f), M, q, axisAngle);
           else moves = poseSchool(rig, f, M, q, axisAngle);
           b = new Float32Array(MAX_BONES * 16);
           poseSkeleton(rig, moves, b, 0);
@@ -403,7 +448,12 @@ export function createSchools(opts) {
         } else if (!s.feeding && !fd.treat) foods = foods.filter((g) => g !== fd);
       }
       acc = Math.min(acc + f.realDt, stepS * 6);
-      while (acc >= stepS) { clockS += stepS; for (const s of schools.values()) s.step(stepS); acc -= stepS; }
+      while (acc >= stepS) { clockS += stepS; for (const s of schools.values()) s.step(stepS); visitor?.swim.step(stepS); acc -= stepS; }
+      // The visiting eel looks again until its show is over, then it is gone for good.
+      if (visitor?.swim.gone) {
+        if (display() / SECONDS_PER_HOUR >= visitor.untilH) visitor = null;
+        else if ((visitor.waitS += f.realDt) >= visitor.againS) { visitor.waitS = 0; visitor.swim.visit(visitor.land, visitor.sea); }
+      }
       // Turtles that have taken a treat from the edge (bask.js): each that ate knows you that much
       // better (bonds.js), and the treat is off the ground.
       for (const s of schools.values()) {

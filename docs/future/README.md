@@ -33,6 +33,7 @@
 | [F16 The sea cave and the Hollow](16-the-sea-cave.md) | Leaning (Matt's design; for a later date) | An optional cave: a fixed mouth, a rubble passage to the sleeping bear, and an arch that needs a made weapon, leading to the Hollow's changing floors. Enemies scale to four skill tracks and the gear you've made; the lantern is the limit. Pools of weapons, lanterns and coats; its own trail |
 | [F17 Fishing and the angler's chart](17-fishing-and-the-anglers-chart.md) | Decided (direction; nothing built) | A made line, two worms as bait, fish sketched and let go, one generator for every fish, a fixed roster per island, twelve rare species, and a chart that inks in as you sketch and hands out riddles; the aquarium waits for a living space |
 | [F20 Meadow stories](20-meadow-stories.md) | Decided (direction; honeyed teas Leaning) | The meadow's three arrivals as short stories with one shape (first sign, visit, a home you make, the gift): honeybees and a woven, clay-daubed skep, honey in clay bowls and honeyed teas for the Hollow; butterflies from eggs on the nettles; a robin at the shovel that nests once there's a hedge and a wall; and three without creatures: rye from a boat parcel, a midsummer marker stone and a kite |
+| [F19 The light on the stack](19-the-light-on-the-stack.md) | Decided (direction; nothing built) | The story that opens the Hollow early: a terraced sea stack offshore from day 0, lights at dusk, a causeway that rises on spring day 7 with a pause to show it, an old lantern and the lamplighter's first note in the mouth, and the bear's passage behind rubble, a grate the old keeper's key opens and a locked box |
 
 ## How they connect
 
@@ -72,6 +73,8 @@ flowchart TB
   F12 --> F13
   F13 --> F20[F20 Meadow stories]
   F20 --> F16
+  F14 --> F19[F19 The light on the stack]
+  F19 --> F16
 ```
 
 ## Working rule

@@ -47,6 +47,7 @@ import { mountHoverTag } from './ui/hover-tag.js';
 import { mountPack } from './ui/pack.js';
 import { mountGroundHere } from './ui/ground-here.js';
 import { mountPhoto } from './ui/photo.js';
+import { hideLoading, dropLoading } from './ui/loading.js';
 
 /** Shown in the corner badge when no build.json or local server info is available. */
 export const BUILD = 'm1-s3-palette';
@@ -79,6 +80,8 @@ let hudLayer = null;
 // The game keeps your island (src/save); tool pages that start the app do not.
 startApp(canvas, { onDeviceLost: (rebuilding) => showRebuildingNote(rebuilding), save: true, build: BUILD })
   .then(async (r) => {
+    // The loading screen (src/ui/loading.js) fades as the island shows, or goes at once for a card.
+    if (r.ok) hideLoading(); else dropLoading();
     if (r.ok) { islandInfo = /** @type {any} */ (r).island ?? null; saveInfo = /** @type {any} */ (r).save ?? null; }
     if (!r.ok && r.reason === 'elsewhere') { showElsewhere(r.takeOver, false); return; }
     if (!r.ok && r.reason === 'damaged') { showDamaged(r.save, r.islands); return; }
@@ -223,6 +226,7 @@ startApp(canvas, { onDeviceLost: (rebuilding) => showRebuildingNote(rebuilding),
   })
   .catch((err) => {
     console.error(err);
+    dropLoading();
     showNoWebGPU('device-failed');
   })
   .finally(async () => showBuildTag(await build, hudLayer));

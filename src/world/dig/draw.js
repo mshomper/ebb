@@ -19,33 +19,40 @@ const IDENTITY = new Float32Array([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 
  */
 export function spoilMeshes(R) {
   const L = R.look, S = L.spoil;
+  // Each shape is baked once and coloured per layer (baking per layer cost seconds at start-up).
+  const shapes = [];
+  for (let i = 0; i < S.shapes; i++) {
+    const h = hash32(S.seed, i);
+    const r = (/** @type {number} */ k) => u01(hash32(h, k));
+    /** @type {any[]} */ const prims = [{ type: 'ellipsoid', c: [0, 0, 0], r: [0.5, 0.2, 0.38], rot: [0, 0, 0], region: 'rock' }];
+    // A few clods and lumps blended in, so it reads as dug earth, not a dome.
+    for (let l = 0; l < 5; l++) {
+      const a = (l / 5 + r(10 + l) * 0.15) * Math.PI * 2;
+      prims.push({ type: 'ellipsoid', c: [Math.cos(a) * 0.26, 0.08 + r(20 + l) * 0.08, Math.sin(a) * 0.18],
+        r: [0.16 + r(30 + l) * 0.08, 0.08 + r(40 + l) * 0.05, 0.13], rot: [0, r(50 + l) * 90, 0], k: 0.05, region: 'rock' });
+    }
+    const b = bakeBody({ prims, albedo: { rock: [1, 1, 1], back: [1, 1, 1] } }, S.cellM);
+    const V = b.vertices;
+    let x0 = Infinity, x1 = -Infinity;
+    for (let v = 0; v < b.count; v++) { x0 = Math.min(x0, V[v * 9]); x1 = Math.max(x1, V[v * 9]); }
+    // Cut at the ground: only the part above y = 0 shows; fit to 1 unit across.
+    const w = x1 - x0;
+    const shade = new Float32Array(b.count);
+    for (let v = 0; v < b.count; v++) {
+      const o = v * 9;
+      V[o] /= w; V[o + 2] /= w; V[o + 1] = Math.max(0, V[o + 1]) / w;
+      const low = Math.max(0, 1 - V[o + 1] / 0.04);
+      shade[v] = (1 - 0.35 * low) * (0.9 + 0.2 * r(60 + (v % 7)));
+    }
+    shapes.push({ b, shade });
+  }
   /** @type {Record<string, any[]>} */ const out = {};
   for (const [layer, col] of Object.entries(L.walls)) {
-    out[layer] = [];
-    for (let i = 0; i < S.shapes; i++) {
-      const h = hash32(S.seed, i);
-      const r = (/** @type {number} */ k) => u01(hash32(h, k));
-      /** @type {any[]} */ const prims = [{ type: 'ellipsoid', c: [0, 0, 0], r: [0.5, 0.2, 0.38], rot: [0, 0, 0], region: 'rock' }];
-      // A few clods and lumps blended in, so it reads as dug earth, not a dome.
-      for (let l = 0; l < 5; l++) {
-        const a = (l / 5 + r(10 + l) * 0.15) * Math.PI * 2;
-        prims.push({ type: 'ellipsoid', c: [Math.cos(a) * 0.26, 0.08 + r(20 + l) * 0.08, Math.sin(a) * 0.18],
-          r: [0.16 + r(30 + l) * 0.08, 0.08 + r(40 + l) * 0.05, 0.13], rot: [0, r(50 + l) * 90, 0], k: 0.05, region: 'rock' });
-      }
-      const b = bakeBody({ prims, albedo: { rock: col, back: col } }, S.cellM);
-      const V = b.vertices;
-      let lo = Infinity, x0 = Infinity, x1 = -Infinity;
-      for (let v = 0; v < b.count; v++) { lo = Math.min(lo, V[v * 9 + 1]); x0 = Math.min(x0, V[v * 9]); x1 = Math.max(x1, V[v * 9]); }
-      // Cut at the ground: only the part above y = 0 shows; fit to 1 unit across.
-      const w = x1 - x0;
-      for (let v = 0; v < b.count; v++) {
-        const o = v * 9;
-        V[o] /= w; V[o + 2] /= w; V[o + 1] = Math.max(0, V[o + 1]) / w;
-        const low = Math.max(0, 1 - V[o + 1] / 0.04);
-        for (let c = 0; c < 3; c++) V[o + 6 + c] = col[c] * (1 - 0.35 * low) * (0.9 + 0.2 * r(60 + (v % 7)));
-      }
-      out[layer].push({ vertices: V, count: b.count, indices: b.indices });
-    }
+    out[layer] = shapes.map(({ b, shade }) => {
+      const V = b.vertices.slice();
+      for (let v = 0; v < b.count; v++) for (let c = 0; c < 3; c++) V[v * 9 + 6 + c] = col[c] * shade[v];
+      return { vertices: V, count: b.count, indices: b.indices };
+    });
   }
   return out;
 }

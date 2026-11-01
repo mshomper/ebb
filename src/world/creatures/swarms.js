@@ -129,6 +129,34 @@ const r4 = (v) => Math.round(v * 10000) / 10000;
 const rightPools = (pools, rec) => pools.filter((p) => p.fit !== false && p.bestScore >= rec.ecology.arrival.rightScore && roomOf(p, rec) >= rec.ecology.arrival.startCount);
 
 /**
+ * An arrival gate (ecology.arrival.gate; the eels, B3): they come only in the gate's seasons, on a
+ * day with rain (rain), and once the home the player shaped is made (home: state.homes[key], which
+ * the live shaped-ground watch writes at each hourly look, src/app/eels.js). Without a gate, always
+ * open. Pure. @param {any} state @param {any} A ecology.arrival @param {string} key
+ */
+export function gateOpen(state, A, key) {
+  const G = A.gate;
+  if (!G) return true;
+  if (G.seasons && !G.seasons.includes(state.seasons?.index ?? 0)) return false;
+  if (G.rain && !((state.weather?.today?.rainHours ?? 0) > 0)) return false;
+  if (G.home && !state.homes?.[key]?.met) return false;
+  return true;
+}
+
+/**
+ * With a gate that wants its home, only the pools at that home count (the pool whose deep spot lies
+ * within gate.homeM of it); none while there is no home. Pure.
+ * @param {any[]} pools @param {any} state @param {any} A @param {string} key @param {number} n the grid's side
+ */
+export function atHome(pools, state, A, key, n) {
+  const G = A.gate;
+  if (!G?.home) return pools;
+  const h = state.homes?.[key];
+  if (!h?.met) return [];
+  return pools.filter((p) => { const [x, z] = cellCenter(p.deepK ?? p.best, n); return Math.hypot(x - h.x, z - h.z) <= G.homeM; });
+}
+
+/**
  * One species' hour. @param {any} state @param {number} hourIndex @param {any} env @param {any} rec
  * @returns {{ state: any, events: { name: string, payload: any }[] }}
  */
@@ -149,7 +177,9 @@ export function swarmStep(state, hourIndex, env, rec) {
   /** @type {any[]} */ const pools = eco.pools ?? [];
 
   // Is some pool right for them now?
-  const right = rightPools(pools, rec);
+  const right = atHome(rightPools(pools, rec), state, A, key, n);
+  // Gated arrivals (the eels: a rainy autumn night, their home made) come and grow only when open.
+  const open = gateOpen(state, A, key);
   S.rightFor = right.length ? S.rightFor + 1 : 0;
   if (!S.right && S.rightFor >= A.rightHoldH) {
     S.right = true;
@@ -234,7 +264,7 @@ export function swarmStep(state, hourIndex, env, rec) {
     .sort((a, b) => b.bestScore - a.bestScore || a.best - b.best);
 
   if (S.phase === 'waiting') {
-    if (atHour && S.rightFor >= A.scoutAfterH && hourIndex >= S.cooldownUntil) {
+    if (atHour && open && S.rightFor >= A.scoutAfterH && hourIndex >= S.cooldownUntil) {
       if (stream(seed, 1, day).next() < A.scoutChance || S.waited + 1 >= A.maxWaitDays) {
         const free = freePools();
         if (free.length) {
@@ -256,8 +286,8 @@ export function swarmStep(state, hourIndex, env, rec) {
   } else {
     const season = Math.min(3, Math.max(0, state.seasons?.index ?? 0));
     if (atHour && A.growSeasons[season]) {
-      // Each content group grows toward what its pool holds.
-      for (const g of S.groups) {
+      // Each content group grows toward what its pool holds (a gated species only when its gate is open).
+      if (open) for (const g of S.groups) {
         const room = roomOf(poolOf.get(g.id), rec);
         if (g.mood < A.growMood || g.count >= room) continue;
         const added = Math.max(1, Math.ceil(A.growShare * (room - g.count)));
@@ -266,7 +296,7 @@ export function swarmStep(state, hourIndex, env, rec) {
       }
       // Now and then a group starts in another pool that suits them.
       const free = freePools();
-      if (free.length && stream(seed, 3, day).next() < A.newPoolChance) {
+      if (open && free.length && stream(seed, 3, day).next() < A.newPoolChance) {
         const g = newGroup(free[0]);
         events.push({ name: 'creature:joined', payload: pay({ id: g.id, x: g.x, z: g.z, count: g.count, total: total(S), added: g.count, pool: true }) });
       }

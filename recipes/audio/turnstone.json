@@ -1,0 +1,12 @@
+{
+  "type": "audio",
+  "id": "turnstone",
+  "version": 1,
+  "note": "The turnstones' voice (B3 wave 2; doc 17 'Procedural creature voices'; Matt, November 1, 2026: yes to their sounds). Made in code like the hen's (src/audio/voices/turnstone.js), not recordings, so there is no licence to carry. When: src/world/turnstones/index.js says each one, where it comes from, to the creatures bus, quiet in the soundscape (gainDb). chatter: the rapid staccato 'kitititit' a flock gives as it flushes and flies, from several birds at once (voices), each starting up to spreadS after the first: notes of noteS, gapS apart, pitch f0Hz (each bird its own within the range) dipping by droop over each note, voiced through a bright formant (formantHz, formantQ); the last few (tailNotes) slower (tailSlow) and lower. tuk: the short soft 'tuk' a feeding bird gives now and then, every tukEveryS seconds from the flock while they feed (none at roost or at night). murmur: a few soft twitters now and then at the roost (murmurEveryS). spatial: refDistance and rolloff of the placed chain.",
+  "tukEveryS": [5, 13],
+  "murmurEveryS": [14, 30],
+  "chatter": { "gainDb": -26, "voices": [2, 3], "spreadS": 0.35, "notes": [8, 14], "noteS": 0.032, "gapS": [0.036, 0.05], "f0Hz": [2300, 2900], "droop": 0.12, "formantHz": 3200, "formantQ": 2.2, "tailNotes": 3, "tailSlow": 1.6 },
+  "tuk": { "gainDb": -33, "notes": [1, 2], "noteS": 0.045, "gapS": [0.09, 0.14], "f0Hz": [1700, 2100], "droop": 0.18, "formantHz": 2400, "formantQ": 2.5 },
+  "murmur": { "gainDb": -36, "notes": [2, 4], "noteS": 0.04, "gapS": [0.12, 0.2], "f0Hz": [1900, 2400], "droop": 0.1, "formantHz": 2600, "formantQ": 2.5 },
+  "spatial": { "refDistance": 3, "rolloff": 1.1 }
+}

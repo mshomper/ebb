@@ -16,7 +16,8 @@ import { get, update } from '../../core/store.js';
 import { hash32 } from '../../core/rng.js';
 import { emitDeferred } from '../../core/events.js';
 import { dayIndexOf, SECONDS_PER_YEAR } from '../../core/clock.js';
-import { waterCellCenter } from '../water/grid.js';
+import { waterCellCenter, waterCellOf } from '../water/grid.js';
+import { WATER_CLASS } from '../water/summary.js';
 import { groundOfCell } from '../water/shore.js';
 import { strandLines } from '../water/strandline.js';
 import { tideParams } from '../tide.js';
@@ -24,6 +25,7 @@ import { seasonOfTide, weatherOfTide } from '../finds/strand.js';
 import { gatherSeed, spotsAt, spotsNear, share, wordFor } from './spots.js';
 import { taken as takenOf, record, expire, cap } from './events.js';
 import { cleanAshes, spreadAsh, liveAshes, ashFresh } from './ashes.js';
+import { cleanRetting, laySteep, liftOne, bundleAt, isRetted, steepable, steepLine, roomToSteep, avoidOf } from './retting.js';
 import { partsOf, pickable, pick, outOfSeasonLine, coverPickable, coverPick, windowsOf, inWindow } from './plants.js';
 import { habitatCell } from '../growth/habitat.js';
 import { coverSpecies, coverTarget } from '../growth/cover.js';
@@ -51,6 +53,21 @@ export function createGather(o) {
   /** The ash patches spread on the ground (P2i, ashes.js). */
   const ashes = () => cleanAshes(get('gather')?.ashes);
   const AS = R.kinds?.ash?.spread ?? { patchM: 1.2, days: 14, max: 6 };
+  /** Flax steeping in the shallows (F1, retting.js). */
+  const bundles = () => cleanRetting(get('gather')?.retting);
+  const RT = R.retting ?? { hours: 72, max: 3, minDepthM: 0.04, maxDepthM: 0.5, avoidM: 2.5, tapM: 0.9, classes: ['still', 'slow'] };
+  const RW = W.retting ?? {};
+  const steepClasses = (RT.classes ?? ['still', 'slow']).map((/** @type {string} */ n) => /** @type {any} */ (WATER_CLASS)[n]);
+  /** @param {any[]} list */
+  const keepBundles = (list) => update('gather', (g) => ({ ...(g ?? { version: 1, events: [] }), retting: list }));
+  /** Can a bundle lie at a point: a pond's shallows (retting.js steepable)? @param {number} x @param {number} z */
+  function steepOk(x, z) {
+    const s = o.water.getSummary?.(), w = o.water.sampleLive?.(x, z);
+    if (!s?.rect || !w) return false;
+    const i = waterCellOf(x) - s.rect.x, j = waterCellOf(z) - s.rect.y;
+    const cls = i >= 0 && j >= 0 && i < s.rect.w && j < s.rect.h ? s.cls[j * s.rect.w + i] : WATER_CLASS.sea;
+    return steepable(w.depth ?? 0, steepClasses.includes(cls), RT);
+  }
 
   /** The strandlines lying now, newest first, with each one's tide, springness, season and day. */
   function linesNow() {
@@ -162,6 +179,14 @@ export function createGather(o) {
       out.unshift({ kind: h[0], name: o.pack.nameOf(h[0]), heap: i, x: h[1], z: h[2], left: h[4], word: o.pack.recipe.words.heap });
       lines.unshift(o.pack.recipe.words.heap);
     });
+    // Flax steeping in the shallows (F1): its line, and once retted, Lift out a handful of fibre.
+    const list = bundles(), bi = bundleAt(list, x, z, RT), hour = o.worldT() / 3600;
+    const steep = bi >= 0 ? steepLine(list[bi], hour, RT, RW) : null;
+    if (bi >= 0 && steep) {
+      const b = list[bi];
+      if (isRetted(b, hour, RT)) out.unshift({ kind: 'flax-fibre', name: RW.liftOut ?? 'Lift out', bundle: bi, x: b[0], z: b[1], left: b[3], word: steep });
+      lines.unshift(steep);
+    }
     // A plant's part in season (reed down).
     const pl = card?.sp ? plantOf(card) : null;
     // Look, don't pick (docs/future/13 PR-44): iris and marsh marigold are never gathered, but
@@ -202,7 +227,7 @@ export function createGather(o) {
       }
     }
     // The word for what you can take first; with nothing to take, the first spot's word.
-    return { gathers: out.slice(0, 2), word: out[0]?.word ?? lines[0] ?? null, lookOnly: null };
+    return { gathers: out.slice(0, 2), word: out[0]?.word ?? lines[0] ?? null, lookOnly: null, steep, steepAt: bi >= 0 ? [list[bi][0], list[bi][1]] : null };
   }
 
   /**
@@ -242,7 +267,8 @@ export function createGather(o) {
       const said = W.refused?.[g.lookOnly];
       if (said) emitDeferred('island:notice', { text: said, showS: R.refusedS ?? 6 });
     }
-    return { ...card, baseText: card.text, text, gathers: below && !arms ? g.gathers : [], gatherAt: [x, z], lookOnly: below ? g.lookOnly : null, leaveBeLabel: W.leaveBe };
+    return { ...card, baseText: card.text, text, gathers: below && !arms ? g.gathers : [], gatherAt: [x, z], lookOnly: below ? g.lookOnly : null, leaveBeLabel: W.leaveBe,
+      steep: g.steep ?? null, steepAt: g.steepAt ?? null, steepName: RW.name };
   }
 
   /** The card again after a handful: its word and buttons as they are now. */
@@ -259,6 +285,20 @@ export function createGather(o) {
       const c = get('identify');
       update('identify', () => (c ? { ...c, full: { kind: g.kind, g }, text: R.fullText ?? o.pack.recipe.words.full, gathers: [], at: performance.now() } : c));
       emitDeferred('pack:full', { kind: g.kind });
+      return;
+    }
+    if (g.bundle !== undefined) {
+      const was = bundles(), next = liftOne(was, g.bundle, o.worldT() / 3600, RT);
+      if (next !== was) {
+        keepBundles(next);
+        o.pack.add(g.kind, 1);
+        emitDeferred('gather:done', { kind: g.kind, group: o.pack.kinds.groupOf(g.kind), x: g.x, z: g.z, from: 'retting' });
+        emitDeferred('retting:lifted', { x: g.x, z: g.z, done: next.length < was.length });
+        if (RW.lifted) emitDeferred('island:notice', { text: RW.lifted, showS: 4 });
+        // The last handful: the bundle is gone, and its card with it.
+        if (next.length < was.length) { update('identify', () => null); return; }
+      }
+      refresh();
       return;
     }
     if (g.heap !== undefined) {
@@ -419,6 +459,35 @@ export function createGather(o) {
       if (W.ashSpread) emitDeferred('island:notice', { text: W.ashSpread, showS: 5 });
       return true;
     },
+    /**
+     * Steep here on the flax stems' pouch card (F1): the walker kneels at the water's edge and lays the
+     * whole pouch in the shallows ahead as one bundle under a stone (retting.js). Returns the line to
+     * show: laid, or why not (not a pond's shallows, three bundles already).
+     * @returns {string}
+     */
+    steep() {
+      if (!o.walk.below) return '';
+      const list = bundles();
+      if (!roomToSteep(list, RT)) return RW.full ?? '';
+      const p = o.walk.feedPoint(RT.aheadM ?? 0.8, RT.turnDeg ?? 70, steepOk, true);
+      if (!p || !steepOk(p[0], p[2])) return RW.notHere ?? '';
+      const n = o.pack.take('flax.stems', o.pack.recipe.handfulsPerPouch ?? 3);
+      if (n < 1) return '';
+      const hour = o.worldT() / 3600;
+      keepBundles(laySteep(list, p[0], p[2], hour, n, RT));
+      emitDeferred('retting:laid', { x: p[0], z: p[2], hour, handfuls: n });
+      return RW.laid ?? '';
+    },
+    /** The bundles steeping now: where, handfuls, and whether retted (the drawing and tests). */
+    steepingNow() {
+      const h = o.worldT() / 3600;
+      return bundles().map((b) => ({ x: b[0], z: b[1], handfuls: b[3], ready: isRetted(b, h, RT), laidHour: b[2] }));
+    },
+    /** Is a steeping bundle within a tap of (x, z)? (the journal's cardAt asks first). @param {number} x @param {number} z */
+    steepNear: (x, z) => bundleAt(bundles(), x, z, RT) >= 0,
+    /** Where a minnow school keeps away from (school.js avoid). */
+    steepAvoid: () => avoidOf(bundles(), RT),
+    rettingRecipe: RT,
     /** The ash patches lying now: where, how big and how fresh (drawn marks, tests). */
     ashesNow() {
       const h = o.worldT() / 3600;

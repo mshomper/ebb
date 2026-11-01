@@ -479,7 +479,7 @@ export function addJournalTests(test, assert, eq) {
     eq(g(run({ sort: 'az' }), 'plants').rows.slice(0, 3).join(','), 'Grass,Reeds,Sea thrift'.split(',').map((n) => words.order.find((/** @type {string} */ id) => words.species[id].name === n)).join(','), 'A to Z by name');
     // The shore plants (thrift, and sea campion not yet seen), and nothing else.
     const shorePlants = g(run({ place: 'shore' }), 'plants').rows;
-    eq([...shorePlants].sort().join(','), words.order.filter((/** @type {string} */ id) => list.placeOf[id] === 'shore').sort().join(','), 'Shore keeps only the shore plants');
+    eq([...shorePlants].sort().join(','), words.order.filter((/** @type {string} */ id) => list.placeOf[id] === 'shore' && !isAnimal(words.species[id])).sort().join(','), 'Shore keeps only the shore plants');
     assert(shorePlants.includes('thrift'), 'thrift is on the shore');
     eq(g(run({ sort: 'place', status: 'found' }), 'plants').rows.join(','), 'reeds,grass,thrift', 'by place: pond, meadow, shore');
     assert(g(run({ shut: { plants: true } }), 'plants').shut, 'a group folds shut');

@@ -1,0 +1,5 @@
+# F1: flax and cloth (m2-flax-cloth)
+
+Status: Done
+
+Flax grows on the meadow islet's grassy patches, planted in the slot the islet kept for it: slender stems with flat sky-blue flowers in summer, straw-coloured by the time the islet first shows. The walker pulls the stems by hand from the end of summer into mid autumn. On the flax pouch's card, Steep here lays the whole pouch in a pond's shallows as one bundle under a stone (still fresh water, a hand to half a metre deep, three bundles at most). Three game days later, worked out from the hour it was laid so a long away keeps it, the stems have gone grey: the bundle's card offers Lift out, a handful of flax fibre a press. Minnows keep clear of a bundle while it steeps. At the workbench, two handfuls of flax fibre weave one handful of linen cloth (the only make that takes fibre), kept for the teal hat in wave 3. With it: pack kinds, drawn icons (flax, fibre, cloth, Steep, Weave), the flax journal page with field notes learned by pulling and retting, web ties, a field sketch and sketchbook subject, a morning hint, and the `?flax` test link.

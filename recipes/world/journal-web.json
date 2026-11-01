@@ -55,6 +55,7 @@
     "thyme": { "label": "Wild thyme", "kind": "plants", "icon": "thyme", "page": "thyme" },
     "clover": { "label": "Red clover", "kind": "plants", "icon": "clover", "page": "clover" },
     "bedstraw": { "label": "Lady's bedstraw", "kind": "plants", "icon": "bedstraw", "page": "bedstraw" },
+    "flax": { "label": "Flax", "kind": "plants", "icon": "flax", "page": "flax" },
     "anemone": { "label": "Beadlet anemone", "kind": "small", "icon": "anemone", "page": "anemone" },
     "periwinkle": { "label": "Periwinkle", "kind": "small", "icon": "periwinkle", "page": "periwinkle" },
     "lugworm": { "label": "Lugworm casts", "kind": "small", "icon": "lugworm", "page": "lugworm" },
@@ -88,7 +89,9 @@
     "lizards": { "label": "Common lizard", "kind": "small", "icon": "lizard", "page": "lizards" },
     "woodlice": { "label": "Woodlice", "kind": "small", "icon": "woodlice", "page": "woodlice" },
     "groundbeetle": { "label": "Violet ground beetle", "kind": "small", "icon": "groundbeetle", "page": "groundbeetle" },
-    "you": { "label": "You", "kind": "animals", "icon": "you", "always": true }
+    "you": { "label": "You", "kind": "animals", "icon": "you", "always": true },
+    "turnstones": { "label": "Turnstones", "kind": "animals", "icon": "turnstone", "page": "turnstones", "flag": "turnstones:seen" },
+    "eels": { "label": "Eels", "kind": "animals", "icon": "eel", "page": "eels", "flag": "eels:seen" }
   },
   "links": [
     { "a": "rock", "b": "moss", "ink": "mossOnRock", "note": "Moss has found a hold on the rock." },
@@ -238,6 +241,20 @@
     { "a": "woodlice", "b": "toads", "ink": "seen:woodlice&seen:toads", "note": "The toad eats woodlice on its night walks." },
     { "a": "logs", "b": "groundbeetle", "ink": "seen:groundbeetle", "note": "A violet ground beetle hides under a log by day." },
     { "a": "grass", "b": "groundbeetle", "ink": "seen:groundbeetle", "note": "The beetle hunts through the grass at night." },
-    { "a": "you", "b": "woodlice", "ink": "seen:woodlice", "note": "Woodlice came to live under a log you carried up from the shore." }
+    { "a": "you", "b": "woodlice", "ink": "seen:woodlice", "note": "Woodlice came to live under a log you carried up from the shore." },
+    { "a": "wrack", "b": "turnstones", "ink": "flag:turnstones:seen&flag:turnstones:settled", "note": "Turnstones flip the wrack left lying to eat the sandhoppers under it." },
+    { "a": "strandline", "b": "turnstones", "ink": "flag:turnstones:seen", "note": "Turnstones run the strandline and wait out the high tide above it." },
+    { "a": "you", "b": "turnstones", "ink": "flag:turnstones:known", "note": "The turnstones came to know you, and feed around your boots." },
+    { "a": "shore", "b": "eels", "ink": "flag:eels:seen", "note": "Eels come up out of the sea on rainy autumn nights, looking for a pond." },
+    { "a": "grass", "b": "eels", "ink": "flag:eels:seen&flag:eels:sign", "note": "Eels cross the wet grass between the shore and the pond." },
+    { "a": "fresh", "b": "eels", "ink": "flag:eels:seen&flag:eels:settled", "note": "Eels live for years in a still pond, hiding by day and hunting by night." },
+    { "a": "pondweed", "b": "eels", "ink": "flag:eels:seen&seen:pondweed", "note": "Eels lie under the pondweed by day." },
+    { "a": "lilies", "b": "eels", "ink": "flag:eels:seen&seen:lilies", "note": "Eels hide in the shade under the lily pads." },
+    { "a": "frogspawn", "b": "eels", "ink": "seen:frogspawn&flag:eels:seen", "note": "Eels hunt the tadpoles that hatch from the spawn." },
+    { "a": "midges", "b": "eels", "ink": "flag:midges:seen&flag:eels:seen", "note": "Eels eat the midge larvae on the pond floor." },
+    { "a": "you", "b": "eels", "ink": "flag:eels:home&flag:eels:seen", "note": "Eels came to the pond you dug long ago near the shore." },
+    { "a": "soil", "b": "flax", "ink": "grows:soil:flax", "note": "Flax stands on the islet's grassy patches, where turf has closed over the sand." },
+    { "a": "flax", "b": "you", "ink": "flag:flax:retted", "note": "Flax steeped in a pond gives long fibre, and the fibre weaves into linen at the bench." },
+    { "a": "fresh", "b": "flax", "ink": "flag:flax:retted", "note": "Flax is steeped in a pond's shallows. The minnows keep away while it lies there." }
   ]
 }

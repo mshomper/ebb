@@ -30,11 +30,17 @@
   <link rel="stylesheet" href="src/ui/settings.css">
   <link rel="stylesheet" href="src/ui/now-playing.css">
   <link rel="stylesheet" href="src/ui/photo.css">
+  <link rel="stylesheet" href="src/ui/loading.css">
   <script type="importmap">{ "imports": {
     "wgpu-matrix": "./src/vendor/wgpu-matrix/wgpu-matrix.module.js" } }</script>
   <script type="module" src="src/boot.js"></script>
 </head>
 <body>
   <canvas id="view" aria-label="The island"></canvas>
+  <div id="ebb-loading" class="ebb-loading" role="status">
+    <div class="ebb-loading__mark">ebb</div>
+    <p class="ebb-loading__tagline">a tended island</p>
+    <p class="ebb-loading__line">Raising the island</p>
+  </div>
 </body>
 </html>

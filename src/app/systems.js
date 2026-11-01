@@ -26,6 +26,8 @@ import * as setpieces from './setpieces.js';
 import * as kit from './kit.js';
 import * as fishing from './fishing.js';
 import * as shaped from './shaped.js';
+import * as turnstones from './turnstones.js';
+import * as eels from './eels.js';
 import * as graph from './graph.js';
 import * as photo from './photo.js';
 import * as quality from './quality.js';
@@ -37,6 +39,7 @@ import * as frame from './frame.js';
 import * as save from './save.js';
 import * as testLinks from './test-links.js';
 import * as testCamp from './test-links-camp.js';
+import * as testFlax from './test-links-flax.js';
 
 /** @type {import('./context.js').StartStep[]} */
 export const SYSTEMS = [
@@ -76,10 +79,13 @@ export const SYSTEMS = [
   fishing.start,
   shaped.start,
   shaped.tests,
+  turnstones.start,
+  eels.start,
   testLinks.packs,
   testCamp.camp,
   testCamp.teas,
   testCamp.spring,
+  testFlax.flax,
   kit.teaReveal,
   testLinks.autumn,
   testLinks.frogScale,

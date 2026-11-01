@@ -504,7 +504,7 @@ export function addPondLifeTests(test, assert, eq) {
 
   test(G, 'the species list knows every recipe by its world key', async () => {
     const R = await loadEcologyRecipes();
-    eq(SPECIES.map((id) => keyOf(R.species[id])).join(), 'frogs,midges,minnows,dragonflies,damselflies,turtles,frogspawn,toads,slowworms,lizards', 'keys');
-    eq(swarmSpecies(R.species).map((r) => r.id).join(), 'minnow,dragonfly,damselfly,turtle', 'schools and swarms with needs');
+    eq(SPECIES.map((id) => keyOf(R.species[id])).join(), 'frogs,midges,minnows,dragonflies,damselflies,turtles,frogspawn,toads,slowworms,lizards,turnstones,eels', 'keys');
+    eq(swarmSpecies(R.species).map((r) => r.id).join(), 'minnow,dragonfly,damselfly,turtle,eel', 'schools and swarms with needs');
   });
 }
