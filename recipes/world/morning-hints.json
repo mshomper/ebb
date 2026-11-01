@@ -9,7 +9,7 @@
   "hints": [
     { "id": "gather", "text": "The tide leaves drift twigs along the beach, and flat stones lie on the rocky shore. Click one, then Gather: the camp will want them.", "done": "gathered", "withinDays": 10 },
     { "id": "finds", "text": "Look closely along the strandline. Shells, crabs and odd things wash up, and each one you click starts a page in your journal.", "done": "found", "withinDays": 10, "showMe": ["shore"], "showMeAlways": true },
-    { "id": "animals", "text": "Something has come to live by the water. Stay still nearby for a while: creatures come to know a quiet keeper.", "done": "metAnimal", "when": "animalCame", "withinDays": 10, "showMe": ["frogs", "minnows", "turtles", "dragonflies", "damselflies"] },
+    { "id": "animals", "text": "Something has come to live by the water. Stay still nearby for a while: creatures come to know a quiet keeper.", "done": "metAnimal", "when": "animalCame", "withinDays": 10, "showMe": ["frogs", "minnows", "turtles", "dragonflies", "damselflies", "turnstones", "eels"] },
     { "id": "shape", "text": "Go up and you can shape the land with Sculpt. A pond with a gentle, reedy edge draws more life than open water.", "done": "shaped", "withinDays": 10 },
     { "id": "plant", "text": "On foot, the Seed tin on your bar holds reeds, lilies and thrift. Sow a few where they'd like to grow.", "done": "planted", "withinDays": 10 },
     { "id": "cord", "text": "Reed leaves twist into cord at the workbench, and so do rush stems once rushes grow here (two flat stones at camp lay the workbench). Cord makes a shovel (with drift twigs woven at the bench, and a flat stone), a basket, the apothecary bench.", "done": "madeCord", "withinDays": 10, "showMe": ["rushes", "reeds", "marram"] },
@@ -19,12 +19,15 @@
     { "id": "stone", "text": "Past the camp there's a flat stone with a sign scratched into it. Someone left it there on purpose. Dig beside it.", "done": "foundCache", "when": "stoneShown" },
     { "id": "spring", "text": "The old keeper's letter said to dig above the spring, where the water starts. Up the rise from the spring's stones there is a small worn mark. Dig beside it, gently.", "done": "springFell", "when": "cairnsRead" },
     { "id": "gift", "text": "Gifts wait on your gift spot, on your bar when you're on foot. Pick one there and set it where it would do well.", "done": "usedGiftSpot", "when": "giftCame" },
-    { "id": "islet", "text": "Where the sea was, a little islet stands offshore now. Its sandbar dries around low tide: walk across then, and back before the tide comes in.", "done": "isletWalked", "when": "isletRose" }
+    { "id": "islet", "text": "Where the sea was, a little islet stands offshore now. Its sandbar dries around low tide: walk across then, and back before the tide comes in.", "done": "isletWalked", "when": "isletRose" },
+    { "id": "turnstone-visit", "visit": "turnstones", "text": "Small birds ran the strandline yesterday, turning the weed over with their bills. Wrack left lying on the strand, not gathered, might keep them." },
+    { "id": "eel-visit", "visit": "eels", "done": "eelsCame", "text": "Something long and dark came up out of the sea in the night and nosed along the shore, then slipped back. An old pond near the sea, with wet grass between, might keep it." },
+    { "id": "flax", "text": "Flax won't give up its fibre dry. Lay the stems in the shallows of a still pond, and lift them out in three days.", "done": "flaxRetted", "when": "flaxPulled" }
   ],
   "tests": {
     "gathered": [{ "flag": "did:gathered" }, { "prefix": "picked:" }, { "flag": "intro:gather", "unless": "intro:skipped" }],
     "found": [{ "kinds": ["find"] }],
-    "animalCame": [{ "flag": "frogs:sign" }, { "flag": "minnows:sign" }, { "flag": "turtles:sign" }, { "flag": "dragonflies:sign" }, { "flag": "damselflies:sign" }],
+    "animalCame": [{ "flag": "frogs:sign" }, { "flag": "minnows:sign" }, { "flag": "turtles:sign" }, { "flag": "dragonflies:sign" }, { "flag": "damselflies:sign" }, { "flag": "turnstones:sign" }, { "visited": ["turnstones"] }, { "flag": "eels:sign" }],
     "metAnimal": [{ "kinds": ["creature", "school"] }],
     "shaped": [{ "flag": "did:shaped" }, { "flag": "intro:shape.1" }],
     "planted": [{ "flag": "did:planted" }, { "flag": "intro:plant.1" }],
@@ -41,7 +44,10 @@
     "springFell": [{ "flag": "setpiece:cairns:fell" }],
     "usedGiftSpot": [{ "flag": "did:gift-spot" }],
     "isletRose": [{ "flag": "setpiece:islet:rose" }],
-    "isletWalked": [{ "flag": "setpiece:islet:walked" }]
+    "isletWalked": [{ "flag": "setpiece:islet:walked" }],
+    "eelsCame": [{ "flag": "eels:home" }, { "flag": "eels:sign" }],
+    "flaxPulled": [{ "learned": "pulled" }],
+    "flaxRetted": [{ "learned": "retted" }]
   },
   "record": {
     "gather:done": "did:gathered",

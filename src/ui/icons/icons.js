@@ -320,6 +320,17 @@ const ICONS = {
     <circle cx="10.6" cy="6.6" r="1" fill="currentColor" stroke="none"/>
     <circle cx="13.4" cy="6.6" r="1" fill="currentColor" stroke="none"/>`,
 
+  // Flax (species chip, F1): three slender upright stems from the ground line, short narrow leaves
+  // up them, a flat five-petal flower on two tips and a round seed boll on the third.
+  flax: `
+    <path d="M3.5 20.5H20.5"/>
+    <path d="M8.6 20.5C8.4 15.6 7.8 11.4 6.8 8.2M12 20.5V5.8M15.6 20.5C15.8 16 16.6 12.6 17.6 10.4"/>
+    <path d="M8.3 16.4L6.8 15.2M7.8 12.8L9.2 11.6M12 16.6L10.6 15.4M12 12.6L13.4 11.4M15.9 15.8L17.4 14.8"/>
+    <path ${ACCENT} d="M6.8 8.2m-2.4 0a2.4 2.4 0 1 0 4.8 0a2.4 2.4 0 1 0 -4.8 0M12 5.8m-2.6 0a2.6 2.6 0 1 0 5.2 0a2.6 2.6 0 1 0 -5.2 0"/>
+    <path d="M6.8 8.2L6.8 5.8M6.8 8.2L4.5 7.5M6.8 8.2L5.4 10.2M6.8 8.2L8.2 10.2M6.8 8.2L9.1 7.5"/>
+    <path d="M12 5.8L12 3.2M12 5.8L9.5 5M12 5.8L10.4 8M12 5.8L13.6 8M12 5.8L14.5 5"/>
+    <circle cx="17.6" cy="9.2" r="1.3"/>`,
+
   // Grass (journal page): five blades of different heights rising from the ground line.
   grass: `
     <path d="M3.5 20.5H20.5"/>
@@ -922,6 +933,28 @@ const ICONS = {
     <path d="M3.5 15C6 11.8 11 11.4 15 14.2L19.8 11.6V18.4L15 15.8C11 18.6 6 18.2 3.5 15Z"/>
     <circle cx="6.9" cy="14.3" r="0.9" fill="currentColor" stroke="none"/>
     <path d="M10.5 13.4C11.2 14.4 11.2 15.6 10.5 16.6"/>`,
+  // Ruddy turnstone (B3, a winter flock): from the side, low and plump on short legs, head down,
+  // its short wedge bill tipping a pebble over, the dark breast band and the folded wing.
+  turnstone: `
+    <path ${ACCENT} d="M3.5 9.6C6 9.8 8 10.6 9.6 11.2C11.4 9.6 14.2 9.2 16.4 10.6C17.4 11.2 18 12 18.3 12.8C18 15.2 16 16.6 13 16.6C10 16.6 7.6 15 6.8 13Z"/>
+    <path d="M3.5 9.6C6 9.8 8 10.6 9.6 11.2C11.4 9.6 14.2 9.2 16.4 10.6C17.4 11.2 18 12 18.3 12.8C18 15.2 16 16.6 13 16.6C10 16.6 7.6 15 6.8 13L3.5 9.6Z"/>
+    <path d="M18.3 12.8L20.6 14.6"/>
+    <circle cx="16.4" cy="11.9" r="0.55" fill="currentColor" stroke="none"/>
+    <path d="M14.6 11.2C15 13 15.6 14.2 16.8 14.8"/>
+    <path d="M8.6 12.2C10.6 13.8 13 13.8 14.6 12.6"/>
+    <path d="M11.6 16.6L11 20.5M14 16.4L14.8 20.5"/>
+    <path ${ACCENT} d="M18.8 20.5C18.8 18.6 21.6 18.2 21.6 20.5Z"/>
+    <path d="M18.8 20.5C18.8 18.6 21.6 18.2 21.6 20.5"/>
+    <path d="M2.5 20.5H18.4"/>`,
+  // Eels (B3): a long body in one wave under the water line, a soft fin ridge along its back half,
+  // the pond floor below.
+  eel: `
+    <path d="M2.5 5.5C4.2 4.7 5.8 4.7 7.5 5.5S10.8 6.3 12.5 5.5S15.8 4.7 17.5 5.5S20 6.1 21.5 5.5"/>
+    <path ${ACCENT} d="M3.2 11.6C5.6 9.2 8.4 9.4 10.6 12S15.6 15.6 18.2 13.2L21.2 11.4L18.8 15C15.8 17.8 11 16.4 9.2 14S5.6 12.6 3.6 14.2C2.6 13.4 2.6 12.4 3.2 11.6Z"/>
+    <path d="M3.2 11.6C5.6 9.2 8.4 9.4 10.6 12S15.6 15.6 18.2 13.2L21.2 11.4L18.8 15C15.8 17.8 11 16.4 9.2 14S5.6 12.6 3.6 14.2C2.6 13.4 2.6 12.4 3.2 11.6Z"/>
+    <path d="M11.6 10.9C13.6 13.5 15.8 14.2 17.9 12"/>
+    <circle cx="4.9" cy="12.1" r="0.8" fill="currentColor" stroke="none"/>
+    <path d="M2.5 20.5H21.5"/>`,
 
   // The Web's shore features (journal-web.json). Rock pool: water held between two rocks.
   pool: `
@@ -1400,6 +1433,20 @@ const ICONS = {
     <path ${ACCENT} d="M4 20.4C4.4 17.8 6.6 16.6 9 16.6H15C17.4 16.6 19.6 17.8 20 20.4Z"/>
     <path d="M4 20.4C4.4 17.8 6.6 16.6 9 16.6H15C17.4 16.6 19.6 17.8 20 20.4ZM7 14.6H17"/>
     <path d="M13.4 3.4L18.6 8.6M16 6L8.4 13.6"/>`,
+  // Weave: three warp threads hung from a bar, the weft passing over and under them (the
+  // workbench's Weave, F1 cloth).
+  weave: `
+    <path ${ACCENT} d="M5 7H19V18.6H5Z"/>
+    <path d="M3 4.4H21M7 4.4V20.4M12 4.4V20.4M17 4.4V20.4"/>
+    <path d="M4.6 9.4C5.8 9.4 6 8.4 7 8.4S8.4 10.4 12 10.4S15.8 8.4 17 8.4S18.2 9.4 19.4 9.4"/>
+    <path d="M4.6 13.4C5.8 13.4 6 14.4 7 14.4S8.4 12.4 12 12.4S15.8 14.4 17 14.4S18.2 13.4 19.4 13.4"/>
+    <path d="M4.6 17.4C5.8 17.4 6 16.4 7 16.4S8.4 18.4 12 18.4S15.8 16.4 17 16.4S18.2 17.4 19.4 17.4"/>`,
+  // Steep: a bundle of stems lying on a pond's bed under a stone, the water line above (F1 retting).
+  steep: `
+    <path ${ACCENT} d="M2.5 9.6C4.4 8.6 6.2 8.6 8 9.6S11.6 10.6 13.4 9.6S17.2 8.6 21.5 9.4V20.4H2.5Z"/>
+    <path d="M2.5 9.6C4.4 8.6 6.2 8.6 8 9.6S11.6 10.6 13.4 9.6S17.2 8.6 21.5 9.4"/>
+    <path d="M4 18.4H20M4.6 16.4H19.4M2.5 20.4H21.5"/>
+    <path d="M9 15.6C9 13.4 10.4 12.4 12 12.4S15 13.4 15 15.6Z"/>`,
   // Pan: a shallow pan tipped over water, a few grains settled in its well (the spring pool, Pan).
   pan: `
     <path ${ACCENT} d="M3.6 10.6C3.6 8.8 7.4 7.6 12 7.6S20.4 8.8 20.4 10.6C20.4 13.8 16.6 16 12 16S3.6 13.8 3.6 10.6Z"/>

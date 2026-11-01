@@ -235,11 +235,17 @@ A game year is 56 game days, so the eels' "year-old pond" is `ageDays` 56.
 
 Visit days come from the seed alone, so a visit that fell while the island was away still sets its flags and brings its hint; it is just not shown. Trust is never touched. The visits look once a game hour; a jump of more than `visits.awayGapH` hours between looks is time away.
 
+**Arrival after the home: the gate** (B3 wave 2, the eels). A species on the swarm model can hold its arrival behind a gate, `ecology.arrival.gate`: `{ "seasons": [2], "rain": true, "home": true, "homeM": 12 }` lets the eels come and grow only in autumn, on a day with rain, once their home is made, and only into the pool whose deep spot lies within `homeM` of the home (`src/world/creatures/swarms.js` `gateOpen`, `atHome`). The tick never measures the ground itself: at each look the live watch writes whether the home is made, and where, into the world state as `homes.<key>` (`src/app/eels.js`), so time away uses the home as it was when you left and the same seed gives the same eels.
+
 **Flags**: `<sp>:visited` at the first visit (the journal page's pencil-circle hint uses it: `{ "when": "seals:visited", "text": "..." }`), `<sp>:home` once the home is made (visit hints are done then).
 
 **The morning hint** is one entry in `recipes/world/morning-hints.json`, no code: `{ "id": "seal-visit", "visit": "seals", "text": "The seal watched the shore a long while. A quiet bar of sand at low tide might keep it." }`. It comes the morning after a visit, rings the visit's spot on Show me, and comes again only after a newer visit at least `visitAgainDays` later. Add the species to the `animalCame` test with `{ "visited": ["seals"] }` or its `:sign` flag, and to any hint's `showMe` list where it fits.
 
 **Test links**: `?shape=bar`, `wall`, `pond`, `wrack` (or several, joined by commas) shape that ground with real strokes; `?shape=pond` makes the pond a game year old (`&pondAge=N` for another age), `?shape=wrack` thickens the strandline's wrack and says it has lain 4 days. `?visit=<sp>` makes that species' visit now and dates it yesterday, so the morning hint can come. `tools/shaped-lab.html` shows every check on the starter island.
+
+### Flocks on shaped ground (B3: the turnstones)
+
+Plain language: a flock whose home is ground the player shaped (the turnstones' wrack left lying; next the purple sandpipers' sea wall) lives the minnows' life in the hourly tick (sign, settling, growing, uneasy, leaving), with its home standing in for the pool. Recipe `ecology.kind: "flock"` (`src/world/creatures/flock.js`). Each shaped look records the home on the flock's state (`state.creatures.<key>.home`: met, how much, where; the app's own module, `src/app/turnstones.js`), and each hour hands it to `swarms.js swarmStep` as one pool: met scores 1, and its amount is the room (`arrival.m2PerOne` is then metres of wrack a bird). A home gone starts the A9 grace (why: `wrack`). Seasons away are a dormancy window in `recipes/world/seasons.json`. Nothing runs until a home is first met, so an island without one keeps its hash. While you play, the live flock (`src/world/turnstones/`) joins the schools list, so taps, Show me and the reveal find it. Each frame an interference check (`live.js separate`, recipe `life.bodyHalfM`) keeps any two bodies from overlapping, side on or nose to tail.
 
 ### Fish on the line (F17)
 

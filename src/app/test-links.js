@@ -40,8 +40,9 @@ export async function startTime(ctx) {
   // `?dragonflies=N` starts on summer day 2: they fly from the start of summer (recipes/world/seasons.json).
   // `?damselflies=N` starts on the last day of spring (day 13): the first ones climb out at 0.9.
   // `?turtles=N` starts on summer day 2 too: they wake once the water has warmed (0.05 into summer).
+  // `?eels=N` starts on autumn day 2 (day 30), when eels come (add &hour=22 to see them at night).
   // `?dig=sleeper` starts on winter day 1 (day 43), when toads sleep in the ground (B1 D1).
-  const testDay = params.has('dragonflies') || params.has('turtles') ? '15' : params.has('damselflies') ? '13' : params.has('frogs') ? '6' : params.get('dig') === 'sleeper' ? '43' : '0';
+  const testDay = params.has('dragonflies') || params.has('turtles') ? '15' : params.has('damselflies') ? '13' : params.has('frogs') ? '6' : params.has('eels') ? '30' : params.get('dig') === 'sleeper' ? '43' : '0';
   const startDay = Math.max(0, Number.parseInt(params.get('day') ?? testDay, 10) || 0);
   // `?autumn` (testing, unsaved): a new world starts on its first misty autumn morning with fungi
   // grown (src/world/finds/autumn.js), and a kept log is laid near the view once the island is up.
@@ -79,7 +80,7 @@ export function swarms(ctx) {
   // `?minnows=N`, `?dragonflies=N`, `?damselflies=N` (testing, unsaved): a group of N comes at once
   // and is settled, once the island, its water and the journal are up (as `?frogs` does). Under
   // `?debug`, window.ebb.summon() asks for one the same way (below).
-  const testSwarms = ['minnow', 'dragonfly', 'damselfly', 'turtle'].filter((id) => params.has(keyOf(speciesRecipes[id])))
+  const testSwarms = ['minnow', 'dragonfly', 'damselfly', 'turtle', 'eel'].filter((id) => params.has(keyOf(speciesRecipes[id])))
     .map((id) => ({ rec: speciesRecipes[id], count: Math.max(1, Math.min(30, Number.parseInt(params.get(keyOf(speciesRecipes[id])) ?? '12', 10) || 12)) }));
   let swarmWait = 0;
   if (testSwarms.length || params.has('debug')) sim.addSystem({ id: 'swarm-tests', tick(/** @type {any} */ f) {

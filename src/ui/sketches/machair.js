@@ -3,7 +3,8 @@
 // trefoil, wild thyme, red clover and lady's bedstraw, drawn with the journal pen (pen.js) in the
 // style of herbs.js. Each sheet stands the plant on shell-sand turf and, in a round inset at the top
 // left, shows one close detail: a harebell's bell, trefoil's pea flowers, a thyme shoot's scented
-// leaves, a clover leaflet's pale chevron, bedstraw's whorl of needle leaves.
+// leaves, a clover leaflet's pale chevron, bedstraw's whorl of needle leaves. Flax (F1) follows, its
+// inset one flat blue flower.
 //
 // Layout as herbs.js: a 380 x 260 sheet, the drawing in x 40..236 on a ground line at y 214, a
 // scale bar at x 30, labels in the right column from x 250, each with a leader from what it names.
@@ -325,4 +326,64 @@ export function bedstraw(p, scale) {
   p.label('root', 250, 236, 168, 238);
   p.scale(30, 66, 214, scale);
   return p.svg(380, 260, "Field sketch of lady's bedstraw");
+}
+
+const FLAX = '#8FB0E2';
+
+/**
+ * A flat five-petal flax flower seen from the front at (cx, cy), r across each petal.
+ * @param {import('./pen.js').Pen} p @param {number} cx @param {number} cy @param {number} r
+ */
+function flaxFlower(p, cx, cy, r) {
+  for (let k = 0; k < 5; k++) {
+    const a = -Math.PI / 2 + (k / 5) * Math.PI * 2;
+    p.shape(petal(cx, cy, cx + Math.cos(a) * r, cy + Math.sin(a) * r, r * 0.95), FLAX, 0.8, 0.9);
+  }
+  p.dot(cx, cy, Math.max(0.9, r * 0.16));
+}
+
+/**
+ * Flax (F1): three slender stems straight up from the islet's grassy turf, short narrow leaves all
+ * the way up, flat sky-blue flowers on two tips and round seed bolls on the third. Inset: one flower
+ * from the front, its five petals veined from the middle.
+ * @param {import('./pen.js').Pen} p @param {string} scale
+ */
+export function flax(p, scale) {
+  const f = p.f;
+  machair(p);
+  /** @type {[number, number, number, number][]} base x, top x, top y, bend */
+  const stems = [[128, 118, 70, -3], [142, 150, 56, 2], [156, 196, 84, 6]];
+  for (const [bx, tx, ty, bend] of stems) {
+    p.line(stem(bx, 214, tx, ty, bend), 1.1);
+    // Short narrow leaves all the way up, alternate sides.
+    for (let k = 0; k < 7; k++) {
+      const t = 0.12 + k * 0.11, side = k % 2 ? 1 : -1;
+      const [x, y] = along(bx, 214, tx, ty, bend, t);
+      p.shape(blade(x, y, x + side * 10, y - 12, 1.4, side), WASH.leaf, 0.5, 0.8);
+    }
+  }
+  // Flowers on the first two stems, a short branch to a second on the middle one.
+  flaxFlower(p, 118, 64, 8);
+  flaxFlower(p, 150, 50, 8);
+  const [bx2, by2] = along(142, 214, 150, 56, 2, 0.86);
+  p.line(`M${f(bx2)} ${f(by2)}Q${f(bx2 + 10)} ${f(by2 - 8)} ${f(bx2 + 16)} ${f(by2 - 6)}`, 0.8);
+  flaxFlower(p, bx2 + 18, by2 - 8, 6.5);
+  // Seed bolls on the third: round, with a pointed tip, on short stalks.
+  for (const [x, y] of [[196, 80], [208, 92], [186, 92]]) {
+    p.line(`M196 86L${x} ${y}`, 0.7);
+    p.oval(x, y - 3, 4, 4.4, WASH.spent, 0.6, 1);
+    p.fine(`M${x} ${y - 7.4}V${y - 10}`, 0.7, 0.7);
+  }
+  // Inset: one flower close up, veins running out from the middle.
+  inset(p);
+  flaxFlower(p, 74, 58, 22);
+  for (let k = 0; k < 5; k++) {
+    const a = -Math.PI / 2 + (k / 5) * Math.PI * 2;
+    p.fine(`M${r1(74 + Math.cos(a) * 5)} ${r1(58 + Math.sin(a) * 5)}L${r1(74 + Math.cos(a) * 17)} ${r1(58 + Math.sin(a) * 17)}`, 0.6, 0.45);
+  }
+  p.label('flower', 250, 50, 158, 50);
+  p.label('boll', 250, 110, 212, 92);
+  p.label('stem', 250, 190, 146, 170);
+  p.scale(30, 56, 214, scale);
+  return p.svg(380, 260, 'Field sketch of flax');
 }

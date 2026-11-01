@@ -42,7 +42,8 @@
     "leashM": 3.5, "turnEveryS": [3, 8], "nightTurnEveryS": [10, 20], "minDepthM": 0.22, "lookM": 0.35,
     "dayDepthM": 0.16, "clearM": 0.05,
     "sepBodies": 1.1, "viewBodies": 5,
-    "weights": { "separate": 2.2, "align": 1.4, "cohere": 0.9, "seek": 0.45, "shore": 2.5, "depth": 2 },
+    "weights": { "separate": 2.2, "align": 1.4, "cohere": 0.9, "seek": 0.45, "shore": 2.5, "depth": 2, "avoid": 3 },
+    "avoidSteeping": true, "avoidNote": "F1: the school keeps clear of flax steeping in the shallows (gather.json retting avoidM; weights.avoid, the push away inside that ring): retting water loses its oxygen.",
     "rollPerAccel": 0.9, "maxRoll": 0.9, "tailHz": [2.5, 18], "tailSwing": 0.35,
     "riseEveryS": [5, 14], "riseS": 2.5, "riseMps": 0.18,
     "feedS": 14, "swirlM": 0.18, "swirlHz": 0.35, "feedRiseShare": 0.08, "ringStrength": 0.6, "ringM": 0.05
