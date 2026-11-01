@@ -935,6 +935,15 @@ const ICONS = {
     <path ${ACCENT} d="M18.8 20.5C18.8 18.6 21.6 18.2 21.6 20.5Z"/>
     <path d="M18.8 20.5C18.8 18.6 21.6 18.2 21.6 20.5"/>
     <path d="M2.5 20.5H18.4"/>`,
+  // Eels (B3): a long body in one wave under the water line, a soft fin ridge along its back half,
+  // the pond floor below.
+  eel: `
+    <path d="M2.5 5.5C4.2 4.7 5.8 4.7 7.5 5.5S10.8 6.3 12.5 5.5S15.8 4.7 17.5 5.5S20 6.1 21.5 5.5"/>
+    <path ${ACCENT} d="M3.2 11.6C5.6 9.2 8.4 9.4 10.6 12S15.6 15.6 18.2 13.2L21.2 11.4L18.8 15C15.8 17.8 11 16.4 9.2 14S5.6 12.6 3.6 14.2C2.6 13.4 2.6 12.4 3.2 11.6Z"/>
+    <path d="M3.2 11.6C5.6 9.2 8.4 9.4 10.6 12S15.6 15.6 18.2 13.2L21.2 11.4L18.8 15C15.8 17.8 11 16.4 9.2 14S5.6 12.6 3.6 14.2C2.6 13.4 2.6 12.4 3.2 11.6Z"/>
+    <path d="M11.6 10.9C13.6 13.5 15.8 14.2 17.9 12"/>
+    <circle cx="4.9" cy="12.1" r="0.8" fill="currentColor" stroke="none"/>
+    <path d="M2.5 20.5H21.5"/>`,
 
   // The Web's shore features (journal-web.json). Rock pool: water held between two rocks.
   pool: `

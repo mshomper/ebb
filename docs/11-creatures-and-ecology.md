@@ -235,6 +235,8 @@ A game year is 56 game days, so the eels' "year-old pond" is `ageDays` 56.
 
 Visit days come from the seed alone, so a visit that fell while the island was away still sets its flags and brings its hint; it is just not shown. Trust is never touched. The visits look once a game hour; a jump of more than `visits.awayGapH` hours between looks is time away.
 
+**Arrival after the home: the gate** (B3 wave 2, the eels). A species on the swarm model can hold its arrival behind a gate, `ecology.arrival.gate`: `{ "seasons": [2], "rain": true, "home": true, "homeM": 12 }` lets the eels come and grow only in autumn, on a day with rain, once their home is made, and only into the pool whose deep spot lies within `homeM` of the home (`src/world/creatures/swarms.js` `gateOpen`, `atHome`). The tick never measures the ground itself: at each look the live watch writes whether the home is made, and where, into the world state as `homes.<key>` (`src/app/eels.js`), so time away uses the home as it was when you left and the same seed gives the same eels.
+
 **Flags**: `<sp>:visited` at the first visit (the journal page's pencil-circle hint uses it: `{ "when": "seals:visited", "text": "..." }`), `<sp>:home` once the home is made (visit hints are done then).
 
 **The morning hint** is one entry in `recipes/world/morning-hints.json`, no code: `{ "id": "seal-visit", "visit": "seals", "text": "The seal watched the shore a long while. A quiet bar of sand at low tide might keep it." }`. It comes the morning after a visit, rings the visit's spot on Show me, and comes again only after a newer visit at least `visitAgainDays` later. Add the species to the `animalCame` test with `{ "visited": ["seals"] }` or its `:sign` flag, and to any hint's `showMe` list where it fits.

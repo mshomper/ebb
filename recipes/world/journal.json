@@ -2,7 +2,7 @@
   "type": "journal",
   "version": 1,
   "note": "The field journal (docs 13, 15): the words it writes and the numbers that shape them. order: the living things with pages, in page order. Each species: name and icon (src/ui/icons), riddle (shown before it has been seen), amount ([at least this many plants, words] steps; a cover plant (kind cover: grass, rushes) uses its share of the dry ground instead, or with amountBy area the square meters it covers), place and compass (where words: compass false skips the side of the island), none (after it has gone), clause words (flowering, dormant, spreading, receding), stages (what tapping one says, by growth stage: seed, sprout, young, mature, flowering, dormant), seasons (what each season box says: grow per season, flower, dormant), likes (lines learned when one of the learn triggers happens: seen, spread, flower, lost:drown, lost:seed, refused:<need>, grass:flooded), gives (a pencil line until the when trigger, then the ink line), notes (the lines the journal writes). trend: a species is spreading when it has gained at least max(upMin, upShare x then) plants over trend hours, receding when it has lost at least max(downMin, downShare x then). where: spreadOut is the mean distance from the plants' middle, as a share of the island's radius, past which they are all around the island; centerShare is how close to the island's middle counts as the middle. notesKept: notes the journal keeps; pageNotes: notes on a species page. islandNote: how long a note stays on the island (showS), the gap between two (gapS) and how many may wait (queue). identify: how near a tap must be to a plant (radiusM), how long the card stays (showS; it closes by itself only after closeS at the least, never while the pointer is over it or after one of its actions was pressed, and for closingGraceS after closing it still takes a late press so it never falls through as a walk), and the size of the breathing ring around what was tapped (ringM for a full-grown plant, smaller for young ones; grassRingM on grass; its timing is in recipes/world/growth.json marks); a species may set its own tapM (how near a tap must be) and ringM, as grey willow does for its wide crown. arrivedHours: plants seen within this many hours of the journal starting were here when you arrived. J1.5: each species also has plural (for the story lines), field (field notes: natural history lines learned like likes, by triggers that include dormant, woke and moment:<id>) and fieldHint (the pencil line while some are still to learn). story: the lines of 'your island's story' ({Plural}, {plural} and {date} are filled in; peak shows when the count has fallen under peakShare of its best). moments: four frames per page by kind (plant, cover for grass and rushes, ground in journal-island.json), each filled the first time you tap that thing at that moment: flower (in flower), summer, winter, rain (rain at least rainAt), mist (at least mistAt), dawn and dusk (hours of the day, inclusive start, exclusive end), frost (a winter dawn); note is the line written. showMe: how long (showS) the ring and card stay after a page's Show me rings the example nearest the middle of your view (the camera does not move). S6a, animals: a creature (kind creature: frogs) is known only once you find one yourself (tap it, or watch it from close by; recipes/species/frog.json find), never just because it is on the island; until then its page shows the riddle, or the latest of its hints whose journal flag is set (frogs:right when the pond is right for them, frogs:sign after the first sign). Its notes come in two voices: the unseen ones speak of something (a sign, rings on the water), never naming it; the others once it is known. A swarm (kind swarm: midges) is known by itself, like a plant, at the first dusk (seenAt.hours) that at least seenAt.m2 square meters hold seenAt.share of a full cloud; its amount is in those square meters. seenAt.drawn: whether the island draws the swarm yet; until it does (S6b), midges stay a pencil ? and nothing names them, because the journal only tells what you could see. card: what a tap on one says. foundLine: its story's first line. The animals' moments are moments.creature. buried (src/world/journal/buried.js, docs/future/13 PR-21, PR-29): line, the kind journal line for a patch still gone an hour after the stroke ({where}: the side of the island and the page's place); stroke, the island's notice when one stroke covers growth.json bury.strokeNotice gather plants ({others}: otherOne or others with numbers, {back}: it or them); session, the notice once a session (load or rest to the next rest) at bury.sessionNotice; showS, how long a notice shows.",
-  "order": ["grass", "rushes", "reeds", "lilies", "iris", "marigold", "willow", "thrift", "campion", "gorse", "pondweed", "watermint", "meadowsweet", "nettle", "chamomile", "marram", "harebell", "trefoil", "thyme", "clover", "bedstraw", "frogs", "midges", "minnows", "dragonflies", "damselflies", "turtles", "hens", "turnstones"],
+  "order": ["grass", "rushes", "reeds", "lilies", "iris", "marigold", "willow", "thrift", "campion", "gorse", "pondweed", "watermint", "meadowsweet", "nettle", "chamomile", "marram", "harebell", "trefoil", "thyme", "clover", "bedstraw", "frogs", "midges", "minnows", "dragonflies", "damselflies", "turtles", "hens", "turnstones", "eels"],
   "findsNote": "Finds (docs/future/11): small shore lives (kind find) found by tapping them, kept apart from order in findOrder. They show under Small lives at the end of Living things, once found and never before (the journal never lists what is missing), with smallLives.marks: one drawn mark for each you have found. card is what a tap names it, cardLine the line under it; place is its page's status once found.",
   "findOrder": ["anemone", "periwinkle", "lugworm", "hermitcrab", "ediblecrab", "shells", "barnacles", "pondskaters", "mussels", "sanddollars", "moonjelly", "fungi", "webs", "sandeel", "goby", "pipefish", "plaice", "wrasse", "shrimp", "shorecrab", "frogspawn", "toads", "slowworms", "lizards", "woodlice", "groundbeetle", "wellshrimp"],
   "smallLives": { "title": "Small lives", "none": "Look closely along the shore, at low tide, in the rock pools and on the wet sand.", "marks": "Found so far" },
@@ -2936,6 +2936,76 @@
       "uneasy": {
         "wrack": "The turnstones seem restless: there is little wrack left lying on the strand. They may move on in a few days.",
         "habitat": "The turnstones seem restless. They may move on in a few days."
+      }
+    },
+    "eels": {
+      "name": "European eels", "icon": "eel", "kind": "school", "plural": "eels", "card": "A European eel",
+      "_school": "B3 (src/world/creatures/swarms.js, eel-swim.js): a few at a time in one pond, never named, known only once you find one yourself, by tapping it or watching it closely. Their home is shaped, not found: a pond you dug, at least a year old, within 30 m of the sea, with wet grass between. Before that, one may come to look on an autumn night (eels:visited). They come up out of the sea on rainy autumn nights and cross the wet grass to the pond, then live there, hiding by day and hunting by night, and sleep in the mud through the winter. Watching only (ceiling Tolerant): no treats, no name, no gift, and they never count toward a tier milestone.",
+      "riddle": "Something long might come up out of the sea on a rainy autumn night, looking for an old pond near the shore.",
+      "hints": [
+        { "when": "eels:visited", "text": "Something long and dark came up out of the sea last night and nosed along the wet shore, then slipped back. It might stay for a pond you dug long ago, not far from the sea, with wet grass between." },
+        { "when": "eels:right", "text": "Your old pond near the shore looks right for something now. On a rainy autumn night, watch the grass between it and the sea." },
+        { "when": "eels:sign", "text": "A wet trail ran through the grass from the shore to the pond this morning, as if something had crossed in the night rain. Look in the pond after dark." }
+      ],
+      "sketch": { "scale": "about 45 cm", "labels": {
+        "fin": { "text": ["one soft fin", "round the tail"], "learn": ["seen"] },
+        "belly": { "text": ["yellow belly:", "a young eel"], "learn": ["settled"] },
+        "head": { "text": ["small eyes,", "a flat head"], "learn": ["moment:dusk", "moment:rain"] } } },
+      "field": [
+        { "text": "It swims like a ribbon in the water: one long wave runs down its body from head to tail.", "learn": ["seen"] },
+        { "text": "By day it lies on the pond floor under the weed with only its head out. It hunts at night.", "learn": ["seen"] },
+        { "text": "Young eels are yellow-bellied. They stay in one pond for many years before they turn silver and go back to the sea.", "learn": ["settled"] },
+        { "text": "On wet nights an eel can leave the water and cross damp grass, its body following its head like a snake's.", "learn": ["joined"] },
+        { "text": "It eats tadpoles, worms and the small creatures on the pond floor.", "learn": ["moment:dusk"] },
+        { "text": "In winter it buries itself in the mud and hardly moves until spring.", "learn": ["dormant"] },
+        { "text": "Every eel was born far out in the ocean and drifted to the coast as a tiny glass eel.", "learn": ["winter", "woke"] }
+      ],
+      "fieldHint": "Watch them after dark and through the year to learn more.",
+      "amount": [[1, "A single eel"], [2, "A pair of eels"], [4, "A few eels"], [7, "Eels all through the pond"]],
+      "place": "in the old pond near the shore", "compass": true,
+      "none": "No eels move in the pond now.",
+      "dormant": "buried in the pond mud until spring",
+      "spreading": "growing in number", "receding": "fewer than before",
+      "stages": ["In the pond", "Asleep in the mud"],
+      "seasons": { "grow": ["waking in the pond", "hunting the pond at night", "coming up from the sea on rainy nights", "asleep in the mud"], "dormant": "asleep in the mud" },
+      "likes": [
+        { "text": "A pond you dug long ago, near the sea", "learn": ["seen"] },
+        { "text": "Wet grass between the pond and the shore, to cross on rainy nights", "learn": ["joined"] },
+        { "text": "Weed and lily pads to hide under by day", "learn": ["settled"] },
+        { "text": "Dark, rainy autumn nights for coming in from the sea", "learn": ["moment:rain", "joined"] },
+        { "text": "Moves on when the pond is drained", "learn": ["left"] },
+        { "text": "Lets you come close, if you keep still", "learn": ["trust:tolerant"] }
+      ],
+      "_trust": "How well the eels know you (doc 23), from quiet watching only (they take no food); the ceiling is Tolerant: they are shy night animals, so they are never named and give no gift.",
+      "trust": { "notes": {
+        "tolerant": "The eels stay where they are now when you come to the pond's edge."
+      } },
+      "foundLine": "You found the first eel on {date}.",
+      "notes": {
+        "right": "The old pond near the shore lies still, with wet grass between it and the sea.",
+        "sign": "A wet trail ran through the grass from the shore to the pond this morning.",
+        "signAgain": "Another wet trail crosses the grass from the shore this morning.",
+        "found": "You found an eel, long and dark, moving like a ribbon.",
+        "settledUnseen": "Whatever crossed the grass seems to have stayed in the pond.",
+        "settled": "The eels have stayed. The old pond suits them.",
+        "back": "Eels are moving in the pond again.",
+        "joinedUnseen": "More wet trails cross the grass from the shore this morning.",
+        "joined": "More eels came up from the sea in the night rain.",
+        "scoutLeftUnseen": "The pond has been still for a while.",
+        "thinned": "There are fewer eels than there were.",
+        "left": "Some of the eels have moved on.",
+        "gone": "The eels have gone from the pond.",
+        "eased": "The eels have settled again in the pond.",
+        "dormant": "The eels have buried themselves in the mud for the winter.",
+        "woke": "The pond is warming. The eels are moving again.",
+        "happy": "Eels hunt all through the pond at night now."
+      },
+      "uneasy": {
+        "waterSummer": "The eels seem restless: their pond has shrunk in the heat. They may move on in a few days.",
+        "water": "The eels seem restless: their pond is not what it was. They may move on in a few days.",
+        "food": "The eels seem restless: there is too little to hunt in their pond. They may move on in a few days.",
+        "shelter": "The eels seem restless: there is too little weed in their pond to hide under. They may move on in a few days.",
+        "habitat": "The eels seem restless. They may move on in a few days."
       }
     }
   }
