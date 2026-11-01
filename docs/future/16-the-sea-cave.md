@@ -2,12 +2,14 @@
 
 > Where the sea has worked at a cliff long enough, it opens a mouth. Inside is a chamber that is always the same: tide pools, weed, the sound of the sea. Two ways lead on. One is choked with fallen rock, and digging through it, visit by visit, leads to quiet chambers and a sleeping bear. The other is an old arch with soot marks around it, and the walker won't go through it with empty hands. Beyond it is **the Hollow**: floors that are different every time you go down, things in the dark that don't belong to the island, and a lantern that decides how far you get before you have to turn back. Nothing makes a player go there. It's for the ones who want it, the way the mines are in Stardew Valley.
 
+**Changed November 1, 2026 (Matt; F19):** the cave is in **the stack**, a terraced sea stack offshore on its own side of the main island, there from the first morning. A rocky **causeway** to it rises on spring day 7 of the first year and stands above every tide from then on. The mouth's floor is above the highest tide. An old cold lantern lies on the mouth's floor; the walker lights it and hangs it on the hook, and the lamplighter's first note lies beside it. The rubble passage ends at an iron grate, opened by the old keeper's iron key from the spring, with the locked box in a niche beside it; the box opens with something found deeper in the bear's chambers. The story that leads here is F19, the light on the stack. The sections below are updated to match.
+
 **Status:** Scheduled on October 27, 2026 (Matt): the first version (H3 to H5) is its own milestone right after M2 (doc 20, "The Hollow, first version"); H0 to H2 are built as test pages. Drafted October 25, 2026, from Matt's ask for a cave with a dungeon-crawling experience, then redrafted the same day to Matt's own design (below). It builds on Matt's pin of October 18, 2026 (caves for a landmark creature such as a bear) and doc 20's M7 line on placed rock pieces for sea caves.
 
 ## Decided so far (Matt, October 25, 2026)
 
 - **Optional.** Nothing on the surface needs the cave. A player goes there only to do everything, as in Stardew Valley's mines. It has **its own trail**.
-- **The mouth never changes.** It is one fixed, hand-made area.
+- **The mouth never changes.** It is one fixed, hand-made area, in the foot of the stack (F19, November 1, 2026).
 - **To one side, a rubble passage**, blocked at first, that eventually leads to the bear.
 - **Another entrance that needs a weapon.** The player can't go through until they've made one.
 - **Beyond it, the Hollow:** floors that change procedurally and get tougher as the player progresses.
@@ -31,7 +33,8 @@ This is the first place in ebb with enemies. Doc 01 lists "no combat" as a non-g
 ```mermaid
 flowchart LR
   M[The mouth<br/><i>fixed, never changes</i>] -->|shovel, over several visits| R[Rubble passage]
-  R --> Q1[Dripstone gallery]
+  R --> GR[The grate<br/><i>the old keeper's key</i>]
+  GR --> Q1[Dripstone gallery]
   Q1 -->|reed raft| Q2[Underground lake]
   Q2 --> Q3[The old marks]
   Q3 --> B[The bear's den]
@@ -45,23 +48,26 @@ flowchart LR
 ### The mouth
 
 - One fixed space, hand-built, the same on every island: a wave-cut floor, weed, rock pools with prawns and a blenny, daylight from the entrance.
-- At high tide the sea fills the entrance. The walker comes in at low tide. The rubble passage, the arch and everything beyond are above the highest tide, so no one is ever trapped: the walker waits on the ledge or rests until the water drops.
-- A **lantern hook** by the arch. The walker hangs the lantern here and it lights the mouth while they look around. It's where every trip into the Hollow starts and ends.
+- **In the stack.** The mouth is in the foot of the stack, a terraced sea stack offshore on its own side of the main island, reached by the causeway that rises on spring day 7 of the first year (F19). *(Changed November 1, 2026, Matt: was a cliff the island has or the player made.)*
+- **Above every tide.** The causeway and the mouth's floor stand above the highest tide, so the cave can be reached at any hour. The rock pools in the floor still fill and drain with the tide. *(Changed November 1, 2026, Matt: was entered only at low tide.)*
+- **The mouth's lantern.** On the first visit an old lantern lies cold on its side on the floor. The walker lights it with the fire steel and hangs it on the **lantern hook** by the arch, and from then on it lights the mouth whenever the walker is in the cave. The walker's own lantern stays in hand. The hook is where every trip into the Hollow starts and ends. *(Changed November 1, 2026, Matt: the walker has one lantern, so it no longer hangs its own.)*
+- **The lamplighter's first note** lies beside the old lantern (F19).
 
 ### The rubble passage and the bear
 
 The quiet half of the cave, with no enemies.
 
-- **The rubble** is cleared with the shovel (P2c digging), a stretch per visit, so getting through takes several trips. Each stretch turns up something: old bones, a bead, a fossil.
+- **The rubble** is cleared with the shovel (P2c digging), a stretch per visit, so getting through takes several trips. Each stretch turns up something: old bones, a bead, a fossil. It can be dug from the first visit, in the first year.
+- **The grate.** At the end of the rubble an old iron grate stands across the passage, padlocked: the old keeper shut it to keep the sleeper's rest. The small iron key from the spring's pool (the cairns, in the second year) opens it (Matt, November 1, 2026).
 - **Behind it** are hand-made chambers that never change: a dripstone gallery, an underground lake crossed on the reed raft, and a wall of old soot marks with the earlier keeper's letter (F13 section 10).
 - **The bear's den** is the last chamber. A brown bear comes to the island late in the game, once the woodland can feed it, and winters here. Finding it asleep is the quiet climax: you lower the lantern and leave. Its trust grows by being left alone. It is never an enemy.
-- **A locked box** somewhere in the hand-made chambers, opened by the small iron key the old keeper lost in the spring's pool (the pan finds, Matt, October 31, 2026). What is in it is not decided yet.
-- The cairn builder (F14) can lead here. Since October 31, 2026 its trail ends above the underground spring instead (the spring-ore plan); the sea cave is entered through the same zone system (`docs/26-zones.md`): a fade, its own scene, light, sound and walk grid, and the island simulating on behind it.
+- **A locked box** wedged in a niche beside the grate, found as soon as the rubble is through and a mystery until it opens. The key doesn't fit it: it opens with something found deeper in, in the bear's chambers (Matt, November 1, 2026). What is in it, and what opens it, are not decided yet.
+- The cairn builder (F14) leads to the underground spring (the spring-ore plan, October 31, 2026), where the key is found; the key leads back here. The sea cave is entered through the same zone system (`docs/26-zones.md`): a fade, its own scene, light, sound and walk grid, and the island simulating on behind it.
 
 ### The arch
 
 - An old arch to the other side of the mouth, ringed with soot and scratched signs. Something moves in the dark beyond it, just past the lantern's reach.
-- **Without a weapon** the walker stops at the arch: *"Not with empty hands."*
+- **Without a weapon** the walker stops at the arch: *"Not with empty hands."* Seeing the arch adds the driftwood staff to the workbench's makes (F19).
 - **With a weapon they made**, the walker steps through. The first time, the arch's journal page opens the Lamplighter's trail.
 
 ### The Hollow
@@ -753,7 +759,7 @@ flowchart LR
 - **01** vision: the non-goal "no combat" gains its one exception, the Hollow, which is opt-in and never reaches the surface. **Matt's call.**
 - **04** render pipeline: an interior scene with its own pass list.
 - **05** look: the cave's darks in the palette.
-- **08** terrain: the cave mouth as a placed rock piece.
+- **08** terrain: the stack and its causeway in the land recipe (F19); the cave mouth as a placed rock piece in the stack's foot.
 - **11, 12** creatures: the bear as the landmark; the Hollow's kinds kept apart from the ecology.
 - **13** progression and journal: the Lamplighter's trail, the bestiary pages.
 - **15** input: swing (left click), dodge roll (Space), raise the lantern (right mouse held), the two special moves (Q and E, tap to fire), Tab to lock on and cycle, sling; the Hollow camera's numbers and wall fade.
@@ -785,7 +791,7 @@ flowchart LR
 ## Open questions
 
 - Is the one exception to "no combat" right, kept to the Hollow?
-- Does the sea open the cave in a tall cliff the player made (F16's first draft), or is it found in a cliff that's already there?
+- ~~Does the sea open the cave in a tall cliff the player made (F16's first draft), or is it found in a cliff that's already there?~~ Answered November 1, 2026 (Matt): neither; it is in the stack, offshore from the first morning, reached by the causeway (F19).
 - What do the Hollow's things look like? Matt is trying text-to-3D for the first kinds; who makes the rest is Matt's call (CLAUDE.md).
 - Should the player ever see anything of the measure, such as a hint like "the Hollow feels deeper today"?
 - **A character and inventory page** (Matt, October 26, 2026: needed with this build-out). The Walker page (doc 23, the I key) now exists with the kit, the pouches and hidden Q and E pegs, which sit as round tablets in the portrait's top corners, Q left and E right (Matt, October 27, 2026). With this build-out it gains the weapon and charm, the Q and E moves and the four tracks' marks, still words and drawings, never numbers.
