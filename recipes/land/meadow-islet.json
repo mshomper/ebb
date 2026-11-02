@@ -48,5 +48,51 @@
     "tries": 60
   },
   "camera": { "marginM": 6 },
-  "words": { "rose": "At the big low tide a pale shoal showed offshore, and by the next low water it stood above the sea: a little meadow islet, with a sandbar to it that dries at low tide." }
+  "words": { "rose": "At the big low tide a pale shoal showed offshore, and by the next low water it stood above the sea: a little meadow islet, with a sandbar to it that dries at low tide." },
+  "stoneNote": "F20, the marker stone (docs/future/20-meadow-stories.md, 'The marker stone'; Matt's calls of November 1, 2026; src/world/meadow). It comes up with the islet: placed once from the islet's seed on its dome, the highest of tries seeded spots within spotShare of its half length and width that reads as turf (score: height plus grassBias times the grass share), and drawn in the pieces pass as soon as the islet shows, so it rises with the ground. An islet that rose before F20 gets it on the next load. heightM, widthM and thickM: the stone's size (findable scale); taper: how much narrower its top is than its foot; leanDeg: its lean, toward leanTowardDeg from north (0 north, 90 east); sinkM: how far it is set into the ground. notch: a V cut down into its top, depthM deep and halfWidthM across at the top, through its thickness. look: rings and sides of its mesh, its albedo (linear) and the lichen's (two kinds, crusts of grey-green and yellow, shareGrey and shareYellow of its surface, in blotches blotchPerM across), its wobble (m). footR: holes keep this far off it; solidR: the walker walks round it. tapM: a tap within this of its foot opens its card; cardFootM. midsummer: summer day 0 (the longest day, day 14 of every 56-day year; the year starts at the spring equinox), at noonHour: the sun (src/world/sky/sun-moon.js, the land's latitude and tilt) through the notch marks one spot on the ground, a pale patch (mark: radiusM, albedo, edgeAlbedo, linear) that stays until untilHour the next morning. Only a midsummer after the islet rose counts, so on a new island it is first found in year 2. A dig within digM of the spot while the mark shows gives the old pot with the sickle blade (once per island); the walker says words.light the first time the mark shows with you within sayM of the stone. calendar: once the pot is found, the stone's card tells the season by its noon shadow, words.shadow by season third (twelve, from early spring).",
+  "stone": {
+    "tries": 40, "spotShare": 0.35, "grassBias": 0.6, "seed": 4471,
+    "heightM": 2.6, "widthM": 0.9, "thickM": 0.5, "taper": 0.3, "leanDeg": 6, "leanTowardDeg": 200, "sinkM": 0.25,
+    "notch": { "depthM": 0.22, "halfWidthM": 0.17 },
+    "look": { "rings": 14, "sides": 18, "wobbleM": 0.05, "albedo": [0.3, 0.3, 0.29], "lichenGrey": [0.42, 0.45, 0.38], "lichenYellow": [0.5, 0.42, 0.16], "shareGrey": 0.28, "shareYellow": 0.1, "blotchPerM": 4.5 },
+    "footR": 0.8, "solidR": 0.5, "tapM": 1.4,
+    "midsummer": { "day": 14, "noonHour": 12, "untilHour": 6, "digM": 0.9, "sayM": 40, "mark": { "radiusM": 0.32, "albedo": [0.78, 0.7, 0.46], "edgeAlbedo": [0.5, 0.45, 0.32] } }
+  },
+  "ryeNote": "F20, the rye (docs/future/20-meadow-stories.md, 'The first cut: rye'; recipes/flora/rye.json; src/world/meadow/rye.js). wild: count stalks of rye gone wild at the stone's foot, on its side away from the midsummer spot (aroundDeg either side of the stone's lean opposite, ringM from its middle), set in at size; they come up with the islet's first summary once it has risen, and any gone (gathered to nothing, buried) come back each late summer and autumn (backWindow, season positions), so the rye can never run out. Gathering their heads (recipes/world/gather.json rye.seed) gives rye seed for the seed tin. cut: Cut the rye on a ripe rye plant's card, with the sickle (cook tool sickle), within window (season positions: late summer into autumn, its heads gold), cuts every ripe rye plant within reachM of it (never the wild stalks, within wildM of the stone) and stands them up in stooks of up to perStook plants; a cut gives straw handfuls of rye straw for every strawPer plants (at least one) and a handful of rye seed for every seedPer plants (at least one), shared out among its stooks. stooks: they dry over dryH game hours, and each live game hour of rain adds rainH; Take up on a dry stook gives what it holds. look: the stook's sheaves (count, heightM, spreadM at the foot, albedo linear). The walker kneels for kneelS (the gather act) to cut and takeUpS to take up.",
+  "rye": {
+    "wild": { "count": 7, "ringM": [0.55, 1.25], "aroundDeg": 70, "size": 0.85, "seed": 9917, "backWindow": [1.7, 3.0] },
+    "cut": { "window": [1.75, 2.95], "reachM": 3.2, "wildM": 1.6, "perStook": 8, "strawPer": 8, "seedPer": 24, "kneelS": 1.6 },
+    "stooks": { "dryH": 72, "rainH": 1, "max": 24, "tapM": 0.6, "takeUpS": 1.2,
+      "look": { "sheaves": 8, "heightM": 0.85, "spreadM": 0.32, "albedo": [0.42, 0.33, 0.13], "band": [0.3, 0.22, 0.09] } }
+  },
+  "meadowWords": {
+    "stoneName": "Old standing stone",
+    "stoneBefore": "An old stone, set up by hand. There's a notch in its top.",
+    "stoneAfter": "It marks midsummer. Someone kept the year by it.",
+    "light": "The light through the notch is on the ground over there.",
+    "markName": "A patch of light",
+    "markLine": "The noon sun through the notch, falling on this one spot.",
+    "pot": "An old pot, under the light's spot. Inside, wrapped in rotten sacking: a sickle blade.",
+    "potName": "An old pot",
+    "potCard": "A sickle blade, rusted but sound. With a stick for a handle and some cord, it would cut the rye.",
+    "shadow": ["The shadow is growing shorter. Early spring.", "The shadow is shorter each noon. Spring.", "The shadow is short now. Late spring.",
+      "The shadow is shortest now. High summer.", "The shadow is short. Midsummer has passed.", "The shadow is growing longer. Late summer.",
+      "The shadow reaches further each noon. Early autumn.", "The shadow is long now. Autumn.", "The shadow is long. Late autumn.",
+      "The shadow is longest now. Midwinter is near.", "The shadow is at its longest. Midwinter.", "The shadow is shortening again. Late winter."],
+    "stookName": "Stook of rye",
+    "stookDrying": "Sheaves of rye stood up to dry. {left}.",
+    "stookDry": "Dry and rustling. Ready to take up.",
+    "stookWet": "Wet from the rain. It needs a few dry days.",
+    "days": "About {n} days more", "aDay": "About a day more", "hours": "A few hours more",
+    "takeUp": "Take up",
+    "took": "Straw and seed, shaken out of the heads.",
+    "cut": "Cut the rye",
+    "cutNoSickle": "The rye wants cutting with a sickle.",
+    "cutNotRipe": "Not gold yet. It's ready in late summer.",
+    "cutDone": "Cut and stood up in stooks to dry. Three dry days, and they can be taken up.",
+    "cutFull": "Take up the stooks standing before cutting more.",
+    "wildCard": "Rye, gone wild. Somebody grew it here once. Sow it before the frost, cut it when it's gold.",
+    "stripCard": "Sown before the frost, it comes up in autumn and turns gold by late summer.",
+    "sown": "Sown in a strip. It comes up once autumn comes, before the frost."
+  }
 }

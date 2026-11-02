@@ -87,6 +87,8 @@ export function result(ctx, stop) {
     lanterns,
     /** Set pieces (docs/future/14): the runner's live core, and the cairns' and the boat's taps and cards. */
     setpieces, cairns, passingBoat,
+    /** The marker stone and the rye (F20, src/world/meadow): the stone's, the light's and the stooks' cards. */
+    meadow: ctx.meadow ?? null,
     /**
      * Testing helpers, on window.ebb with `?debug`: autumn's misty morning and kept logs, skipping to
      * a time of year, and bringing a settled school or swarm. They change this island's time and

@@ -43,6 +43,8 @@ import * as save from './save.js';
 import * as testLinks from './test-links.js';
 import * as testCamp from './test-links-camp.js';
 import * as testFlax from './test-links-flax.js';
+import * as meadow from './meadow.js';
+import * as testMeadow from './test-links-meadow.js';
 
 /** @type {import('./context.js').StartStep[]} */
 export const SYSTEMS = [
@@ -74,6 +76,7 @@ export const SYSTEMS = [
   testLinks.springCave,
   testLinks.digStood,
   dig.run,
+  meadow.start,
   fixtures.start,
   testLinks.lanterns,
   testLinks.perch,
@@ -92,6 +95,7 @@ export const SYSTEMS = [
   testCamp.teas,
   testCamp.spring,
   testFlax.flax,
+  testMeadow.meadow,
   kit.teaReveal,
   testLinks.autumn,
   testLinks.frogScale,

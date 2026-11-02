@@ -26,7 +26,9 @@
     { "id": "teal-visit", "visit": "teals", "text": "Little ducks dropped onto the pond yesterday, dabbled for an hour and rose off it with a whirr. A wide pond you dug, with reeds all round its edge, might keep them through the winter." },
     { "id": "sandpiper-visit", "visit": "sandpipers", "text": "Small grey birds crept along the water's edge yesterday, picking at the weed on the stones. A stone wall built out where the waves break, eight paces long or more, might keep them." },
     { "id": "seal-visit", "visit": "seals", "text": "A round grey head rose out of the sea yesterday and watched the shore, then sank. A sandbar raised above the tide, and left quiet, might bring it ashore." },
-    { "id": "seal-pup", "text": "There is a white pup on the seals' sandbar. Watch from the shore and keep off the bar: its mother will not leave it.", "done": "sawPup", "when": "sealPup", "showMe": ["seals"] }
+    { "id": "seal-pup", "text": "There is a white pup on the seals' sandbar. Watch from the shore and keep off the bar: its mother will not leave it.", "done": "sawPup", "when": "sealPup", "showMe": ["seals"] },
+    { "id": "rye-sow", "text": "That rye by the old stone wants sowing on the islet's grass before the frost. A handful sows a whole strip.", "done": "ryeSown", "when": "ryeGathered" },
+    { "id": "stone-notch", "text": "The notch in the stone lines up with something. Maybe the sun?", "done": "stonePot", "when": "stoneSpring" }
   ],
   "tests": {
     "gathered": [{ "flag": "did:gathered" }, { "prefix": "picked:" }, { "flag": "intro:gather", "unless": "intro:skipped" }],
@@ -53,7 +55,11 @@
     "flaxPulled": [{ "learned": "pulled" }],
     "flaxRetted": [{ "learned": "retted" }],
     "sealPup": [{ "flag": "seals:pup" }],
-    "sawPup": [{ "learned": "pup" }]
+    "sawPup": [{ "learned": "pup" }],
+    "stoneSpring": [{ "flag": "setpiece:stone:spring" }],
+    "stonePot": [{ "flag": "setpiece:stone:pot" }],
+    "ryeGathered": [{ "flag": "setpiece:rye:gathered" }],
+    "ryeSown": [{ "flag": "setpiece:rye:sown" }]
   },
   "record": {
     "gather:done": "did:gathered",

@@ -4,6 +4,8 @@
 // Style: 24 px grid, 2 px padding, stroke 1.75, round caps and joins,
 // stroke="currentColor", optional accent fill at 20 percent. See README.md.
 
+import { MEADOW_ICONS } from './icons-meadow.js';
+
 const STROKE = 'fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"';
 const ACCENT = 'fill="currentColor" fill-opacity="0.2" stroke="none"';
 
@@ -1619,6 +1621,8 @@ const ICONS = {
     <path ${ACCENT} d="M10 15.5L18.2 7.3L20.7 9.8L12.5 18Z"/>
     <path d="M10 15.5L18.2 7.3L20.7 9.8L12.5 18L9.2 18.8Z"/>
     <path d="M16.6 8.9L19.1 11.4"/>`,
+  // The meadow islet's rye, its stooks, the marker stone and the sickle (F20, icons-meadow.js).
+  ...MEADOW_ICONS,
 };
 
 /** Names of every icon in the sprite. */

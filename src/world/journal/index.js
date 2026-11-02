@@ -427,6 +427,13 @@ export function createJournal(opts) {
       commit(learn(journal, p.species, 'pick:refused', { state: world.state, hour: hourIndex(), words }))),
     // Flax (F1): pulled by hand, then steeped and lifted out as fibre (src/world/gather/retting.js).
     on('plant:picked', (/** @type {{ sp: string }} */ p) => { if (p?.sp === 'flax') commit(learn(journal, 'flax', 'pulled', { state: world.state, hour: hourIndex(), words })); }),
+    // Any other page learning from what was done (F20: rye cut and taken up, the marker stone's pot):
+    // the line it learns, and its flag <sp>:<what> for "gives" lines and tests.
+    on('journal:learn', (/** @type {{ sp: string, what: string }} */ p) => {
+      if (!p?.sp || !words.species[p.sp]) return;
+      const r = learn(journal, p.sp, p.what, { state: world.state, hour: hourIndex(), words }), f = `${p.sp}:${p.what}`;
+      commit(r.journal.flags?.includes(f) ? r : { ...r, journal: { ...r.journal, flags: [...(r.journal.flags ?? []), f] } });
+    }),
     on('retting:lifted', () => {
       const r = learn(journal, 'flax', 'retted', { state: world.state, hour: hourIndex(), words });
       // The flag inks flax's "gives" line (what its fibre is for).

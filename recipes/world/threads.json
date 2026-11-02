@@ -89,7 +89,31 @@
       { "id": "rose", "test": "isletRose", "text": "At the big low tide a pale shoal showed offshore, where there was only sea before." },
       { "id": "risen", "test": "isletRisen", "text": "By the next low water it stood above the high tide: a little meadow islet, with a sandbar to our shore." },
       { "id": "walked", "test": "isletWalked", "text": "I walked out over the bar at low tide and stood on the islet. The ground there is dry and sunny, meadow, not pond." }
-    ], "pencil": "The bar is dry only around low tide. I watch the tide when I go.", "end": ["isletWalked"] }
+    ], "pencil": "The bar is dry only around low tide. I watch the tide when I go.", "end": ["isletWalked"] },
+    {
+      "id": "rye",
+      "title": "The rye",
+      "icon": "sheaf",
+      "lines": [
+        { "id": "gathered", "test": "ryeGathered", "text": "A few rye stalks gone wild beside the old stone on the islet. Somebody grew it here once. I saved the seed." },
+        { "id": "sown", "test": "ryeSown", "text": "I sowed a strip of rye on the islet before the frost." },
+        { "id": "cut", "test": "ryeCut", "text": "The rye is gold. I cut it and stood the sheaves up to dry." }
+      ],
+      "pencil": "Rye goes in before the frost, and comes in when it's gold.",
+      "end": ["ryeCut"]
+    },
+    {
+      "id": "marker-stone",
+      "title": "The marker stone",
+      "icon": "marker-stone",
+      "lines": [
+        { "id": "seen", "test": "stoneSeen", "text": "An old standing stone came up with the islet. There's a notch cut in its top." },
+        { "id": "pot", "test": "stonePot", "text": "At noon on midsummer, the light through the notch fell on one spot. I dug there: an old pot, and a sickle blade inside." },
+        { "id": "calendar", "test": "stoneCalendar", "text": "The stone keeps the year. I can read the season by its shadow now." }
+      ],
+      "pencil": "The notch lines up with something. Maybe the sun?",
+      "end": ["stoneCalendar"]
+    }
   ],
   "tests": { "lineMade": [{"made": ["line"]}], "fishFirst": [{"flag": "fishing:sketch"}], "fishRiddle": [{"flag": "fishing:riddle:1"}], "fishWater": [{"prefix": "fishing:water:"}], "fishRare": [{"flag": "fishing:rare"}], "chartFull": [{"flag": "fishing:chart:full"}],
     "stoneShown": [{ "flag": "dig:marked-stone" }],
@@ -117,6 +141,12 @@
     "keeperTend": [{ "flag": "keeper:tend" }],
     "isletRose": [{ "flag": "setpiece:islet:rose" }],
     "isletRisen": [{ "flag": "setpiece:islet:risen" }],
-    "isletWalked": [{ "flag": "setpiece:islet:walked" }]
+    "isletWalked": [{ "flag": "setpiece:islet:walked" }],
+    "ryeGathered": [{ "flag": "setpiece:rye:gathered" }],
+    "ryeSown": [{ "flag": "setpiece:rye:sown" }],
+    "ryeCut": [{ "flag": "setpiece:rye:cut" }],
+    "stoneSeen": [{ "flag": "setpiece:stone:seen" }, { "flag": "setpiece:stone:pot" }],
+    "stonePot": [{ "flag": "setpiece:stone:pot" }],
+    "stoneCalendar": [{ "flag": "setpiece:stone:calendar" }]
   }
 }

@@ -56,6 +56,8 @@
     "clover": { "label": "Red clover", "kind": "plants", "icon": "clover", "page": "clover" },
     "bedstraw": { "label": "Lady's bedstraw", "kind": "plants", "icon": "bedstraw", "page": "bedstraw" },
     "flax": { "label": "Flax", "kind": "plants", "icon": "flax", "page": "flax" },
+    "rye": { "label": "Rye", "kind": "plants", "icon": "rye", "page": "rye" },
+    "markerstone": { "label": "Marker stone", "kind": "ground", "icon": "marker-stone", "page": "markerstone", "flag": "setpiece:stone:seen" },
     "anemone": { "label": "Beadlet anemone", "kind": "small", "icon": "anemone", "page": "anemone" },
     "periwinkle": { "label": "Periwinkle", "kind": "small", "icon": "periwinkle", "page": "periwinkle" },
     "lugworm": { "label": "Lugworm casts", "kind": "small", "icon": "lugworm", "page": "lugworm" },
@@ -270,6 +272,10 @@
     { "a": "shore", "b": "seals", "ink": "flag:seals:seen", "note": "Seals rest upright in the shallows off the shore, watching." },
     { "a": "sandeel", "b": "seals", "ink": "seen:sandeel&flag:seals:seen", "note": "Seals hunt sand eels out over the sand." },
     { "a": "wrasse", "b": "seals", "ink": "seen:wrasse&flag:seals:seen", "note": "Seals take wrasse from among the rocks." },
-    { "a": "you", "b": "seals", "ink": "flag:seals:settled&flag:seals:seen", "note": "Seals came to the sandbar you raised, and stayed while you kept off it." }
+    { "a": "you", "b": "seals", "ink": "flag:seals:settled&flag:seals:seen", "note": "Seals came to the sandbar you raised, and stayed while you kept off it." },
+    { "a": "soil", "b": "rye", "ink": "grows:soil:rye", "note": "Rye stands on the islet's grassy patches, where turf has closed over the sand." },
+    { "a": "markerstone", "b": "rye", "ink": "flag:setpiece:stone:seen", "note": "A few rye stalks gone wild at the old stone's foot, left by whoever set it." },
+    { "a": "markerstone", "b": "you", "ink": "flag:setpiece:stone:pot", "note": "The midsummer light through the notch showed where the sickle blade lay." },
+    { "a": "rye", "b": "you", "ink": "flag:rye:straw", "note": "Rye cut with the sickle gives straw, and seed for next autumn." }
   ]
 }
