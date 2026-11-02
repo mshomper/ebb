@@ -973,6 +973,18 @@ const ICONS = {
     <path d="M11.6 10.9C13.6 13.5 15.8 14.2 17.9 12"/>
     <circle cx="4.9" cy="12.1" r="0.8" fill="currentColor" stroke="none"/>
     <path d="M2.5 20.5H21.5"/>`,
+  // Purple sandpiper (B3, a winter flock): from the side, plump and low on short legs on the
+  // stones of a sea wall, its long bill drooping a little at the tip, a wave at the wall's foot.
+  sandpiper: `
+    <path ${ACCENT} d="M3 8.6C5.4 9 7.4 9.8 9 10.4C10.8 8.8 13.6 8.4 15.6 9.6C16.6 10.2 17.2 11 17.4 11.8C17 14 15.2 15.2 12.4 15.2C9.6 15.2 7.2 13.8 6.4 12Z"/>
+    <path d="M3 8.6C5.4 9 7.4 9.8 9 10.4C10.8 8.8 13.6 8.4 15.6 9.6C16.6 10.2 17.2 11 17.4 11.8C17 14 15.2 15.2 12.4 15.2C9.6 15.2 7.2 13.8 6.4 12L3 8.6Z"/>
+    <path d="M17.4 11.6C19 11.8 20.4 12.4 21.5 13.6"/>
+    <circle cx="15.6" cy="10.9" r="0.55" fill="currentColor" stroke="none"/>
+    <path d="M8.2 11.4C10.2 12.8 12.4 12.8 14 11.8"/>
+    <path d="M11.2 15.2L11 17M13.4 15L13.6 17"/>
+    <path ${ACCENT} d="M7 17H19V21.5H7Z"/>
+    <path d="M7 17H19V21.5H7ZM13 17V19.2M7 19.2H19M10 19.2V21.5M16 19.2V21.5"/>
+    <path d="M2.5 20C3.5 19.2 4.5 19.2 5.5 20"/>`,
 
   // The Web's shore features (journal-web.json). Rock pool: water held between two rocks.
   pool: `

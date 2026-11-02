@@ -12,13 +12,15 @@ import { poseSkeleton, moveMatrix } from '../src/world/creatures/pose.js';
 import { MAX_BONES, packMesh } from '../src/world/creatures/bodies.js';
 import { bakeBody } from '../src/world/creatures/body-bake.js';
 import { birdRig } from '../src/world/creatures/bird-rig.js';
-import { poseBird, idlePose, gaitPose, peckPose, flipPose, preenPose, flyPose, takeoffPose, landPose, restPose } from '../src/world/creatures/bird-motion.js';
+import { poseBird, idlePose, gaitPose, peckPose, flipPose, preenPose, flyPose, takeoffPose, landPose, restPose, bobPose, roostPose } from '../src/world/creatures/bird-motion.js';
 import { createStage } from './shore-birds-lab-stage.js';
 
 const $ = (/** @type {string} */ id) => /** @type {HTMLElement} */ (document.getElementById(id));
-const R = await (await fetch(new URL('../recipes/birds/turnstone.json', import.meta.url))).json();
-const M = R.motion, k = R.displayScale;
 const query = new URLSearchParams(location.search);
+// `?bird=purple-sandpiper` (B3 wave 3) carries the sandpiper instead: its creep, bob and tucked roost.
+const BIRD = query.get('bird') === 'purple-sandpiper' ? 'purple-sandpiper' : 'turnstone';
+const R = await (await fetch(new URL(`../recipes/birds/${BIRD}.json`, import.meta.url))).json();
+const M = R.motion, k = R.displayScale;
 const HOLD = query.has('hold') ? Number(query.get('hold')) : null;
 
 const made = await createStage(/** @type {HTMLCanvasElement} */ ($('view')));
@@ -28,11 +30,11 @@ const rig = birdRig(R.shape);
 
 // --- the turnstone, baked in both plumages on the worker pool ---
 const BAKE = { module: './world/creatures/bird-model.js', fn: 'bakeBird' };
-let plumage = query.get('plumage') === 'breeding' ? 'breeding' : 'winter';
+let plumage = query.get('plumage') === 'breeding' && R.plumage.breeding ? 'breeding' : 'winter';
 // Each plumage twice: a single bird (bake.maxTris) and a flock bird (bake.flockTris), named
 // `<plumage>` and `<plumage>-flock`.
 const B = R.bake;
-const baked = await Promise.all(['winter', 'breeding'].flatMap((p) => [['', B.maxTris], ['-flock', B.flockTris]].map(([tag, maxTris]) => run(BAKE, {
+const baked = await Promise.all(Object.keys(R.plumage).flatMap((p) => [['', B.maxTris], ['-flock', B.flockTris]].map(([tag, maxTris]) => run(BAKE, {
   shape: R.shape, plumage: R.plumage[p], wingPattern: R.wingPattern, cellM: B.cellM, wingCellM: B.wingCellM, blendM: B.blendM,
   maxTris, wingShare: B.wingShare, attrWeight: B.attrWeight }).then((/** @type {any} */ m) => { stage.setMesh(p + tag, m); return m; }))));
 
@@ -76,9 +78,9 @@ const CRUISE_Y = 0.25;
  * @typedef {{ id: string, label: string, s: number, enter?: (a: Actor) => void, step: (a: Actor, u: number, t: number, dt: number) => import('../src/world/creatures/bird-motion.js').BirdPose }} Segment
  */
 
-/** A walk or run of `s` seconds, easing in and out. @param {'walk' | 'run'} kind @param {number} s @returns {Segment} */
+/** A walk, run or creep of `s` seconds, easing in and out. @param {'walk' | 'run' | 'creep'} kind @param {number} s @returns {Segment} */
 function gaitSeg(kind, s) {
-  return { id: kind, label: kind === 'walk' ? 'scurrying along' : 'running', s, step: (a, u, t, dt) => {
+  return { id: kind, label: kind === 'walk' ? 'scurrying along' : kind === 'creep' ? 'creeping low over wet rock' : 'running', s, step: (a, u, t, dt) => {
     const e = Math.min(1, Math.min(u * s, (1 - u) * s) / 0.18);
     const v = M[kind].mps * e;
     a.dist += v * dt; fwd(a, v * k * dt);
@@ -152,11 +154,26 @@ function lapSeg(backM) {
   return seg;
 }
 
+/** The sandpiper's life loop: no stones turned; it creeps, picks, bobs and preens, then flies its lap. @returns {Segment[]} */
+const sandpiperLife = () => [
+  still('idle', 'standing, breathing, looking about', 1.6, (t) => idlePose(t, M)),
+  gaitSeg('creep', 3),
+  still('peck', 'picking at the weed', M.peck.s, (t, u) => peckPose(t, u, M)),
+  still('peck', 'picking at the weed', M.peck.s, (t, u) => peckPose(t, u, M)),
+  still('bob', 'bobbing', M.bob.s, (t, u) => bobPose(t, u, M)),
+  gaitSeg('creep', 2),
+  still('peck', 'picking at the weed', M.peck.s, (t, u) => peckPose(t, u, M)),
+  still('preen', 'preening', M.preen.s, (t, u) => preenPose(t, u, M)),
+  takeoffSeg(),
+  lapSeg(() => bird.z - homeZ + LAND_M * k),
+  landSeg(),
+];
+
 /** Where the life loop began (drawn z), for the lap to fly home. */
 let homeZ = 0;
 /** @type {Record<string, () => Segment[]>} */
 const LOOPS = {
-  life: () => [
+  life: () => M.creep ? sandpiperLife() : [
     still('idle', 'standing, breathing, looking about', 1.6, (t) => idlePose(t, M)),
     gaitSeg('walk', 2.2),
     flipSeg('stone'),
@@ -182,6 +199,9 @@ const LOOPS = {
   land: () => [{ id: 'fly', label: 'gliding in', s: 0.8, enter: (a) => { a.z = -(0.8 * FLY_MPS + LAND_M) * k; a.y = CRUISE_Y * k; }, step: (a, u, t, dt) => {
     fwd(a, FLY_MPS * k * dt); a.beat += dt * M.flap.hz; a.y = CRUISE_Y * k; return flyPose(t, a.beat, Math.min(1, u * 2), M); } }, landSeg(),
   still('idle', 'standing', 1.2, (t) => idlePose(t, M))],
+  creep: () => [gaitSeg('creep', 4)],
+  bob: () => [still('bob', 'bobbing', M.bob?.s ?? 1, (t, u) => bobPose(t, u, M)), still('idle', 'standing', 0.8, (t) => idlePose(t, M))],
+  roost: () => [still('roost', 'roosting tucked: head back in the feathers', 8, (t, u) => roostPose(t, u * 8, M))],
   wings: () => [still('wings', 'the wing telescoping open and closed', 4, (t, u) => {
     const P = restPose(); P.t = t; const s = Math.min(1, Math.max(0, Math.sin(u * Math.PI) * 1.5));
     P.wing = { spread: s, up: 0.35 * s, sweep: 0, handUp: 0, handFold: 0 }; return P; })],
@@ -341,3 +361,8 @@ if (query.has('view')) setView(/** @type {any} */ (query.get('view')));
 $('note').textContent = 'Watch the feet against the grid: they stay put on the sand while the body passes over them.';
 /** @type {any} */ (window).shoreLab = { rig, R, cam, bird: () => bird, seg: () => segs[segI]?.id, setClip: (/** @type {string} */ c) => { clip = c; startClip(); autoView(); } };
 requestAnimationFrame(frame);
+
+// Which bird: the sandpiper's own clips show only for it; plumage buttons only for plumages it has.
+for (const b of document.querySelectorAll('[data-only]')) /** @type {HTMLElement} */ (b).hidden = !M[/** @type {HTMLElement} */ (b).dataset.only ?? ''];
+for (const b of $('plumage').querySelectorAll('button')) /** @type {HTMLElement} */ (b).hidden = !R.plumage[/** @type {HTMLElement} */ (b).dataset.plumage ?? ''];
+for (const a of $('birds').querySelectorAll('a')) a.setAttribute('aria-current', String(/** @type {HTMLElement} */ (a).dataset.bird === BIRD));

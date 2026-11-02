@@ -16,11 +16,14 @@
 //   around   once the flock knows you (presence.knownTrust), a walker standing still near them
 //            draws them to forage around your boots
 //   leave    a visit's birds (or the whole flock when told) fly off out over the sea and are gone
+// The purple sandpipers (B3 wave 3) live the same life on a sea wall's wet rock, with three things
+// of their own from their recipe: a slow gait close by (life.slowGait 'creep'), a bob now and
+// then (life.bobShare), a tucked roost (the bird's motion.roost), and a tighter flush (seaOutJitter).
 // Lengths in the motion block are real metres; on the island everything is drawn displayScale
 // times, so a bird covers displayScale times the ground its legs walk.
 
 import { hash32 } from '../../core/rng.js';
-import { poseBird, idlePose, gaitPose, peckPose, flipPose, preenPose, flyPose, takeoffPose, landPose } from '../creatures/bird-motion.js';
+import { poseBird, idlePose, gaitPose, peckPose, flipPose, preenPose, flyPose, takeoffPose, landPose, bobPose, roostPose } from '../creatures/bird-motion.js';
 import { ringScale } from '../creatures/presence.js';
 
 /** The golden angle, for the roost's spiral. */
@@ -164,7 +167,7 @@ export function createFlockLife(o) {
     // Out over whichever side is lower (the sea), so the flock swings out over the water.
     const sx = -uz, sz = ux, mx = (b.x + end.x) / 2, mz = (b.z + end.z) / 2;
     const side = o.ground(mx + sx * 3, mz + sz * 3) < o.ground(mx - sx * 3, mz - sz * 3) ? 1 : -1;
-    const out = L.seaOutM * (0.7 + 0.6 * b.r());
+    const j = L.seaOutJitter ?? 0.6, out = L.seaOutM * (1 - j / 2 + j * b.r());
     const cx = mx + sx * side * out, cz = mz + sz * side * out;
     const len = Math.hypot(cx - b.x, cz - b.z) + Math.hypot(end.x - cx, end.z - cz);
     b.path = { x0: b.x, z0: b.z, cx, cz, x1: end.x, z1: end.z, up: between(b.r, L.flyUpM), len };
@@ -179,6 +182,7 @@ export function createFlockLife(o) {
       if (onWrack && u < L.flipShare) return begin(b, 'flip', M.flip.s);
       if (u < L.flipShare + 0.3) { b.n = Math.round(between(b.r, L.pecks)); return begin(b, 'peck', M.peck.s * b.n); }
       if (u < L.flipShare + 0.3 + L.preenShare) return begin(b, 'preen', M.preen.s);
+      if (L.bobShare && u < L.flipShare + 0.3 + L.preenShare + L.bobShare) return begin(b, 'bob', M.bob.s);
     }
     if (u < 0.35) return begin(b, 'idle', between(b.r, L.idleS));
     const t = spotNear(b, c.x, c.z, ctx.spread, ctx.spots);
@@ -195,7 +199,7 @@ export function createFlockLife(o) {
   /** Move a running bird on toward its target. @param {Bird} b @param {number} dt */
   function stepRun(b, dt) {
     const dx = b.tx - b.x, dz = b.tz - b.z, d = Math.hypot(dx, dz);
-    const kind = d > L.runOverM ? 'run' : 'walk', G = M[kind];
+    const kind = d > L.runOverM ? 'run' : (L.slowGait ?? 'walk'), G = M[kind];
     const v = Math.min(d, G.mps * k * dt);
     if (d > 1e-3) { const want = Math.atan2(dx, dz); let dy = want - b.yaw; dy -= Math.round(dy / (Math.PI * 2)) * Math.PI * 2; b.yaw += dy * Math.min(1, dt * 10); }
     b.x += Math.sin(b.yaw) * v; b.z += Math.cos(b.yaw) * v;
@@ -277,6 +281,15 @@ export function createFlockLife(o) {
 
     // Roost: the highest spot near the middle, everyone close.
     const roostAt = ctx.roost ? (ctx.spots.filter((s) => Math.hypot(s.x - mid.x, s.z - mid.z) < 10).sort((a, b) => o.ground(b.x, b.z) - o.ground(a.x, a.z))[0] ?? mid) : null;
+    // On a narrow wall top (the sandpipers, life.roostOnTop) the spiral would spill down the face:
+    // each takes its own spot of the top instead, nearest the highest first, a body apart.
+    /** @type {{ x: number, z: number }[]} */ const top = [];
+    if (roostAt && L.roostOnTop) {
+      const topY = o.ground(roostAt.x, roostAt.z), apart = 2 * L.bodyHalfM[0] * ROOST_PACK * 1.6;
+      const high = ctx.spots.filter((s) => Math.hypot(s.x - roostAt.x, s.z - roostAt.z) < 10 && o.ground(s.x, s.z) >= topY - 0.15)
+        .sort((a, b) => Math.hypot(a.x - roostAt.x, a.z - roostAt.z) - Math.hypot(b.x - roostAt.x, b.z - roostAt.z));
+      for (const s of high) if (top.every((q) => Math.hypot(q.x - s.x, q.z - s.z) >= apart)) top.push(s);
+    }
 
     for (const b of live) {
       b.t += dt;
@@ -308,9 +321,17 @@ export function createFlockLife(o) {
         // A sunflower's spiral by rank, so no two share a place and the gaps stay even.
         const rank = live.indexOf(b), rr = 2 * L.bodyHalfM[0] * ROOST_PACK * Math.sqrt(rank + 0.5), ra = rank * GOLDEN;
         const off = { x: Math.sin(ra) * rr, z: Math.cos(ra) * rr };
-        const tx = roostAt.x + off.x, tz = roostAt.z + off.z;
+        const mine = top.length ? top[rank % top.length] : null;
+        const tx = mine ? mine.x : roostAt.x + off.x, tz = mine ? mine.z : roostAt.z + off.z;
         if (Math.hypot(tx - b.x, tz - b.z) > 0.25) { b.tx = tx; b.tz = tz; b.then = 'roost'; begin(b, 'run', 0); P0 = idlePose(clock, M, b.id); }
         else if (b.mode === 'preen') { P0 = preenPose(clock, u, M); if (u >= 1) begin(b, 'roost', between(b.r, [6, 20])); }
+        else if (M.roost) {
+          // Tucked: settled down with the bill in the back feathers, only now and then a preen.
+          if (b.mode !== 'roost') begin(b, 'roost', between(b.r, [20, 60]));
+          P0 = roostPose(clock, b.t, M, b.id % 2 ? 1 : -1);
+          if (b.t >= b.dur) begin(b, b.r() < 0.25 ? 'preen' : 'roost', b.r() < 0.25 ? M.preen.s : between(b.r, [20, 60]));
+          if (b.mode === 'roost' && b.t === 0) b.t = M.roost.settleS;
+        }
         else { if (b.mode !== 'roost') begin(b, 'roost', between(b.r, [6, 20])); P0 = idlePose(clock * 0.5, M, b.id); if (b.t >= b.dur) begin(b, b.r() < 0.4 ? 'preen' : 'roost', b.r() < 0.4 ? M.preen.s : between(b.r, [6, 20])); }
       } else if (b.mode === 'run') {
         const r = stepRun(b, dt);
@@ -321,6 +342,7 @@ export function createFlockLife(o) {
         if (b.mode === 'flip') P0 = flipPose(clock, u, M).pose;
         else if (b.mode === 'peck') P0 = peckPose(clock, (b.t / M.peck.s) % 1, M);
         else if (b.mode === 'preen') P0 = preenPose(clock, u, M);
+        else if (b.mode === 'bob') P0 = bobPose(clock, u, M);
         else P0 = idlePose(clock, M, b.id);
         if (b.mode === 'roost') begin(b, 'idle', 0);
         if (b.t >= b.dur) {

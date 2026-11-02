@@ -34,6 +34,7 @@ import { tealCall } from './voices/teal.js';
  * @property {any} [hen]   recipes/audio/hen.json (the hen's murmur, alarm and the distant crow)
  * @property {any} [turnstone] recipes/audio/turnstone.json (the flock's chatter, a feeding bird's tuk, the roost's twitter)
  * @property {any} [teal] recipes/audio/teal.json (the drake's krik, the duck's murmur, the flock's whirr as it flushes)
+ * @property {any} [sandpiper] recipes/audio/purple-sandpiper.json (the same three, softer and lower)
  * @property {any} [proc]  recipes/audio/procedural.json, for the frog's plop into water
  * @property {{sizeCm: number[], gainDb: number[]}} [plop]  the plop's size and level ranges
  */
@@ -228,6 +229,25 @@ export function createVoices(mixer, voiceRecipes, seed, opts = {}) {
     return true;
   }
 
+  // ---- The purple sandpipers (B3 wave 3): the turnstones' call maker, their own recipe -----------
+  const SP = voiceRecipes.sandpiper;
+  let sandpiperCount = 0;
+
+  /**
+   * One of the purple sandpipers' sounds, placed where it comes from: the flush's kwit, a wit, a twitter.
+   * @param {'chatter'|'tuk'|'murmur'} kind @param {number[]} pos [x, y, z] @param {number} [when] audio time
+   * @returns {boolean} whether it sounds (false without their recipe)
+   */
+  function sandpiper(kind, pos, when) {
+    if (!SP) return false;
+    const chain = placedChain(ctx, out, { ...spatial, refDistance: SP.spatial.refDistance, rolloff: SP.spatial.rolloff });
+    const t = Math.max(when ?? ctx.currentTime, ctx.currentTime);
+    chain.place(pos, ear, t);
+    const end = turnstoneCall(ctx, chain.input, kind, SP, stream(hash32(seed >>> 0, 0x5a9), sandpiperCount++), t);
+    setTimeout(() => chain.dispose(), (end - ctx.currentTime + 1) * 1000);
+    return true;
+  }
+
   // ---- Dragonflies -----------------------------------------------------------------------------
   const D = voiceRecipes.dragonfly;
   /** @type {Map<string|number, ReturnType<typeof createWingVoice>>} */
@@ -334,6 +354,7 @@ export function createVoices(mixer, voiceRecipes, seed, opts = {}) {
     hen,
     turnstone,
     teal,
+    sandpiper,
     /** Calls sounding now. */
     liveCount: () => { prune(); return live.length; },
     /** Midge swarms heard now: id, distance from the eye, density. */

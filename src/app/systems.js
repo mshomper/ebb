@@ -29,6 +29,7 @@ import * as shaped from './shaped.js';
 import * as turnstones from './turnstones.js';
 import * as eels from './eels.js';
 import * as teal from './teal.js';
+import * as sandpipers from './sandpipers.js';
 import * as graph from './graph.js';
 import * as photo from './photo.js';
 import * as quality from './quality.js';
@@ -83,6 +84,7 @@ export const SYSTEMS = [
   turnstones.start,
   eels.start,
   teal.start,
+  sandpipers.start,
   testLinks.packs,
   testCamp.camp,
   testCamp.teas,
