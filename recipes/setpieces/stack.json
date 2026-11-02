@@ -22,6 +22,9 @@
   "rubble": { "stretches": 8 },
   "rubbleNote": "The rubble in the mouth (F16): dug a stretch a game day with the shovel, `stretches` in all. At its end the grate and the box (a later branch); until then the card says the rock beyond is packed hard.",
 
+  "mouthLook": { "stone": [0.3, 0.29, 0.27] },
+  "mouthLookNote": "The cave mouth's stones on the island (src/world/stack/mouth-mesh.js): their albedo under the rock scan (linear; the palette paints it).",
+
   "words": {
     "seen": "Someone kept a light out there once.",
     "road": "The sea has left a road to the stack.",

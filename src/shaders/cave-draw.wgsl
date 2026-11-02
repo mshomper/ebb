@@ -30,6 +30,8 @@ struct CaveUniforms {
   lamp: vec4f,      // xyz: its flame (world); w: its glass's glow (nits), 0 when it is cold
   lampE: vec4f,     // rgb: its luminous intensity (cd, flicker folded in); w: 1 when the rock carries baked light (vertex col: r, g lamp sight, b occlusion)
   lampMix: vec4f,   // x: which baked sight (0 the floor spot, 1 the hook); y: its bounce per cd (lux); z: the air's scatter per meter; w: wet glint strength
+  soot: vec4f,      // xyz: the middle of a sooted opening (world; the mouth's arch); w: how far the soot reaches (m), 0 for none
+  sootLook: vec4f,  // x: how dark it goes (0..1); yzw: unused
 };
 
 @group(0) @binding(0) var<uniform> frame: FrameUniforms;
@@ -185,6 +187,15 @@ fn lampHaze(p: vec3f) -> vec3f {
     let grain = 0.75 + 0.5 * vnoise(q * 11.0);
     let m = (0.7 + 0.6 * smoothstep(0.3, 0.7, vnoise(q * 2.3))) * band * grain * mix(0.6, 1.0, smoothstep(-0.3, 0.6, n.y));
     albedo = mix(mix(cu.rock.rgb, cu.floorAlb.rgb, up), cu.rockWet.rgb, wet * 0.8) * m;
+    // Old soot round the arch's opening, thicker above it where the smoke went up, and the scratched
+    // signs in it: pale fine lines where the soot was scored through.
+    if (cu.soot.w > 0.0) {
+      let sd = (p - cu.soot.xyz) / vec3f(cu.soot.w, cu.soot.w * 1.35, cu.soot.w);
+      let up = smoothstep(-0.6, 0.7, (p.y - cu.soot.y) / cu.soot.w);
+      let sootK = (1.0 - smoothstep(0.45, 1.0, length(sd))) * (0.45 + 0.55 * up) * (0.75 + 0.25 * vnoise(q * 4.0));
+      let scratch = smoothstep(0.9, 0.96, vnoise(vec3f(q.x * 26.0, q.y * 2.2, q.z * 26.0))) * smoothstep(0.25, 0.6, sootK) * (1.0 - smoothstep(0.75, 0.95, sootK));
+      albedo *= (1.0 - cu.sootLook.x * sootK) + scratch * 1.4;
+    }
     // Under the water: darker still, weed-stained, and broken up (the bed of a rock pool).
     let under = 1.0 - smoothstep(cu.pool.y - 0.06, cu.pool.y, p.y);
     albedo *= mix(1.0, 0.45 + 0.5 * vnoise(q * 6.0), under);

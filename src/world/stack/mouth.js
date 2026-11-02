@@ -47,17 +47,20 @@ export function createStackMouth(o) {
   const flag = (f) => { if (get('journal') && !flags().includes(f)) dispatch(/** @type {any} */ ({ type: 'journal.flag', flag: f })); };
   const notice = (/** @type {string} */ text) => emitDeferred('island:notice', { text, showS: 6 });
 
-  // Where the hook is: on the wall beside the arch's opening, toward the way in.
+  // Where the hook is: on the wall beside the arch's opening, toward the way in, at the hook's height.
+  // Found in the rock itself (the field, in 3D), so its arm goes into stone: wall, where it meets the
+  // rock; tip, armM back out into the room, where the lantern hangs (x, z in the mouth frame).
   const hookAt = (() => {
-    const A = S.arch, x = A.at[0] - A.halfWidthM - T.hook.fromArchM;
-    for (let z = A.at[1] - 1.5; z < A.at[1] + 2; z += 0.02) if (shape.inside(x, z) < 0.1) return { x, z: z - 0.08 };
-    return { x, z: A.at[1] };
+    const A = S.arch, x = A.at[0] - A.halfWidthM - T.hook.fromArchM, y = T.hook.heightM;
+    let wall = A.at[1];
+    for (let z = A.at[1] - 3; z < A.at[1] + 3; z += 0.01) if (shape.air(x, y, z) < 0) { wall = z; break; }
+    return { x, z: wall - T.hook.armM, wall: wall + 0.04 };
   })();
 
   /** Where the lantern's flame is, lying on the floor or hanging on its hook (mouth frame [x, y, z]). */
   const flameAt = {
     floor: [T.lantern.at[0], shape.floorAt(T.lantern.at[0], T.lantern.at[1]) + T.lantern.radiusM, T.lantern.at[1]],
-    hook: [hookAt.x + 0.12, T.hook.heightM - 0.06 - T.lantern.heightM * 0.55, hookAt.z],
+    hook: [hookAt.x, T.hook.heightM - 0.06 - T.lantern.heightM * 0.55, hookAt.z],
   };
 
   /** The floor (world height). @param {number} x @param {number} z */
@@ -136,7 +139,7 @@ export function createStackMouth(o) {
     const lan = lanternMesh();
     if (s.lantern === 'hung') {
       const y0 = T.hook.heightM - T.lantern.heightM - 0.06;
-      for (let i = 0; i < lan.data.length; i += 10) { lan.data[i] += hookAt.x + 0.12; lan.data[i + 1] += y0; lan.data[i + 2] += hookAt.z; }
+      for (let i = 0; i < lan.data.length; i += 10) { lan.data[i] += hookAt.x; lan.data[i + 1] += y0; lan.data[i + 2] += hookAt.z; }
     } else {
       // On its side: its axis turned to lie along x, resting on the floor.
       const [ax, az] = T.lantern.at, y0 = shape.floorAt(ax, az) + T.lantern.radiusM, h = T.lantern.heightM;
@@ -149,19 +152,16 @@ export function createStackMouth(o) {
     parts.push(place(lan));
     // The hook: an iron arm out of the wall, bent up at its end.
     const hy = T.hook.heightM;
-    parts.push(place(tube([[hookAt.x - 0.02, hy, hookAt.z + 0.06], [hookAt.x + 0.12, hy, hookAt.z], [hookAt.x + 0.14, hy + 0.05, hookAt.z]], 0.012, 5, K.iron)));
+    // From inside the rock out to its tip, bent up there; and a short iron plate where it is driven in.
+    parts.push(place(tube([[hookAt.x, hy - 0.02, hookAt.wall], [hookAt.x, hy, hookAt.z + 0.02], [hookAt.x, hy + 0.05, hookAt.z]], 0.014, 6, K.iron)));
+    parts.push(place(tube([[hookAt.x, hy - 0.09, hookAt.wall - 0.05], [hookAt.x, hy + 0.07, hookAt.wall - 0.05]], 0.03, 6, K.iron)));
+    // The ring of the lantern's bail over the hook's tip, when it hangs.
+    if (s.lantern === 'hung') parts.push(place(tube([[hookAt.x, hy + 0.04, hookAt.z], [hookAt.x, hy - 0.065, hookAt.z]], 0.006, 4, K.iron)));
     // The note: a folded sheet with a small stone on it.
     const [nx0, nz0] = T.note.at, [nw, nd] = T.note.sizeM, ny0 = shape.floorAt(nx0, nz0) + 0.012;
     parts.push(place({ data: [nx0 - nw / 2, ny0, nz0 - nd / 2, 0, 1, 0, ...K.note, 1, nx0 + nw / 2, ny0, nz0 - nd / 2, 0, 1, 0, ...K.note, 1,
       nx0 + nw / 2, ny0 + 0.006, nz0 + nd / 2, 0, 1, 0, ...K.note, 1, nx0 - nw / 2, ny0 + 0.006, nz0 + nd / 2, 0, 1, 0, ...K.note, 1], idx: [0, 2, 1, 0, 3, 2] }));
     parts.push(place(lumpStone(nx0 + 0.02, ny0, nz0, 0.035, (k) => ((hash32(17, k) >>> 8) / 16777216), 0.2, K.stone)));
-    // The soot ring round the arch's opening.
-    const A = S.arch, ring = [];
-    for (let k = 0; k <= 24; k++) {
-      const t = Math.PI * (k / 24), sx = Math.cos(t) * (A.halfWidthM + 0.04), sy = Math.sin(t) * (A.heightM + 0.04);
-      ring.push([A.at[0] - sx * A.dir[1], Math.max(0.02, sy), A.at[1] + sx * A.dir[0] - 0.02]);
-    }
-    parts.push(place(tube(ring, T.soot.radiusM, 6, K.soot)));
     parts.push(place(rubbleMesh(s.rubble)));
     parts.push(place(poolStones()));
     o.pass.setMesh('things', join(parts));
@@ -182,14 +182,21 @@ export function createStackMouth(o) {
     const P = S.rubble, B = T.rubble, front = -0.6 + (P.lengthM + 0.6) * Math.min(1, dug / Math.max(1, o.stretches));
     const u = (/** @type {number} */ i, /** @type {number} */ k) => (hash32(B.seed, i, k) >>> 8) / 16777216;
     const parts = [];
-    for (let i = 0; i < B.stones; i++) {
-      const s = -0.4 + u(i, 1) * (P.lengthM + 0.4), t = (u(i, 2) - 0.5) * 2 * P.halfWidthM * 0.85;
-      if (s < front) continue;
-      // Heaped: most low, fewer higher, the heap rising to the roof a little way in.
-      const lift = u(i, 3) ** 2 * Math.min(P.heightM - 0.35, 0.25 + (s - front) * 1.2);
-      const x = P.at[0] + P.dir[0] * s - P.dir[1] * t, z = P.at[1] + P.dir[1] * s + P.dir[0] * t;
-      const size = B.sizeM[0] + (B.sizeM[1] - B.sizeM[0]) * u(i, 4) ** 1.5;
-      parts.push(lumpStone(x, lift, z, size / 2, (k) => u(i, k + 5), 0.25, R.look.stone, 0.75));
+    // Stacked from the floor up, deepest first: each stone rests on the floor or on the stones under
+    // it, never in the air; the heap slopes down toward the dug face and stays under the roof.
+    const cand = Array.from({ length: B.stones }, (_, i) => ({ i, s: -0.4 + u(i, 1) * (P.lengthM + 0.4), r: (B.sizeM[0] + (B.sizeM[1] - B.sizeM[0]) * u(i, 4) ** 1.5) / 2 }))
+      .filter((c) => c.s >= front).sort((a, b) => b.s - a.s || a.i - b.i);
+    /** @type {{ x: number, z: number, r: number, top: number }[]} */ const laid = [];
+    for (const c of cand) {
+      const t = (u(c.i, 2) - 0.5) * 2 * Math.max(0, P.halfWidthM - c.r * 0.7);
+      const x = P.at[0] + P.dir[0] * c.s - P.dir[1] * t, z = P.at[1] + P.dir[1] * c.s + P.dir[0] * t;
+      let base = shape.floorAt(x, z) - c.r * 0.15;
+      for (const q of laid) if (Math.hypot(q.x - x, q.z - z) < (q.r + c.r) * 0.8) base = Math.max(base, q.top - c.r * 0.45);
+      const roof = P.heightM * Math.sqrt(Math.max(0, 1 - (t / P.halfWidthM) ** 2)) - 0.08;
+      const top = base + c.r * 1.3;
+      if (top > Math.min(roof, 0.4 + (c.s - front) * 1.15)) continue;
+      laid.push({ x, z, r: c.r, top });
+      parts.push(lumpStone(x, base, z, c.r, (k) => u(c.i, k + 5), 0.25, R.look.stone, 0.75));
     }
     const all = join(parts);
     return { data: Array.from(all.data), idx: Array.from(all.idx) };
@@ -213,7 +220,7 @@ export function createStackMouth(o) {
   // ---- the things you do ----
 
   /** @type {string | null} */ let acting = null;
-  function light() {
+  function lightLantern() {
     if (o.walk.zone !== ID || saved().lantern !== 'floor' || o.walk.busy()) return;
     update('identify', () => null);
     if (o.walk.act('strike')) acting = 'light'; else lit();
@@ -255,7 +262,7 @@ export function createStackMouth(o) {
   const base = { noPage: true, stage: -1, sub: null, canCarry: false };
   const at = (/** @type {number} */ a, /** @type {number} */ b) => { const [x, z] = world(a, b); return { wx: x, wz: z }; };
   function lanternCard() {
-    const s = saved(), p = s.lantern === 'hung' ? at(hookAt.x + 0.5, hookAt.z - 0.3) : at(T.lantern.at[0], T.lantern.at[1]);
+    const s = saved(), p = s.lantern === 'hung' ? at(hookAt.x, hookAt.z - 0.6) : at(T.lantern.at[0], T.lantern.at[1]);
     return { ...base, sp: 'stack:lantern', stackLantern: s.lantern, name: W.lanternName, icon: 'lamp', text: s.lantern === 'hung' ? W.lanternHung : s.lantern === 'lit' ? W.lanternLit : W.lanternCold, ...p, r: 0.3, reachR: 0.7 };
   }
   const noteCard = () => ({ ...base, sp: 'stack:note', stackNote: true, name: W.noteName, icon: 'note', text: W.note, ...at(T.note.at[0], T.note.at[1]), r: 0.25, reachR: 0.7 });
@@ -272,7 +279,7 @@ export function createStackMouth(o) {
   function cardAt(x, z) {
     if (o.walk.zone !== ID) return null;
     const [a, b] = local(x, z), s = saved();
-    const lp = s.lantern === 'hung' ? [hookAt.x + 0.12, hookAt.z] : T.lantern.at;
+    const lp = s.lantern === 'hung' ? [hookAt.x, hookAt.z] : T.lantern.at;
     if (Math.hypot(a - lp[0], b - lp[1]) < T.lantern.tapM + (s.lantern === 'hung' ? 0.3 : 0)) return lanternCard();
     if (Math.hypot(a - T.note.at[0], b - T.note.at[1]) < T.note.tapM) return noteCard();
     if (Math.hypot(a, b) < T.door.tapM) return doorCard();
@@ -306,6 +313,8 @@ export function createStackMouth(o) {
   // ---- light ----
 
   const lanternRgb = kelvinRgb(R.light.lantern.lightK);
+  /** The middle of the arch's opening (world), where its soot gathers. */
+  const sootAt = (() => { const A = S.arch, [x, z] = world(A.at[0], A.at[1]); return [x, O.y + A.heightM * 0.55, z]; })();
   /**
    * This frame's light (cave-draw.wgsl CaveUniforms, as the spring cave's), the cleft's top as the
    * hole; then the lantern once lit (Matt, November 1, 2026: the cave must look its best with it): a
@@ -345,6 +354,8 @@ export function createStackMouth(o) {
       fx, fy, fz, on ? LL.glassNits * fl : 0,
       ...cd, built ? 1 : 0,
       st === 'hung' ? 1 : 0, (4 * Math.PI * carry * LL.bounce) / walls / Math.PI, LL.scatter, LL.glint,
+      ...sootAt, T.soot.radiusM,
+      T.soot.darken, 0, 0, 0,
     ];
     const wx = wk?.x ?? O.x, wz = wk?.z ?? O.z, wy = (wk?.y ?? O.y) + 0.9;
     const dx = O.x - wx, dy = O.top - wy, dz = O.z - wz, dl = Math.hypot(dx, dy, dz) || 1;
@@ -387,7 +398,7 @@ export function createStackMouth(o) {
     onAction((/** @type {any} */ a) => {
       if (a.type === 'stack.goIn') { if (o.stack.risen && o.walk.below) { update('identify', () => null); o.zones.go(ID); } }
       else if (a.type === 'stack.goOut') { update('identify', () => null); o.zones.back(); }
-      else if (a.type === 'stack.light') light();
+      else if (a.type === 'stack.light') lightLantern();
       else if (a.type === 'stack.hang') hang();
       else if (a.type === 'stack.read') read();
       else if (a.type === 'stack.dig') dig();

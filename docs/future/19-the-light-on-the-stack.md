@@ -107,7 +107,7 @@ The lamplighter is someone older than the old keeper, who kept a light on the st
 
 **The first note, in the mouth (draft):**
 
-> Whoever finds the lamp: light it. Hang it by the arch. They don't like the light, and they don't come up past it. I kept the big lamp on the top of the rock for as long as I could carry the oil. If you go through, go with something in your hand, and come back before your light does.
+> Whoever finds the lamp: light it. Hang it by the arch. They don't like the light, and they don't come up past it. I kept the big lamp on the top of the rock for as long as I could carry the oil. If you go through, go with something in your hand, and come back before your light dies.
 
 **Later notes (Leaning, proposals):** one on each of the first guardian floors, telling in pieces who the lamplighter was, why the light was kept, and why it went out. The last says where the bracket's lamp went. They give the Lamplighter's trail (F16) its reason.
 

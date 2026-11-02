@@ -37,7 +37,7 @@ export async function land(ctx) {
 export async function start(ctx) {
   const { camera, sim, stack, stackRecipe: R, terrain, walk, world, zones } = ctx;
   if (!stack) return;
-  stack.attach({ camera, water: ctx.water, dayLengthH: () => world.state?.seasons?.dayLengthH ?? 12,
+  stack.attach({ camera, water: ctx.water, pieces: ctx.pieces, dayLengthH: () => world.state?.seasons?.dayLengthH ?? 12,
     walker: () => { const w = walk.walker; return walk.below && !walk.zone && w?.placed ? { x: w.x, z: w.z, yaw: w.yaw } : null; } });
   // Go down never sets you on the stack, its ledges or in the cave (docs/23; src/world/walk).
   walk.setLanding?.((/** @type {number} */ x, /** @type {number} */ z) => {

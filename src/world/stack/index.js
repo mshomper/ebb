@@ -21,6 +21,10 @@ import { kelvinRgb, flicker } from '../camp/light.js';
 import { stackLayout, makeStackShape, makeCauseway, causewayFrom, inBox } from './layout.js';
 import { startDayOf, lightDays, lightAt, roadH, duskOf } from './schedule.js';
 import { cleanStack } from './model.js';
+import { mouthStones, mouthDark } from './mouth-mesh.js';
+import { packMesh } from '../creatures/bodies.js';
+
+const IDENTITY = new Float32Array([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
 
 const N = WORLD_CELLS;
 
@@ -225,6 +229,13 @@ export function createStack(o) {
     return [L.shore[0], L.shore[1]];
   }
 
+  /** Is a point in the passage through the porch, or just before it? @param {number} x @param {number} z */
+  function atMouth(x, z) {
+    const ax = L.mouth[0], az = L.mouth[1], vx = L.front[0] + (L.front[0] - L.mouth[0]) * 0.3 - ax, vz = L.front[1] + (L.front[1] - L.mouth[1]) * 0.3 - az;
+    const t = Math.max(0, Math.min(1, ((x - ax) * vx + (z - az) * vz) / (vx * vx + vz * vz || 1)));
+    return Math.hypot(x - ax - vx * t, z - az - vz * t) <= S.mouth.halfWidthM + 0.4;
+  }
+
   return {
     id: 'stack',
     layout: L,
@@ -240,10 +251,18 @@ export function createStack(o) {
     /** The ring's dashed edge for the brush marks (the camp pad's style). */
     ring: { x: L.x, z: L.z, r: L.noBuildM },
     /**
-     * The systems made after it (src/app/stack.js). @param {{ camera: any, water?: any, dayLengthH: () => number, walker: () => { x: number, z: number, yaw: number } | null }} a
+     * The systems made after it (src/app/stack.js). @param {{ camera: any, water?: any, pieces?: any, dayLengthH: () => number, walker: () => { x: number, z: number, yaw: number } | null }} a
      */
     attach(a) {
       dayLengthH = a.dayLengthH; walker = a.walker; water = a.water ?? null;
+      // The cave mouth's stones, drawn with the pieces (mouth-mesh.js): the capstone and the arch, and the dark past it.
+      if (a.pieces?.pass && a.pieces.addBeings) {
+        const st = mouthStones(S, o.seed, R.mouthLook.stone), dk = mouthDark(S);
+        a.pieces.pass.setMesh('stack-mouth-stones', { data: packMesh(st), indices: st.indices });
+        a.pieces.pass.setMesh('stack-mouth-dark', { data: packMesh(dk), indices: dk.indices });
+        const yaw = Math.atan2(-L.ux, -L.uz), at = { x: L.front[0], y: L.apronM, z: L.front[1], yaw, size: 1, bone: IDENTITY, slope: [0, 0], seed: 3.1, half: [S.mouth.halfWidthM + 1, S.porch.outM] };
+        a.pieces.addBeings(() => [{ ...at, mesh: 'stack-mouth-stones' }, { ...at, mesh: 'stack-mouth-dark', plain: true }]);
+      }
       a.camera?.addReach({ ax: center.x, az: center.z, bx: L.x, bz: L.z, r: L.reachM + S.cameraMarginM });
       const live = get('terrainLive');
       if (live?.mirror) guardNow(live.mirror);
@@ -286,7 +305,7 @@ export function createStack(o) {
     /** The card a tap on the stack or at its mouth opens, or null. @param {number} x @param {number} z */
     cardAt(x, z) {
       const W = R.words;
-      if (saved().risen && Math.hypot(x - L.mouth[0], z - L.mouth[1]) <= 1.4) {
+      if (saved().risen && atMouth(x, z)) {
         return { sp: 'setpiece:stack-mouth', stackMouth: true, name: W.mouthName, sub: null, icon: 'stack', text: W.mouth,
           wx: L.stand[0], wz: L.stand[1], r: 0.4, reachR: 0.9, stage: -1, noPage: true, canCarry: false };
       }

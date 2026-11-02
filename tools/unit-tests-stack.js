@@ -139,6 +139,21 @@ export function addStackTests(test, assert, eq) {
     assert(s.air(0, 1, 0) > 0 && s.air(0, 1, 20) < 0, 'air in the room, rock beyond');
   });
 
+  test(G, "the cave pass's light: the shader's struct, the buffer and the mouth's values all the same size", async () => {
+    const wgsl = await (await fetch(new URL('../src/shaders/cave-draw.wgsl', import.meta.url))).text();
+    const pass = await (await fetch(new URL('../src/render/passes/cave.js', import.meta.url))).text();
+    const mouth = await (await fetch(new URL('../src/world/stack/mouth.js', import.meta.url))).text();
+    const struct = wgsl.slice(wgsl.indexOf('struct CaveUniforms'), wgsl.indexOf('};', wgsl.indexOf('struct CaveUniforms')));
+    const floats = (struct.match(/: vec4f,/g) ?? []).length * 4;
+    const F = Number(/const FLOATS = (\d+);/.exec(pass)?.[1]);
+    eq(F, floats, `the buffer holds the struct (${floats} floats)`);
+    // The mouth's uniforms: count the values it lists, a spread of 3 for each ...array.
+    const list = mouth.slice(mouth.indexOf('const uniforms = ['), mouth.indexOf('];', mouth.indexOf('const uniforms = [')));
+    const n = list.split(String.fromCharCode(10)).slice(1).join(' ').split(',').map((t) => t.trim()).filter(Boolean)
+      .reduce((s, t) => s + (t.startsWith('...') ? 3 : 1), 0);
+    eq(n, F, `the mouth gives every value (${n})`);
+  });
+
   test(G, 'its story: two threads with tests, the note a keeper page, the hint, the staff a unique make, the zone listed', async () => {
     const T = await load('world/threads'), K = await load('world/keeper-pages'), H = await load('world/morning-hints'), C = await load('world/cook');
     const Z = await load('world/zones'), I = await load('index');

@@ -10,8 +10,8 @@ import { makeBuffer, makeShaderModule } from '../../core/gpu.js';
 
 /** @typedef {import('../frame-graph.js').PassContext} PassContext */
 
-/** 60 for the spring's cave; the last 12 are a lantern's (the stack's mouth), zeros where there is none. */
-const FLOATS = 72;
+/** 60 for the spring's cave; then a lantern's 12 and the soot's 8 (the stack's mouth), zeros where there is none. */
+const FLOATS = 80;
 /** Floats a vertex: position, normal, colour (rgb albedo, a 1 for a made thing's own). */
 const VERT = 10;
 
