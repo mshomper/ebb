@@ -31,6 +31,7 @@ import { mountNetPanel } from './net-panel.js';
  * @property {WaterMode} [waterMode]   undefined reads as 'pour'
  * @property {SpringRate} [springRate] undefined reads as 'brook'
  * @property {PlantSpecies} [plantSpecies] undefined reads as the first of PLANT_SPECIES
+ * @property {string} [feedSpecies] the Feed tool's chosen creature; undefined reads as the first found
  * @property {number} size        brush radius, meters
  * @property {number} strength    0..1
  * @property {[number, number]} sizeRange  [min, max] meters

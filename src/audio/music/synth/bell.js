@@ -110,7 +110,7 @@ export function createBell(ctx, output, recipe, opts = {}) {
       let longest = 0;
       let longestOsc = 0;
       const lowest = midiToHz(p.minPartialMidi);
-      const parts = /** @type {{ratio: number, db: number, decayRatio: number, velocityDb: number, pan: number, pair?: {hz: number[], db: number}}[]} */ (p.partials);
+      const parts = /** @type {{ratio: number, db: number, decayRatio: number, velocityDb: number, pan: number, pair?: {hz: number[], db: number, phaseTurns?: number}}[]} */ (p.partials);
       for (const pt of parts) {
         const pf = f * pt.ratio * Math.pow(2, (r.range(-1, 1) * p.partialJitterCents) / 1200);
         // Draws above happen for every partial, so each partial's tuning stays fixed per note.

@@ -22,7 +22,7 @@ export const fingerprint = (world) => hashWorldState(world).toString(16).toUpper
 
 /** @param {Uint8Array} bytes @param {string} name */
 function download(bytes, name) {
-  const url = URL.createObjectURL(new Blob([bytes], { type: 'application/octet-stream' }));
+  const url = URL.createObjectURL(new Blob([/** @type {Uint8Array<ArrayBuffer>} */ (bytes)], { type: 'application/octet-stream' }));
   const a = document.createElement('a');
   a.href = url;
   a.download = name;

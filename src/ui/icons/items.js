@@ -56,7 +56,10 @@ function baseBody(base) {
   return ITEMS.seedhead[1].split(A).join(A2);
 }
 
-/** The composite rules: name prefix -> [family of the result, or null for the base's, builder]. */
+/**
+ * The composite rules: name prefix -> [family of the result, or null for the base's, builder].
+ * @type {Record<string, [string | null, (b: string) => string]>}
+ */
 const COMPOSE = {
   seed: ['seeds', (/** @type {string} */ b) => `${placed(baseBody(b), 0.4, 0.2, 0.74)}${seedDrop(17.2, 14.2, 25)}${seedDrop(20, 18, -15)}${seedDrop(15.4, 19.4, 50)}`],
   clump: ['seeds', (/** @type {string} */ b) => `${placed(baseBody(b), 4.6, 0, 0.62)}<path ${A} d="M7.4 12.9C7.4 17 9.4 19.2 12 19.2S16.6 17 16.6 12.9Z"/><path d="M7.4 12.9C7.4 17 9.4 19.2 12 19.2S16.6 17 16.6 12.9"/><path d="M9.8 18.6L8.8 21.2M12 19.2V21.6M14.2 18.6L15.2 21.2M9.4 15.2L10.6 16.4M13.8 14.4L14.8 15.6"/>`],
