@@ -637,6 +637,34 @@ const ICONS = {
     <path d="M7.5 19.2H13"/>
     <path d="M4.2 8.4C4.8 6.2 6.6 4.8 8.8 4.6M7.2 3.4L8.8 4.6L7.6 6.2"/>
     <path d="M2.5 20.8H21.5"/>`,
+  // The kite (docs/future/20, src/world/kite): a diamond of cloth on its crossed sticks, a short
+  // tail of two bows from its foot.
+  kite: `
+    <path ${ACCENT} d="M12 2.8L17.6 8.6L12 17.2L6.4 8.6Z"/>
+    <path d="M12 2.8L17.6 8.6L12 17.2L6.4 8.6Z"/>
+    <path d="M12 2.8V17.2M6.4 8.6H17.6"/>
+    <path d="M12 17.2C11 18.6 13 19.6 12 21.2"/>
+    <path d="M10.4 18.6L11.6 19.2M12.4 20.2L13.6 20.8"/>`,
+  // Fly the kite: the kite high in the top corner, its line curving down to a hand-held spool.
+  fly: `
+    <path ${ACCENT} d="M17 2.6L21 6.6L17 12L13 6.6Z"/>
+    <path d="M17 2.6L21 6.6L17 12L13 6.6Z"/>
+    <path d="M17 12C14 15.6 8.6 15.4 5.4 19"/>
+    <circle cx="4.6" cy="19.8" r="1.8"/>
+    <path d="M9.6 4.6L10.8 5.6M8.4 8L9.8 8.6"/>`,
+  // Rise with it: an eye over the island seen from high, a small kite above it.
+  kiteview: `
+    <path ${ACCENT} d="M3 17.6C5.6 15.6 9 15.2 12 16.2C15 17.2 18.4 16.8 21 15.2V20.6H3Z"/>
+    <path d="M3 17.6C5.6 15.6 9 15.2 12 16.2C15 17.2 18.4 16.8 21 15.2"/>
+    <path d="M12 3L15 6.2L12 10.4L9 6.2Z"/>
+    <path d="M12 10.4V13.4M10.2 11.8L12 13.6L13.8 11.8"/>`,
+  // Reel in: the line wound back onto a spool, an arrow round it.
+  reel: `
+    <ellipse ${ACCENT} cx="12" cy="14" rx="5" ry="5"/>
+    <circle cx="12" cy="14" r="5"/>
+    <circle cx="12" cy="14" r="1.6"/>
+    <path d="M17 13C18.6 8.6 18 5 15.6 3"/>
+    <path d="M5.4 5.6C7.6 3.2 11.4 2.6 14.2 4.2M12.4 2.4L14.4 4.2L12.6 6.2"/>`,
   // The shelf (keepsakes, docs/future/12): a plank on two brackets holding a coiled shell, a pebble
   // and a feather leaning up.
   shelf: `

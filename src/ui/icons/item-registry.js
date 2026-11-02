@@ -19,6 +19,7 @@ import { CAMP_ROWS } from './items-camp.js';
 import { METAL_POUCH_ROWS, METAL_MAKE_ROWS } from './items-metal.js';
 import { FLAX_POUCH_ROWS, FLAX_PART_ROWS } from './items-flax.js';
 import { RYE_POUCH_ROWS, RYE_MAKE_ROWS } from './items-rye.js';
+import { KITE_POUCH_ROWS, KITE_MAKE_ROWS } from './items-kite.js';
 
 /**
  * @typedef {{ id: string, icon: string, name: string, tier: string, phase: number }} ItemRow
@@ -58,6 +59,8 @@ export const POUCH_KINDS = /** @type {[string, string, string, string, number][]
   ['teal-feather', 'teal-feather', 'Teal feather', 'T3', 3],
   // The rye and the sickle (F20): straw from the stooks, the old blade from the pot under the marker stone.
   ...RYE_POUCH_ROWS,
+  // The kite (docs/future/20): the torn kite washed in, carried to the workbench.
+  ...KITE_POUCH_ROWS,
 ]).map(row);
 
 /** Plant parts, '<species>.<part>' (docs/future/13 sections 4.1 and 5.3). @type {ItemRow[]} */
@@ -117,6 +120,8 @@ export const MAKES = /** @type {[string, string, string, string, number][]} */ (
   ...CAMP_ROWS,
   ...METAL_MAKE_ROWS,
   ...RYE_MAKE_ROWS,
+  // The kite (docs/future/20): mended at the workbench.
+  ...KITE_MAKE_ROWS,
 ]).map(row);
 
 /** Treats and offerings (docs/future/13 section 8). @type {ItemRow[]} */

@@ -24,6 +24,7 @@ import * as zones from './zones.js';
 import * as fixtures from './fixtures.js';
 import * as setpieces from './setpieces.js';
 import * as kit from './kit.js';
+import * as kite from './kite.js';
 import * as fishing from './fishing.js';
 import * as shaped from './shaped.js';
 import * as turnstones from './turnstones.js';
@@ -82,6 +83,7 @@ export const SYSTEMS = [
   testLinks.perch,
   setpieces.start,
   kit.start,
+  kite.start,
   fishing.start,
   shaped.start,
   shaped.tests,

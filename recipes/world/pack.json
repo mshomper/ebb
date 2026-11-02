@@ -84,7 +84,8 @@
     { "id": "cloth", "name": "Linen cloth", "group": "craft", "sketch": "flat", "camp": "heap", "line": "A length of linen, woven tight. Kept for a hat one day." },
     { "id": "teal-feather", "name": "Teal feather", "group": "craft", "sketch": "down", "camp": "heap", "max": 1, "line": "A teal's wing feather, with a band of green that shines when it turns. Kept for a hat." },
     { "id": "rye-straw", "name": "Rye straw", "group": "fibres", "sketch": "coil", "camp": "heap", "line": "Long, strong straw from the rye, shaken clean of its seed. Good for coiling and thatching." },
-    { "id": "sickle-blade", "name": "Sickle blade", "group": "craft", "sketch": "flat", "camp": "heap", "line": "An old curved blade from the pot under the stone, rusted but sound. It wants a handle." }
+    { "id": "sickle-blade", "name": "Sickle blade", "group": "craft", "sketch": "flat", "camp": "heap", "line": "An old curved blade from the pot under the stone, rusted but sound. It wants a handle." },
+    { "id": "torn-kite", "name": "A torn kite", "group": "craft", "sketch": "flat", "camp": "heap", "line": "Sticks and torn cloth in a tangle of line. Rush cord and a stick at the workbench would mend it." }
   ],
   "piles": { "handfuls": 12, "looks": [3, 8, 12], "rackBunches": 12, "rackHandfuls": 6, "bowlHandfuls": 6,
     "look": {

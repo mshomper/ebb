@@ -60,6 +60,7 @@
     "world/shaped": "world/shaped.json",
     "world/forager": "world/forager.json",
     "world/kit": "world/kit.json",
+    "world/kite": "world/kite.json",
     "world/nets": "world/nets.json",
     "world/fishing": "world/fishing.json",
     "world/pieces": "world/pieces.json",

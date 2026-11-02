@@ -50,8 +50,12 @@ export function createKit(o) {
       line: (get('cook')?.tools ?? []).includes('line'),
       // The old keeper's pan, taken from beside the spring's pool (src/world/spring).
       pan: (get('cook')?.tools ?? []).includes('keepers-pan'),
+      // The kite, mended at the workbench (src/world/kite).
+      kite: (get('cook')?.tools ?? []).includes('kite'),
     };
-    return R.belt.map((/** @type {any} */ t) => ({ id: t.id, owned: !!(/** @type {any} */ (has))[t.id] }));
+    // A tool's line for now, from its own module (the kite: where and when it can fly).
+    const notes = get('beltNotes') ?? {};
+    return R.belt.map((/** @type {any} */ t) => ({ id: t.id, owned: !!(/** @type {any} */ (has))[t.id], ...(notes[t.id] ? { note: notes[t.id] } : {}) }));
   }
 
   /** Has the Hollow been found (Q and E show)? A journal flag, set when the Hollow comes. */
@@ -93,6 +97,7 @@ export function createKit(o) {
     subscribe('cook', publish),
     subscribe('sketchbook', publish),
     subscribe('journal', publish),
+    subscribe('beltNotes', publish),
   ];
   sync();
 

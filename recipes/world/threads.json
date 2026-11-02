@@ -113,7 +113,12 @@
       ],
       "pencil": "The notch lines up with something. Maybe the sun?",
       "end": ["stoneCalendar"]
-    }
+    },
+    { "id": "kite", "title": "The kite", "icon": "kite", "lines": [
+      { "id": "found", "test": "kiteFound", "text": "A kite washed up on the bar after the gale, torn but whole." },
+      { "id": "mended", "test": "kiteMended", "text": "I laced the tear shut with rush cord and lashed in a new stick for the spar." },
+      { "id": "flown", "test": "kiteFlown", "text": "I flew the kite from the top of the islet. I could see everything." }
+    ], "pencil": "It only flies from the islet's top, and only when the wind is up.", "end": ["kiteFlown"] }
   ],
   "tests": { "lineMade": [{"made": ["line"]}], "fishFirst": [{"flag": "fishing:sketch"}], "fishRiddle": [{"flag": "fishing:riddle:1"}], "fishWater": [{"prefix": "fishing:water:"}], "fishRare": [{"flag": "fishing:rare"}], "chartFull": [{"flag": "fishing:chart:full"}],
     "stoneShown": [{ "flag": "dig:marked-stone" }],
@@ -147,6 +152,9 @@
     "ryeCut": [{ "flag": "setpiece:rye:cut" }],
     "stoneSeen": [{ "flag": "setpiece:stone:seen" }, { "flag": "setpiece:stone:pot" }],
     "stonePot": [{ "flag": "setpiece:stone:pot" }],
-    "stoneCalendar": [{ "flag": "setpiece:stone:calendar" }]
+    "stoneCalendar": [{ "flag": "setpiece:stone:calendar" }],
+    "kiteFound": [{ "flag": "setpiece:kite:found" }],
+    "kiteMended": [{ "flag": "setpiece:kite:mended" }],
+    "kiteFlown": [{ "flag": "setpiece:kite:flown" }]
   }
 }

@@ -1,0 +1,36 @@
+{
+  "type": "kite",
+  "version": 1,
+  "note": "The kite (docs/future/20, 'The kite'; Matt, November 1, 2026: it flies from the islet only, and Fly lives on the kite's own card, never on the action bar). Read by src/world/kite (rules.js pure, mesh.js, index.js live, view.js the high view). wash: on the first day after the islet rose that is in autumn, with the day's wind at least windMin and blowing onto the bar (within onshoreDeg of straight across it, from either side), a torn kite lies on the islet's strandline from hour on that day; searchDays is how far past the rise it looks (two years). Its spot: walking in along the bar's line from the islet's near shore, the first ground at least aboveTideM over the highest tide and at most bandM over that, sideM to one side of the walking line. fly: the mended kite flies while the wind now is at least windMin, from within topReachM of the islet's highest ground and no more than topDropM below it; walking more than walkOffM from where you let it out reels it in, and a wind that drops under calmShare of windMin brings it down. lineM: the line let out, over climbS; elevDeg: the line's angle over the ground, swaying swayDeg at swayHz; tiltDeg: how far the kite's face leans back from upright; rollDeg: its wobble. sagShare: the line's sag at its middle, a share of its length. view: once the kite is fully up, Rise with it on its card (only when pressed, Matt, November 1, 2026) glides the view up with it over riseS, eased, to a slow view from behind the kite at pitchDeg over the ground, at fill times the distance that holds the island (worldRadius from the camera recipe), the islet and the stack (when it stands) square on (the slanting view foreshortens the ground, so under 1 still holds them); it drifts driftDeg either way at driftHz. A view held sketchAfterS adds a page to the sketchbook (subject 'kite'; Matt draws kite-1..3 from the island seen from above). look: the kite's size and colours (linear albedo; the cloth a faded madder red), in meters: spanM the spine, crossM the spar, crossAt the spar's place from the top as a share of the spine, stickR and lineR the radii, tail bows and their spacing. hang: where it hangs at camp, in the tent model's frame (meters; -z is the tent's back), leaning tiltDeg. tap: how near a tap finds it lying (lyingR) or hanging (hangR), and the reach to Take up (reachM). words: the cards and the island's lines.",
+  "wash": { "windMin": 0.5, "onshoreDeg": 55, "hour": 15, "searchDays": 112, "aboveTideM": 0.08, "bandM": 0.45, "sideM": 1.6 },
+  "fly": { "windMin": 0.3, "calmShare": 0.7, "topReachM": 7, "topDropM": 0.35, "walkOffM": 0.8, "lineM": 26, "climbS": 9, "elevDeg": 52, "swayDeg": 7, "swayHz": 0.11, "tiltDeg": 26, "rollDeg": 9, "sagShare": 0.035 },
+  "view": { "riseS": 6, "pitchDeg": 24, "fill": 0.62, "driftDeg": 8, "driftHz": 0.015, "sketchAfterS": 4, "behindM": 6 },
+  "look": {
+    "spanM": 0.95, "crossM": 0.66, "crossAt": 0.3, "stickR": 0.008, "lineR": 0.004,
+    "cloth": [0.42, 0.12, 0.08], "clothBack": [0.36, 0.11, 0.08], "stick": [0.3, 0.21, 0.13], "tail": [0.55, 0.5, 0.4], "line": [0.62, 0.58, 0.5],
+    "tailBows": 5, "tailGapM": 0.13, "bowM": 0.07, "loopR": 0.16
+  },
+  "hang": { "tentM": [0.0, 0.66, -1.02], "tiltDeg": 10 },
+  "tap": { "lyingR": 1.0, "hangR": 0.55, "reachM": 1.6 },
+  "words": {
+    "tornName": "A torn kite",
+    "torn": "A kite, washed in. The cloth is torn, but the frame is whole.",
+    "tornNeeds": "With rush cord and two sticks at the workbench, it might fly again.",
+    "takeUp": "Take it up",
+    "taken": "A torn kite, tangled in its own line. It goes in a pouch.",
+    "full": "No room for it in the pack.",
+    "away": "Walk over to it first.",
+    "name": "Kite",
+    "fly": "Fly the kite",
+    "rise": "Rise with it",
+    "reel": "Reel in",
+    "ready": "It tugs at the line in this wind.",
+    "flying": "Up on the wind, the line humming.",
+    "calm": "No wind for it today.",
+    "where": "It flies from the top of the islet, on a windy day.",
+    "hung": "Hung on the tent's back pole.",
+    "down": "The wind dropped, and the kite came down. I wound it in.",
+    "reeled": "I wound the line in.",
+    "mended": "Mended. The cloth is patched with cord, the spar a new stick."
+  }
+}
