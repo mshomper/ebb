@@ -66,7 +66,7 @@ export function addStackTests(test, assert, eq) {
     }
     assert(top <= H_MAX && top > 11, `its top just under the ceiling (${top.toFixed(2)} m)`);
     assert(levels.size >= 4, 'stepped: several levels of shelf');
-    for (const [n, p] of [['the mouth', L.mouth], ['where you stand at it', L.stand], ['the foot', L.foot]]) {
+    for (const [n, p] of /** @type {[string, [number, number]][]} */ ([['the mouth', L.mouth], ['where you stand at it', L.stand], ['the foot', L.foot]])) {
       const h = shape.heightAt(p[0], p[1]);
       assert(h > A + 0.2 && h < 1.4, `${n} above every tide (${h.toFixed(2)} m)`);
     }

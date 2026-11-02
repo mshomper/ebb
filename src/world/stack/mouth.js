@@ -54,6 +54,12 @@ export function createStackMouth(o) {
     return { x, z: A.at[1] };
   })();
 
+  /** Where the lantern's flame is, lying on the floor or hanging on its hook (mouth frame [x, y, z]). */
+  const flameAt = {
+    floor: [T.lantern.at[0], shape.floorAt(T.lantern.at[0], T.lantern.at[1]) + T.lantern.radiusM, T.lantern.at[1]],
+    hook: [hookAt.x + 0.12, T.hook.heightM - 0.06 - T.lantern.heightM * 0.55, hookAt.z],
+  };
+
   /** The floor (world height). @param {number} x @param {number} z */
   const floor = (x, z) => { const [a, b] = local(x, z); return O.y + shape.floorAt(a, b); };
   /** Where you may walk: the floor, raised where the walls close in. @param {number} x @param {number} z */
@@ -74,11 +80,15 @@ export function createStackMouth(o) {
   function build() {
     if (built || building) return;
     building = true;
-    run({ module: './world/stack/mouth-field.js', fn: 'mouthMeshJob' }, { S, seed: R.seed, top: R.depthM }, { lane: 'interactive' }).then((m) => {
-      const v = new Float32Array(m.count * 10);
+    // The rock and its light baked for the lantern's two spots (its sight of each, and the occlusion),
+    // carried in the vertex colour (cave-draw.wgsl: r the floor spot, g the hook, b occlusion).
+    run({ module: './world/stack/mouth-field.js', fn: 'mouthMeshJob' }, { S, seed: R.seed, top: R.depthM, lamps: [flameAt.floor, flameAt.hook], bake: R.bake },
+      { lane: 'interactive' }).then((m) => {
+      const v = new Float32Array(m.count * 10), lit = m.light.length === m.count * 3;
       for (let i = 0; i < m.count; i++) {
         const a = m.pos[i * 3], y = m.pos[i * 3 + 1], b = m.pos[i * 3 + 2], na = m.nrm[i * 3], nb = m.nrm[i * 3 + 2];
-        v.set([O.x + a * ux + b * vx, O.y + y, O.z + a * uz + b * vz, na * ux + nb * vx, m.nrm[i * 3 + 1], na * uz + nb * vz, 0, 0, 0, 0], i * 10);
+        const c = lit ? [m.light[i * 3], m.light[i * 3 + 1], m.light[i * 3 + 2]] : [1, 1, 1];
+        v.set([O.x + a * ux + b * vx, O.y + y, O.z + a * uz + b * vz, na * ux + nb * vx, m.nrm[i * 3 + 1], na * uz + nb * vz, c[0], c[1], c[2], 0], i * 10);
       }
       o.pass.setMesh('rock', { data: v, idx: m.idx });
       built = true; building = false;
@@ -105,8 +115,16 @@ export function createStackMouth(o) {
   /** The old lantern: an iron cylinder with a cap and a ring, horn panes between, its foot at the origin. */
   function lanternMesh() {
     const K = R.look, r = T.lantern.radiusM, h = T.lantern.heightM;
-    return lathe([[0, 0], [r, 0], [r, h * 0.08], [r * 0.92, h * 0.1], [r * 0.92, h * 0.7], [r, h * 0.72], [r * 1.05, h * 0.78], [r * 0.6, h * 0.92], [r * 0.25, h], [0, h]],
+    const m = lathe([[0, 0], [r, 0], [r, h * 0.08], [r * 0.92, h * 0.1], [r * 0.92, h * 0.7], [r, h * 0.72], [r * 1.05, h * 0.78], [r * 0.6, h * 0.92], [r * 0.25, h], [0, h]],
       12, K.lantern, [null, K.lanternRim, null, K.glass, K.glass, null, K.lanternRim, null, null, null]);
+    // Its horn panes glow while it burns (alpha 2: cave-draw.wgsl draws them by the flame's light, the warm tint at lamp nits).
+    if (saved().lantern !== 'floor') {
+      const g = K.glowTint;
+      for (let i = 0; i < m.data.length; i += 10) {
+        if (m.data[i + 6] === K.glass[0] && m.data[i + 7] === K.glass[1] && m.data[i + 8] === K.glass[2]) { m.data[i + 6] = g[0]; m.data[i + 7] = g[1]; m.data[i + 8] = g[2]; m.data[i + 9] = 2; }
+      }
+    }
+    return m;
   }
   /** The made things: the lantern (lying, lit or hung), the note, the hook, the soot ring and the rubble. */
   function things() {
@@ -145,7 +163,19 @@ export function createStackMouth(o) {
     }
     parts.push(place(tube(ring, T.soot.radiusM, 6, K.soot)));
     parts.push(place(rubbleMesh(s.rubble)));
+    parts.push(place(poolStones()));
     o.pass.setMesh('things', join(parts));
+  }
+  /** Pebbles and a few cobbles on the rock pool's bed and round its lip (seeded). */
+  function poolStones() {
+    const P = S.pool, u = (/** @type {number} */ i, /** @type {number} */ k) => (hash32(R.seed, 4411, i, k) >>> 8) / 16777216, parts = [];
+    for (let i = 0; i < 26; i++) {
+      const a = u(i, 1) * Math.PI * 2, r = Math.sqrt(u(i, 2)) * P.radiusM * 1.15, x = P.at[0] + Math.cos(a) * r, z = P.at[1] + Math.sin(a) * r;
+      const size = 0.05 + 0.14 * u(i, 3) ** 2;
+      parts.push(lumpStone(x, shape.floorAt(x, z) - size * 0.25, z, size / 2, (k) => u(i, k + 4), 0.25, R.look.stone, 0.6));
+    }
+    const all = join(parts);
+    return { data: Array.from(all.data), idx: Array.from(all.idx) };
   }
   /** The rubble's stones, heaped in its passage past what is dug. @param {number} dug */
   function rubbleMesh(dug) {
@@ -278,7 +308,11 @@ export function createStackMouth(o) {
   const lanternRgb = kelvinRgb(R.light.lantern.lightK);
   /**
    * This frame's light (cave-draw.wgsl CaveUniforms, as the spring cave's), the cleft's top as the
-   * hole, plus the hung (or lit) lantern's warm fill. @param {{ sunDir: ArrayLike<number>, sunIlluminance: ArrayLike<number>, cloud: number, time: number }} d
+   * hole; then the lantern once lit (Matt, November 1, 2026: the cave must look its best with it): a
+   * flickering point light of cd candela at its flame, its sight of each spot baked into the rock,
+   * its bounce off the walls (the light it puts out, 4 pi I, carried round by the rock's albedo over
+   * the walls' area), the air round it glowing, its glints in wet stone, and its glass alight. The
+   * walker is lit by whichever is brighter on it, the cleft or the lantern. @param {{ sunDir: ArrayLike<number>, sunIlluminance: ArrayLike<number>, cloud: number, time: number }} d
    */
   function light(d) {
     const Lt = R.light, K = R.look, sy = Math.max(0, d.sunDir[1]);
@@ -287,8 +321,10 @@ export function createStackMouth(o) {
     const shaftY = O.y + shape.ceilAt(0, 0) - 0.15;
     const area = Math.PI * Lt.holeRadiusM ** 2, walls = 2 * Math.PI * S.radiusM[0] * S.radiusM[1] + 2 * Math.PI * Math.sqrt(S.radiusM[0] * S.radiusM[1]) * S.ceilingM;
     const alb = (K.rock[0] + K.rock[1] + K.rock[2]) / 3, carry = alb / (1 - alb), sunIn = sy > 0.85 ? 1 : 0;
-    const lan = saved().lantern === 'floor' ? 0 : Lt.lantern.lux * flicker(d.time, Lt.lantern.flicker, Lt.lantern.flickerHz, 23);
-    const bounce = [0, 1, 2].map((c) => ((eOut[c] * area + d.sunIlluminance[c] * area * sunIn) / walls) * carry * Lt.bounce / Math.PI + (eLevel[c] * Lt.fill) / Math.PI + (lan * lanternRgb[c]) / Math.PI);
+    const st = saved().lantern, on = st !== 'floor', LL = Lt.lantern;
+    const fl = on ? flicker(d.time, LL.flicker, LL.flickerHz, 23) : 0, cd = lanternRgb.map((c) => c * LL.cd * fl);
+    const fp = st === 'hung' ? flameAt.hook : flameAt.floor, [fx, fz] = world(fp[0], fp[2]), fy = O.y + fp[1];
+    const bounce = [0, 1, 2].map((c) => ((eOut[c] * area + d.sunIlluminance[c] * area * sunIn) / walls) * carry * Lt.bounce / Math.PI + (eLevel[c] * Lt.fill) / Math.PI);
     const W2 = K.water, p = S.pool, [px, pz] = world(p.at[0], p.at[1]), wk = o.walk.walker;
     const uniforms = [
       O.x, O.top, O.z, Lt.holeRadiusM,
@@ -306,11 +342,21 @@ export function createStackMouth(o) {
       W2.drips, W2.dripS, Lt.beam.nits, Lt.beam.scatter,
       wk?.x ?? O.x, (wk?.y ?? O.y) + 0.9, wk?.z ?? O.z, R.view.fadeM,
       ...W2.glow, W2.glowNits,
+      fx, fy, fz, on ? LL.glassNits * fl : 0,
+      ...cd, built ? 1 : 0,
+      st === 'hung' ? 1 : 0, (4 * Math.PI * carry * LL.bounce) / walls / Math.PI, LL.scatter, LL.glint,
     ];
     const wx = wk?.x ?? O.x, wz = wk?.z ?? O.z, wy = (wk?.y ?? O.y) + 0.9;
     const dx = O.x - wx, dy = O.top - wy, dz = O.z - wz, dl = Math.hypot(dx, dy, dz) || 1;
     const k = (area * (dy / dl)) / (Math.PI * Math.max(dl * dl, 0.16)) * Lt.figure.share;
-    return { uniforms, sunDir: [dx / dl, dy / dl, dz / dl], sunIlluminance: eOut.map((e, c) => e * k + lan * lanternRgb[c] * 0.3) };
+    const eHole = eOut.map((e) => e * k);
+    // The lantern on the walker: I / d^2 from its flame.
+    const lx = fx - wx, ly = fy - wy, lz = fz - wz, ll = Math.hypot(lx, ly, lz) || 1, eLamp = cd.map((c) => c / Math.max(ll * ll, 0.09));
+    const wH = eHole[1], wL = eLamp[1], t = wH + wL > 0 ? wL / (wH + wL) : 0;
+    const dir = [dx / dl * (1 - t) + (lx / ll) * t, dy / dl * (1 - t) + (ly / ll) * t, dz / dl * (1 - t) + (lz / ll) * t], dn = Math.hypot(dir[0], dir[1], dir[2]) || 1;
+    // The walker's fill: the room's bounce, and the lantern's light coming back off the walls close
+    // round you (figure.lampFill of what falls on you), so you are never a black cut-out against it.
+    return { uniforms, sunDir: dir.map((v) => v / dn), sunIlluminance: eHole.map((e, c) => e + eLamp[c]), ambient: bounce.map((b, c) => b + (eLamp[c] * Lt.figure.lampFill) / Math.PI) };
   }
   const sound = () => ({ under: R.sound.under, near: { waterNear: { still: 0, slow: R.sound.waterSlow, running: 0 }, surfaceNear: { water: 1, pads: 0, reeds: 0, grass: 0 }, falls: [] } });
 
@@ -356,7 +402,7 @@ export function createStackMouth(o) {
     floor, ground, cardAt,
     /** Start building the room once the road stands, so going in is quick. */
     prepare() { if (o.stack.risen && !built) build(); },
-    debug: { shape, hookAt, world, local, rubbleFront, dug, lit, hang, get built() { return built; } },
+    debug: { shape, hookAt, world, local, rubbleFront, dug, lit, hang, pass: o.pass, get built() { return built; } },
     dispose() { for (const off of offs) off(); },
   };
 }

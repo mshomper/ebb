@@ -16,7 +16,7 @@ import { idleFade, stepFade, darkness, startFade } from './zone.js';
 
 /**
  * @typedef {{ id: string, enter: () => boolean, leave: () => void, tick?: (dt: number) => void,
- *   cardAt?: (x: number, z: number) => any, light?: (d: any) => { uniforms: number[], sunDir: number[], sunIlluminance: number[] },
+ *   cardAt?: (x: number, z: number) => any, light?: (d: any) => { uniforms: number[], sunDir: number[], sunIlluminance: number[], ambient?: number[] },
  *   sound?: () => any, groundAt?: (ro: number[], rd: number[]) => number[] | null, viewRoom?: (target: ArrayLike<number>, eye: ArrayLike<number>) => number,
  *   ready?: () => boolean, rayCard?: (ro: number[], rd: number[]) => any, pass?: { setUniforms: (u: number[]) => void },
  *   floor?: (x: number, z: number) => number, exposureBiasEV?: number, camera?: any }} Zone

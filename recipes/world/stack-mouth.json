@@ -28,14 +28,14 @@
   "light": {
     "skyShare": 0.25, "cloudCut": 0.75, "holeRadiusM": 0.55, "bounce": 0.35, "fill": 0.002, "minNits": 0.004, "exposureBiasEV": 2.0,
     "beam": { "nits": 4, "scatter": 0.04, "spread": 1.3 },
-    "figure": { "share": 1.0, "ambientShare": 1.0 },
-    "lantern": { "lightK": 2000, "lux": 9, "flicker": 0.2, "flickerHz": 1.4 }
+    "figure": { "share": 1.0, "ambientShare": 1.0, "lampFill": 0.45 },
+    "lantern": { "lightK": 1900, "cd": 22, "flicker": 0.18, "flickerHz": 1.3, "glassNits": 900, "bounce": 1.0, "scatter": 0.035, "glint": 1.0 }
   },
-  "lightNote": "As the spring cave's (spring-cave.json lightNote), the hole being the cleft's open top. lantern: the old lantern once lit (Matt allowed fake light for the ambience, October 31, 2026): a warm fill of lux at lightK over the room, flickering, whatever the hour; it is the light the walker wakes to below later (F16).",
+  "lightNote": "As the spring cave's (spring-cave.json lightNote), the hole being the cleft's open top. lantern: the old lantern once lit, a real point light (Matt, November 1, 2026: the cave must look its best with it lit): cd candela at lightK from its flame (a bright hurricane lantern; an oil lamp is near 10), flickering by flicker at about flickerHz, whatever the hour; its sight of the rock baked (bake below), so ledges and the arch's lip throw soft shadows; glassNits: its horn panes' glow; bounce: the share of its light carried round the walls as a warm fill gathered round it; scatter: the cave air's scatter per meter, the glow round the flame; glint: its flame mirrored in wet stone. figure.lampFill: the share of the lantern's light on the walker that comes back to them off the walls close round, as their fill. It is the light the walker wakes to below later (F16).",
 
   "look": {
     "rock": [0.15, 0.14, 0.125], "rockWet": [0.06, 0.065, 0.06], "floor": [0.11, 0.105, 0.09], "wetNearM": 0.5,
-    "roughness": [0.85, 0.3], "lantern": [0.2, 0.17, 0.12], "lanternRim": [0.32, 0.16, 0.07], "glass": [0.55, 0.5, 0.38], "note": [0.62, 0.58, 0.48],
+    "roughness": [0.85, 0.3], "lantern": [0.2, 0.17, 0.12], "lanternRim": [0.32, 0.16, 0.07], "glass": [0.55, 0.5, 0.38], "glowTint": [1.0, 0.6, 0.28], "note": [0.62, 0.58, 0.48],
     "soot": [0.025, 0.022, 0.02], "iron": [0.18, 0.1, 0.06], "stone": [0.13, 0.125, 0.11],
     "water": { "absorption": [0.42, 0.12, 0.09], "f0": 0.02, "ripple": 0.03, "drips": 2, "dripS": 6, "tint": [0.02, 0.035, 0.04], "glow": [0.35, 0.75, 0.8], "glowNits": 0.0 }
   },
@@ -50,6 +50,9 @@
     "door": { "tapM": 0.6 }
   },
   "thingsNote": "Where the things lie (mouth frame): the old lantern on its side at `at` (radiusM, heightM; tapM how far past it a tap still finds it), the note beside it, the hook on the wall fromArchM along the wall from the arch's side at heightM, the soot ring round the arch's opening (radiusM thick), the rubble's stones heaped in its passage (each dug stretch clears its share, front first), and the way out under the cleft (door: within tapM of the arrival spot).",
+
+  "bake": { "liftM": 0.04, "lampClearM": 0.12, "penumbra": 7, "minStepM": 0.03, "maxStepM": 0.35, "aoM": [0.12, 0.3, 0.6, 1.0], "aoStrength": 0.55 },
+  "bakeNote": "Light baked into the rock once in the worker (src/world/stack/mouth-field.js bakeLight): for each vertex, lifted liftM off the rock, how much it sees of each spot the lantern can be (on the floor, on its hook), marched through the field to within lampClearM of the flame, the shadow's edge softened by penumbra (larger: harder) with steps between minStepM and maxStepM; and its ambient occlusion from the open air at the distances aoM out along its normal (each counting 0.7 of the one before), aoStrength how dark the deepest hollows go.",
 
   "sound": { "waterSlow": 0.35, "under": 1 },
 

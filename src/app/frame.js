@@ -128,7 +128,7 @@ export function start(ctx) {
     const zl = zoneNow?.light ? zoneNow.light({ sunDir: day.sm.sunDir, sunIlluminance: day.sunIlluminance, cloud: day.weather.cloud, time: t.animT }) : null;
     if (zl) {
       (zoneNow?.pass ?? cavePass).setUniforms(zl.uniforms);
-      const b = zl.uniforms.slice(20, 23);
+      const b = zl.ambient ?? zl.uniforms.slice(20, 23);
       caveSHData.fill(0);
       for (let c = 0; c < 3; c++) { caveSHData[c] = (b[c] * 0.7) / 0.282095; caveSHData[4 + c] = (b[c] * 0.3) / 0.488603; }
       gpu.device.queue.writeBuffer(caveSH, 0, caveSHData);

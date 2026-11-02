@@ -4,7 +4,8 @@
 // the walk grid are laid over it; given the view, the walker, the zones and the clock once they
 // exist. `?stack` (testing, unsaved) raises the causeway at once and puts you on it; `?stack=road`
 // plays the causeway's reveal now; `?stack=lights` keeps the light at its foot on for the visit (an
-// evening there: add `&hour=19`); `?stack=mouth` puts you in the mouth room, the lantern cold.
+// evening there: add `&hour=19`); `?stack=mouth` puts you in the mouth room, the lantern cold;
+// `?stack=lamp` the same with the lantern lit and hung.
 // Run in order from src/app/systems.js; reads and adds to the start-up context (src/app/context.js).
 
 import * as clock from '../core/clock.js';
@@ -99,6 +100,8 @@ export function tests(ctx) {
   if (!stack.risen) { const from = stack.startRoad(); stack.writeRoad(1); stack.roadDone(from, false); }
   const L = stack.layout, road = stack.road;
   const [fx, fz] = road ? [L.foot[0] * 0.7 + (road.box.x0 + road.box.x1) / 2 * 0.3, L.foot[1] * 0.7 + (road.box.z0 + road.box.z1) / 2 * 0.3] : L.stand;
-  const x = t === 'mouth' ? L.stand[0] : fx, z = t === 'mouth' ? L.stand[1] : fz;
-  ctx.stackPut = { x, z, yaw: Math.atan2(L.x - x, L.z - z), mouth: t === 'mouth', tries: 600 };
+  const inside = t === 'mouth' || t === 'lamp', x = inside ? L.stand[0] : fx, z = inside ? L.stand[1] : fz;
+  // `?stack=lamp`: the old lantern already lit and hung, to see the room by it.
+  if (t === 'lamp') updateStore('stack', (s) => ({ ...s, lantern: 'hung' }));
+  ctx.stackPut = { x, z, yaw: Math.atan2(L.x - x, L.z - z), mouth: inside, tries: 600 };
 }

@@ -26,6 +26,10 @@ struct CaveUniforms {
   drips: vec4f,     // x: count, y: every dripS seconds, z: beam nits per 1000 lux, w: beam scatter per meter
   you: vec4f,       // xyz: the walker's chest (world): the rock between the eye and it fades out; w: within this far of the line (m)
   glow: vec4f,      // the pool's own soft light (Matt: illuminate it slightly; fake light for the look): rgb its colour, w nits
+  // A lantern (the stack's mouth, src/world/stack/mouth.js; all zero in the spring's cave):
+  lamp: vec4f,      // xyz: its flame (world); w: its glass's glow (nits), 0 when it is cold
+  lampE: vec4f,     // rgb: its luminous intensity (cd, flicker folded in); w: 1 when the rock carries baked light (vertex col: r, g lamp sight, b occlusion)
+  lampMix: vec4f,   // x: which baked sight (0 the floor spot, 1 the hook); y: its bounce per cd (lux); z: the air's scatter per meter; w: wet glint strength
 };
 
 @group(0) @binding(0) var<uniform> frame: FrameUniforms;
@@ -103,6 +107,34 @@ fn wetSpec(p: vec3f, n: vec3f, v: vec3f, rough: f32) -> vec3f {
   return holeLight(p, n) * dd * f * 0.08 / max(dot(n, v), 0.1);
 }
 
+/** The lantern's light reaching a point (lux), with its baked sight of the flame. */
+fn lampLight(p: vec3f, n: vec3f, sight: f32) -> vec3f {
+  let d = cu.lamp.xyz - p; let d2 = max(dot(d, d), 0.04);
+  return cu.lampE.rgb * max(dot(n, d * inverseSqrt(d2)), 0.0) / d2 * sight;
+}
+
+/** The lantern's flame mirrored in wet stone (nits). */
+fn lampSpec(p: vec3f, n: vec3f, v: vec3f, rough: f32, sight: f32) -> vec3f {
+  let l = normalize(cu.lamp.xyz - p); let hv = normalize(l + v);
+  let a = max(rough * rough, 0.03); let a2 = a * a;
+  let nh = max(dot(n, hv), 0.0);
+  let dd = a2 / (PI * pow(nh * nh * (a2 - 1.0) + 1.0, 2.0));
+  let f = 0.04 + 0.96 * pow(1.0 - max(dot(v, hv), 0.0), 5.0);
+  return lampLight(p, n, sight) * dd * f / max(dot(n, v), 0.1);
+}
+
+/**
+ * The air round the lantern lit by it, along the view ray from the eye to p: the inverse-square
+ * light integrated along the ray (closed form), times the scatter per meter (nits).
+ */
+fn lampHaze(p: vec3f) -> vec3f {
+  if (cu.lampMix.z <= 0.0) { return vec3f(0.0); }
+  let e = frame.cameraPos; let rd = p - e; let len = length(rd); let dir = rd / max(len, 1e-4);
+  let c = cu.lamp.xyz - e; let t0 = dot(c, dir); let h = max(length(c - dir * t0), 0.06);
+  let s = (atan((len - t0) / h) - atan(-t0 / h)) / h;
+  return cu.lampE.rgb * cu.lampMix.z * s / (4.0 * PI);
+}
+
 @vertex fn vsCave(i: VsIn) -> VsOut {
   var o: VsOut;
   o.pos = frame.viewProj * vec4f(i.pos, 1.0);
@@ -135,6 +167,10 @@ fn wetSpec(p: vec3f, n: vec3f, v: vec3f, rough: f32) -> vec3f {
   }
   let v = normalize(frame.cameraPos - p);
   var albedo: vec3f; var rough: f32;
+  // The lantern's glass and flame: their own glow while it burns (else a made thing, lit as one).
+  if (i.col.a > 1.5 && cu.lamp.w > 0.0) {
+    return FsOut(vec4f(i.col.rgb * cu.lamp.w * frame.exposure, 1.0), vec4f(octEncode(n), 0.0, 2.0 / 3.0));
+  }
   if (i.col.a > 0.5) {
     // A made thing (the pan, the rope): its own albedo.
     albedo = i.col.rgb; rough = 0.7;
@@ -149,14 +185,31 @@ fn wetSpec(p: vec3f, n: vec3f, v: vec3f, rough: f32) -> vec3f {
     let grain = 0.75 + 0.5 * vnoise(q * 11.0);
     let m = (0.7 + 0.6 * smoothstep(0.3, 0.7, vnoise(q * 2.3))) * band * grain * mix(0.6, 1.0, smoothstep(-0.3, 0.6, n.y));
     albedo = mix(mix(cu.rock.rgb, cu.floorAlb.rgb, up), cu.rockWet.rgb, wet * 0.8) * m;
+    // Under the water: darker still, weed-stained, and broken up (the bed of a rock pool).
+    let under = 1.0 - smoothstep(cu.pool.y - 0.06, cu.pool.y, p.y);
+    albedo *= mix(1.0, 0.45 + 0.5 * vnoise(q * 6.0), under);
     rough = mix(cu.floorAlb.w, cu.rockWet.w, wet);
   }
+  // Baked into the rock where there is a lantern (the stack's mouth): its sight of the flame from
+  // here and how open the air round it is; full sight and no occlusion elsewhere.
+  let baked = cu.lampE.w > 0.5 && i.col.a < 0.5;
+  let sight = select(1.0, select(i.col.r, i.col.g, cu.lampMix.x > 0.5), baked);
+  let ao = select(1.0, i.col.b, baked);
   let e = holeLight(p, n) + sunLight(p, n);
   // The bounce and fill gather round where the light comes in, and fade into the far corners.
   let toLight = length(p - vec3f(cu.shaft.x, cu.pool.y, cu.shaft.z));
   let near = 1.0 / (1.0 + toLight * toLight * 0.35);
-  var radiance = albedo * (e / PI + cu.bounce.rgb * near * (0.5 + 0.5 * max(n.y, 0.0))) + vec3f(cu.sunE.w);
+  // The lantern's own bounce gathers round it the same way.
+  let toLamp = length(p - cu.lamp.xyz);
+  let lampB = cu.lampE.rgb * cu.lampMix.y / (1.0 + toLamp * toLamp * 0.5);
+  let soft = (cu.bounce.rgb * near + lampB) * (0.5 + 0.5 * max(n.y, 0.0)) * ao;
+  var radiance = albedo * ((e + lampLight(p, n, sight)) / PI + soft) + vec3f(cu.sunE.w) * ao;
   radiance += wetSpec(p, n, v, rough) * (1.0 - rough);
+  // Its glints only in wet stone, never as glitter on the dry floor: on the smooth normal, a little rougher.
+  // (and none under the pool's water: the water's own surface takes the glints there)
+  let wetK = (1.0 - smoothstep(cu.rockWet.w, cu.floorAlb.w, rough)) * smoothstep(cu.pool.y - 0.01, cu.pool.y + 0.02, p.y);
+  radiance += lampSpec(p, normalize(i.n) * select(1.0, -1.0, !front && i.col.a < 0.5), v, max(rough, 0.35), sight) * wetK * cu.lampMix.w;
+  radiance += lampHaze(p);
   return FsOut(vec4f(radiance * frame.exposure, 1.0), vec4f(octEncode(n), 0.0, select(0.0, 2.0 / 3.0, i.col.a > 0.5)));
 }
 
@@ -206,7 +259,7 @@ fn waterNormal(p: vec3f) -> vec3f {
   let f = cu.water.w + (1.0 - cu.water.w) * pow(1.0 - max(dot(n, v), 0.0), 5.0);
   // The reflection: the hole's bright disc where the mirrored ray meets it, else the dim rock above.
   let r = reflect(-v, n);
-  var refl = cu.bounce.rgb * 0.15;
+  var refl = cu.bounce.rgb * select(0.15, 0.04, cu.lamp.w > 0.0);
   if (r.y > 0.01) {
     let q = p + r * ((cu.hole.y - p.y) / r.y);
     let inHole = 1.0 - smoothstep(cu.hole.w * 0.8, cu.hole.w * 1.1, length(q.xz - cu.hole.xz));
@@ -216,7 +269,21 @@ fn waterNormal(p: vec3f) -> vec3f {
   let deep = 1.0 - exp(-thick * 3.0);
   let ripple = 1.0 + 4.0 * (1.0 - n.y);
   let own = cu.glow.rgb * cu.glow.w * deep * ripple * frame.exposure;
-  let color = mix(under * T + scatter, refl * frame.exposure, f) + own;
+  // The lantern: lighting what the water scatters, its flame mirrored in the surface, the haze above.
+  let lampIn = lampLight(p, vec3f(0.0, 1.0, 0.0), 1.0);
+  let lampScatter = cu.tint.rgb * (lampIn / PI) * (1.0 - T) * frame.exposure;
+  var lampRefl = vec3f(0.0);
+  if (cu.lamp.w > 0.0) {
+    // The lit rock over the pool, mirrored: the reflected ray meets the roof about a metre and a half
+    // up, lit by the lantern as the rock is (dim, warm, moving with the ripples).
+    let q = p + r * 1.6; let tq = cu.lamp.xyz - q;
+    let grain = 0.25 + 1.1 * smoothstep(0.2, 0.8, vnoise(local(q) * 2.6)) * (0.6 + 0.4 * vnoise(local(q) * 9.0));
+    lampRefl = cu.rock.rgb * 0.45 * grain * cu.lampE.rgb / max(dot(tq, tq), 0.15) / PI;
+    // The flame itself, a bright smear broken by the ripples.
+    let toL = cu.lamp.xyz - p; let lr = max(dot(r, normalize(toL)), 0.0);
+    lampRefl += vec3f(1.0, 0.6, 0.28) * cu.lamp.w * (pow(lr, 2000.0) + pow(lr, 160.0) * 0.04);
+  }
+  let color = mix(under * T + scatter + lampScatter, (refl + lampRefl) * frame.exposure, f) + own + lampHaze(p) * frame.exposure;
   return FsOut(vec4f(color, 1.0), vec4f(octEncode(n), 1.0, 0.0));
 }
 

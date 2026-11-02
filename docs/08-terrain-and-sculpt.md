@@ -110,6 +110,8 @@ Falloff `f(d) = 1 − smoothstep(hardness · r, r, d)`. Radius 0.5 to 8 m, stren
 
 **Steepness and edges.** Raise and Lower are capped so a single frame cannot create a step over 0.15 m between neighbors; erosion-lite cleans up what is left. The Cliff tool is the one exception. Smooth softens rock faces only at full strength, so a casual smoothing pass never erases a cliff. Brushes fade out over the last 2 m before an unopened chunk, so no wall forms at the edge of the world.
 
+**The stack's ring** (docs/future/19). The sea stack offshore stands in the open sea, outside the open land, raised from the land recipe's `stack` block on every load. Within `stack.noBuildM` (25 m) of it, and on the causeway once it rises, the brushes do nothing: a fixed guard under the Steps' own (`terrain.setFixedGuard`, ORed into the guard texture), whose put-back restores anything erosion or a boulder spills in. Its edge is drawn dashed, as the camp pad's is, while a brush comes near. On an older island, land raised inside the ring sinks back to the ground as generated, once.
+
 **Structures.** Brushes avoid cells under walls and bridge abutments by default (a mask from `world/structures/`); flatten and paint still work there. When a stroke ends under a path, the path re-fits (doc 09). The camp pad is fully locked, paint included (above; docs/future/13, section 3.1).
 
 ### Wetness: simulation vs. look

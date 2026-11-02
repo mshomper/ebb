@@ -8,6 +8,7 @@
 // Numbers: recipes/world/stack-mouth.json shape.
 
 import { caveShape } from '../spring/cave-field.js';
+import { noise3 } from '../hollow/field.js';
 import { surfaceNets, gridNormals } from '../mesh/surface-nets.js';
 
 /** @param {number} a @param {number} b @param {number} k */
@@ -34,10 +35,15 @@ export function mouthShape(S, seed) {
     const roof = P.heightM * Math.sqrt(Math.max(0, 1 - (t / P.halfWidthM) ** 2));
     return Math.min(P.halfWidthM - t, roof - y, y + 0.05, P.lengthM - s, s + 1.2);
   }
+  /** The rock's wear, as the chamber's (cave-field.js air): the passages are worn the same. @param {number} x @param {number} y @param {number} z */
+  const wear = (x, y, z) => {
+    const g = S.wallNoiseScale, f = S.fineNoiseScale;
+    return (noise3(seed + 3, x * g, y * g, z * g) - 0.5) * 2 * S.wallNoiseM + (noise3(seed + 5, x * f, y * f, z * f) - 0.5) * 2 * S.fineNoiseM;
+  };
   /** @param {number} x @param {number} y @param {number} z */
   function air(x, y, z) {
     let a = base.air(x, y, z, 0);
-    for (const P of [S.arch, S.rubble]) a = smax(a, passage(P, x, y, z), 0.25);
+    for (const P of [S.arch, S.rubble]) { const q = passage(P, x, y, z); if (q > -0.8) a = smax(a, q + wear(x, y, z) * 1.4, 0.25); }
     return a;
   }
   /** The floor: the chamber's, or level in a passage. @param {number} x @param {number} z */
@@ -70,8 +76,48 @@ export function mouthMesh(S, seed, top) {
   return { pos: Float32Array.from(m.pos.subarray(0, m.count * 3)), nrm, idx: m.idx, count: m.count };
 }
 
-/** The worker's job (src/core/workers.js). @param {{ S: any, seed: number, top: number }} a */
+/**
+ * Light baked into the rock once, per vertex (the mouth's lantern is a real light, Matt, November 1,
+ * 2026: the cave must look its best with the lantern lit): how much of each lantern spot a vertex
+ * sees (soft shadows marched through the field toward it, so ledges, the arch's lip and the rubble
+ * throw shade), and its ambient occlusion (hollows and corners go dark). Mouth frame.
+ * @param {any} S @param {number} seed @param {Float32Array} pos @param {Float32Array} nrm @param {number} count
+ * @param {number[][]} lamps lantern spots [x, y, z] (mouth frame) @param {any} B stack-mouth.json bake
+ * @returns {Float32Array} per vertex: [one visibility per lamp..., ao]
+ */
+export function bakeLight(S, seed, pos, nrm, count, lamps, B) {
+  const shape = mouthShape(S, seed), K = lamps.length + 1, out = new Float32Array(count * K);
+  for (let i = 0; i < count; i++) {
+    const nx = nrm[i * 3], ny = nrm[i * 3 + 1], nz = nrm[i * 3 + 2];
+    const px = pos[i * 3] + nx * B.liftM, py = pos[i * 3 + 1] + ny * B.liftM, pz = pos[i * 3 + 2] + nz * B.liftM;
+    lamps.forEach((L, k) => {
+      const dx = L[0] - px, dy = L[1] - py, dz = L[2] - pz, d = Math.hypot(dx, dy, dz) || 1;
+      let res = 1, t = 0.02;
+      while (t < d - B.lampClearM && res > 0.01) {
+        const h = shape.air(px + (dx / d) * t, py + (dy / d) * t, pz + (dz / d) * t);
+        if (h < 0.002) { res = 0; break; }
+        res = Math.min(res, (B.penumbra * h) / t);
+        t += Math.min(Math.max(h, B.minStepM), B.maxStepM);
+      }
+      out[i * K + k] = Math.max(0, Math.min(1, res));
+    });
+    // Ambient occlusion: how far the open air falls short of the distance out along the normal.
+    let occ = 0, w = 1;
+    for (const r of B.aoM) {
+      occ += w * Math.max(0, r - shape.air(px + nx * r, py + ny * r, pz + nz * r)) / r;
+      w *= 0.7;
+    }
+    out[i * K + lamps.length] = Math.max(0, Math.min(1, 1 - occ * B.aoStrength));
+  }
+  return out;
+}
+
+/**
+ * The worker's job (src/core/workers.js): the mesh, and its light baked for the lantern's spots.
+ * @param {{ S: any, seed: number, top: number, lamps?: number[][], bake?: any }} a
+ */
 export function mouthMeshJob(a) {
   const m = mouthMesh(a.S, a.seed, a.top);
-  return { ...m, __transfer: [m.pos.buffer, m.nrm.buffer, m.idx.buffer] };
+  const light = a.lamps && a.bake ? bakeLight(a.S, a.seed, m.pos, m.nrm, m.count, a.lamps, a.bake) : new Float32Array(0);
+  return { ...m, light, __transfer: [m.pos.buffer, m.nrm.buffer, m.idx.buffer, light.buffer] };
 }
