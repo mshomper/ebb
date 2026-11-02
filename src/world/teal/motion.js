@@ -4,8 +4,10 @@
 // swimming (the feet paddle under it, the head bobs a little), dabbling (the bill dipped to the
 // surface and sieving), up-ending (tipped forward until only the tail and kicking feet show),
 // preening and sleeping with the head turned back on the back. Off it: the rise (a dabbling duck
-// springs straight up off the water, wings beating hard at once), fast whirring flight, and the
-// landing (the shared glide, flare and wings-up, onto the water). Live animation only.
+// springs up steeply off the water, wings beating hard at once, moving on as it climbs), fast
+// whirring flight stretched out flat (the neck forward, the head level, never upright as it sits
+// on the water), and the landing (the shared glide, flare and wings-up, onto the water, still
+// stretched out until the flare). Live animation only.
 
 import { restPose, idlePose, preenPose, flyPose, landPose, flapAt, mixWing } from '../creatures/bird-motion.js';
 
@@ -79,24 +81,38 @@ export function sleepPose(t, M) {
 }
 
 /**
- * The rise: straight up off the water, wings open and beating hard at once, the body tipped up
- * and the feet trailing, then tucked as it levels off. Returns the share of the climb made (the
- * caller sets the height). @param {number} t @param {number} u 0..1 @param {number} beat @param {any} M
+ * Flying: fast whirring beats, no glide, stretched out flat as a duck flies: the body tipped a
+ * little nose down from its floating trim, the neck reaching forward so the head rides level
+ * ahead of it, the tail lifted in line and the feet tucked back. Never the upright shape it has
+ * on the water. @param {number} t @param {number} beat @param {any} M
+ */
+export function tealFlyPose(t, beat, M) {
+  const S = M.fly, P = flyPose(t, beat, 0, M);
+  P.bodyPitch = S.bodyDeg * DEG;
+  P.neckPitch = S.neckDeg * DEG;
+  P.headPitch = S.headDeg * DEG;
+  P.tailUp = S.tailDeg * DEG;
+  return P;
+}
+
+/**
+ * The rise: up off the water steeply but moving on (the caller carries it forward and up), wings
+ * open and beating hard at once, the body tipped up a little and the neck coming forward as it
+ * climbs, then stretched out flat into flight. Returns the share of the climb made (the caller
+ * sets the height). @param {number} t @param {number} u 0..1 @param {number} beat @param {any} M
  * @returns {{ pose: ReturnType<typeof restPose>, climb: number }}
  */
 export function risePose(t, u, beat, M) {
-  const R = M.rise, F = M.flap, P = flyPose(t, beat * R.beatK, 0, M);
-  const open = ramp(u, 0, 0.12);
+  const R = M.rise, F = M.flap, P = tealFlyPose(t, beat * R.beatK, M);
+  const open = ramp(u, 0, 0.12), flat = ramp(u, 0.3, 0.9), reach = ramp(u, 0.05, 0.4);
   P.wing = mixWing({ ...FOLDED }, flapAt(beat * R.beatK, F, 1.15), open);
-  P.bodyPitch = -R.pitchDeg * DEG * (1 - ramp(u, 0.55, 1)) - F.bodyPitchDeg * DEG * ramp(u, 0.55, 1);
-  P.air = ramp(u, 0.2, 0.8);
+  P.bodyPitch = -R.pitchDeg * DEG * (1 - flat) + M.fly.bodyDeg * DEG * flat;
+  P.neckPitch = M.fly.neckDeg * DEG * reach;
+  P.tailUp = M.fly.tailDeg * DEG * reach;
+  P.air = ramp(u, 0.15, 0.6);
   P.reach = 0;
-  P.neckPitch = -8 * DEG * (1 - u);
   return { pose: P, climb: 1 - Math.pow(1 - u, 2) };
 }
-
-/** Flying: fast whirring beats, no glide. @param {number} t @param {number} beat @param {any} M */
-export const tealFlyPose = (t, beat, M) => flyPose(t, beat, 0, M);
 
 /**
  * Landing on the water: the shared glide in, flare, wings held up and folded. The caller moves it
@@ -104,6 +120,11 @@ export const tealFlyPose = (t, beat, M) => flyPose(t, beat, 0, M);
  */
 export function splashPose(t, u, M) {
   const r = landPose(t, u, 0, M);
+  // Stretched out flat on the glide in, the neck coming up into the flare.
+  const S = M.fly, flat = 1 - ramp(u, 0.25, 0.42), P = r.pose;
+  P.bodyPitch += (S.bodyDeg * DEG - P.bodyPitch) * flat;
+  P.neckPitch += (S.neckDeg * DEG - P.neckPitch) * flat;
+  P.tailUp += (S.tailDeg * DEG - P.tailUp) * flat;
   // On the water the feet do not run on: they hang still under it once down.
   r.pose.gait.w = 0;
   return r.pose;

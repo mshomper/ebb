@@ -3,8 +3,8 @@
 // skins to the small-bird rig (every vertex on real bones, weights summing to one, the legs on
 // their own side, the wing copies whole on the arm and hand); a reedy dug pond in winter brings a
 // flock that grows to what the pond holds, the same every run, and nothing comes while they are
-// away; the live flock stays on the water, flushes from the walker at Wary, circles and lands on
-// the far side, but past Wary swims off instead, and no two on the water come too close; their
+// away; the live flock stays on the water, flushes from the walker at Wary (rising forward away
+// from you), circles leaning into the turn, flies stretched out flat, and lands on the far side, but past Wary swims off instead, and no two on the water come too close; their
 // gift is the feather and the teal hat is a unique make that the kit can own and wear, with its
 // wading boon; and every card of theirs has a home.
 
@@ -12,6 +12,9 @@ import { recordHome, coarseStep, bringFlock } from '../src/world/creatures/flock
 import { skinOf, nearOnSegment } from '../src/world/teal/model.js';
 import { createTealLife } from '../src/world/teal/live.js';
 import { birdRig } from '../src/world/creatures/bird-rig.js';
+import { poseBird } from '../src/world/creatures/bird-motion.js';
+import { poseSkeleton } from '../src/world/creatures/pose.js';
+import { tealFlyPose } from '../src/world/teal/motion.js';
 import { wadeRingK } from '../src/app/teal.js';
 import { cleanKit, own, wearKit } from '../src/world/kit/model.js';
 import { ICON_NAMES } from '../src/ui/icons/icons.js';
@@ -119,10 +122,43 @@ export function addTealTests(test, assert, eq) {
     const life3 = mk();
     life3.step(1 / 30, { ...base, count: 3, placeNow: false });
     assert(life3.birds().every((b) => b.mode === 'land' && b.y > 0), 'flying in');
-    for (let i = 0; i < 30 * 4; i++) life3.step(1 / 30, { ...base, count: 3, placeNow: false });
+    // From inFromM off they glide in no faster than they fly (about 10 s from 30 m).
+    for (let i = 0; i < 30 * 12; i++) life3.step(1 / 30, { ...base, count: 3, placeNow: false });
     assert(life3.birds().every((b) => b.y === 0), 'landed on the water');
     for (let i = 0; i < 30 * 15; i++) life3.step(1 / 30, { ...base, count: 3, placeNow: false, leave: true });
     eq(life3.birds().length, 0, 'gone');
+  });
+
+  test(G, 'they fly stretched out flat, rise forward away from you and lean into the lap (Matt, November 2, 2026)', async () => {
+    const { R, B } = await load();
+    const M = B.motion, rig = birdRig(B.shape);
+    // The flying shape: the bill no more than 20 degrees above the tail (it was 35, sitting upright).
+    const P = tealFlyPose(0, 0.3, M), out = new Float32Array(rig.skeleton.length * 16);
+    poseSkeleton(rig.skeleton, poseBird(rig, P, M), out, 0);
+    /** @param {number[]} p @param {string} bone */
+    const at = (p, bone) => { const o = rig.at[bone] * 16; return [out[o + 1] * p[0] + out[o + 5] * p[1] + out[o + 9] * p[2] + out[o + 13], out[o + 2] * p[0] + out[o + 6] * p[1] + out[o + 10] * p[2] + out[o + 14]]; };
+    const bill = at([0, 0.254, 0.18], 'head'), tail = at([0, 0.025, -0.18], 'tail');
+    const slope = Math.atan2(bill[0] - tail[0], bill[1] - tail[1]) * 180 / Math.PI;
+    assert(slope < 20, `flat in flight (${slope.toFixed(0)} degrees bill above tail)`);
+    // The flush: one bird rises forward at about climbDeg, away from the walker, then leans into the lap.
+    const life = createTealLife({ L: R.life, P: R.presence, M, k: R.body.displayScale, seed: 9, water: pondWater });
+    const base = { count: 1, pond: { x: 0, z: 0, r: 5.5 }, night: false, walker: null, trust: 0, band: 0, placeNow: true };
+    life.step(1 / 30, base);
+    const b = life.birds()[0], x0 = b.x, z0 = b.z;
+    /** @type {any} */ const walker = { kind: 'walker', body: true, pos: [b.x + 1.5, 1, b.z], speed: 1, posture: 'stand', gaze: null, stillS: 0, editing: false, edits: [] };
+    assert(life.step(1 / 30, { ...base, placeNow: false, walker }).includes('flushed'), 'flushed');
+    let rose = null, lean = 0;
+    for (let i = 0; i < 30 * 8; i++) {
+      life.step(1 / 30, { ...base, placeNow: false });
+      const c = life.birds()[0];
+      if (!rose && c.mode === 'fly') rose = { up: c.y, along: Math.hypot(c.x - x0, c.z - z0), away: Math.hypot(c.x - walker.pos[0], c.z - walker.pos[2]) };
+      if (c.mode === 'fly') lean = Math.max(lean, Math.abs(c.pose.bodyRoll));
+    }
+    assert(rose, 'it rose');
+    const climb = Math.atan2(rose.up, rose.along) * 180 / Math.PI;
+    assert(Math.abs(climb - M.rise.climbDeg) < 8, `rose forward at about ${M.rise.climbDeg} degrees (${climb.toFixed(0)})`);
+    assert(rose.away > 1.5 + rose.along * 0.5, 'away from the walker');
+    assert(Math.abs(lean * 180 / Math.PI - M.fly.bankDeg) < 2, `leaned into the lap (${(lean * 180 / Math.PI).toFixed(0)} degrees)`);
   });
 
   test(G, 'their gift is the feather; the teal hat is a unique make the kit owns and wears; wading in it calms', async () => {

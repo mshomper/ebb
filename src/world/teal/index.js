@@ -60,10 +60,11 @@ export function pondReach(water, x, z, minDepth, maxM = 16) {
 /**
  * @param {{ recipe: any, bird: any, seed: number, world: { state: any, env: any }, camera: { target: ArrayLike<number>, eye: ArrayLike<number>, distance: number },
  *   presence: import('../creatures/presence.js').Presence, water: (x: number, z: number) => { surface: number, depth: number },
- *   hours: () => number, you: () => number[] | null, record: () => void, sounds?: any }} o
+ *   hours: () => number, you: () => number[] | null, record: () => void, sounds?: any, testFlushS?: number }} o
  *   recipe: recipes/species/teal.json; bird: recipes/birds/teal.json; hours: display time in game
  *   hours; you: where you stand on foot, or null above; record: after a trust event is written;
- *   sounds: recipes/audio/teal.json (when they call)
+ *   sounds: recipes/audio/teal.json (when they call); testFlushS: `?tealflush` (testing), a pretend
+ *   walker beside the flock flushes it this often, so the rise and the lap can be watched from above
  */
 export function createTeals(o) {
   const R = o.recipe, B = o.bird, L = R.life, P = R.presence, find = R.find, key = R.key;
@@ -78,7 +79,7 @@ export function createTeals(o) {
   /** What their page was taught this session. @type {Set<string>} */ const taught = new Set();
   /** Their sounds said lately, numbered, for the sound to play (src/audio/creatures-game.js). @type {{ n: number, kind: 'krik'|'murmur'|'whirr', pos: number[] }[]} */
   const heard = [];
-  let heardN = 0, krikIn = 4, murmurIn = 10, rn = 0;
+  let heardN = 0, krikIn = 4, murmurIn = 10, rn = 0, flushIn = 4;
   const V = o.sounds;
   const rnd = () => (hash32(o.seed, 0x7ea5 + rn++) >>> 8) / 16777216;
   /** @param {'krik'|'murmur'|'whirr'} kind @param {number} x @param {number} z */
@@ -165,7 +166,13 @@ export function createTeals(o) {
       // A flock already here when the island opens is on the water; later ones fly in.
       sinceS += dt;
       const placeNow = n > 0 && !testAt && sinceS < 6;
-      const said = life.step(dt, { count: want, pond, night, walker: w, trust, band, leave: !!visit?.leaving && n === 0, around, placeNow });
+      // `?tealflush`: a pretend walker 1.5 m from the flock's middle, every testFlushS, until it rises.
+      /** @type {import('../creatures/presence.js').PresenceSource | null} */ let scare = null;
+      if (o.testFlushS && (flushIn -= dt) <= 0 && life.birds().some((b) => !life.flying(b))) {
+        scare = { id: 'walker', kind: 'walker', pos: [mid.x + 1.5, 0, mid.z], speed: 1, editing: false, edits: [], stillS: 0, body: true };
+      }
+      const said = life.step(dt, { count: want, pond, night, walker: scare ?? w, trust, band: scare ? 0 : band, leave: !!visit?.leaving && n === 0, around, placeNow });
+      if (scare && said.includes('flushed')) flushIn = o.testFlushS ?? 20;
       if (said.includes('flushed')) { emitDeferred('creature:startled', { species: key, id: 1 }); say('whirr', mid.x, mid.z); }
       const swimming = life.birds().filter((b) => !life.flying(b));
       if (V && swimming.length) {

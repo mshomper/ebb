@@ -43,7 +43,7 @@ export async function start(ctx) {
 
   const teals = createTeals({ recipe: R, bird, seed, world, camera, presence, water: (x, z) => water.sampleLive(x, z),
     hours: () => clock.display() / clock.SECONDS_PER_HOUR, you: () => ctx.walk?.below ? ctx.walk.you() : null,
-    record: () => updateStore('world', () => world.state), sounds });
+    record: () => updateStore('world', () => world.state), sounds, testFlushS: params.has('tealflush') ? 20 : 0 });
   updateStore('creatureSound', (c) => ({ ...(c ?? {}), teals: () => teals.voiced() }));
   sim.addSystem(teals);
   // With the schools, so the journal's taps and Show me, the reveal and the frame graph find it.
@@ -101,6 +101,8 @@ export async function start(ctx) {
   // to make the hat at the workbench (with `?camp=bench`, standing at it).
   if (params.has('tealhat')) { pack.add(FEATHER, 1); pack.add('cloth', 1); pack.add('rush-cord', 1); }
 
+  // `?tealflush` (testing, with `?teals`): the flock is flushed every 20 seconds by a pretend walker
+  // beside it, so the rise, the lap round the pond and the landing can be watched from above.
   // `?teals` (testing, unsaved): a flock of 5 (or `?teals=N`) settles now on the still water
   // nearest the view, whatever the season; `&trust=` starts them knowing you that well (0.2
   // Tolerant, 0.45 Curious, 0.5 their group moment and gift).

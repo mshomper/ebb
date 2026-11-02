@@ -26,20 +26,21 @@ const mix = (/** @type {number} */ a, /** @type {number} */ b, /** @type {number
  *   t: number, breath: number,
  *   gait: { phase: number, w: number, strideM: number, duty: number, liftM: number },
  *   feet: { dz: number, dy: number }[],
- *   bodyPitch: number, bodyLift: number, bodyLunge: number,
+ *   bodyPitch: number, bodyRoll: number, bodyLift: number, bodyLunge: number,
  *   neckPitch: number, neckYaw: number, headPitch: number, headYaw: number, headTilt: number,
  *   tailUp: number, tailFan: number,
  *   wing: WingPose, wingL: Partial<WingPose> | null, wingR: Partial<WingPose> | null,
  *   air: number, reach: number,
  * }} BirdPose
  *   headPitch: the head's pitch in the world (held level against the body and neck);
+ *   bodyRoll: the lean into a turn in flight (positive lifts the left wing);
  *   air: 0 legs on the ground, 1 tucked for flight; reach: legs swung forward to land
  */
 
 /** @returns {BirdPose} the bird standing still, wings folded. */
 export function restPose() {
   return { t: 0, breath: 1, gait: { phase: 0, w: 0, strideM: 0.05, duty: 0.6, liftM: 0.01 }, feet: [{ dz: 0, dy: 0 }, { dz: 0, dy: 0 }],
-    bodyPitch: 0, bodyLift: 0, bodyLunge: 0, neckPitch: 0, neckYaw: 0, headPitch: 0, headYaw: 0, headTilt: 0,
+    bodyPitch: 0, bodyRoll: 0, bodyLift: 0, bodyLunge: 0, neckPitch: 0, neckYaw: 0, headPitch: 0, headYaw: 0, headTilt: 0,
     tailUp: 0, tailFan: 1, wing: { spread: 0, up: 0, sweep: 0, handUp: 0, handFold: 0 }, wingL: null, wingR: null, air: 0, reach: 0 };
 }
 
@@ -74,7 +75,7 @@ export function poseBird(rig, P, M) {
   const sw = M.breath.swell * P.breath * (0.5 + 0.5 * Math.sin(P.t * M.breath.hz * Math.PI * 2));
   // Breathing swells the flanks only: a sideways stretch turns with the legs' own turns (about x),
   // so it never moves a foot along the ground or up off it.
-  moves[at.body] = { q: qAxis(0, P.bodyPitch), t: [0, P.bodyLift, P.bodyLunge], s: [1 + sw, 1, 1] };
+  moves[at.body] = { q: P.bodyRoll ? qmul(qAxis(2, P.bodyRoll), qAxis(0, P.bodyPitch)) : qAxis(0, P.bodyPitch), t: [0, P.bodyLift, P.bodyLunge], s: [1 + sw, 1, 1] };
   moves[at.neck] = { q: qmul(qAxis(1, P.neckYaw), qAxis(0, P.neckPitch)) };
   // The head holds its own pitch in the world (as a bird's does), whatever the body and neck do.
   moves[at.head] = { q: qmul(qAxis(1, P.headYaw), qmul(qAxis(0, P.headPitch - P.bodyPitch - P.neckPitch), qAxis(2, P.headTilt))) };
