@@ -148,6 +148,7 @@ export function addSealsTests(test, assert, eq) {
     const S = life.seals();
     eq(S.length, 3, 'three seals');
     for (const s of S) assert(ground(s.x, s.z) - tide > R.life.dryAboveM, 'each on dry ground');
+    for (const s of S) assert(ground(s.x, s.z) - tide <= R.life.lieAboveM + 0.05, 'each on the beach by the water, never up the bank');
     for (let i = 0; i < S.length; i++) for (let j = i + 1; j < S.length; j++) assert(Math.hypot(S[i].x - S[j].x, S[i].z - S[j].z) > 0.5, 'apart');
     assert(S.every((s) => s.mode === 'lie' && s.pose), 'lying, posed');
     // The tide covers the bar: into the water to bottle.
@@ -214,6 +215,11 @@ export function addSealsTests(test, assert, eq) {
     const phases = life2.seals().map((s) => s.phase), holds = life2.seals().map((s) => s.hold);
     assert(new Set(phases.map((v) => Math.round(v * 100))).size === phases.length, 'each at its own point in the hump');
     assert(new Set(holds.map((v) => Math.round(v * 100))).size === holds.length, 'each sets off at its own moment');
+    // A beach rising up a bank inland (the water's edge at x 10): they lie by the water, never up the bank.
+    const bank = (/** @type {number} */ x) => 1.5 - x * 0.15;
+    const life3 = createSealLife({ L: R.life, P: R.presence, M: R.motion, seed: 9, pupK: 0.5, ground: (x) => bank(x), tide: () => 0, sea });
+    for (let i = 0; i < 30 * 10; i++) life3.step(1 / 30, { ...base, count: 4, home: { x: 6, z: 0 } });
+    assert(life3.seals().length === 4 && life3.seals().every((q) => bank(q.x) <= R.life.lieAboveM + 0.05), 'lying by the water, not up the bank');
   });
 
   test(G, 'every card of theirs has a home: page, notes, list, web, sketchbook, icon, hints, seasons, voice', async () => {

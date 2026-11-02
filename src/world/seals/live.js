@@ -104,18 +104,22 @@ export function createSealLife(o) {
   }
 
   /**
-   * Each adult's lying spot near home: down a sunflower spiral spacingM apart, the dry ones within
-   * dryReachM, nearest first, one each (the mother first, so her pup lies by her). @param {{ x: number, z: number }} home
+   * Each adult's lying spot near home: down a sunflower spiral spacingM apart, within dryReachM, the
+   * ones dry but no more than lieAboveM above the tide (the beach just above the water, never up the
+   * bank: Matt, November 2, 2026), lowest first, one each (the mother first, so her pup lies by her).
+   * @param {{ x: number, z: number }} home
    */
   function spots(home) {
-    /** @type {{ x: number, z: number }[]} */ const out = [];
-    for (let i = 0; i < 120 && out.length < 12; i++) {
+    /** @type {{ x: number, z: number, h: number }[]} */ const out = [];
+    for (let i = 0; i < 160; i++) {
       const r = L.spacingM * 0.62 * Math.sqrt(i + 0.5), a = i * GOLDEN;
       if (r > L.dryReachM) break;
-      const x = home.x + Math.sin(a) * r, z = home.z + Math.cos(a) * r;
-      if (dry(x, z) && dry(x + 0.8, z) && dry(x - 0.8, z) && dry(x, z + 0.8) && dry(x, z - 0.8)) out.push({ x, z });
+      const x = home.x + Math.sin(a) * r, z = home.z + Math.cos(a) * r, h = -depth(x, z);
+      if (h > L.lieAboveM) continue;
+      if (dry(x, z) && dry(x + 0.8, z) && dry(x - 0.8, z) && dry(x, z + 0.8) && dry(x, z - 0.8)) out.push({ x, z, h });
     }
-    return out;
+    // Lowest first, so the group lies along the water's edge; spaced by the spiral already.
+    return out.sort((p, q) => p.h - q.h).slice(0, 12);
   }
 
   /** A new seal at (x, z), doing `mode`. @param {number} x @param {number} z @param {boolean} pup @param {'lie'|'bottle'} mode */
