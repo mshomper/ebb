@@ -44,10 +44,10 @@ export function mouthShape(S, seed) {
   };
   /** @param {number} x @param {number} y @param {number} z */
   function air(x, y, z) {
-    // No chimney top: the spring cave's air() drops that input (claude/typecheck-18); the cast reads either form.
-    let a = /** @type {any} */ (base).air(x, y, z);
+    // The chamber and its passages cut, then the stone forms over all of it (cave-field.js stoneAt).
+    let a = base.rawAir(x, y, z);
     for (const P of [S.arch, S.rubble]) { const q = passage(P, x, y, z); if (q > -0.8) a = smax(a, q + wear(x, y, z) * S.passageRag.wear, 0.25); }
-    return a;
+    return base.stoneAt(a, x, y, z);
   }
   /** The floor: the chamber's, or level in a passage. @param {number} x @param {number} z */
   function floorAt(x, z) {
@@ -63,20 +63,39 @@ export function mouthShape(S, seed) {
   return { ...base, air, floorAt, inside, passage };
 }
 
+/** The sampling grid's size (samples along x, y, z). @param {any} S @param {number} top the chimney's top */
+export function mouthGrid(S, top) {
+  const [x0, y0, z0, x1, , z1] = S.boundsM, c = S.cellM;
+  return [Math.round((x1 - x0) / c) + 1, Math.round((top - y0) / c) + 1, Math.round((z1 - z0) / c) + 1];
+}
+
 /**
- * The mouth's mesh (as caveMesh does the spring's). @param {any} S @param {number} seed @param {number} top the chimney's top
- * @returns {{ pos: Float32Array, nrm: Float32Array, idx: Uint32Array, count: number }}
+ * The field's samples for z rows k0 up to k1, clamped to the surface's neighbourhood (so every worker
+ * can sample a share of the room at once). @param {any} S @param {number} seed @param {number} top @param {number} k0 @param {number} k1
  */
-export function mouthMesh(S, seed, top) {
-  const shape = mouthShape(S, seed), [x0, y0, z0, x1, , z1] = S.boundsM, c = S.cellM;
-  const n = [Math.round((x1 - x0) / c) + 1, Math.round((top - y0) / c) + 1, Math.round((z1 - z0) / c) + 1];
-  const field = new Float32Array(n[0] * n[1] * n[2]);
-  for (let k = 0; k < n[2]; k++) for (let j = 0; j < n[1]; j++) for (let i = 0; i < n[0]; i++) {
-    field[(k * n[1] + j) * n[0] + i] = Math.max(-0.5, Math.min(0.5, shape.air(x0 + i * c, y0 + j * c, z0 + k * c)));
+export function mouthFieldRows(S, seed, top, k0, k1) {
+  const shape = mouthShape(S, seed), [x0, y0, z0] = S.boundsM, c = S.cellM, n = mouthGrid(S, top);
+  const out = new Float32Array((k1 - k0) * n[1] * n[0]);
+  for (let k = k0; k < k1; k++) for (let j = 0; j < n[1]; j++) for (let i = 0; i < n[0]; i++) {
+    out[((k - k0) * n[1] + j) * n[0] + i] = Math.max(-0.5, Math.min(0.5, shape.air(x0 + i * c, y0 + j * c, z0 + k * c)));
   }
+  return out;
+}
+
+/** The mesh of the sampled field. @param {any} S @param {number} top @param {Float32Array} field */
+export function mouthNets(S, top, field) {
+  const [x0, y0, z0] = S.boundsM, c = S.cellM, n = mouthGrid(S, top);
   const m = surfaceNets(field, n, [x0, y0, z0], c);
   const nrm = gridNormals(field, n, [x0, y0, z0], c, m.pos, m.count);
   return { pos: Float32Array.from(m.pos.subarray(0, m.count * 3)), nrm, idx: m.idx, count: m.count };
+}
+
+/**
+ * The mouth's mesh (as caveMesh does the spring's), on one thread. @param {any} S @param {number} seed @param {number} top the chimney's top
+ * @returns {{ pos: Float32Array, nrm: Float32Array, idx: Uint32Array, count: number }}
+ */
+export function mouthMesh(S, seed, top) {
+  return mouthNets(S, top, mouthFieldRows(S, seed, top, 0, mouthGrid(S, top)[2]));
 }
 
 /**
@@ -88,22 +107,29 @@ export function mouthMesh(S, seed, top) {
  * @param {number[][]} lamps lantern spots [x, y, z] (mouth frame) @param {any} B stack-mouth.json bake
  * @returns {Float32Array} per vertex: [one visibility per lamp..., ao]
  */
+/**
+ * How much of a lantern spot a point sees (0..1): a soft shadow marched through the field toward it.
+ * @param {{ air: (x: number, y: number, z: number) => number }} shape @param {number} px @param {number} py @param {number} pz
+ * @param {number[]} L the spot @param {any} B stack-mouth.json bake
+ */
+export function lampSight(shape, px, py, pz, L, B) {
+  const dx = L[0] - px, dy = L[1] - py, dz = L[2] - pz, d = Math.hypot(dx, dy, dz) || 1;
+  let res = 1, t = 0.02;
+  while (t < d - B.lampClearM && res > 0.01) {
+    const h = shape.air(px + (dx / d) * t, py + (dy / d) * t, pz + (dz / d) * t);
+    if (h < 0.002) { res = 0; break; }
+    res = Math.min(res, (B.penumbra * h) / t);
+    t += Math.min(Math.max(h, B.minStepM), B.maxStepM);
+  }
+  return Math.max(0, Math.min(1, res));
+}
+
 export function bakeLight(S, seed, pos, nrm, count, lamps, B) {
   const shape = mouthShape(S, seed), K = lamps.length + 1, out = new Float32Array(count * K);
   for (let i = 0; i < count; i++) {
     const nx = nrm[i * 3], ny = nrm[i * 3 + 1], nz = nrm[i * 3 + 2];
     const px = pos[i * 3] + nx * B.liftM, py = pos[i * 3 + 1] + ny * B.liftM, pz = pos[i * 3 + 2] + nz * B.liftM;
-    lamps.forEach((L, k) => {
-      const dx = L[0] - px, dy = L[1] - py, dz = L[2] - pz, d = Math.hypot(dx, dy, dz) || 1;
-      let res = 1, t = 0.02;
-      while (t < d - B.lampClearM && res > 0.01) {
-        const h = shape.air(px + (dx / d) * t, py + (dy / d) * t, pz + (dz / d) * t);
-        if (h < 0.002) { res = 0; break; }
-        res = Math.min(res, (B.penumbra * h) / t);
-        t += Math.min(Math.max(h, B.minStepM), B.maxStepM);
-      }
-      out[i * K + k] = Math.max(0, Math.min(1, res));
-    });
+    lamps.forEach((L, k) => { out[i * K + k] = lampSight(shape, px, py, pz, L, B); });
     // Ambient occlusion: how far the open air falls short of the distance out along the normal.
     let occ = 0, w = 1;
     for (const r of B.aoM) {
@@ -113,6 +139,31 @@ export function bakeLight(S, seed, pos, nrm, count, lamps, B) {
     out[i * K + lamps.length] = Math.max(0, Math.min(1, 1 - occ * B.aoStrength));
   }
   return out;
+}
+
+/**
+ * Lantern sight for vertices i0 up to i1 only (so every worker can bake a share at once): as
+ * bakeLight, for that slice. @param {any} S @param {number} seed @param {Float32Array} pos @param {Float32Array} nrm
+ * @param {number} i0 @param {number} i1 @param {number[][]} lamps @param {any} B
+ */
+export function bakeLightRange(S, seed, pos, nrm, i0, i1, lamps, B) {
+  return bakeLight(S, seed, pos.subarray(i0 * 3, i1 * 3), nrm.subarray(i0 * 3, i1 * 3), i1 - i0, lamps, B);
+}
+
+/** Workers' jobs (src/core/workers.js): a share of the field's rows. @param {{ S: any, seed: number, top: number, k0: number, k1: number }} a */
+export function mouthFieldJob(a) {
+  const f = mouthFieldRows(a.S, a.seed, a.top, a.k0, a.k1);
+  return { field: f, __transfer: [f.buffer] };
+}
+/** The mesh of the whole sampled field. @param {{ S: any, top: number, field: Float32Array }} a */
+export function mouthNetsJob(a) {
+  const m = mouthNets(a.S, a.top, a.field);
+  return { ...m, __transfer: [m.pos.buffer, m.nrm.buffer, m.idx.buffer] };
+}
+/** A share of the lantern bake. @param {{ S: any, seed: number, pos: Float32Array, nrm: Float32Array, i0: number, i1: number, lamps: number[][], bake: any }} a */
+export function mouthBakeJob(a) {
+  const l = bakeLightRange(a.S, a.seed, a.pos, a.nrm, a.i0, a.i1, a.lamps, a.bake);
+  return { light: l, __transfer: [l.buffer] };
 }
 
 /**

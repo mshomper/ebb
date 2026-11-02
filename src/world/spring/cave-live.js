@@ -95,7 +95,8 @@ export function lumpStone(x, y0, z, r, u, lumpK, col, flat = 0.65) {
 /** Several meshes in one. @param {{ data: number[], idx: number[] }[]} parts */
 export function join(parts) {
   const data = [], idx = [];
-  for (const p of parts) { const base = data.length / 10; data.push(...p.data); for (const i of p.idx) idx.push(i + base); }
+  // A loop, not a spread: a big part (the stack's rubble) would overflow the call stack.
+  for (const p of parts) { const base = data.length / 10; for (const v of p.data) data.push(v); for (const i of p.idx) idx.push(i + base); }
   return { data: new Float32Array(data), idx: new Uint32Array(idx) };
 }
 

@@ -1,0 +1,5 @@
+# The stack cave's rock reads as stone (claude/m2-stack-cave-rock)
+
+Status: In review
+
+Decision 0001 (Matt, November 2, 2026: B, stone forms): the mouth room's walls read as smoke, its floor as dunes and its rubble as flat outlined shapes. The room's field now has stone forms: bedding ledges and jointed blocks in the walls, slabs in the roof, flagstones with cracks and sand pockets on the floor, and rocky bulges on the walls only. The wall wear no longer rolls the floor. The cliffs' photographed rock is drawn on the rock, triplanar, as the pieces pass draws stones, so the cave matches the cliff outside. The rubble and the pool's stones are broken stones drawn as the room's rock, lit and shadowed by the lantern, with no outline. The pool stones are bedded on the lowest ground under them, so they no longer float. Only the pool makes the floor wet now; before, the whole floor glistened. The room is built on every worker at once, the field in shares of its rows and the lantern bake in shares of its vertices. The spring's cave has no stone block and looks as it did.

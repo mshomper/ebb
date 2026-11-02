@@ -7,6 +7,11 @@
 // and deterministic: the same recipe and seed give the same cave in every browser and worker.
 // Frame: meters from the hole's axis (x, z), y up from the cave's floor level. Numbers:
 // recipes/world/spring-cave.json shape.
+// Stone forms (decision 0001, Matt, November 2, 2026): a shape with a `stone` block reads as stone,
+// not smoke: bedding ledges stepped in the walls, vertical joints cutting them into blocks, the roof
+// in slabs, the floor in flagstones with cracks and sand pockets, and a layer of rocky bulges hugging
+// the surface (stacked seeded spheres joined by smooth min and max, so the field stays a distance).
+// A shape without one (the spring's cave) is as it was.
 
 import { hash32, det } from '../../core/rng.js';
 import { noise3 } from '../hollow/field.js';
@@ -22,6 +27,42 @@ function smin(a, b, k) {
 const smax = (a, b, k) => -smin(-a, -b, k);
 /** A seeded share 0..1. @param {number} seed @param {...number} k */
 const u01 = (seed, ...k) => (hash32(seed, ...k) >>> 8) / 16777216;
+/** @param {number} a @param {number} b @param {number} x */
+const smooth = (a, b, x) => { const t = Math.max(0, Math.min(1, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
+
+/**
+ * The 2D cells round (x, z) at `size` metres (a seeded jittered grid): the nearest cell's id and
+ * middle, and how far (x, z) is from the line between it and the next nearest (half the gap between
+ * their distances), the joint between two cells. Pure.
+ * @param {number} seed @param {number} x @param {number} z @param {number} size
+ * @returns {{ id: number, cx: number, cz: number, edge: number }}
+ */
+export function cells2(seed, x, z, size) {
+  const gx = x / size, gz = z / size, ix = Math.floor(gx), iz = Math.floor(gz);
+  let d1 = Infinity, d2 = Infinity, id = 0, cx = 0, cz = 0;
+  for (let j = -1; j <= 1; j++) for (let i = -1; i <= 1; i++) {
+    const a = ix + i, b = iz + j, h = hash32(seed, a, b);
+    const px = a + 0.15 + 0.7 * ((h >>> 8) & 255) / 255, pz = b + 0.15 + 0.7 * ((h >>> 16) & 255) / 255;
+    const d = Math.hypot(px - gx, pz - gz);
+    if (d < d1) { d2 = d1; d1 = d; id = h; cx = px * size; cz = pz * size; } else if (d < d2) d2 = d;
+  }
+  return { id, cx, cz, edge: ((d2 - d1) / 2) * size };
+}
+
+/**
+ * Rocky bulges round a point (IQ's "FBM detail in SDFs"): the distance to the nearest of the seeded
+ * spheres on the corners of a size-metre grid (negative inside one). @param {number} seed
+ * @param {number} x @param {number} y @param {number} z @param {number} size
+ */
+function spheres(seed, x, y, z, size) {
+  const gx = x / size, gy = y / size, gz = z / size, ix = Math.floor(gx), iy = Math.floor(gy), iz = Math.floor(gz);
+  let d = Infinity;
+  for (let k = 0; k <= 1; k++) for (let j = 0; j <= 1; j++) for (let i = 0; i <= 1; i++) {
+    const r = 0.5 * ((hash32(seed, ix + i, iy + j, iz + k) >>> 8) / 16777216);
+    d = Math.min(d, Math.hypot(gx - ix - i, gy - iy - j, gz - iz - k) - r);
+  }
+  return d * size;
+}
 
 /**
  * The cave's shape functions. @param {any} S spring-cave.json shape @param {number} seed
@@ -50,16 +91,49 @@ export function caveShape(S, seed) {
   }
   /** The pool basin's dip below the floor (m, 0 outside it). @param {number} x @param {number} z */
   const basin = (x, z) => { const d = Math.hypot(x - P.at[0], z - P.at[1]) / P.radiusM; return d >= 1 ? 0 : P.depthM * (1 - d * d) * (1 - d * d); };
-  /** The floor's height (m): gently bumped, rising into the walls, dipping into the pool. @param {number} x @param {number} z */
+  const ST = S.stone ?? null;
+  /**
+   * The floor's stone (stone shapes only): flagstones each lifted and tilted a little, a crack
+   * along every joint between them, and sand settled flat in the hollows over them (m). @param {number} x @param {number} z
+   */
+  function slabs(x, z) {
+    const F = ST.slabs, c = cells2(seed + 41, x, z, F.sizeM);
+    const lift = ((c.id >>> 8 & 255) / 255 - 0.5) * 2 * F.liftM;
+    const ta = ((c.id >>> 16 & 255) / 255) * Math.PI * 2;
+    const tilt = F.tiltM * ((x - c.cx) * Math.cos(ta) + (z - c.cz) * Math.sin(ta)) / F.sizeM;
+    const stone = lift + tilt - F.crackM * (1 - smooth(0, F.crackW, c.edge));
+    // Sand over the low stones and in the cracks: flat at its own level where the patch lies.
+    const sand = smooth(1 - F.sandShare - 0.08, 1 - F.sandShare + 0.08, noise3(seed + 43, x * F.sandScale, 1.7, z * F.sandScale));
+    const level = -F.liftM * 0.35;
+    return sand > 0 ? stone + (Math.max(stone, level) - stone) * sand : stone;
+  }
+  /** The floor's height (m): gently bumped (or in flagstones), rising into the walls, dipping into the pool. @param {number} x @param {number} z */
   function floorAt(x, z) {
-    const n = (noise3(seed, x * 1.3, 0.5, z * 1.3) - 0.5) * 2 * S.floorNoiseM;
+    const n = ST ? slabs(x, z) : (noise3(seed, x * 1.3, 0.5, z * 1.3) - 0.5) * 2 * S.floorNoiseM;
     const near = Math.max(0, 1 - inside(x, z) / 0.9);
     return n + S.floorRiseM * near * near - basin(x, z);
   }
-  /** The ceiling's height (m): a low dome. @param {number} x @param {number} z */
+  /** The ceiling's height (m): a low dome (in slabs, for stone shapes). @param {number} x @param {number} z */
   function ceilAt(x, z) {
     const e = Math.max(0, inside(x, z)) / Math.min(rx, rz);
-    return S.ceilingM + S.domeM * Math.min(1, e * 1.6) + (noise3(seed + 7, x * 0.9, 3.1, z * 0.9) - 0.5) * 0.3;
+    const slab = ST ? ((cells2(seed + 47, x, z, ST.roof.sizeM).id >>> 8 & 255) / 255 - 0.5) * 2 * ST.roof.stepM : 0;
+    return S.ceilingM + S.domeM * Math.min(1, e * 1.6) + (noise3(seed + 7, x * 0.9, 3.1, z * 0.9) - 0.5) * 0.3 + slab;
+  }
+  /**
+   * How far a wall stands back at a point (m, stone shapes only): its bedding (each bed set in or out
+   * on its own, stepping sharply to the next, the beds dipping a little), and the joints cutting the
+   * beds into blocks (each block set in or out, a groove along each joint).
+   * @param {number} x @param {number} y @param {number} z
+   */
+  function wallBack(x, y, z) {
+    const B = ST.beds, J = ST.joints;
+    const yy = y + B.dip[0] * x + B.dip[1] * z + (noise3(seed + 51, x * 0.5, 0.3, z * 0.5) - 0.5) * 2 * B.wobbleM;
+    const i = Math.floor(yy / B.stepM), f = yy / B.stepM - i;
+    const bed = (/** @type {number} */ k) => (u01(seed, 53, k) - 0.5) * 2 * B.offsetM;
+    const off = bed(i) + (bed(i + 1) - bed(i)) * smooth(1 - B.sharp, 1, f);
+    const c = cells2(seed + 57, x + y * J.lean, z - y * J.lean, J.sizeM);
+    const block = ((c.id >>> 8 & 255) / 255 - 0.5) * 2 * J.offsetM;
+    return off + block + J.grooveM * (1 - smooth(0, J.widthM, c.edge));
   }
   /** The water over the floor (m, 0 where dry): only in the pool's basin, never in the floor's other dips. @param {number} x @param {number} z */
   const poolDepth = (x, z) => (Math.hypot(x - P.at[0], z - P.at[1]) < P.radiusM * 1.15 ? Math.max(0, P.levelM - floorAt(x, z)) : 0);
@@ -76,6 +150,11 @@ export function caveShape(S, seed) {
    * The signed field at a point: positive in the air. @param {number} x @param {number} y @param {number} z
    */
   function air(x, y, z) {
+    const a = rawAir(x, y, z);
+    return ST ? stoneAt(a, x, y, z) : a;
+  }
+  /** The field before its stone forms (a shape built on this one adds its own cuts, then the stone). @param {number} x @param {number} y @param {number} z */
+  function rawAir(x, y, z) {
     const b = S.blendM;
     let a = smin(smin(y - floorAt(x, z), ceilAt(x, z) - y, b), inside(x, z), b);
     // The chimney: from just under the ceiling up to the hole.
@@ -92,9 +171,32 @@ export function caveShape(S, seed) {
     }
     const g = S.wallNoiseScale, f = S.fineNoiseScale ?? 0;
     const wear = (noise3(seed + 3, x * g, y * g, z * g) - 0.5) * 2 * S.wallNoiseM + (f ? (noise3(seed + 5, x * f, y * f, z * f) - 0.5) * 2 * (S.fineNoiseM ?? 0) : 0);
-    return a + wear;
+    // Stone shapes wear their walls only: the floor keeps its flagstones (the wear rolled it into dunes).
+    return a + (ST ? wear * smooth(0.05, 0.5, y - floorAt(x, z)) : wear);
   }
-  return { inside, floorAt, ceilAt, poolDepth, air, basin, shaftIn, drips };
+  /**
+   * Stone forms on the field near its surface (far from it the field is clamped anyway): the walls
+   * stepped back by their beds and blocks (above the floor, where wall rather than floor), then the
+   * rocky bulges hugging the walls (never the floor, which keeps its flagstones). @param {number} a the field so far @param {number} x @param {number} y @param {number} z
+   */
+  function stoneAt(a, x, y, z) {
+    if (!ST || Math.abs(a) > ST.nearM) return a;
+    const fl = floorAt(x, z), wall = smooth(0.05, 0.35, y - fl);
+    a += wallBack(x, y, z) * wall;
+    // Rock bulges (rock is where the field is negative): clipped to a band round the surface, then joined.
+    // Walls only: the floor keeps its flagstones flat and walkable.
+    if (wall <= 0) return a;
+    const L = ST.lumps;
+    let rock = -a, size = L.sizeM, band = L.bandM * wall;
+    for (let o = 0; o < L.octaves; o++) {
+      let n = spheres(seed + 61 + o, x, y, z, size);
+      n = smax(n, rock - band, L.blendM);
+      rock = smin(n, rock, L.blendM);
+      size *= L.gain; band *= L.gain;
+    }
+    return -rock;
+  }
+  return { inside, floorAt, ceilAt, poolDepth, air, rawAir, stoneAt, basin, shaftIn, drips };
 }
 
 /**

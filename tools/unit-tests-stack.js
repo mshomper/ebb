@@ -171,7 +171,10 @@ export function addStackTests(test, assert, eq) {
     const list = mouth.slice(mouth.indexOf('const uniforms = ['), mouth.indexOf('];', mouth.indexOf('const uniforms = [')));
     const n = list.split(String.fromCharCode(10)).slice(1).join(' ').split(',').map((t) => t.trim()).filter(Boolean)
       .reduce((s, t) => s + (t.startsWith('...') ? 3 : 1), 0);
-    eq(n, F, `the mouth gives every value (${n})`);
+    // The mouth sets the frame's own values; the pass adds the rock scan's after them (decision 0001).
+    const set = Number(/const SET_FLOATS = (\d+);/.exec(pass)?.[1]);
+    eq(n, set, `the mouth gives every value it sets (${n})`);
+    eq(F - set, 8, 'the pass adds two vec4s for the rock scan');
   });
 
   test(G, 'its story: two threads with tests, the note a keeper page, the hint, the staff a unique make, the zone listed', async () => {
