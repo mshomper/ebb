@@ -1,0 +1,12 @@
+{
+  "type": "audio",
+  "id": "seal",
+  "version": 1,
+  "note": "The grey seals' voice (B3 wave 3; doc 17 'Procedural creature voices'; Matt, November 1, 2026: soft sounds). Made in code like the turnstones' (src/audio/voices/seal.js), not recordings, so there is no licence to carry. When: src/world/seals/index.js says each one, where it comes from, to the creatures bus, quiet in the soundscape (gainDb). moan: the low hooting 'hoooo' that carries from a haul-out, now and then (every moanEveryS from those lying out): a soft triangle tone of s seconds at f0Hz, rising by rise and falling back, a slow vibrato (vibHz, vib share of the pitch), through a lowpass; sometimes twice (twiceShare), the second lower. snort: a short breath of noise (bandpass hz, q) as a seal slips into the sea when startled. pup: the pup's thin lamb-like call, every pupEveryS while it is here: a wavering sawtooth through a formant. spatial: refDistance and rolloff of the placed chain.",
+  "moanEveryS": [18, 45],
+  "pupEveryS": [12, 30],
+  "moan": { "gainDb": -30, "s": [1.4, 2.4], "f0Hz": [170, 240], "rise": 0.22, "vibHz": 4.5, "vib": 0.012, "lowpassHz": 700, "twiceShare": 0.3 },
+  "snort": { "gainDb": -30, "s": [0.18, 0.3], "hz": [500, 900], "q": 1.2 },
+  "pup": { "gainDb": -34, "s": [0.45, 0.7], "f0Hz": [420, 560], "rise": 0.12, "vibHz": 7, "vib": 0.03, "formantHz": 1100, "formantQ": 2 },
+  "spatial": { "refDistance": 5, "rolloff": 1 }
+}

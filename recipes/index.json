@@ -137,6 +137,8 @@
     "birds/teal": "birds/teal.json",
     "birds/purple-sandpiper": "birds/purple-sandpiper.json",
     "species/purple-sandpiper": "species/purple-sandpiper.json",
-    "audio/purple-sandpiper": "audio/purple-sandpiper.json"
+    "audio/purple-sandpiper": "audio/purple-sandpiper.json",
+    "species/seal": "species/seal.json",
+    "audio/seal": "audio/seal.json"
   }
 }

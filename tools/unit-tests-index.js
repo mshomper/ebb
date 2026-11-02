@@ -96,6 +96,7 @@ export const TEST_FILES = {
   'sampler': '',
   'sandpipers': '',
   'save': '',
+  'seals': '',
   'setpieces': '',
   'shaped': '',
   'shore-sand': '',

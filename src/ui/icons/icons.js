@@ -985,6 +985,18 @@ const ICONS = {
     <path ${ACCENT} d="M7 17H19V21.5H7Z"/>
     <path d="M7 17H19V21.5H7ZM13 17V19.2M7 19.2H19M10 19.2V21.5M16 19.2V21.5"/>
     <path d="M2.5 20C3.5 19.2 4.5 19.2 5.5 20"/>`,
+  // Grey seal (B3 wave 3): hauled out on a sandbar, from the side, curved like a banana with the
+  // head and the tail flippers lifted, a fore flipper under it and blotches on the coat.
+  seal: `
+    <path ${ACCENT} d="M3.2 14.6C6 14 9 13.2 11.4 12.6C14.2 12 15.8 10.8 16.8 8.6C17.4 7.2 18.8 6.4 20.2 6.9L21.4 7.8C21.4 8.5 20.8 8.8 20.1 8.8C19.4 9 19 9.8 19 11.2C19 14.8 17.2 17.2 13.8 17.2H7C5.2 17.2 4 16.2 3.2 14.6Z"/>
+    <path d="M3.2 14.6C6 14 9 13.2 11.4 12.6C14.2 12 15.8 10.8 16.8 8.6C17.4 7.2 18.8 6.4 20.2 6.9L21.4 7.8C21.4 8.5 20.8 8.8 20.1 8.8C19.4 9 19 9.8 19 11.2C19 14.8 17.2 17.2 13.8 17.2H7C5.2 17.2 4 16.2 3.2 14.6Z"/>
+    <path d="M3.2 14.6L1.9 12.8M3.2 14.6L1.8 15.6"/>
+    <path d="M13 16.4C14.4 16.4 15.8 17 16.6 17.8"/>
+    <circle cx="19.3" cy="7.9" r="0.55" fill="currentColor" stroke="none"/>
+    <circle cx="9" cy="15" r="0.5" fill="currentColor" stroke="none"/>
+    <circle cx="12.4" cy="14.4" r="0.45" fill="currentColor" stroke="none"/>
+    <circle cx="15.6" cy="13.2" r="0.45" fill="currentColor" stroke="none"/>
+    <path d="M2.5 20C7 18.6 17 18.6 21.5 20"/>`,
 
   // The Web's shore features (journal-web.json). Rock pool: water held between two rocks.
   pool: `
