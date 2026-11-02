@@ -862,6 +862,15 @@ const ICONS = {
     <path d="M6.5 17.5C6 12.5 9.5 6.5 19.5 4.5C18.5 13 13 17.5 6.5 17.5Z"/>
     <path d="M3.5 20.5C8 16 13 10.5 19.5 4.5"/>
     <path d="M9.5 14.8L8.3 11.6M12.4 11.8L11.8 8.4M10.8 13.5L13.6 15.4M13.8 10.4L16.6 11.8"/>`,
+  // A teal's wing feather (the teal's gift, B3): a straighter, narrower flight feather lying corner
+  // to corner, the green speculum a darker band across its vane near the tip.
+  'teal-feather': `
+    <path ${ACCENT} d="M7 17C7.4 13.2 11.6 8 19.5 4.5C17.4 11.4 12.6 16 7 17Z"/>
+    <path fill="currentColor" fill-opacity="0.55" stroke="none" d="M12.4 8.4L14.6 6.6L17.6 9.6L16 12Z"/>
+    <path d="M7 17C7.4 13.2 11.6 8 19.5 4.5C17.4 11.4 12.6 16 7 17Z"/>
+    <path d="M12.4 8.4L16 12M14.6 6.6L17.6 9.6"/>
+    <path d="M4 20.5C8.5 16 13.5 10.5 19.5 4.5"/>
+    <path d="M9.4 14.4L8.6 12.4M11 13.4L13.2 15"/>`,
   // Common toad (spring marker): squat and low on the ground, walking, its back dotted with warts.
   toad: `
     <path ${ACCENT} d="M3.5 18C3.8 14.4 7.2 12.2 11.5 12C12.4 10.4 15 10.2 16.2 11.6C18.6 12 20.5 13.4 20.5 15C20.5 16.6 18.8 17.4 16.6 17.6L15 18Z"/>
@@ -946,6 +955,15 @@ const ICONS = {
     <path ${ACCENT} d="M18.8 20.5C18.8 18.6 21.6 18.2 21.6 20.5Z"/>
     <path d="M18.8 20.5C18.8 18.6 21.6 18.2 21.6 20.5"/>
     <path d="M2.5 20.5H18.4"/>`,
+  // Eurasian teal (B3): a small dabbling duck swimming, from the side, its rounded body low on a
+  // ripple, the pointed tail up, a short bill, the eye stripe sweeping back to the nape.
+  teal: `
+    <path ${ACCENT} d="M3.5 12C5.4 12.4 7.6 11.2 10.4 11.2C12 11.2 13.2 11.3 13.8 11.4C13.6 10.2 13.6 8.6 14.2 7.6C14.8 6.4 16.4 6 17.6 6.6C18.4 7 18.8 7.8 18.8 8.6L20.8 9.4C20.6 10 19.8 10.2 18.6 10C18 10.6 17.6 11.6 17.4 12.8C18 13.6 18 15 17 15.8C16.4 16.2 15.8 16.4 15 16.4H7.4C5.2 16.4 3.8 14.6 3.5 12Z"/>
+    <path d="M3.5 12C5.4 12.4 7.6 11.2 10.4 11.2C12 11.2 13.2 11.3 13.8 11.4C13.6 10.2 13.6 8.6 14.2 7.6C14.8 6.4 16.4 6 17.6 6.6C18.4 7 18.8 7.8 18.8 8.6L20.8 9.4C20.6 10 19.8 10.2 18.6 10C18 10.6 17.6 11.6 17.4 12.8C18 13.6 18 15 17 15.8C16.4 16.2 15.8 16.4 15 16.4H7.4C5.2 16.4 3.8 14.6 3.5 12Z"/>
+    <circle cx="17.2" cy="8.2" r="0.55" fill="currentColor" stroke="none"/>
+    <path d="M16.8 8.9C15.9 9.4 14.8 9.3 14 8.7"/>
+    <path d="M7.4 13.2C9.6 14.4 12.4 14.4 14.4 13.4"/>
+    <path d="M2.5 18.2C4.2 17.4 5.8 17.4 7.5 18.2S10.8 19 12.5 18.2S15.8 17.4 17.5 18.2S20 18.8 21.5 18.2"/>`,
   // Eels (B3): a long body in one wave under the water line, a soft fin ridge along its back half,
   // the pond floor below.
   eel: `

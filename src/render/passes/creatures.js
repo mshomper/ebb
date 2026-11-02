@@ -248,7 +248,8 @@ export function createCreaturePass(opts) {
      */
     async setMaps(glb) {
       if (!opts.maps) return;
-      if (!device) { pendingMaps = glb; return; }
+      // Before the pass is set up (its device may come before its buffers), they wait for it.
+      if (!device || !ubuf) { pendingMaps = glb; return; }
       pendingMaps = null;
       const m = materialMaps(glb);
       const made = await Promise.all([mapTexture(device, m.baseColor, 'rgba8unorm-srgb', [128, 128, 128, 255], `${pass.name}-colour`),

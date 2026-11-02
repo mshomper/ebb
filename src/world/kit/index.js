@@ -116,6 +116,17 @@ export function createKit(o) {
       publish();
       emitDeferred('kit:band', { id });
     },
+    /**
+     * Something owned from now on (the teal hat, made at the workbench), and put on at once when
+     * wearIt. @param {import('./model.js').Slot} slot @param {string} id @param {boolean} [wearIt]
+     */
+    gain(slot, id, wearIt = false) {
+      const k = own(kit(), slot, id);
+      if (k !== kit()) { update('kit', () => k); publish(); }
+      if (wearIt) wear({ slot, id });
+    },
+    /** The boon of the hat worn, if it has one (recipes/world/kit.json items.hat.<id>.boon), else null. */
+    hatBoon: () => R.items?.hat?.[kit().hat]?.boon ?? null,
     belt,
     dispose() { for (const off of offs) off(); },
   };

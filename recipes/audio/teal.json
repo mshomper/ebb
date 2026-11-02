@@ -1,0 +1,12 @@
+{
+  "type": "audio",
+  "id": "teal",
+  "version": 1,
+  "note": "The teal's voice (B3, the winter duck flock; doc 17 'Procedural creature voices'). Made in code like the turnstones' (src/audio/voices/teal.js), not recordings, so there is no licence to carry. When: src/app/teal.js says each one, where it comes from, to the creatures bus, quiet in the soundscape (gainDb). krik: the drake's short, clear, ringing double whistle 'krrik', every krikEveryS real seconds from the flock while they swim: chirps (usually two) of chirpS, gapS apart, a sine at f0Hz (each call its own within the range) rising by rise then falling by droop, a little second harmonic (harmonic) for the ring, and the opening share of each chirp (trillShare) rolled by a trill (trillHz, trillDepth) for the 'rr'. murmur: a few soft low nasal quacks of the duck at rest and at night (murmurEveryS): notes of noteS, gapS apart, a sawtooth at f0Hz dipping by droop through a nasal formant (formantHz, formantQ). whirr: the flock flushing: filtered noise (noiseHz, noiseQ) beating at wingHz for durS (attackS in, then fading), with krikCalls krik calls over it, each up to krikSpreadS after the start. spatial: refDistance and rolloff of the placed chain.",
+  "krikEveryS": [9, 22],
+  "murmurEveryS": [16, 34],
+  "krik": { "gainDb": -30, "chirps": [2, 2], "chirpS": 0.07, "gapS": [0.05, 0.075], "f0Hz": [2600, 3300], "rise": 0.06, "droop": 0.1, "harmonic": 0.18, "trillShare": 0.45, "trillHz": 55, "trillDepth": 0.6 },
+  "murmur": { "gainDb": -38, "notes": [2, 4], "noteS": 0.1, "gapS": [0.14, 0.26], "f0Hz": [380, 480], "droop": 0.15, "formantHz": 1100, "formantQ": 3 },
+  "whirr": { "gainDb": -32, "durS": [0.9, 1.2], "attackS": 0.06, "wingHz": [12, 16], "noiseHz": 900, "noiseQ": 0.8, "krikCalls": [1, 2], "krikSpreadS": 0.6 },
+  "spatial": { "refDistance": 3, "rolloff": 1.1 }
+}

@@ -6,7 +6,8 @@
   "popSlots": 4,
   "items": {
     "hat": {
-      "own": { "name": "Your hat", "icon": "hat", "line": "Wide enough to keep the rain off a sketch. The brim has gone soft at the front where I pull it down." }
+      "own": { "name": "Your hat", "icon": "hat", "line": "Wide enough to keep the rain off a sketch. The brim has gone soft at the front where I pull it down." },
+      "teal": { "name": "The teal hat", "icon": "teal-hat", "line": "A linen band round the crown and the teal's green feather in it. In it I can wade the shallows and scatter less.", "boon": { "wadeRingK": 0.7, "wadeDepthM": 0.06 } }
     },
     "lantern": {
       "hand": { "name": "Hand lantern", "icon": "lantern", "line": "It hangs on the tent pole by day. After dark I take it with me when I leave the camp." }
@@ -75,7 +76,7 @@
   },
   "figure": {
     "note": "Hat and coat looks for Phase 4 dyes: per id, a linear tint [r, g, b] for that part (null: as made). Read by src/world/kit/model.js looksOf; the walker's own are as made.",
-    "hat": { "own": null },
+    "hat": { "own": null, "teal": null },
     "coat": { "own": null }
   }
 }

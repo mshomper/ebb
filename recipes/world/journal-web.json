@@ -91,7 +91,8 @@
     "groundbeetle": { "label": "Violet ground beetle", "kind": "small", "icon": "groundbeetle", "page": "groundbeetle" },
     "you": { "label": "You", "kind": "animals", "icon": "you", "always": true },
     "turnstones": { "label": "Turnstones", "kind": "animals", "icon": "turnstone", "page": "turnstones", "flag": "turnstones:seen" },
-    "eels": { "label": "Eels", "kind": "animals", "icon": "eel", "page": "eels", "flag": "eels:seen" }
+    "eels": { "label": "Eels", "kind": "animals", "icon": "eel", "page": "eels", "flag": "eels:seen" },
+    "teals": { "label": "Teal", "kind": "animals", "icon": "teal", "page": "teals", "flag": "teals:seen" }
   },
   "links": [
     { "a": "rock", "b": "moss", "ink": "mossOnRock", "note": "Moss has found a hold on the rock." },
@@ -253,6 +254,10 @@
     { "a": "frogspawn", "b": "eels", "ink": "seen:frogspawn&flag:eels:seen", "note": "Eels hunt the tadpoles that hatch from the spawn." },
     { "a": "midges", "b": "eels", "ink": "flag:midges:seen&flag:eels:seen", "note": "Eels eat the midge larvae on the pond floor." },
     { "a": "you", "b": "eels", "ink": "flag:eels:home&flag:eels:seen", "note": "Eels came to the pond you dug long ago near the shore." },
+    { "a": "fresh", "b": "teals", "ink": "flag:teals:seen", "note": "Teal winter on a still pond, dabbling and up-ending in the shallows." },
+    { "a": "reeds", "b": "teals", "ink": "flag:teals:seen&seen:reeds", "note": "Teal want a pond with reeds all round its edge to shelter in." },
+    { "a": "rushes", "b": "teals", "ink": "flag:teals:seen&seen:rushes", "note": "Rushes on the bank count toward the reedy edge the teal look for." },
+    { "a": "you", "b": "teals", "ink": "flag:teals:known", "note": "The teal came to know you, and left you a green wing feather." },
     { "a": "soil", "b": "flax", "ink": "grows:soil:flax", "note": "Flax stands on the islet's grassy patches, where turf has closed over the sand." },
     { "a": "flax", "b": "you", "ink": "flag:flax:retted", "note": "Flax steeped in a pond gives long fibre, and the fibre weaves into linen at the bench." },
     { "a": "fresh", "b": "flax", "ink": "flag:flax:retted", "note": "Flax is steeped in a pond's shallows. The minnows keep away while it lies there." }

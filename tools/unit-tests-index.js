@@ -109,6 +109,7 @@ export const TEST_FILES = {
   'stone': '',
   'store': '',
   'summer': '',
+  'teal': '',
   'teas': '',
   'terrain': '',
   'tide': '',

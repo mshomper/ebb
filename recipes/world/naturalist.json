@@ -62,6 +62,11 @@
         "icon": "raft",
         "title": "A gift from the {species}",
         "line": "A raft of reeds is waiting on your gift spot. Go down, pick it there, and set it on a pond. Turtles bask on it, far from the bank, and it rises and falls with the water.", "stoneLine": "A raft of reeds, left on the gift stone at camp. Take it up there, and it goes to your gift spot. Set on a pond, turtles bask on it, far from the bank."
+      },
+      "tealFeather": {
+        "icon": "teal-feather",
+        "title": "A gift from the {species}",
+        "line": "A wing feather with a band of green that shines, left on the bank of their pond. It is in your pack now. With linen cloth and rush cord, the workbench makes a hat of it.", "stoneLine": "A wing feather with a band of green that shines, left on the gift stone at camp. Take it up there. With linen cloth and rush cord, the workbench makes a hat of it."
       }
     }
   },

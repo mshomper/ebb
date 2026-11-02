@@ -53,6 +53,8 @@ export const POUCH_KINDS = /** @type {[string, string, string, string, number][]
   ...METAL_POUCH_ROWS,
   // Flax and linen (F1): the fibre from steeped flax, and the cloth woven from it.
   ...FLAX_POUCH_ROWS,
+  // The teal's gift (B3 wave 3): their wing feather, in a pouch until it goes into the teal hat.
+  ['teal-feather', 'teal-feather', 'Teal feather', 'T3', 3],
 ]).map(row);
 
 /** Plant parts, '<species>.<part>' (docs/future/13 sections 4.1 and 5.3). @type {ItemRow[]} */
