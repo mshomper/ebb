@@ -34,7 +34,7 @@ const F = camp.fire, S = camp.fireSim;
 
 const canvas = /** @type {HTMLCanvasElement} */ ($('c'));
 const r = await initGpu(canvas);
-if (!r.ok) {
+if (r.ok === false) {
   status.textContent = r.reason === 'missing' ? 'This lab needs WebGPU: open it in a recent Chrome or Edge on desktop.' : `The GPU could not start (${r.reason}).`;
   throw new Error(r.reason);
 }

@@ -45,9 +45,11 @@ import { keeperOfJournal } from '../keeper/route.js';
  * @param {{ world: { state: any, env: any }, words: any, island: any, web: any, wash?: any,
  *   creatures?: { frogAt: (x: number, z: number) => { x: number, z: number, id?: number } | null } | null,
  *   finds?: any, keepsakes?: any, pieces?: any, lift?: any, nets?: any, shore?: (() => Record<string, number> | null) | null, list?: any,
- *   schools?: { at: (x: number, z: number, y?: number) => { sp: string, id: number, x: number, z: number } | null }[] }} opts
+ *   schools?: { at: (x: number, z: number, y?: number) => { sp: string, id: number, x: number, z: number, one?: number } | null }[],
+ *   gather?: any, piles?: any, camp?: any, hen?: any, stores?: any, dig?: any, perch?: any, lanterns?: any, setpieces?: any[] }} opts
  *   schools: the live schools (minnows; src/world/creatures/schools.js), which say whether a tap
- *   landed on one
+ *   landed on one (one: a turtle's own id); gather, piles, camp, hen, stores, dig, perch, lanterns,
+ *   setpieces: the live modules whose cards and words a tap reads (each by its cardAt or the like)
  *   world: the live world (state and env of the hourly tick); words: recipes/world/journal.json;
  *   island: recipes/world/journal-island.json; web: recipes/world/journal-web.json;
  *   wash: recipes/world/journal-wash.json; creatures: the live creatures (src/world/creatures),
@@ -572,7 +574,8 @@ export function createJournal(opts) {
       /** @type {JournalUiSlice} */ const u = get('journalUi');
       const open = a.toggle ? !u.open : a.open ?? u.open;
       /** @type {Partial<JournalUiSlice>} */ const patch = { open };
-      if (a.view) patch.view = a.view;
+      // The Keeper's views went to the Keeper above (keeperOfJournal), so what is left is the journal's.
+      if (a.view) patch.view = /** @type {JournalUiSlice['view']} */ (a.view);
       if (a.page !== undefined) {
         patch.page = a.page;
         if (a.page) patch.view = words.species[a.page] ? 'living' : island.ground[a.page] ? 'ground' : u.view;

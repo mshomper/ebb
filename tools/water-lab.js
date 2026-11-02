@@ -63,7 +63,7 @@ function pct(arr, q) {
 const fmt = (v, d = 2) => (Number.isFinite(v) ? v.toFixed(d) : '-');
 
 const result = await startApp(canvas);
-if (!result.ok) {
+if (result.ok === false) {
   $('summary').innerHTML = `<div class="status">${ICON_WARN}<span>WebGPU is not available here (${result.reason}). Open this page in current Chrome or Edge.</span></div>`;
 } else {
   const r = result;

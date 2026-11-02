@@ -191,7 +191,7 @@ export function createHollow(o) {
     lantern.update(dt);
     // The lantern arm rises while the right mouse holds it up: a layer over walking and any swing.
     const RL = FR.clips.raiseLantern;
-    motion.hold('raiseLantern', lantern.raised && !lantern.snuffed && !lantern.out, { span: RL.layer.span, mask: RL.layer.mask, upS: RL.layer.upS, downS: RL.layer.downS });
+    motion.holdClip('raiseLantern', lantern.raised && !lantern.snuffed && !lantern.out, { span: RL.layer.span, mask: RL.layer.mask, upS: RL.layer.upS, downS: RL.layer.downS });
     reeling = Math.max(0, reeling - dt);
     grace = Math.max(0, grace - dt);
     if (shove) {

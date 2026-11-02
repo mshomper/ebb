@@ -90,7 +90,7 @@ export function createOrbitCamera(r) {
   /**
    * The low view below (doc 23, the walker): while set, the camera follows you from behind and
    * close (`follow` each frame), with its own zoom and look limits and no panning; null above.
-   * @type {{ minDistance: number, maxDistance: number, pitchMin: number, pitchMax: number, minEyeHeight: number } | null}
+   * @type {{ minDistance: number, maxDistance: number, pitchMin: number, pitchMax: number, minEyeHeight: number, orbitDegPerPx?: number, turnHalfLife?: number } | null}
    */
   let ground = null;
   /**

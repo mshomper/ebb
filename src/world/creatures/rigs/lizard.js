@@ -57,6 +57,7 @@ export function poseLizard(rig, f, M, axisAngle) {
   moves[at.head] = { q: qmul(axisAngle([0, 1, 0], f.look - spine * 0.8), axisAngle([1, 0, 0], -f.lookUp + pitch * 0.5)) };
   // Legs (a left one as it is, the right mirrored): splayed at rest; running, diagonal pairs sweep
   // back along the ground and swing forward lifted; in a push-up the front legs straighten.
+  /** @type {[string, string, number, boolean, number][]} */
   const legs = [['arm.l', 'hand.l', 1, true, 0], ['arm.r', 'hand.r', -1, true, 0.5], ['leg.l', 'foot.l', 1, false, 0.5], ['leg.r', 'foot.r', -1, false, 0]];
   for (const [up, lo, s, front, off] of legs) {
     const L = front ? G.front : G.hind, m = /** @type {number} */ (s);

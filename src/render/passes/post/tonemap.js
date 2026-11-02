@@ -14,7 +14,7 @@ const POST_BYTES = 416;
 const rgb = (hex) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255);
 
 /**
- * @param {{ bloom: { view: () => GPUTextureView }, luts: GPUTextureView[], recipe: any }} opts
+ * @param {{ bloom: { view: () => GPUTextureView, mix?: number }, luts: GPUTextureView[], recipe: any }} opts
  *   recipe is recipes/world/post.json
  */
 export function createTonemapPass(opts) {

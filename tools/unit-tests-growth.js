@@ -705,7 +705,7 @@ export function addGrowthTests(test, assert, eq) {
     const start = rec.flowering[0], hoursPerSeason = 14 * 24;
     const from = Math.floor((start - 0.3) * hoursPerSeason), to = Math.ceil((start + 0.3) * hoursPerSeason);
     const run = () => {
-      let s = { ...initialWorldState(9), growth: { ...initialGrowth(), starterDone: true, plants: plants.map((p) => ({ ...p })), nextId: 100 } };
+      /** @type {any} */ let s = { ...initialWorldState(9), growth: { ...initialGrowth(), starterDone: true, plants: plants.map((p) => ({ ...p })), nextId: 100 } };
       /** @type {Map<number, number>} */ const first = new Map();
       for (let h = from; h < to; h++) {
         const pos = h / hoursPerSeason;

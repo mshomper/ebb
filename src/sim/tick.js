@@ -28,6 +28,8 @@ import * as setpieces from '../world/setpieces/runner.js';
  * @property {() => any} [habitat] the current habitat grid (world/growth/habitat.js), or null until the water summary exists
  * @property {() => any} [habitatInputs] what the habitat is built from, for catch-up to follow the season (world/growth/habitat-days.js)
  * @property {typeof det} det
+ * @property {boolean} [away]     true in catch-up: set pieces' beats that need you there wait (src/world/setpieces/runner.js)
+ * @property {any} [awayCamp]     the camp's standing presence, earned only while away (catchup.js; docs/future/13 CP-13)
  */
 
 /**

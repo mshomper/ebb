@@ -75,7 +75,7 @@ function speciesIds(plants = []) {
 }
 
 const result = await startApp(canvas);
-if (!result.ok) {
+if (result.ok === false) {
   $('status').innerHTML = `${ICON_WARN}<span>WebGPU is not available here (${result.reason}). Open this page in current Chrome or Edge.</span>`;
 } else {
   const world = result.world;

@@ -83,4 +83,17 @@ export function addItemTests(test, assert, eq) {
     for (const c of Object.values(CHIP_FOR)) assert(CHIP_NAMES.includes(c), `chip ${c}`);
     return `${ITEM_ICON_NAMES.length} glyphs`;
   });
+
+  // November 2, 2026: the lantern's Set here asked for a 'setdown' chip, which is no chip, and its
+  // pouch card threw when drawn on foot. Every card action's chip must be one that is drawn.
+  test(G, 'every card action\'s chip is a drawn chip (the lantern\'s Set here wears the pile)', async () => {
+    const files = ['world/pieces/lantern-live.js', 'world/creatures/perch-sticks.js', 'world/setpieces/boat-live.js', 'world/setpieces/cairns-live.js'];
+    let n = 0;
+    for (const f of files) {
+      const src = await (await fetch(`../src/${f}`)).text();
+      for (const m of src.matchAll(/\bchip: '([^']*)'/g)) { assert(CHIP_NAMES.includes(m[1]), `${f}: chip '${m[1]}' is drawn`); n++; }
+    }
+    assert(n >= 7, `found the card actions' chips (${n})`);
+    return `${n} chips`;
+  });
 }

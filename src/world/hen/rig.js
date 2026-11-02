@@ -120,7 +120,7 @@ export function buildHen(glb, R, o = {}) {
   const P = glb.accessor(prim.attributes.POSITION), N = glb.accessor(prim.attributes.NORMAL), UV = glb.accessor(prim.attributes.TEXCOORD_0);
   const J = glb.accessor(prim.attributes.JOINTS_0), Wt = glb.accessor(prim.attributes.WEIGHTS_0);
   const wScale = json.accessors[prim.attributes.WEIGHTS_0].componentType === 5126 ? 1 : json.accessors[prim.attributes.WEIGHTS_0].componentType === 5121 ? 1 / 255 : 1 / 65535;
-  const skinMat = joints.map((n, j) => mul(rest[n], Array.from(ibm.subarray(j * 16, j * 16 + 16))));
+  const skinMat = joints.map((n, j) => mul(rest[n], Array.from(/** @type {Float32Array} */ (ibm).subarray(j * 16, j * 16 + 16))));
   const jointFold = joints.map((n) => foldOf(n));
   const count = P.length / 3;
   const vertices = new Float32Array(count * 9);

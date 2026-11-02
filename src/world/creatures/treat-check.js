@@ -51,7 +51,7 @@ export function treatCheckJob(a) {
     }
     hours.push({ f, s });
   }
-  const frogs = () => ({ frogs: [1, 2, 3].map((id) => ({ id, x: id, z: 0, trust: 0 })), pending: /** @type {any[]} */ ([]) });
+  const frogs = () => ({ frogs: [1, 2, 3].map((id) => /** @type {{ id: number, x: number, z: number, trust: number, treatDay?: number }} */ ({ id, x: id, z: 0, trust: 0 })), pending: /** @type {any[]} */ ([]) });
 
   // Each hour, as the tick applies them.
   const fr = frogs(), S = /** @type {any} */ ({ trust: 0 });

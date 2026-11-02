@@ -38,7 +38,7 @@ export function crossesCampGround(pad, a, b, half) {
 
 /**
  * The pieces that may stay, leaving out any that would rest on the pad (the handful of loose
- * stones that arrive by themselves). @template {{ x: number, z: number, size?: number }} P
+ * stones that arrive by themselves). @template {{ x: number, z: number, size?: number, kind?: string }} P
  * @param {{ x: number, z: number, r: number } | null} pad @param {P[]} list @returns {P[]}
  */
 export function offCampGround(pad, list) {

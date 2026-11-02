@@ -45,7 +45,7 @@ const lower = (s) => s.charAt(0).toLowerCase() + s.slice(1);
 export function createGiftStone(k) {
   const R = k.R, G = R.giftStone, B = R.bed, KN = R.known, W = R.words.giftStone ?? {};
   const pass = createCreaturePass({ recipe: { body: { scaleReal: [G.pass.lengthM, G.pass.lengthM], contactShadow: G.pass.shadow, wetSpecular: { roughness: 0.85, strength: 0 } } },
-    maxBones: 1, name: 'camp-gifts', liftGroup: 'camp-gifts' });
+    maxBones: 1, name: 'camp-gifts', liftGroup: 'props' });
   const put = (/** @type {string} */ key, /** @type {import('../pack/pickup-meshes.js').Mesh} */ m) => pass.setMesh(key, { data: packMesh(m), indices: m.indices });
   const stone = giftStoneMesh(hash32(k.campSeed, 0x6f7), G);
   put('stone', stone.mesh);

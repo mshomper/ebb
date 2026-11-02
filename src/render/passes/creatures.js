@@ -118,7 +118,7 @@ export function createCreaturePass(opts) {
     m.vbuf = makeBuffer(device, { label: `creature-vertices-${key}`, size: m.data.byteLength, usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST });
     device.queue.writeBuffer(m.vbuf, 0, m.data);
     m.ibuf = makeBuffer(device, { label: `creature-indices-${key}`, size: m.indices.byteLength, usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST });
-    device.queue.writeBuffer(m.ibuf, 0, m.indices);
+    device.queue.writeBuffer(m.ibuf, 0, /** @type {Uint32Array<ArrayBuffer>} */ (m.indices));
   }
 
   const pass = {

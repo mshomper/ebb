@@ -12,6 +12,7 @@ const G = 'sound: camp';
 async function recipe(name = 'camp') {
   const url = new URL(`../recipes/audio/${name}.json`, import.meta.url);
   if (typeof window === 'undefined' && typeof self === 'undefined') {
+    // @ts-ignore Node only
     const fs = await import('node:fs');
     return JSON.parse(fs.readFileSync(url, 'utf8'));
   }
@@ -22,6 +23,7 @@ async function recipe(name = 'camp') {
 async function exists(path) {
   const url = new URL(`../${path}`, import.meta.url);
   if (typeof window === 'undefined' && typeof self === 'undefined') {
+    // @ts-ignore Node only
     const fs = await import('node:fs');
     return fs.existsSync(url);
   }
@@ -35,6 +37,7 @@ const filesOf = (s) => s.files ?? [s.file];
 async function text(path) {
   const url = new URL(`../${path}`, import.meta.url);
   if (typeof window === 'undefined' && typeof self === 'undefined') {
+    // @ts-ignore Node only
     const fs = await import('node:fs');
     return fs.readFileSync(url, 'utf8');
   }

@@ -254,7 +254,7 @@ export async function createFxPass(gpu) {
   const put = (b, a, n, per, max) => {
     if (!a) return 0;
     const k = Math.max(0, Math.min(max, n ?? a.length / per, Math.floor(a.length / per)));
-    if (k) device.queue.writeBuffer(b, 0, a, 0, k * per);
+    if (k) device.queue.writeBuffer(b, 0, /** @type {Float32Array<ArrayBuffer>} */ (a), 0, k * per);
     return k;
   };
 

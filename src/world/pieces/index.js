@@ -835,7 +835,7 @@ export function createPieces(opts) {
         return;
       }
       // Only once the drag has gone somewhere, and only for a run that wants more.
-      if (!plan.ok && plan.reason === 'short' && dx * dx + dz * dz > 0.25) {
+      if (plan.ok === false && plan.reason === 'short' && dx * dx + dz * dz > 0.25) {
         const m = ST.words.short.replace('{m}', (Math.ceil((plan.needM ?? 0) * 2) / 2).toFixed(1));
         if (shapingSay.message !== m) syncShaping({ mode: 'steps', message: m, refused: true });
       } else if (plan.ok && shapingSay.refused) syncShaping({ mode: 'steps', message: '' });
@@ -854,7 +854,7 @@ export function createPieces(opts) {
       if (crossesCampGround(padNow(), c.a, c.b, ST.widthM / 2)) { syncShaping({ mode: 'steps', message: recipe.words.camp, refused: true }); return; }
       if (depthAt(c.a[0], c.a[1]) > S.wetM || depthAt(c.b[0], c.b[1]) > S.wetM) { say('water'); return; }
       const plan = planOf(c.a, c.b);
-      if (!plan.ok) { say(plan.reason); return; }
+      if (plan.ok === false) { say(plan.reason); return; }
       const s = state();
       const seed = hash32(piecesSeed, s.nextId, 0x57e95);
       /** @type {any} */ const piece = { id: `p${s.nextId}`, kind: 'steps', x: plan.x, z: plan.z, x2: plan.x2, z2: plan.z2, yaw: 0,
@@ -910,7 +910,7 @@ export function createPieces(opts) {
       if (hit) { shapingSel.raft = hit.id; syncShaping({ mode: 'raft', message: '' }); return; }
       shapingSel.raft = null;
       const r = this.raftAdd(p);
-      if (!r.ok) { syncShaping({ mode: 'raft', message: r.message, refused: true }); return; }
+      if (r.ok === false) { syncShaping({ mode: 'raft', message: r.message, refused: true }); return; }
       shapingSel.raft = r.id;
       syncShaping({ mode: 'raft', message: '' });
     },
@@ -947,7 +947,7 @@ export function createPieces(opts) {
      */
     raftAdd(p) {
       const c = this.raftCheck(p);
-      if (!c.ok) return c;
+      if (c.ok === false) return c;
       const next = addPiece(state(), c.piece, RF.cap);
       if (!next) return { ok: false, reason: 'full', message: RF.words.full };
       update('pieces', () => next);

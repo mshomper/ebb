@@ -113,7 +113,7 @@ export async function addClipStrips(o) {
   /** Hold the raise from AT to AT + HOLD in a run whose motion this sets each step. @param {any} r a run */
   const raised = (r) => {
     let t = 0;
-    return { ...r, step() { t += DT; r.motion.hold('raiseLantern', t >= AT && t < AT + HOLD, RL.layer); return r.step(); } };
+    return { ...r, step() { t += DT; r.motion.holdClip('raiseLantern', t >= AT && t < AT + HOLD, RL.layer); return r.step(); } };
   };
   const raisePicks = () => [0, 0.05, 0.1, 0.15, 0.4, HOLD, HOLD + 0.07, HOLD + 0.14, HOLD + 0.3].map((s) => ({ i: Math.round((AT + s) / DT), label: s < HOLD ? `${s.toFixed(2)} s held` : `${(s - HOLD).toFixed(2)} s let go` }));
   STRIPS.raise = {

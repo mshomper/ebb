@@ -33,14 +33,14 @@ export function addUndoTests(test, assert, eq) {
     /** @type {string[]} */
     const log = [];
     h.setApplier('t', (cmd, dir) => { log.push(`${dir}:${cmd.id}`); return true; });
-    h.push({ kind: 't', bytes: 400, id: 1 });
-    h.push({ kind: 't', bytes: 400, id: 2 });
+    h.push(/** @type {any} */ ({ kind: 't', bytes: 400, id: 1 }));
+    h.push(/** @type {any} */ ({ kind: 't', bytes: 400, id: 2 }));
     assert(h.undo() && h.undo(), 'two undos');
     eq(h.canUndo(), false, 'nothing left to undo');
     assert(h.redo(), 'redo');
-    h.push({ kind: 't', bytes: 400, id: 3 });
+    h.push(/** @type {any} */ ({ kind: 't', bytes: 400, id: 3 }));
     eq(h.canRedo(), false, 'a new edit clears redo');
-    h.push({ kind: 't', bytes: 400, id: 4 });
+    h.push(/** @type {any} */ ({ kind: 't', bytes: 400, id: 4 }));
     eq(h.depth().undo, 2, 'budget of 1000 bytes keeps the newest two 400-byte steps');
     eq(log.join(' '), 'undo:2 undo:1 redo:1', 'applier calls');
     const busy = createHistory({ budgetBytes: 1000 });

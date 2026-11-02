@@ -83,6 +83,22 @@ function walk(R, built, speed, h, seconds, clips = null) {
  * @param {(cond: any, msg?: string) => void} assert @param {(a: any, b: any, msg?: string) => void} eq
  */
 export function addFigureTests(test, assert, eq) {
+  // November 2, 2026: the raised lantern's hold(name, on, o) shared the pot's hold(on) name and
+  // replaced it, so the walker never took the pot in both arms. The lantern layer is holdClip now.
+  test(FIG, 'holding the pot brings both hands in front, and letting go lets them back', async () => {
+    const { R, built } = await load();
+    const m = createFigureMotion(R, built.skeleton, await loadFigureClips(R));
+    const s = Object.freeze({ x: 0, z: 0, y: 0, yaw: 0, speed: 0, moving: false, ground: () => 0, depth: () => 0, below: true, posture: 'stand' });
+    const ahead = () => ['hand.l', 'hand.r'].map((n) => { const i = built.skeleton.findIndex((b) => b.name === n); return matPoint(m.bones, i * 16, built.skeleton[i].pivot)[2]; });
+    const run = (/** @type {number} */ sec) => { for (let f = 0; f < sec * 60; f++) m.update(1 / 60, s); };
+    run(1); const rest = ahead();
+    m.hold(true); run(1); const held = ahead();
+    m.hold(false); run(1); const back = ahead();
+    assert(held.every((z, i) => z > rest[i] + 0.1), `hands come forward (${rest.map((v) => v.toFixed(2))} to ${held.map((v) => v.toFixed(2))})`);
+    assert(back.every((z, i) => Math.abs(z - rest[i]) < 0.03), `and go back (${back.map((v) => v.toFixed(2))})`);
+    assert(typeof m.holdClip === 'function', 'the lantern layer is its own holdClip');
+  });
+
   test(FIG, 'the hurry pace is a run: a flight between steps, a longer stride and lean, the hips lowest over the foot; the walk is its own pace (October 26, 2026: walk 2.2 m/s, about 3 body m/s)', async () => {
     const R = await (await fetch('../recipes/world/figure.json')).json();
     const G = R.gait, DS = R.body.displayScale;

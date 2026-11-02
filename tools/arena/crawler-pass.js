@@ -137,8 +137,8 @@ export async function createCrawlerPass(gpu, model, C) {
   const vb = buf(model.data.byteLength, GPUBufferUsage.VERTEX), ib = buf(model.indices.byteLength, GPUBufferUsage.INDEX);
   const sb = buf(model.surface.byteLength, GPUBufferUsage.VERTEX);
   device.queue.writeBuffer(vb, 0, model.data);
-  device.queue.writeBuffer(sb, 0, model.surface);
-  device.queue.writeBuffer(ib, 0, model.indices);
+  device.queue.writeBuffer(sb, 0, /** @type {Float32Array<ArrayBuffer>} */ (model.surface));
+  device.queue.writeBuffer(ib, 0, /** @type {Uint32Array<ArrayBuffer>} */ (model.indices));
   const frameBuf = buf(144, GPUBufferUsage.UNIFORM), lookBuf = buf(96, GPUBufferUsage.UNIFORM);
   const instBuf = buf(MAX_CRAWLERS * CRAWLER_FLOATS * 4, GPUBufferUsage.STORAGE), boneBuf = buf(MAX_CRAWLERS * CRAWLER_BONES * 64, GPUBufferUsage.STORAGE);
   const dustBuf = buf(MAX_DUST * DUST_FLOATS * 4, GPUBufferUsage.STORAGE);

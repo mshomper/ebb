@@ -18,6 +18,8 @@ import { emit } from '../core/events.js';
  *   | { type: 'camera.twist', angle: number }
  *   | { type: 'camera.focus', x: number, z: number, distance: number, pitchDeg: number, y?: number }
  *   | { type: 'journal.showMe', sp: string, at?: { x: number, z: number }, text?: string }
+ *   | { type: 'journal.noteShown', n: number }
+ *   | { type: 'journal.flag', flag: string }
  *   | { type: 'tool.select', toolId: ToolId | null, source?: Source }
  *   | { type: 'tool.begin', x: number, y: number, pressure: number, source: Source, shift?: boolean }
  *   | { type: 'tool.move', x: number, y: number, pressure: number, source: Source }
@@ -25,7 +27,7 @@ import { emit } from '../core/events.js';
  *   | { type: 'tool.cancel', source: Source }
  *   | { type: 'tool.hover', x: number, y: number, inside: boolean, source: Source }
  *   | { type: 'brush.set', patch: { sculptMode?: 'raise'|'lower'|'flatten'|'stone'|'loosestone'|'pondstones'|'terrace'|'cut'|'steps', paintLayer?: 'grass'|'sand'|'soil'|'rock', size?: number, strength?: number, cliffHeight?: number,
- *       waterMode?: 'pour'|'drain'|'spring'|'net'|'raft', springRate?: 'trickle'|'brook'|'stream', plantSpecies?: PlantSpecies } }
+ *       waterMode?: 'pour'|'drain'|'spring'|'net'|'raft', springRate?: 'trickle'|'brook'|'stream', plantSpecies?: PlantSpecies, feedSpecies?: string } }
  *   | { type: 'water.springRemove', id: string }
  *   | { type: 'pieces.remove', id: string }
  *   | { type: 'pieces.removeRun', run: string }
@@ -76,10 +78,16 @@ import { emit } from '../core/events.js';
  *   | { type: 'gather.heapHere' } | { type: 'gather.leaveBe' } | { type: 'gather.spreadAsh' } | { type: 'gather.steep' }
  *   | { type: 'treats.setOut', kind: string }
  *   | { type: 'pile.takeUp', id: string }
+ *   | { type: 'pot.card', x: number, y: number, source?: Source }
+ *   | { type: 'station.lay', kind: string } | { type: 'station.unlay', i: number } | { type: 'station.act' }
+ *   | { type: 'shaped.toFire', kind: string }
+ *   | { type: 'keep.takeUp', i: number }
+ *   | { type: 'camp.wear', id: string }
+ *   | { type: 'kit.wear', slot: string, id: string | null }
  *   | { type: 'hen.egg' } | { type: 'hen.feather' }
  *   | { type: 'creature.name', id: number, name: string, sp?: string }
  *   | { type: 'ui.hideHud', hidden?: boolean, source?: Source }
- *   | { type: 'ui.journal', open?: boolean, toggle?: boolean, view?: 'trails'|'living'|'ground'|'web'|'almanac'|'notes'|'shelf', page?: string|null, size?: 'half'|'full', trail?: 'naturalist'|'beach'|'shape' }
+ *   | { type: 'ui.journal', open?: boolean, toggle?: boolean, view?: 'trails'|'living'|'ground'|'web'|'almanac'|'notes'|'shelf', page?: string|null, size?: 'half'|'full', trail?: 'naturalist'|'beach'|'shape', keeper?: string }
  *   | { type: 'ui.keeper', open?: boolean, toggle?: boolean, tab?: 'kit'|'threads'|'trails'|'shelf'|'camp'|'chart', page?: string|null, trail?: string }} Action  ui.journal's trails and shelf views (and herbarium, camp, keeper) open the Keeper book (src/world/keeper/route.js)
  */
 

@@ -84,7 +84,7 @@ export async function boatModelMesh(buffer, color) {
   const map = materialMaps(glb).baseColor;
   /** @type {{ data: Uint8ClampedArray, w: number, h: number } | null} */ let img = null;
   if (map && typeof createImageBitmap === 'function' && typeof OffscreenCanvas === 'function') {
-    const bmp = await createImageBitmap(new Blob([map.bytes], { type: map.mimeType }));
+    const bmp = await createImageBitmap(new Blob([/** @type {Uint8Array<ArrayBuffer>} */ (map.bytes)], { type: map.mimeType }));
     const cv = new OffscreenCanvas(bmp.width, bmp.height), g = /** @type {OffscreenCanvasRenderingContext2D} */ (cv.getContext('2d'));
     g.drawImage(bmp, 0, 0);
     img = { data: g.getImageData(0, 0, bmp.width, bmp.height).data, w: bmp.width, h: bmp.height };

@@ -5,7 +5,7 @@
 // ground that suits it fully. Pure, so tools/unit-tests.html can check it too.
 
 import { recoverFactor } from '../src/world/growth/coarse.js';
-import { partOf, inWindow } from '../src/world/gather/plants.js';
+import { partOf, inWindow, windowsOf } from '../src/world/gather/plants.js';
 
 /** Game hours in a season (14 days). */
 export const SEASON_H = 14 * 24;
@@ -26,7 +26,7 @@ export function runPlant(a) {
   for (let h = 0; h < a.hours; h++) {
     const pos = (a.pos0 + h / SEASON_H) % 4;
     const season = Math.floor(pos);
-    const ready = size >= P.readyShare * best && inWindow(pos, P.window);
+    const ready = size >= P.readyShare * best && windowsOf(P.window).some((w) => inWindow(pos, w));
     const now = a.pickAt === undefined || a.pickAt === null ? ready : h === a.pickAt;
     if (now) { size = Math.max(G.floor * best, size * (1 - P.share)); handfuls++; }
     const k = recoverFactor(size, best, mature, P.readyShare, a.gather.plants, a.rain, a.mist ?? 0);

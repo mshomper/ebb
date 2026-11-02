@@ -39,6 +39,8 @@ export const HABITAT_ORIGIN = -80;
  * @property {{ x: number, z: number, r: number }} [pad]  the camp pad (the camp cause of volunteers.js). Only when a pad was given
  * @property {{ patches: number[][], r: number, days: number }} [ash]  ash patches spread on the ground ([x, z, hour] each), their
  *   radius (m) and how many game days they lie (P2i; volunteers.js ashSpreadAt). Only when patches were given
+ * @property {boolean} [land]  whether the land piece a plant waits for is on the island (volunteer.land, docs/future/13
+ *   PR-39). Nothing sets it yet: wire it up before a recipe names volunteer.land, or that plant never comes
  * @property {number} hash      FNV-1a over the arrays (uint32), for the determinism page
  */
 

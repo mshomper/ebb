@@ -83,9 +83,9 @@ startApp(canvas, { onDeviceLost: (rebuilding) => showRebuildingNote(rebuilding),
     // The loading screen (src/ui/loading.js) fades as the island shows, or goes at once for a card.
     if (r.ok) hideLoading(); else dropLoading();
     if (r.ok) { islandInfo = /** @type {any} */ (r).island ?? null; saveInfo = /** @type {any} */ (r).save ?? null; }
-    if (!r.ok && r.reason === 'elsewhere') { showElsewhere(r.takeOver, false); return; }
-    if (!r.ok && r.reason === 'damaged') { showDamaged(r.save, r.islands); return; }
-    if (!r.ok) showNoWebGPU(r.reason);
+    if (r.ok === false && r.reason === 'elsewhere') { showElsewhere(r.takeOver, false); return; }
+    if (r.ok === false && r.reason === 'damaged') { showDamaged(r.save, r.islands); return; }
+    if (r.ok === false) showNoWebGPU(r.reason);
     else if (new URLSearchParams(location.search).has('debug')) /** @type {any} */ (window).ebb = r;
     // Another window took the island over: say so, and offer it back.
     if (r.ok && saveInfo) on('save:moved-away', () => showElsewhere(saveInfo.takeOver, true));

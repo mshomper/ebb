@@ -21,6 +21,7 @@ const POND = { sips: ['minnows'], wings: ['dragonflies'], leadS: 0.03, staleS: 0
 async function recipe(path) {
   const url = new URL(`../recipes/${path}.json`, import.meta.url);
   if (typeof window === 'undefined') {
+    // @ts-ignore Node only
     const fs = await import('node:fs');
     return JSON.parse(fs.readFileSync(url, 'utf8'));
   }
@@ -131,7 +132,7 @@ export function addPondSoundTests(test, assert, eq) {
     /** @param {number[]} pos @param {number} speed @param {boolean} flying */
     const render = async (pos, speed, flying) => {
       const ctx = new OfflineAudioContext(2, SR * 1.2, SR);
-      const v = createWingVoice(ctx, ctx.destination, R, 12345, 'desktop');
+      const v = createWingVoice(ctx, ctx.destination, R, 12345);
       v.set(pos, [0, 0, 0], speed, flying);
       return rmsDb(await ctx.startRendering(), 0.4, 1.2);
     };

@@ -31,13 +31,13 @@ export class SaveError extends Error {
 
 /** @param {Uint8Array} bytes */
 async function gzip(bytes) {
-  const s = new Blob([bytes]).stream().pipeThrough(new CompressionStream('gzip'));
+  const s = new Blob([/** @type {Uint8Array<ArrayBuffer>} */ (bytes)]).stream().pipeThrough(new CompressionStream('gzip'));
   return new Uint8Array(await new Response(s).arrayBuffer());
 }
 
 /** @param {Uint8Array} bytes */
 async function gunzip(bytes) {
-  const s = new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'));
+  const s = new Blob([/** @type {Uint8Array<ArrayBuffer>} */ (bytes)]).stream().pipeThrough(new DecompressionStream('gzip'));
   return new Uint8Array(await new Response(s).arrayBuffer());
 }
 

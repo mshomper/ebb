@@ -87,7 +87,7 @@ render();
 
 const runIndex = params.has('run') ? Number(params.get('run')) : null;
 const result = await startApp(/** @type {HTMLCanvasElement} */ ($('view')));
-if (!result.ok) {
+if (result.ok === false) {
   $('status').innerHTML = `${ICON_WARN}<span>WebGPU is not available here (${result.reason}). Open this page in current Chrome or Edge.</span>`;
 } else {
   const info = result.adapterInfo;

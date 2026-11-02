@@ -125,7 +125,7 @@ export function createLanterns(o) {
       } else if (a.type === 'lantern.takeUp') takeUp(a.id);
       else if (a.type === 'lantern.lift') lift(a.id);
     }),
-    registerCardAction({ id: 'lanternset', icon: 'setdown', order: 11, main: true, label: W.setHere, item: () => 'post-lantern', chip: 'setdown',
+    registerCardAction({ id: 'lanternset', icon: 'setdown', order: 11, main: true, label: W.setHere, item: () => 'post-lantern', chip: 'pile',
       when: (c) => c?.sp === 'pouch' && (c.kindId === 'post-lantern' || c.kindId === 'mica-lantern') && !!get('walk')?.below, action: () => ({ type: 'lantern.set' }) }),
     registerCardAction({ id: 'lanternlift', icon: 'carry', order: 12, label: W.lift,
       when: (c) => !!c?.lantern && !c.carrying, action: (c) => ({ type: 'lantern.lift', id: c.lantern }) }),
@@ -142,7 +142,7 @@ export function createLanterns(o) {
     addGlass(fn) { extra.push(fn); },
     /** pieces.json lantern. */
     recipe: L,
-    /** Each frame: the glass and moths of the lit lanterns (the camp's effects pass). @param {{ realDt: number }} f */
+    /** Each frame: the glass and moths of the lit lanterns (the camp's effects pass). */
     tick() {
       const g = glow();
       // The glow through the holes, drawn just on the pot's near side so the pot does not hide it.

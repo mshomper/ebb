@@ -43,7 +43,7 @@ function slice(t, o = {}) {
     displayT: t, season: o.season ?? 0, seasonPhase: o.phase ?? 0.5,
     weather: { cloud: 0, rain: 0, mist: 0, wind: 0.4, ...(o.weather ?? {}) }, tidePhase: 0.25,
     eye: [0, 10, 10], target: [0, 0, 0],
-    near: { waterNear: { still: 0, slow: 0, running: 0 }, surfaceNear: { water: 0, pads: 0, reeds: 0, grass: 0 } },
+    near: { waterNear: { still: 0, slow: 0, running: 0 }, surfaceNear: { water: 0, pads: 0, reeds: 0, grass: 0 }, falls: [] },
     residents: [],
   };
 }

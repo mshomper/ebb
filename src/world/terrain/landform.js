@@ -426,7 +426,7 @@ function tongueAt(t, x, z) {
  */
 function springsOf(c) {
   return c.springHeads.map((h) => {
-    const [x, z] = unwarp(c, h.sx ?? h.x, h.sz ?? h.z);
+    const [x, z] = unwarp(c, h.x, h.z);
     return { x, z, spec: h.spec };
   });
 }

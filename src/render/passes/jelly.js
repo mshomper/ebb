@@ -38,9 +38,9 @@ export function createJellyPass(opts) {
     const m = meshes.get(key);
     if (!device || !m || m.vbuf) return;
     m.vbuf = makeBuffer(device, { label: `jelly-vertices-${key}`, size: m.vertices.byteLength, usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST });
-    device.queue.writeBuffer(m.vbuf, 0, m.vertices);
+    device.queue.writeBuffer(m.vbuf, 0, /** @type {Float32Array<ArrayBuffer>} */ (m.vertices));
     m.ibuf = makeBuffer(device, { label: `jelly-indices-${key}`, size: m.indices.byteLength, usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST });
-    device.queue.writeBuffer(m.ibuf, 0, m.indices);
+    device.queue.writeBuffer(m.ibuf, 0, /** @type {Uint32Array<ArrayBuffer>} */ (m.indices));
   }
 
   return {

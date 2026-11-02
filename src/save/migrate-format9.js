@@ -79,7 +79,6 @@ export function clean9(id, v) {
   if (id === 'stack') return cleanStack(v);
   if (!v || typeof v !== 'object' || Array.isArray(v) || v.version !== 1) return empty9(id);
   const out = structuredClone(v);
-  if (id === 'gather' && !Array.isArray(out.events)) out.events = [];
   return out;
 }
 

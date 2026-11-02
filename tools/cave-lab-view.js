@@ -73,9 +73,9 @@ export async function createFloorView(canvas, mesh, bounds, tint) {
   const ctx = /** @type {GPUCanvasContext} */ (canvas.getContext('webgpu'));
   ctx.configure({ device, format, alphaMode: 'opaque' });
   const vb = device.createBuffer({ size: mesh.vertices.byteLength, usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST });
-  device.queue.writeBuffer(vb, 0, mesh.vertices);
+  device.queue.writeBuffer(vb, 0, /** @type {Float32Array<ArrayBuffer>} */ (mesh.vertices));
   const ib = device.createBuffer({ size: Math.max(4, mesh.indices.byteLength), usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST });
-  device.queue.writeBuffer(ib, 0, mesh.indices);
+  device.queue.writeBuffer(ib, 0, /** @type {Uint32Array<ArrayBuffer>} */ (mesh.indices));
   const ub = device.createBuffer({ size: 112, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
   const bind = device.createBindGroup({ layout: pipeline.getBindGroupLayout(0), entries: [{ binding: 0, resource: { buffer: ub } }] });
   /** @type {GPUTexture | null} */ let depth = null;

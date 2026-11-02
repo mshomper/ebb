@@ -56,7 +56,7 @@ export function createKeepsakeSounds(mixer, recipe, opts = {}) {
     // The page's first tap both wakes the sound and picks a keepsake up: wait a moment for it.
     if (ctx.state !== 'running') {
       await new Promise((r) => { ctx.addEventListener('statechange', r, { once: true }); setTimeout(r, recipe.wakeWaitMs ?? 400); });
-      if (ctx.state !== 'running') return;
+      if (/** @type {AudioContextState} */ (ctx.state) !== 'running') return;
     }
     const turn = turns.get(name) ?? 0;
     turns.set(name, turn + 1);

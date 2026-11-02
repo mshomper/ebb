@@ -22,7 +22,7 @@ const $ = (/** @type {string} */ id) => /** @type {HTMLElement} */ (document.get
 
 const made = await createStage(canvas), madeOld = await createStage(canvasOld);
 if (!made.ok || !madeOld.ok) {
-  const why = !made.ok ? made.reason : !madeOld.ok ? madeOld.reason : '';
+  const why = made.ok === false ? made.reason : madeOld.ok === false ? madeOld.reason : '';
   note.textContent = `This page needs WebGPU (${why}).`;
   throw new Error(why);
 }

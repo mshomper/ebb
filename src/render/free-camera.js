@@ -44,7 +44,7 @@ export function createFreeCamera(R, o) {
   /** Below: the walker's feet (x, z), the middle of the room. @type {number[] | null} */
   let anchor = null;
 
-  /** The room the eye may be in now. @param {number[]} e */
+  /** The room the eye may be in now. @param {ArrayLike<number>} e */
   const room = (e) => ({
     center: anchor ?? o.island.center,
     radius: anchor ? R.belowRadiusM : o.island.radius,

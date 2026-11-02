@@ -200,7 +200,7 @@ canvas.addEventListener('click', (e) => {
   const z = grid.minZ + ((e.clientY - r.top) / r.height) * grid.h * grid.cellM;
   const double = e.detail >= 2;   // the second click of a double click hurries
   const res = walker.walkTo(x, z, double);
-  if (res.ok) say(double ? 'Hurrying.' : '');
+  if (res.ok === true) say(double ? 'Hurrying.' : '');
   else {
     const lowDepth = depthAtLow(depth, (k) => grid.height[k], level, -0.65);
     say(crossingNote(grid, walker.rules, [walker.x, walker.z], [x, z], { reason: res.reason, lowDepth, hoursToLow: hoursToLowOf(level), words: R.words }));

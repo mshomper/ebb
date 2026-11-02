@@ -13,7 +13,7 @@ import { createHenLife } from '../src/world/hen/life.js';
 const $ = (/** @type {string} */ id) => /** @type {HTMLElement} */ (document.getElementById(id));
 const R = await (await fetch(new URL('../recipes/species/hen.json', import.meta.url))).json();
 const made = await createStage(/** @type {HTMLCanvasElement} */ ($('view')));
-if (!made.ok) {
+if (made.ok === false) {
   $('note').textContent = `This page needs WebGPU: ${made.reason}`;
   throw new Error(made.reason);
 }

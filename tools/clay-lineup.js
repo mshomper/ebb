@@ -57,7 +57,7 @@ const bounds = { min: [-mid, 0, -deep], max: [mid, top, deep] };
 $('sizes').textContent = ROW.map((id, k) => { const b = parts[k].bounds; return `${id} ${Math.round((b.max[0] - b.min[0]) * 100)} cm across, ${Math.round(b.max[1] * 100)} cm tall`; }).join(' · ');
 
 const r = await createStage([$('view')]);
-if (!r.ok) throw new Error(r.reason);
+if (r.ok === false) throw new Error(r.reason);
 const stage = r.stage;
 /** @type {any} */ (globalThis).clayLineup = { stage };
 stage.frameOn(bounds);

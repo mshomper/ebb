@@ -14,7 +14,7 @@ const $ = (/** @type {string} */ id) => /** @type {HTMLElement} */ (document.get
 const recipe = async (/** @type {string} */ p) => (await fetch(new URL(`../recipes/${p}.json`, import.meta.url))).json();
 const view = /** @type {HTMLCanvasElement} */ ($('view'));
 const made = await createStage(view);
-if (!made.ok) { $('note').textContent = `This page needs WebGPU (${made.reason}).`; throw new Error(made.reason); }
+if (made.ok === false) { $('note').textContent = `This page needs WebGPU (${made.reason}).`; throw new Error(made.reason); }
 const stage = made.stage;
 const pass = await createFxPass(stage.gpu);
 const [FX, MR] = await Promise.all([recipe('world/hollow-move-fx'), recipe('world/hollow-moves')]);
