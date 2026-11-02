@@ -40,7 +40,7 @@ export function bodyPrims(S) {
     { type: 'ellipsoid', c: S.breast.c, r: S.breast.r, bone: 'body', part: 'breast', k: K.bodyK },
     { type: 'capsule', a: S.neck.base, b: S.neck.top, r: S.neck.r, bone: 'neck', part: 'neck', k: K.bodyK },
     { type: 'ellipsoid', c: S.head.c, r: S.head.r, bone: 'head', part: 'head', k: K.headK },
-    { type: 'roundCone', a: S.bill.base, b: S.bill.tip, ra: S.bill.r[0], rb: S.bill.r[1], scale: [1, S.bill.flat, 1], bone: 'head', part: 'bill', k: 0.003 },
+    ...billPrims(S.bill),
     { type: 'ellipsoid', c: S.tail.c, r: S.tail.r, rot: [S.tail.pitchDeg ?? 0, 0, 0], bone: 'tail', part: 'tail', k: 0.008 },
   ];
   for (const [s, side] of /** @type {const} */ ([['l', 1], ['r', -1]])) {
@@ -62,6 +62,19 @@ export function bodyPrims(S) {
 }
 
 /**
+ * The bill: one tapering piece from base to tip, or two when it bends at `mid` (the purple
+ * sandpiper's slight droop), the radius tapering on through the bend. @param {any} B shape.bill
+ */
+function billPrims(B) {
+  const piece = (/** @type {number[]} */ a, /** @type {number[]} */ b, /** @type {number} */ ra, /** @type {number} */ rb) =>
+    ({ type: 'roundCone', a, b, ra, rb, scale: [1, B.flat, 1], bone: 'head', part: 'bill', k: 0.003 });
+  if (!B.mid) return [piece(B.base, B.tip, B.r[0], B.r[1])];
+  const l0 = Math.hypot(...B.mid.map((/** @type {number} */ v, /** @type {number} */ i) => v - B.base[i])), l1 = Math.hypot(...B.tip.map((/** @type {number} */ v, /** @type {number} */ i) => v - B.mid[i]));
+  const rm = B.r[0] + (B.r[1] - B.r[0]) * (l0 / (l0 + l1));
+  return [piece(B.base, B.mid, B.r[0], rm), piece(B.mid, B.tip, rm, B.r[1])];
+}
+
+/**
  * The left wing's two panels, each straight along -z from its pivot (the hand is turned to point at
  * the folded tip after baking): the arm under the hand, both flat across x.
  * @param {any} S @returns {{ arm: any, hand: any, wrist: number[] }}
@@ -79,7 +92,13 @@ export function wingPanels(S) {
 /** Rest-space colour of a body vertex. @param {any} S @param {any} PL plumage @param {string} part @param {number[]} p @param {number[]} n */
 function bodyColour(S, PL, part, p, n) {
   const C = PL.parts;
-  if (part === 'bill') return C.bill;
+  if (part === 'bill') {
+    // A pale base (billBase over billBaseShare of its length), when the plumage has one.
+    if (!C.billBase) return C.bill;
+    const B = S.bill, d = B.tip.map((/** @type {number} */ v, /** @type {number} */ i) => v - B.base[i]), dd = d[0] * d[0] + d[1] * d[1] + d[2] * d[2];
+    const along = ((Math.abs(p[0]) - B.base[0]) * d[0] + (p[1] - B.base[1]) * d[1] + (p[2] - B.base[2]) * d[2]) / dd;
+    return along < (PL.billBaseShare ?? 0.3) ? C.billBase : C.bill;
+  }
   if (part === 'eye') return C.eye;
   if (part === 'leg' || part === 'toe') return C.leg;
   if (part === 'thigh') return C.under;

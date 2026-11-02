@@ -158,16 +158,17 @@ export function idlePose(t, M, seed = 0) {
 
 /**
  * Walking or running at a gait phase (metres walked / strideM): short quick steps, the body
- * bobbing twice a stride and leaning into a run.
- * @param {number} t @param {number} phase @param {any} M @param {'walk' | 'run'} kind
+ * bobbing twice a stride and leaning into a run. A creep (the purple sandpiper's, over wet rock)
+ * is a walk with its own lean, crouch (crouchM) and neck (neckDeg) from its recipe block.
+ * @param {number} t @param {number} phase @param {any} M @param {'walk' | 'run' | 'creep'} kind
  */
 export function gaitPose(t, phase, M, kind) {
-  const G = M[kind], P = restPose();
+  const G = M[kind], P = restPose(), run = kind === 'run';
   P.t = t;
   P.gait = { phase, w: 1, strideM: G.strideM, duty: G.duty, liftM: G.liftM };
-  P.bodyLift = -G.bobM * (0.5 + 0.5 * Math.cos(phase * Math.PI * 4)) - (kind === 'run' ? 0.004 : 0);
-  P.bodyPitch = (kind === 'run' ? G.leanDeg : 2) * DEG;
-  P.neckPitch = (kind === 'run' ? -10 : -2) * DEG + Math.sin(phase * Math.PI * 4) * 2.5 * DEG;
+  P.bodyLift = -G.bobM * (0.5 + 0.5 * Math.cos(phase * Math.PI * 4)) - (G.crouchM ?? (run ? 0.004 : 0));
+  P.bodyPitch = (run || G.leanDeg !== undefined ? G.leanDeg : 2) * DEG;
+  P.neckPitch = (G.neckDeg ?? (run ? -10 : -2)) * DEG + Math.sin(phase * Math.PI * 4) * 2.5 * DEG;
   P.headPitch = 4 * DEG;
   P.tailUp = Math.sin(phase * Math.PI * 4 + 1) * M.tail.bobDeg * 0.4 * DEG;
   return P;
@@ -317,4 +318,41 @@ export function landPose(t, u, phase, M, fromM = 0.25) {
   const y = u < touch ? fromM * Math.pow(1 - k, 1.6) : 0;
   const v = u < touch ? mix(0.9, 0.55, ramp(u, 0.3, touch)) : 0.55 * (1 - ramp(u, touch, 0.7));
   return { pose: P, y, v };
+}
+
+/**
+ * A bob (the purple sandpiper's): standing, the body dips quickly n times, the tail flicking up
+ * with each dip and the head held level. @param {number} t @param {number} u 0..1 through it @param {any} M
+ */
+export function bobPose(t, u, M) {
+  const K = M.bob, P = idlePose(t, M);
+  const d = Math.pow(Math.max(0, Math.sin(u * Math.PI * K.n)), 2);
+  P.bodyPitch = K.dipDeg * DEG * d;
+  P.bodyLift = -K.dropM * d;
+  P.neckPitch = -K.dipDeg * 0.6 * DEG * d;
+  P.headPitch = -K.dipDeg * 0.4 * DEG * d;
+  P.tailUp = K.tailDeg * DEG * d;
+  return P;
+}
+
+/**
+ * Roosting tucked (the purple sandpiper's, on the wall at high tide): the body sunk onto bent legs,
+ * the head turned back over the shoulder with the bill in the back feathers, breathing slowly; it
+ * eases in over settleS from standing. `side` picks the shoulder (+1 left, -1 right).
+ * @param {number} t @param {number} s seconds since it began roosting @param {any} M @param {number} [side]
+ */
+export function roostPose(t, s, M, side = 1) {
+  const K = M.roost, P = restPose();
+  P.t = t;
+  const k = ease(Math.min(1, s / K.settleS));
+  P.breath = 0.6;
+  P.bodyLift = -K.dropM * k;
+  P.bodyPitch = -3 * DEG * k;
+  P.neckYaw = side * K.neckYawDeg * DEG * 0.55 * k;
+  P.headYaw = side * K.neckYawDeg * DEG * 0.45 * k;
+  P.neckPitch = K.neckPitchDeg * DEG * k;
+  P.headPitch = 10 * DEG * k;
+  P.headTilt = side * 12 * DEG * k;
+  P.tailFan = 1;
+  return P;
 }

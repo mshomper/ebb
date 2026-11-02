@@ -1,0 +1,241 @@
+{
+  "id": "purple-sandpiper",
+  "rig": "small-bird",
+  "note": "The purple sandpiper on the small-bird rig (B3 wave 3; src/world/creatures/bird-rig.js, bird-motion.js, bird-model.js), made from the turnstone's recipe (recipes/birds/turnstone.json, by tools/sandpiper-prep/derive.mjs) with these changes: the body a little lower on shorter legs (everything above the feet 6 mm down, the ankle 4.5 mm), a longer bill drooping slightly toward the tip (bill.mid: a second segment from mid to tip), and its winter plumage: slate grey with a purple cast above with pale scaly fringes (mottle), a grey streaked breast fading into a pale belly (the bib mark, patchy), a pale eye ring, a dark bill with a yellow-orange base (billBase over billBaseShare of its length from the base) and short yellow-orange legs. Winter plumage only: they leave before their brown breeding plumage would show. A real purple sandpiper is about 0.21 m long; displayScale 2.8 draws it about 0.59 m. BAKE: the turnstone's budget, 3,000 triangles for a single bird, 1,196 for a flock bird. MOTION: the turnstone's clips plus creep (a low, slow, crouched walk over wet rock: leanDeg forward, crouchM lower, neckDeg the neck drawn forward), bob (n quick dips of the body and a flick of the tail over s seconds), and roost (tucked: the body lowered dropM onto bent legs, the head turned back over the shoulder with the bill in the back feathers, eased in over settleS). Lengths in real metres, times in real seconds.",
+  "realLengthM": 0.21,
+  "displayScale": 2.8,
+  "drawnLengthM": 0.59,
+  "bake": {
+    "cellM": 0.0016,
+    "wingCellM": 0.0014,
+    "blendM": 0.004,
+    "maxTris": 3000,
+    "flockTris": 1196,
+    "wingShare": 0.16,
+    "attrWeight": 0.000002
+  },
+  "shape": {
+    "body": {
+      "c": [0, 0.068, -0.004],
+      "r": [0.037, 0.034, 0.068],
+      "pitchDeg": -7
+    },
+    "breast": {
+      "c": [0, 0.065, 0.04],
+      "r": [0.036, 0.034, 0.037]
+    },
+    "neck": {
+      "base": [0, 0.08, 0.054],
+      "top": [0, 0.097, 0.075],
+      "r": [0.022, 0.017]
+    },
+    "head": {
+      "c": [0, 0.105, 0.088],
+      "r": [0.0178, 0.0172, 0.0215]
+    },
+    "bill": {
+      "base": [0, 0.1012, 0.1035],
+      "mid": [0, 0.1004, 0.124],
+      "tip": [0, 0.0972, 0.1395],
+      "r": [0.0048, 0.0013],
+      "flat": 0.85
+    },
+    "eye": {
+      "c": [0.0152, 0.1095, 0.0955],
+      "r": 0.0034
+    },
+    "tail": {
+      "c": [0, 0.077, -0.08],
+      "r": [0.02, 0.005, 0.03],
+      "pitchDeg": 9
+    },
+    "wing": {
+      "shoulder": [0.03, 0.082, 0.026],
+      "armM": 0.062,
+      "armChordM": 0.042,
+      "handM": 0.128,
+      "handChordM": [0.038, 0.009],
+      "thickM": 0.0042,
+      "insetM": 0.004,
+      "leanDeg": 28,
+      "tip": [0.014, 0.088, -0.096]
+    },
+    "leg": {
+      "hip": [0.016, 0.05, -0.004],
+      "ankle": [0.018, 0.0265, -0.018],
+      "foot": [0.018, 0.0045, -0.006],
+      "thighR": [0.0105, 0.004],
+      "tarsusR": 0.0034,
+      "toesM": [0.019, 0.022, 0.017],
+      "toeSpreadDeg": 32,
+      "toeR": 0.0023,
+      "hindToeM": 0.006
+    },
+    "blend": {
+      "bodyK": 0.018,
+      "headK": 0.012,
+      "legK": 0.004,
+      "toeK": 0.002
+    }
+  },
+  "plumage": {
+    "winter": {
+      "parts": {
+        "upper": [0.075, 0.07, 0.092],
+        "under": [0.66, 0.66, 0.64],
+        "head": [0.095, 0.09, 0.105],
+        "throat": [0.42, 0.42, 0.42],
+        "bib": [0.15, 0.145, 0.16],
+        "wingUpper": [0.07, 0.066, 0.086],
+        "wingUnder": [0.68, 0.68, 0.66],
+        "wingBar": [0.6, 0.6, 0.58],
+        "tail": [0.045, 0.042, 0.05],
+        "rump": [0.05, 0.047, 0.058],
+        "bill": [0.022, 0.02, 0.02],
+        "billBase": [0.6, 0.36, 0.06],
+        "leg": [0.64, 0.4, 0.06],
+        "eye": [0.012, 0.009, 0.008],
+        "eyeRing": [0.66, 0.66, 0.64]
+      },
+      "billBaseShare": 0.38,
+      "mottle": {
+        "scale": 230,
+        "amount": 0.3,
+        "color": [0.035, 0.033, 0.045],
+        "pale": [0.2, 0.19, 0.23],
+        "paleShare": 0.22
+      },
+      "marks": [
+        {
+          "on": ["body", "breast", "neck"],
+          "c": [0, 0.064, 0.05],
+          "r": [0.05, 0.026, 0.036],
+          "color": "bib",
+          "patchy": 0.55
+        },
+        {
+          "on": ["neck", "head"],
+          "c": [0, 0.088, 0.08],
+          "r": [0.012, 0.011, 0.02],
+          "color": "throat",
+          "below": true
+        },
+        {
+          "on": ["head"],
+          "c": [0.0152, 0.1095, 0.0955],
+          "r": [0.006, 0.0058, 0.0058],
+          "color": "eyeRing"
+        }
+      ]
+    }
+  },
+  "wingPattern": {
+    "barAlong": [0.08, 0.9],
+    "barAcross": [0.45, 0.8],
+    "handBarAlong": [0, 0.12],
+    "handBarAcross": [0.7, 1],
+    "tipDark": 0.62,
+    "tipColor": [0.025, 0.023, 0.03]
+  },
+  "motion": {
+    "breath": {
+      "hz": 0.9,
+      "swell": 0.022
+    },
+    "walk": {
+      "strideM": 0.045,
+      "duty": 0.62,
+      "liftM": 0.01,
+      "bobM": 0.0022,
+      "mps": 0.18
+    },
+    "run": {
+      "strideM": 0.085,
+      "duty": 0.42,
+      "liftM": 0.014,
+      "bobM": 0.004,
+      "mps": 0.5,
+      "leanDeg": 9
+    },
+    "flip": {
+      "s": 1.5,
+      "reachDeg": 27,
+      "neckDeg": 42,
+      "aheadM": 0.1,
+      "thrustM": 0.03,
+      "pecks": 2
+    },
+    "peck": {
+      "s": 0.42,
+      "reachDeg": 28,
+      "neckDeg": 46
+    },
+    "preen": {
+      "s": 3.2,
+      "neckYawDeg": 150,
+      "neckPitchDeg": 22,
+      "wingLift": 0.25
+    },
+    "look": {
+      "yawDeg": 35,
+      "tiltDeg": 18
+    },
+    "flap": {
+      "hz": 7.5,
+      "upDeg": 62,
+      "downDeg": -34,
+      "downShare": 0.56,
+      "handLagDeg": 26,
+      "handFoldDeg": 28,
+      "sweepDeg": 10,
+      "glideUpDeg": 9,
+      "bodyPitchDeg": 4
+    },
+    "takeoff": {
+      "s": 1.1,
+      "runS": 0.45,
+      "crouchDeg": 14,
+      "climbDeg": 22,
+      "climbMps": 0.9
+    },
+    "land": {
+      "s": 1.3,
+      "flareDeg": 28,
+      "wingsUpS": 0.3,
+      "wingsUpDeg": 72,
+      "runOnM": 0.05
+    },
+    "tuck": {
+      "legDeg": 50,
+      "shankDeg": 62,
+      "footDeg": 60
+    },
+    "tail": {
+      "fan": 1.45,
+      "bobDeg": 6
+    },
+    "creep": {
+      "strideM": 0.032,
+      "duty": 0.72,
+      "liftM": 0.007,
+      "bobM": 0.0016,
+      "mps": 0.09,
+      "leanDeg": 14,
+      "crouchM": 0.007,
+      "neckDeg": -16
+    },
+    "bob": {
+      "s": 0.8,
+      "n": 2,
+      "dipDeg": 11,
+      "dropM": 0.005,
+      "tailDeg": 14
+    },
+    "roost": {
+      "dropM": 0.02,
+      "neckYawDeg": 150,
+      "neckPitchDeg": 18,
+      "settleS": 1.2
+    }
+  }
+}

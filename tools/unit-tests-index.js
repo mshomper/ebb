@@ -94,6 +94,7 @@ export const TEST_FILES = {
   'rigs-spring': '',
   'rng': '',
   'sampler': '',
+  'sandpipers': '',
   'save': '',
   'setpieces': '',
   'shaped': '',
