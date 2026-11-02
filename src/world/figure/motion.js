@@ -175,7 +175,7 @@ export function createFigureMotion(R, skeleton, clipFile = null) {
      * Hold a clip's pose as a layer over everything on some bones (clips.js hold; the lantern raised,
      * tool pages only for now). @param {string} name @param {boolean} on @param {{ span: number[], mask: string[], upS: number, downS: number }} o
      */
-    hold(name, on, o) { return clips ? clips.hold(name, on, o) : false; },
+    holdClip(name, on, o) { return clips ? clips.hold(name, on, o) : false; },
     /** How far up the held layer is (0 down, 1 held). */
     get holding() { return clips?.holding ?? 0; },
     /** The act playing, or null. */

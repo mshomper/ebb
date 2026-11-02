@@ -125,7 +125,7 @@ export function createLanterns(o) {
       } else if (a.type === 'lantern.takeUp') takeUp(a.id);
       else if (a.type === 'lantern.lift') lift(a.id);
     }),
-    registerCardAction({ id: 'lanternset', icon: 'setdown', order: 11, main: true, label: W.setHere, item: () => 'post-lantern', chip: 'setdown',
+    registerCardAction({ id: 'lanternset', icon: 'setdown', order: 11, main: true, label: W.setHere, item: () => 'post-lantern', chip: 'pile',
       when: (c) => c?.sp === 'pouch' && (c.kindId === 'post-lantern' || c.kindId === 'mica-lantern') && !!get('walk')?.below, action: () => ({ type: 'lantern.set' }) }),
     registerCardAction({ id: 'lanternlift', icon: 'carry', order: 12, label: W.lift,
       when: (c) => !!c?.lantern && !c.carrying, action: (c) => ({ type: 'lantern.lift', id: c.lantern }) }),

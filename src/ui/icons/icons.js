@@ -919,12 +919,6 @@ const ICONS = {
     <path d="M10.6 6.2C10.6 4.8 13.4 4.8 13.4 6.2"/>
     <path d="M11.2 4.6C10.4 3 9.2 2.2 7.6 2M12.8 4.6C13.6 3 14.8 2.2 16.4 2"/>
     <path d="M9.4 8.2L6.4 6.6L5.2 4.8M14.6 8.2L17.6 6.6L18.8 4.8M8.2 13L5 13.4L3.6 15M15.8 13L19 13.4L20.4 15M8.4 17L5.6 19L5 21M15.6 17L18.4 19L19 21"/>`,
-  // The floating reed raft (the turtles' gift): a low mat of reeds on the water, stems standing up.
-  raft: `
-    <path ${ACCENT} d="M3.5 16C5 14.6 19 14.6 20.5 16C19 17.4 5 17.4 3.5 16Z"/>
-    <path d="M3.5 16C5 14.6 19 14.6 20.5 16C19 17.4 5 17.4 3.5 16Z"/>
-    <path d="M7 15V8M9.5 15V5.5M15 15V7M17 15V9.5"/>
-    <path d="M2.5 20C4.2 19.2 5.8 19.2 7.5 20S10.8 20.8 12.5 20S15.8 19.2 17.5 20S20 20.6 21.5 20"/>`,
   // Minnows (M2): a small fish under the water line, a ring above where one rose.
   minnow: `
     <path d="M2.5 7.5C4 6.5 5.5 8.5 7 7.5S10 6.5 11.5 7.5M15 7.5H21.5"/>
