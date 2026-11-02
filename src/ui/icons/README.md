@@ -207,4 +207,8 @@ pouch.innerHTML = itemPouchSvg(icon, handfuls);   // 0 flat .. 3 full and tied
 | `flax` | three slender stems with short narrow leaves, a flat five-petal flower on two tips and a seed boll on the third: the flax species chip on the meadow islet (F1) |
 | `weave` | three warp threads hung from a bar, the weft passing over and under them: the workbench's Weave (F1 cloth) |
 | `steep` | a bundle of stems on a pond's bed under a stone, the water line above: Steep here on the flax pouch card (F1) |
-
+| `stack` | a tall rock stepped in ledges down one side, standing in the sea, a small flame on its top: the stack and its thread (F19) |
+| `grate` | an arched iron grate, its bars and a padlock: the sleeper's passage thread (F19) |
+| `lamp` | a round iron lantern with a ring on top, a flame behind its panes: the old lantern in the stack's mouth (F19) |
+| `hook` | an iron hook out of a wall, a ring hanging on it: Hang it, the old lantern by the arch (F19) |
+| `cavemouth` | a dark cleft in a rock face, the ground running into it: Go in and Go out at the stack's mouth (F19) |

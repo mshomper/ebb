@@ -11,4 +11,6 @@ export const LIGHTS = [
   (ctx) => ctx.lanterns?.lights() ?? [],
   // The clay furnace's glow while a load burns (the spring-ore plan; src/app/fixtures.js).
   (ctx) => ctx.furnaceLights?.() ?? [],
+  // The light at the stack's foot on its evenings (docs/future/19; src/app/stack.js).
+  (ctx) => ctx.stack?.lights() ?? [],
 ];

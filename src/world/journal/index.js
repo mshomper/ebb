@@ -518,6 +518,8 @@ export function createJournal(opts) {
     on('camp:known-rose', (/** @type {{ text: string }} */ p) => commit(noteOnce(journal, 'camp:known', p.text, { state: world.state, hour: hourIndex(), words }))),
     // The meadow islet first showed (src/world/islet): written once, and its flag starts its thread.
     on('islet:rose', (/** @type {{ text: string }} */ p) => commit(noteOnce(journal, 'setpiece:islet:rose', p.text, { state: world.state, hour: hourIndex(), words }, 'land'))),
+    // The causeway to the stack rose (docs/future/19, src/world/stack): written once, and its flag writes its thread's line.
+    on('stack:road', (/** @type {{ text: string }} */ p) => commit(noteOnce(journal, 'setpiece:stack:road', p.text, { state: world.state, hour: hourIndex(), words }, 'land'))),
     // The walker's first meal, an egg cooked on the hearth (docs/future/15 slice 4, cookpot.js).
     on('meal:eaten', (/** @type {{ text?: string }} */ p) => { if (p?.text) commit(noteOnce(journal, 'meal:first', p.text, { state: world.state, hour: hourIndex(), words })); }),
     // Watching a frog (or a school) from close by finds it too (src/world/creatures/index.js, schools.js).

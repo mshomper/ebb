@@ -8,6 +8,7 @@ import * as boot from './boot.js';
 import * as world from './world.js';
 import * as view from './view.js';
 import * as islet from './islet.js';
+import * as stack from './stack.js';
 import * as light from './light.js';
 import * as ground from './ground.js';
 import * as creatures from './creatures.js';
@@ -47,6 +48,7 @@ export const SYSTEMS = [
   world.land,
   testLinks.startTime,
   islet.land,
+  stack.land,
   world.start,
   view.start,
   islet.start,
@@ -75,6 +77,8 @@ export const SYSTEMS = [
   testLinks.lanterns,
   testLinks.perch,
   setpieces.start,
+  stack.start,
+  stack.tests,
   kit.start,
   fishing.start,
   shaped.start,

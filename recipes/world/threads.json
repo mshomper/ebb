@@ -89,7 +89,20 @@
       { "id": "rose", "test": "isletRose", "text": "At the big low tide a pale shoal showed offshore, where there was only sea before." },
       { "id": "risen", "test": "isletRisen", "text": "By the next low water it stood above the high tide: a little meadow islet, with a sandbar to our shore." },
       { "id": "walked", "test": "isletWalked", "text": "I walked out over the bar at low tide and stood on the islet. The ground there is dry and sunny, meadow, not pond." }
-    ], "pencil": "The bar is dry only around low tide. I watch the tide when I go.", "end": ["isletWalked"] }
+    ], "pencil": "The bar is dry only around low tide. I watch the tide when I go.", "end": ["isletWalked"] },
+    { "id": "stack", "title": "The light on the stack", "icon": "stack", "pages": true, "lines": [
+      { "id": "seen", "test": "stackSeen", "text": "There's a rock offshore, stepped like a stair. A dark band near its top, and something iron. Someone kept a light out there once." },
+      { "id": "lights", "test": "stackLights", "text": "A light at the foot of the stack tonight, low on the water. The moths went out to it. When I looked again it was gone." },
+      { "id": "road", "test": "stackRoad", "text": "The sea drew back further than I've ever seen it and left a road of stones to the stack. It hasn't gone back under." },
+      { "id": "lamp", "test": "stackLamp", "text": "A cave in the stack's foot, and an old lantern on the floor. I lit it and hung it by the door. There was a note beside it." },
+      { "id": "arch", "test": "stackArch", "text": "An arch at the back of the cave, ringed with soot. Something moves past the light. Not with empty hands." },
+      { "id": "through", "test": "stackThrough", "text": "I made a staff from driftwood and cord, and I went through the arch." }
+    ], "pencil": "The road to the stack is dry at any tide.", "end": ["stackThrough"] },
+    { "id": "stack-passage", "title": "The sleeper's passage", "icon": "grate", "lines": [
+      { "id": "rubble", "test": "stackRubble", "text": "A passage off the cave, choked with fallen rock. I dug some of it out today." },
+      { "id": "grate", "test": "stackGrate", "text": "Through the rubble at last. An iron grate, locked, and a small box wedged in the rock beside it, locked too." },
+      { "id": "key", "test": "stackKey", "text": "The little key from the spring fits the grate. The old keeper locked it. I think I know why now." }
+    ], "pencil": "Whatever is past the grate, the old keeper wanted it left in peace." }
   ],
   "tests": { "lineMade": [{"made": ["line"]}], "fishFirst": [{"flag": "fishing:sketch"}], "fishRiddle": [{"flag": "fishing:riddle:1"}], "fishWater": [{"prefix": "fishing:water:"}], "fishRare": [{"flag": "fishing:rare"}], "chartFull": [{"flag": "fishing:chart:full"}],
     "stoneShown": [{ "flag": "dig:marked-stone" }],
@@ -117,6 +130,6 @@
     "keeperTend": [{ "flag": "keeper:tend" }],
     "isletRose": [{ "flag": "setpiece:islet:rose" }],
     "isletRisen": [{ "flag": "setpiece:islet:risen" }],
-    "isletWalked": [{ "flag": "setpiece:islet:walked" }]
+    "isletWalked": [{ "flag": "setpiece:islet:walked" }], "stackSeen": [{"flag": "setpiece:stack:seen"}], "stackLights": [{"flag": "setpiece:stack:lights"}], "stackRoad": [{"flag": "setpiece:stack:road"}], "stackCrossed": [{"flag": "setpiece:stack:crossed"}], "stackLamp": [{"flag": "setpiece:stack:lamp"}], "stackArch": [{"flag": "setpiece:stack:arch"}], "stackThrough": [{"flag": "setpiece:stack:through"}], "stackRubble": [{"flag": "setpiece:stack:rubble"}], "stackGrate": [{"flag": "setpiece:stack:grate"}], "stackKey": [{"flag": "setpiece:stack:key"}]
   }
 }

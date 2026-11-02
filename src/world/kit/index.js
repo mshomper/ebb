@@ -50,6 +50,8 @@ export function createKit(o) {
       line: (get('cook')?.tools ?? []).includes('line'),
       // The old keeper's pan, taken from beside the spring's pool (src/world/spring).
       pan: (get('cook')?.tools ?? []).includes('keepers-pan'),
+      // The driftwood staff, made once the arch in the stack's mouth is seen (docs/future/19).
+      'driftwood-staff': (get('cook')?.tools ?? []).includes('driftwood-staff'),
     };
     return R.belt.map((/** @type {any} */ t) => ({ id: t.id, owned: !!(/** @type {any} */ (has))[t.id] }));
   }

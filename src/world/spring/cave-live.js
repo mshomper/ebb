@@ -29,7 +29,7 @@ const ID = 'spring-cave';
  * vertex with an albedo. @param {number[][]} prof @param {number} n @param {number[]} col
  * @param {(number[] | null)[]} [ringCol] an albedo for some rings of the profile (the rusted rim)
  */
-function lathe(prof, n, col, ringCol = []) {
+export function lathe(prof, n, col, ringCol = []) {
   const data = [], idx = [];
   for (let j = 0; j < prof.length; j++) {
     const [r, y] = prof[j], [r0, y0] = prof[Math.max(0, j - 1)], [r1, y1] = prof[Math.min(prof.length - 1, j + 1)];
@@ -51,7 +51,7 @@ function lathe(prof, n, col, ringCol = []) {
  * A tube along points (the rope), sides round, VERT floats a vertex. @param {number[][]} pts @param {number} r
  * @param {number} sides @param {number[]} col @param {number} [alpha] 1 for a made thing's own albedo
  */
-function tube(pts, r, sides, col, alpha = 1) {
+export function tube(pts, r, sides, col, alpha = 1) {
   const data = [], idx = [];
   for (let j = 0; j < pts.length; j++) {
     const p = pts[j], q = pts[Math.min(pts.length - 1, j + 1)], o = pts[Math.max(0, j - 1)];
@@ -80,7 +80,7 @@ function tube(pts, r, sides, col, alpha = 1) {
  * @param {number} z @param {number} r @param {(k: number) => number} u seeded 0..1 by k
  * @param {number} lumpK @param {number[]} col @param {number} [flat] how squashed (0.65 a pebble)
  */
-function lumpStone(x, y0, z, r, u, lumpK, col, flat = 0.65) {
+export function lumpStone(x, y0, z, r, u, lumpK, col, flat = 0.65) {
   const sph = [], sidx = [], LAT = 5, LON = 8;
   for (let a = 0; a <= LAT; a++) for (let b = 0; b <= LON; b++) {
     const th = (a / LAT) * Math.PI, ph = (b / LON) * Math.PI * 2;
@@ -93,7 +93,7 @@ function lumpStone(x, y0, z, r, u, lumpK, col, flat = 0.65) {
 }
 
 /** Several meshes in one. @param {{ data: number[], idx: number[] }[]} parts */
-function join(parts) {
+export function join(parts) {
   const data = [], idx = [];
   for (const p of parts) { const base = data.length / 10; data.push(...p.data); for (const i of p.idx) idx.push(i + base); }
   return { data: new Float32Array(data), idx: new Uint32Array(idx) };

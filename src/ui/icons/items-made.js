@@ -31,6 +31,9 @@ export const MADE = {
   // The fishing line (F17): a withy rod bending from the hand, its cord to a float on a ripple.
   'fishing-line': ['made', `<path d="M4.4 20.4C8 15 12.4 9.4 19 3.6"/><path d="M19 3.6C19.4 8 19.2 12 18.4 15.6"/>
     ${both('d="M18.4 14C19.4 14 20 14.8 20 15.8S19.4 17.6 18.4 17.6S16.8 16.8 16.8 15.8S17.4 14 18.4 14Z"')}<path d="M15.2 19.2C16.6 18.4 20.2 18.4 21.6 19.2"/>${BASE}`],
+  // The driftwood staff (F19, F16's first weapon): a long crooked stick leaning across, its grip bound with cord.
+  'driftwood-staff': ['made', `<path d="M5 20.6C6.6 16.6 8.4 13.4 10.6 10.6S15.6 5.2 18.8 3.2"/><path d="M8.6 15.4L10.6 16.4M9.4 14L11.4 15M10.2 12.6L12.2 13.6"/>
+    ${dot(18.8, 3.2, 0.9)}<path d="M13.6 8L15.2 7"/>${BASE}`],
   // The keeper's blade: a ground stone blade on its unwrapped cloth.
   'keepers-blade': ['made', `<path ${A2} d="M2.8 16.4L11.4 12.6L21.2 15.8L12.4 20.4Z"/><path d="M2.8 16.4L11.4 12.6L21.2 15.8L12.4 20.4Z"/>
     <g transform="rotate(-50 12 11)">${both('d="M10 3.6H14L16 14.6C16 16.4 14.2 17.4 12 17.4S8 16.4 8 14.6Z"')}<path d="M8.6 13.8C10 14.8 14 14.8 15.4 13.8"/></g>`],
