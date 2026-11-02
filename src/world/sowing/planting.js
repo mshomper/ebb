@@ -13,6 +13,8 @@ import { emitDeferred } from '../../core/events.js';
 import { onAction } from '../../input/actions.js';
 import { registerCardAction } from '../../ui/card-actions.js';
 import { ballSpots } from './model.js';
+import { stripSpots } from '../meadow/rye.js';
+import { hash32 } from '../../core/rng.js';
 
 /**
  * @param {{ recipe: any, plantTool: any, growth: any, pack: any, flora: Record<string, any>, hasShovel: () => boolean, plants: () => any[],
@@ -80,9 +82,25 @@ export function createPlanting(o) {
      */
     sow(item, p) {
       if (o.pack.take(item.from, 1) < 1) return false;
+      const T = R.strips?.[item.species];
+      if (item.kind === 'seed' && T) return api.sowStrip(item.species, p, T);
       if (item.kind !== 'ball') return o.plantTool.tap(item.species, p, { given: true });
       let any = false;
       for (const q of cluster(item.species, p)) any = o.plantTool.tap(item.species, q, { given: true, plant: optsOf(item) }) || any;
+      return any;
+    },
+
+    /**
+     * A handful of a strip crop's seed (rye, F20): a strip of seeds laid along the line from you to
+     * where it landed; the middle goes in through the plant tool (its words and its event), the rest
+     * quietly. @param {string} sp @param {number[]} p @param {any} T sowing.json strips[sp] @returns {boolean}
+     */
+    sowStrip(sp, p, T) {
+      const me = o.walk.spot();
+      const spots = stripSpots(me ? [me.x, me.z] : [p[0], p[2] - 1], [p[0], p[2]], T, hash32(Math.round(p[0] * 100), Math.round(p[2] * 100)));
+      let any = o.plantTool.tap(sp, p, { given: true });
+      for (const [x, z] of spots) any = o.growth.plant(sp, x, z).ok || any;
+      if (any) emitDeferred('rye:sown', { species: sp, x: p[0], z: p[2] });
       return any;
     },
 

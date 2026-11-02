@@ -121,8 +121,8 @@ export async function createMotePass(gpu, model, M) {
   });
   const buf = (/** @type {number} */ size, /** @type {number} */ usage) => device.createBuffer({ size, usage: usage | GPUBufferUsage.COPY_DST });
   const vb = buf(model.data.byteLength, GPUBufferUsage.VERTEX), ib = buf(model.indices.byteLength, GPUBufferUsage.INDEX);
-  device.queue.writeBuffer(vb, 0, model.data);
-  device.queue.writeBuffer(ib, 0, model.indices);
+  device.queue.writeBuffer(vb, 0, /** @type {Float32Array<ArrayBuffer>} */ (model.data));
+  device.queue.writeBuffer(ib, 0, /** @type {Uint32Array<ArrayBuffer>} */ (model.indices));
   const frameBuf = buf(144, GPUBufferUsage.UNIFORM), lookBuf = buf(128, GPUBufferUsage.UNIFORM);
   const moteBuf = buf(MAX_MOTES * MOTE_FLOATS * 4, GPUBufferUsage.STORAGE), puffBuf = buf(MAX_PUFFS * PUFF_FLOATS * 4, GPUBufferUsage.STORAGE);
   const group = device.createBindGroup({ layout, entries: [

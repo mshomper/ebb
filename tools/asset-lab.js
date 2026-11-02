@@ -26,7 +26,7 @@ const srcUrl = new URLSearchParams(location.search).get('src');
 /** @type {Map<string, File>} */ const files = new Map();
 
 const r = await createStage([$('left'), $('right')]);
-if (!r.ok) { say(r.reason); throw new Error(r.reason); }
+if (r.ok === false) { say(r.reason); throw new Error(r.reason); }
 const stage = r.stage;
 // For scripted render sheets (a session saving pictures of every piece): the stage's camera.
 /** @type {any} */ (globalThis).assetLab = { stage };

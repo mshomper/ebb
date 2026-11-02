@@ -45,6 +45,7 @@
     "flora/clover": "flora/clover.json",
     "flora/bedstraw": "flora/bedstraw.json",
     "flora/flax": "flora/flax.json",
+    "flora/rye": "flora/rye.json",
     "world/growth": "world/growth.json",
     "world/journal": "world/journal.json",
     "world/journal-island": "world/journal-island.json",
@@ -59,6 +60,7 @@
     "world/shaped": "world/shaped.json",
     "world/forager": "world/forager.json",
     "world/kit": "world/kit.json",
+    "world/kite": "world/kite.json",
     "world/nets": "world/nets.json",
     "world/fishing": "world/fishing.json",
     "world/pieces": "world/pieces.json",
@@ -131,6 +133,16 @@
     "music/names": "music/names.json",
     "species/turnstone": "species/turnstone.json",
     "audio/turnstone": "audio/turnstone.json",
-    "species/eel": "species/eel.json"
+    "species/eel": "species/eel.json",
+    "audio/teal": "audio/teal.json",
+    "species/teal": "species/teal.json",
+    "birds/teal": "birds/teal.json",
+    "birds/purple-sandpiper": "birds/purple-sandpiper.json",
+    "species/purple-sandpiper": "species/purple-sandpiper.json",
+    "audio/purple-sandpiper": "audio/purple-sandpiper.json",
+    "species/seal": "species/seal.json",
+    "audio/seal": "audio/seal.json",
+    "setpieces/stack": "setpieces/stack.json",
+    "world/stack-mouth": "world/stack-mouth.json"
   }
 }

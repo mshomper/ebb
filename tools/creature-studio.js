@@ -40,7 +40,7 @@ const fromHex = (/** @type {string} */ h) => [1, 3, 5].map((i) => { const s = pa
 
 // --- the stage ---
 const made = await createStage(/** @type {HTMLCanvasElement} */ ($('stage')));
-if (!made.ok) {
+if (made.ok === false) {
   $('status').textContent = `WebGPU is not available here (${made.reason}). Open this page in current Chrome or Edge.`;
   throw new Error('no WebGPU');
 }

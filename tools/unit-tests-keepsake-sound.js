@@ -15,6 +15,7 @@ const G = 'sound: keepsakes';
 async function recipe() {
   const url = new URL('../recipes/audio/keepsakes.json', import.meta.url);
   if (typeof window === 'undefined') {
+    // @ts-ignore Node only
     const fs = await import('node:fs');
     return JSON.parse(fs.readFileSync(url, 'utf8'));
   }
@@ -25,6 +26,7 @@ async function recipe() {
 async function exists(path) {
   const url = new URL(`../${path}`, import.meta.url);
   if (typeof window === 'undefined') {
+    // @ts-ignore Node only
     const fs = await import('node:fs');
     return fs.existsSync(url);
   }

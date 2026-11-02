@@ -34,7 +34,7 @@ function pct(arr, q) {
 const fmt = (/** @type {number} */ v) => (Number.isFinite(v) ? v.toFixed(2) : '-');
 
 const result = await startApp(canvas);
-if (!result.ok) {
+if (result.ok === false) {
   $('status').innerHTML = `${ICON_WARN}<span>WebGPU is not available here (${result.reason}). Open this page in current Chrome or Edge.</span>`;
 } else {
   const info = result.adapterInfo;

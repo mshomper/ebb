@@ -157,7 +157,7 @@ export function mountWalk(parent, words, sowing) {
     if (!b) return;
     if (b === go) dispatch({ type: get('walk')?.below ? 'walk.up' : 'walk.down', source: 'button' });
     else if (b === stuckBtn) dispatch({ type: 'walk.stuck', source: 'button' });
-    else if (b.dataset.posture) dispatch({ type: 'walk.posture', posture: b.dataset.posture, source: 'button' });
+    else if (b.dataset.posture) dispatch({ type: 'walk.posture', posture: /** @type {'sit'|'kneel'} */ (b.dataset.posture), source: 'button' });
     else if (b.dataset.feed !== undefined) dispatch({ type: 'walk.feed', source: 'button' });
     else if (b.dataset.photo !== undefined) dispatch({ type: 'photo.open', source: 'mouse' });
     else if (b.dataset.menu === 'line' && (get('fishingUi')?.out || get('hand')?.kind === 'line')) {

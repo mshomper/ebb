@@ -5,6 +5,8 @@
 // and reads as not earned, so an older island loads without it; one that has risen stays risen.
 // Pure.
 
+import { cleanMeadow } from '../meadow/model.js';
+
 /**
  * @typedef {Object} IsletSave
  * @property {1} version
@@ -12,6 +14,7 @@
  * @property {number | null} lowH     game hour of the low water it first shows at (null: not earned)
  * @property {number} applied         how far its rise is written into the saved ground, 0..1 (1: risen)
  * @property {string[]} planted       the starter clumps' species planted on it so far
+ * @property {import('../meadow/model.js').MeadowSave} [meadow]  the stone's and the rye's (F20, src/world/meadow), once there is any
  */
 
 /** @returns {IsletSave} */
@@ -30,5 +33,6 @@ export function cleanIslet(v) {
     version: 1, earnedH, lowH: earnedH === null ? null : lowH,
     applied: Number.isFinite(v.applied) ? Math.max(0, Math.min(1, v.applied)) : 0,
     planted: Array.isArray(v.planted) ? v.planted.filter((/** @type {any} */ s) => typeof s === 'string') : [],
+    ...(v.meadow ? { meadow: cleanMeadow(v.meadow) } : {}),
   };
 }

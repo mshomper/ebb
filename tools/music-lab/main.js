@@ -42,7 +42,7 @@ for (const [attr, key] of /** @type {const} */ ([['data-range', 'range']])) {
   for (const b of btns) b.addEventListener('click', () => {
     for (const o of btns) o.setAttribute('aria-pressed', String(o === b));
     const v = b.getAttribute(attr) ?? '';
-    /** @type {any} */ (budget)[key] = key === 'tail' || key === 'mono' ? Number(v) : v;
+    /** @type {any} */ (budget)[key] = v;
   });
 }
 
@@ -188,10 +188,10 @@ seg(['pn-off', 'pn-on'], (id) => { pedalNoiseOn = id === 'pn-on'; pushLive(); })
 
 /** The lit instrument, with the pedal noise following its pedal. */
 const playable = {
-  noteOn: (/** @type {number} */ m, /** @type {number} */ v, /** @type {number|undefined} */ w) => cur().noteOn(m, v, w),
-  noteOff: (/** @type {number} */ m, /** @type {number|undefined} */ w) => cur().noteOff(m, w),
-  pedal: (/** @type {boolean} */ d, /** @type {number|undefined} */ w) => cur().pedal(d, w),
-  stopAll: (/** @type {number|undefined} */ f) => cur().stopAll(f),
+  noteOn: (/** @type {number} */ m, /** @type {number} */ v, /** @type {number|undefined} */ w = undefined) => cur().noteOn(m, v, w),
+  noteOff: (/** @type {number} */ m, /** @type {number|undefined} */ w = undefined) => cur().noteOff(m, w),
+  pedal: (/** @type {boolean} */ d, /** @type {number|undefined} */ w = undefined) => cur().pedal(d, w),
+  stopAll: (/** @type {number|undefined} */ f = undefined) => cur().stopAll(f),
 };
 
 // ---------------- keys and pedal ----------------

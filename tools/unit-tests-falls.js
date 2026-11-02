@@ -50,7 +50,7 @@ async function detect(dev, s) {
   for (let j = 0; j < W; j++) for (let i = 0; i < W; i++) {
     if (ORIGIN + (i + 0.5) * 0.5 < 0) { depth[j * W + i] = s.depth; vel[(j * W + i) * 2] = s.vx; }
   }
-  /** @param {GPUTextureFormat} format @param {number} n @param {Float32Array} data @param {number} bpp */
+  /** @param {GPUTextureFormat} format @param {number} n @param {Float32Array<ArrayBuffer>} data @param {number} bpp */
   const tex = (format, n, data, bpp) => {
     const t = dev.createTexture({ size: [n, n], format, usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST });
     dev.queue.writeTexture({ texture: t }, data, { bytesPerRow: n * bpp }, [n, n]);

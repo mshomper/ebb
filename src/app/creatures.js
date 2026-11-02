@@ -35,7 +35,7 @@ export async function start(ctx) {
   // `hooks.labCamera` (tools/frog-lab.html): the old close camera, whose own eye startles frogs.
   if (hooks.labCamera) camera.setClose(camRecipe.labClose);
   const presence = createPresence({ camera, cameraBody: !!hooks.labCamera, walker: () => ctx.walk?.presenceNow() ?? null, heightM: walkerRecipe.presence.heightM,
-    ringK: () => (getStore('boonLift')?.comfort ?? 1) * (wearsBand(getStore('kit'), 'hen-feather') ? speciesRecipes.hen.fond?.calmK ?? 1 : 1),
+    ringK: () => (getStore('boonLift')?.comfort ?? 1) * (wearsBand(getStore('kit'), 'hen-feather') ? speciesRecipes.hen.fond?.calmK ?? 1 : 1) * (ctx.hatRingK?.() ?? 1),
     known: () => getStore('campKnown') ?? null });
   /** Where you are felt on foot (finds, food, finding by watching); null while you are above. */
   const you = () => ctx.walk?.you() ?? null;

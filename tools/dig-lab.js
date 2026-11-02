@@ -61,8 +61,8 @@ function classify() {
   for (let k = 0; k < N * N; k++) {
     const [x, z] = cellCenter(k);
     const g = groundClass(x, z, { hab: h, pad: island.pad }, R);
-    classes[k] = g.cls ? { cls: g.cls } : { cls: null, why: g.why };
-    if (g.cls || (g.why !== 'outside' && g.why !== 'water')) { const i = k % N, j = Math.floor(k / N); i0 = Math.min(i0, i); j0 = Math.min(j0, j); i1 = Math.max(i1, i); j1 = Math.max(j1, j); }
+    classes[k] = g.cls ? { cls: g.cls } : { cls: null, why: /** @type {any} */ (g).why };
+    if (g.cls || (/** @type {any} */ (g).why !== 'outside' && /** @type {any} */ (g).why !== 'water')) { const i = k % N, j = Math.floor(k / N); i0 = Math.min(i0, i); j0 = Math.min(j0, j); i1 = Math.max(i1, i); j1 = Math.max(j1, j); }
   }
   // Drawn square, cropped to the land with a margin of sea.
   const side = Math.min(N, Math.max(i1 - i0, j1 - j0) + 12), ci = Math.round((i0 + i1) / 2), cj = Math.round((j0 + j1) / 2);
@@ -263,12 +263,12 @@ function showDeeper() {
     return Object.entries(n).map(([f, c]) => `${f} ${Math.round(c / 10)}%`).join(', ') || 'none';
   };
   const rarity = (/** @type {any} */ o) => { const w = digRarityWeights(at(o), R), t = w.reduce((a, b) => a + b, 0) || 1; return w.map((x, i) => { const p = (100 * x) / t; return x > 0 ? `${TIERS[i]} ${p < 1 ? 'under 1' : Math.round(p)}%` : ''; }).filter(Boolean).join(', '); };
-  const rows = [
+  const rows = /** @type {[string, any][]} */ ([
     ['Subsoil, near a hearth', { layer: 'subsoil', depth: 2, nearHearth: true }],
     ['Subsoil, on a hearth', { layer: 'subsoil', depth: 2, nearHearth: true, hearth: true }],
     [`${W.names.charcoal} (blade)`, { layer: 'charcoal', depth: 3, nearHearth: true, hearth: true }],
     [`${W.names.deepclay} (blade)`, { layer: 'deepclay', depth: 3 }],
-  ].map(([name, o]) => `<tr><td>${name}</td><td>${Math.round(100 * (R.keepsake.chance[/** @type {any} */ (o).layer] ?? 0))}%</td><td>${shares({ ...o, potFired: false })}</td><td>${shares({ ...o, potFired: true })}</td><td>${rarity(o)}</td></tr>`).join('');
+  ]).map(([name, o]) => `<tr><td>${name}</td><td>${Math.round(100 * (R.keepsake.chance[/** @type {any} */ (o).layer] ?? 0))}%</td><td>${shares({ ...o, potFired: false })}</td><td>${shares({ ...o, potFired: true })}</td><td>${rarity(o)}</td></tr>`).join('');
   $('deeper').innerHTML = `<h2>Digging deeper</h2>
     <p class="muted">The keeper's blade (from the cache under the marked stone) reaches a third layer: the charcoal band on a hearth, deeper clay under a damp bank. Sherds wait until the walker has fired a pot of their own. Keepsakes before the island's budget and a patch's thinning.</p>
     <table><tr><th>Layer</th><th>Holds a keepsake</th><th>Families, before a pot</th><th>Families, after</th><th>Rarity</th></tr>${rows}</table>

@@ -50,8 +50,14 @@ export function createKit(o) {
       line: (get('cook')?.tools ?? []).includes('line'),
       // The old keeper's pan, taken from beside the spring's pool (src/world/spring).
       pan: (get('cook')?.tools ?? []).includes('keepers-pan'),
+      // The kite, mended at the workbench (src/world/kite).
+      kite: (get('cook')?.tools ?? []).includes('kite'),
+      // The driftwood staff, made once the arch in the stack's mouth is seen (docs/future/19).
+      'driftwood-staff': (get('cook')?.tools ?? []).includes('driftwood-staff'),
     };
-    return R.belt.map((/** @type {any} */ t) => ({ id: t.id, owned: !!(/** @type {any} */ (has))[t.id] }));
+    // A tool's line for now, from its own module (the kite: where and when it can fly).
+    const notes = get('beltNotes') ?? {};
+    return R.belt.map((/** @type {any} */ t) => ({ id: t.id, owned: !!(/** @type {any} */ (has))[t.id], ...(notes[t.id] ? { note: notes[t.id] } : {}) }));
   }
 
   /** Has the Hollow been found (Q and E show)? A journal flag, set when the Hollow comes. */
@@ -93,6 +99,7 @@ export function createKit(o) {
     subscribe('cook', publish),
     subscribe('sketchbook', publish),
     subscribe('journal', publish),
+    subscribe('beltNotes', publish),
   ];
   sync();
 
@@ -116,6 +123,17 @@ export function createKit(o) {
       publish();
       emitDeferred('kit:band', { id });
     },
+    /**
+     * Something owned from now on (the teal hat, made at the workbench), and put on at once when
+     * wearIt. @param {import('./model.js').Slot} slot @param {string} id @param {boolean} [wearIt]
+     */
+    gain(slot, id, wearIt = false) {
+      const k = own(kit(), slot, id);
+      if (k !== kit()) { update('kit', () => k); publish(); }
+      if (wearIt) wear({ slot, id });
+    },
+    /** The boon of the hat worn, if it has one (recipes/world/kit.json items.hat.<id>.boon), else null. */
+    hatBoon: () => R.items?.hat?.[kit().hat]?.boon ?? null,
     belt,
     dispose() { for (const off of offs) off(); },
   };

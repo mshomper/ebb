@@ -89,7 +89,49 @@
       { "id": "rose", "test": "isletRose", "text": "At the big low tide a pale shoal showed offshore, where there was only sea before." },
       { "id": "risen", "test": "isletRisen", "text": "By the next low water it stood above the high tide: a little meadow islet, with a sandbar to our shore." },
       { "id": "walked", "test": "isletWalked", "text": "I walked out over the bar at low tide and stood on the islet. The ground there is dry and sunny, meadow, not pond." }
-    ], "pencil": "The bar is dry only around low tide. I watch the tide when I go.", "end": ["isletWalked"] }
+    ], "pencil": "The bar is dry only around low tide. I watch the tide when I go.", "end": ["isletWalked"] },
+    {
+      "id": "rye",
+      "title": "The rye",
+      "icon": "sheaf",
+      "lines": [
+        { "id": "gathered", "test": "ryeGathered", "text": "A few rye stalks gone wild beside the old stone on the islet. Somebody grew it here once. I saved the seed." },
+        { "id": "sown", "test": "ryeSown", "text": "I sowed a strip of rye on the islet before the frost." },
+        { "id": "cut", "test": "ryeCut", "text": "The rye is gold. I cut it and stood the sheaves up to dry." }
+      ],
+      "pencil": "Rye goes in before the frost, and comes in when it's gold.",
+      "end": ["ryeCut"]
+    },
+    {
+      "id": "marker-stone",
+      "title": "The marker stone",
+      "icon": "marker-stone",
+      "lines": [
+        { "id": "seen", "test": "stoneSeen", "text": "An old standing stone came up with the islet. There's a notch cut in its top." },
+        { "id": "pot", "test": "stonePot", "text": "At noon on midsummer, the light through the notch fell on one spot. I dug there: an old pot, and a sickle blade inside." },
+        { "id": "calendar", "test": "stoneCalendar", "text": "The stone keeps the year. I can read the season by its shadow now." }
+      ],
+      "pencil": "The notch lines up with something. Maybe the sun?",
+      "end": ["stoneCalendar"]
+    },
+    { "id": "kite", "title": "The kite", "icon": "kite", "lines": [
+      { "id": "found", "test": "kiteFound", "text": "A kite washed up on the bar after the gale, torn but whole." },
+      { "id": "mended", "test": "kiteMended", "text": "I laced the tear shut with rush cord and lashed in a new stick for the spar." },
+      { "id": "flown", "test": "kiteFlown", "text": "I flew the kite from the top of the islet. I could see everything." }
+    ], "pencil": "It only flies from the islet's top, and only when the wind is up.", "end": ["kiteFlown"] },
+    { "id": "stack", "title": "The light on the stack", "icon": "stack", "pages": true, "lines": [
+      { "id": "seen", "test": "stackSeen", "text": "There's a rock offshore, stepped like a stair. A dark band near its top, and something iron. Someone kept a light out there once." },
+      { "id": "lights", "test": "stackLights", "text": "A light at the foot of the stack tonight, low on the water. The moths went out to it. When I looked again it was gone." },
+      { "id": "road", "test": "stackRoad", "text": "The sea drew back further than I've ever seen it and left a road of stones to the stack. It hasn't gone back under." },
+      { "id": "lamp", "test": "stackLamp", "text": "A cave in the stack's foot, and an old lantern on the floor. I lit it and hung it by the door. There was a note beside it." },
+      { "id": "arch", "test": "stackArch", "text": "An arch at the back of the cave, ringed with soot. Something moves past the light. Not with empty hands." },
+      { "id": "through", "test": "stackThrough", "text": "I made a staff from driftwood and cord, and I went through the arch." }
+    ], "pencil": "The road to the stack is dry at any tide.", "end": ["stackThrough"] },
+    { "id": "stack-passage", "title": "The sleeper's passage", "icon": "grate", "lines": [
+      { "id": "rubble", "test": "stackRubble", "text": "A passage off the cave, choked with fallen rock. I dug some of it out today." },
+      { "id": "grate", "test": "stackGrate", "text": "Through the rubble at last. An iron grate, locked, and a small box wedged in the rock beside it, locked too." },
+      { "id": "key", "test": "stackKey", "text": "The little key from the spring fits the grate. The old keeper locked it. I think I know why now." }
+    ], "pencil": "Whatever is past the grate, the old keeper wanted it left in peace." }
   ],
   "tests": { "lineMade": [{"made": ["line"]}], "fishFirst": [{"flag": "fishing:sketch"}], "fishRiddle": [{"flag": "fishing:riddle:1"}], "fishWater": [{"prefix": "fishing:water:"}], "fishRare": [{"flag": "fishing:rare"}], "chartFull": [{"flag": "fishing:chart:full"}],
     "stoneShown": [{ "flag": "dig:marked-stone" }],
@@ -117,6 +159,16 @@
     "keeperTend": [{ "flag": "keeper:tend" }],
     "isletRose": [{ "flag": "setpiece:islet:rose" }],
     "isletRisen": [{ "flag": "setpiece:islet:risen" }],
-    "isletWalked": [{ "flag": "setpiece:islet:walked" }]
+    "isletWalked": [{ "flag": "setpiece:islet:walked" }],
+    "ryeGathered": [{ "flag": "setpiece:rye:gathered" }],
+    "ryeSown": [{ "flag": "setpiece:rye:sown" }],
+    "ryeCut": [{ "flag": "setpiece:rye:cut" }],
+    "stoneSeen": [{ "flag": "setpiece:stone:seen" }, { "flag": "setpiece:stone:pot" }],
+    "stonePot": [{ "flag": "setpiece:stone:pot" }],
+    "stoneCalendar": [{ "flag": "setpiece:stone:calendar" }],
+    "kiteFound": [{ "flag": "setpiece:kite:found" }],
+    "kiteMended": [{ "flag": "setpiece:kite:mended" }],
+    "kiteFlown": [{ "flag": "setpiece:kite:flown" }],
+    "isletWalked": [{ "flag": "setpiece:islet:walked" }], "stackSeen": [{"flag": "setpiece:stack:seen"}], "stackLights": [{"flag": "setpiece:stack:lights"}], "stackRoad": [{"flag": "setpiece:stack:road"}], "stackCrossed": [{"flag": "setpiece:stack:crossed"}], "stackLamp": [{"flag": "setpiece:stack:lamp"}], "stackArch": [{"flag": "setpiece:stack:arch"}], "stackThrough": [{"flag": "setpiece:stack:through"}], "stackRubble": [{"flag": "setpiece:stack:rubble"}], "stackGrate": [{"flag": "setpiece:stack:grate"}], "stackKey": [{"flag": "setpiece:stack:key"}]
   }
 }

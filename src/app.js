@@ -18,7 +18,8 @@ import { result as appResult } from './app/api.js';
  *   growth: import('./world/growth/index.js').Growth, world: { state: any, env: any },
  *   palette: { list: () => { id: string, name: string }[], current: () => any, apply: (json: any, fadeS?: number) => void },
  *   quality: { set: (tier: string) => boolean, tier: () => string, renderScale: () => number, pinScale: (s: number | null) => void, info: () => any },
- *   pickColor: (cssX: number, cssY: number) => Promise<string> }
+ *   pickColor: (cssX: number, cssY: number) => Promise<string>,
+ *   frogScale?: { recipe: any, find: () => any, setSize: (s: number) => void, size: number } | null }
  *   | { ok: false, reason: 'missing'|'no-adapter'|'device-failed' }
  *   | { ok: false, reason: 'elsewhere', takeOver: () => void }
  *   | { ok: false, reason: 'damaged', save: any, islands: { id: string, name: string }[] }} StartResult
@@ -37,7 +38,7 @@ import { result as appResult } from './app/api.js';
  */
 export async function startApp(canvas, hooks = {}) {
   const result = await initGpu(canvas);
-  if (!result.ok) return result;
+  if (result.ok === false) return result;
 
   /** @type {import('./app/context.js').AppContext} */
   const ctx = { canvas, hooks, gpu: result.gpu };

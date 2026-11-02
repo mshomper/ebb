@@ -222,7 +222,7 @@ export async function createWatcherPass(gpu, model, S) {
   const buf = (/** @type {number} */ size, /** @type {number} */ usage) => device.createBuffer({ size, usage: usage | GPUBufferUsage.COPY_DST });
   const vb = buf(model.data.byteLength, GPUBufferUsage.VERTEX), ib = buf(model.indices.byteLength, GPUBufferUsage.INDEX);
   device.queue.writeBuffer(vb, 0, model.data);
-  device.queue.writeBuffer(ib, 0, model.indices);
+  device.queue.writeBuffer(ib, 0, /** @type {Uint32Array<ArrayBuffer>} */ (model.indices));
   const albedo = await mapTexture(device, model.albedo, 'rgba8unorm-srgb', [150, 145, 135, 255], 'watcher albedo');
   const normal = await mapTexture(device, model.normal, 'rgba8unorm', [128, 128, 255, 255], 'watcher normals');
   const samp = device.createSampler({ magFilter: 'linear', minFilter: 'linear', mipmapFilter: 'linear', maxAnisotropy: 4 });

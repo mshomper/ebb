@@ -49,7 +49,7 @@ const recipe = async (p) => (await fetch(new URL(`../recipes/${p}.json`, import.
 const view = /** @type {HTMLCanvasElement} */ ($('view'));
 const note = $('note');
 const made = await createStage(view);
-if (!made.ok) { note.textContent = `This page needs WebGPU (${made.reason}).`; throw new Error(made.reason); }
+if (made.ok === false) { note.textContent = `This page needs WebGPU (${made.reason}).`; throw new Error(made.reason); }
 const stage = made.stage;
 const [R, FR, CR, frogR] = await Promise.all([recipe('world/walker'), recipe('world/figure'), recipe('world/camera'), recipe('species/frog')]);
 /** The walker recipe as loaded, to show what changed. */

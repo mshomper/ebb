@@ -35,6 +35,7 @@ export function addPackTests(test, assert, eq) {
   const load = () => {
     loaded ??= (async () => {
       const url = new URL('../recipes/world/pack.json', import.meta.url);
+      // @ts-ignore Node only
       if (url.protocol === 'file:') { const fs = await import('node:fs/promises'); return JSON.parse(await fs.readFile(url, 'utf8')); }
       return (await fetch(url)).json();
     })().then((recipe) => ({ recipe, kinds: makeKinds(recipe, ['mint.leaves', 'chamomile.seed']) }));
@@ -48,6 +49,7 @@ export function addPackTests(test, assert, eq) {
     const c = await load();
     const land = await (async () => {
       const url = new URL('../recipes/land/starter-island-2.json', import.meta.url);
+      // @ts-ignore Node only
       if (url.protocol === 'file:') { const fs = await import('node:fs/promises'); return JSON.parse(await fs.readFile(url, 'utf8')); }
       return (await fetch(url)).json();
     })();
@@ -74,6 +76,7 @@ export function addPackTests(test, assert, eq) {
     const c = await load();
     const land = await (async () => {
       const url = new URL('../recipes/land/starter-island-2.json', import.meta.url);
+      // @ts-ignore Node only
       if (url.protocol === 'file:') { const fs = await import('node:fs/promises'); return JSON.parse(await fs.readFile(url, 'utf8')); }
       return (await fetch(url)).json();
     })();
@@ -301,7 +304,7 @@ export function addPackTests(test, assert, eq) {
   test(G, 'a set-down pouch finds its slot, falls back to a heap slot, or says why not', async () => {
     const { kinds } = await load();
     const slots = ['sticks', 'stones', 'clay', 'heap1', 'heap2', 'heap3'].map((id, i) => ({ id, x: i, z: 0 }));
-    const pile = (/** @type {string} */ holds, /** @type {string} */ slot) => ({ id: 1, kind: /** @type {'pile'} */ ('pile'), x: 0, z: 0, yaw: 0, seed: 1, size: 1, placedHour: 0, holds, handfuls: 4, slot });
+    const pile = (/** @type {string} */ holds, /** @type {string} */ slot) => ({ id: 'p1', kind: /** @type {'pile'} */ ('pile'), x: 0, z: 0, yaw: 0, seed: 1, size: 1, placedHour: 0, holds, handfuls: 4, slot });
     eq(js(slotFor('sticks', [], slots, kinds)), js({ slot: 'sticks' }));
     eq(js(slotFor('sticks', [pile('sticks', 'sticks')], slots, kinds)), js({ slot: 'sticks' }));
     eq(js(slotFor('drift-twigs', [pile('sticks', 'sticks')], slots, kinds)), js({ slot: 'heap1' }));
@@ -317,7 +320,7 @@ export function addPackTests(test, assert, eq) {
 
   test(G, 'a pile takes what fits, gives a pouch back and names its size', async () => {
     const { recipe } = await load();
-    const p = { id: 1, kind: /** @type {'pile'} */ ('pile'), x: 0, z: 0, yaw: 0, seed: 1, size: 1, placedHour: 0, holds: 'sticks', handfuls: 10, slot: 'sticks' };
+    const p = { id: 'p1', kind: /** @type {'pile'} */ ('pile'), x: 0, z: 0, yaw: 0, seed: 1, size: 1, placedHour: 0, holds: 'sticks', handfuls: 10, slot: 'sticks' };
     eq(js(setDown(p, 3, recipe.piles.handfuls)), js({ handfuls: 12, moved: 2, left: 1 }));
     eq(js(setDown({ ...p, handfuls: 0 }, 3)), js({ handfuls: 3, moved: 3, left: 0 }));
     eq(js(takeUp(p)), js({ handfuls: 7, taken: 3 }));

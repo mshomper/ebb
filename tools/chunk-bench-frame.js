@@ -120,7 +120,7 @@ GPUCommandEncoder.prototype.finish = function (desc) {
 };
 
 const submit = GPUQueue.prototype.submit;
-GPUQueue.prototype.submit = function (buffers) {
+GPUQueue.prototype.submit = /** @returns {undefined} */ function (buffers) {
   const t0 = performance.now();
   submit.call(this, buffers);
   for (const cb of buffers) {
@@ -190,7 +190,7 @@ async function main() {
   const { on } = await import('../src/core/events.js');
   const canvas = /** @type {HTMLCanvasElement} */ (document.getElementById('view'));
   const result = await startApp(canvas);
-  if (!result.ok) {
+  if (result.ok === false) {
     post({ type: 'error', message: `The island did not start here (${result.reason}). Open this page in current Chrome or Edge on the desktop.` });
     $status.textContent = 'The island did not start';
     return;

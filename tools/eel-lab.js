@@ -30,7 +30,7 @@ eels.setMood('night');
 const canvas = /** @type {HTMLCanvasElement} */ (document.getElementById('view'));
 const g = /** @type {CanvasRenderingContext2D} */ (canvas.getContext('2d'));
 const PX = 130, OX = 460, OZ = 600;
-const toPx = (/** @type {number} */ x, /** @type {number} */ z) => [OX + x * PX, OZ + z * PX];
+const toPx = (/** @type {number} */ x, /** @type {number} */ z) => /** @type {[number, number]} */ ([OX + x * PX, OZ + z * PX]);
 const status = /** @type {HTMLElement} */ (document.getElementById('status'));
 
 /** The chain's joints from above for one eel: the snout first. @param {any} f */

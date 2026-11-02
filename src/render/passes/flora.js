@@ -92,7 +92,7 @@ export function createFloraPass(opts) {
       });
       // The looks' strengths (lib-flora.wgsl FloraLooks), the same for every species.
       const looksBuffer = makeBuffer(device, { label: 'flora-looks', size: 48, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
-      device.queue.writeBuffer(looksBuffer, 0, packLooks(opts.looks));
+      device.queue.writeBuffer(looksBuffer, 0, /** @type {Float32Array<ArrayBuffer>} */ (packLooks(opts.looks)));
       const pipelineLayout = device.createPipelineLayout({ label: 'flora', bindGroupLayouts: [ctx.layouts.frame, ctx.layouts.lighting, layout] });
       const heightView = opts.terrain.gpu.height.createView();
       const depthViews = opts.water.depthTextures.map((t) => t.createView());

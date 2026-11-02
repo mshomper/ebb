@@ -132,6 +132,7 @@ export function shelfLook(at, S) {
 
 /** The families the test shelf draws from, in turn (the artifacts wait for their bases to load). */
 const TEST_FAMILIES = ['bottle', 'shell', 'starfish', 'driftwood', 'stone', 'feather', 'urchin', 'purse', 'fossil', 'coral', 'cuttlebone', 'seed', 'bivalve', 'sherd', 'bottle', 'shell'];
+/** @type {import('../keepsakes/rarity.js').Rarity[]} */
 const TEST_RARITY = ['common', 'uncommon', 'rare', 'common', 'veryRare', 'uncommon', 'common', 'rare'];
 
 /**

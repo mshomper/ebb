@@ -81,16 +81,16 @@ export function addFigureClipTests(test, assert, eq) {
     for (let f = 0; f < 30; f++) m.update(dt, still);
     const low = handY();
     let n = 0;
-    while (m.holding < 1 && n < 120) { m.hold('raiseLantern', true, L); m.update(dt, still); n++; }
+    while (m.holding < 1 && n < 120) { m.holdClip('raiseLantern', true, L); m.update(dt, still); n++; }
     assert(Math.abs(n * dt - L.upS) < 2.5 * dt, `up in upS (${(n * dt).toFixed(2)} s)`);
     const up = handY();
     assert(up - low > 0.3, `the lantern hand rises ${((up - low) * 100).toFixed(0)} cm`);
     m.shoot('swingDouble', { mask: FR.clips.swingDouble.mask ? FR.mask : undefined, feet: true });
     let lowest = Infinity;
-    for (let f = 0; f < 40; f++) { m.hold('raiseLantern', true, L); m.update(dt, still); lowest = Math.min(lowest, handY()); }
+    for (let f = 0; f < 40; f++) { m.holdClip('raiseLantern', true, L); m.update(dt, still); lowest = Math.min(lowest, handY()); }
     assert(lowest - low > 0.15 && m.holding === 1, `held through a swing (never below ${((lowest - low) * 100).toFixed(0)} cm over hanging)`);
     n = 0;
-    while (m.holding > 0 && n < 120) { m.hold('raiseLantern', false, L); m.update(dt, still); n++; }
+    while (m.holding > 0 && n < 120) { m.holdClip('raiseLantern', false, L); m.update(dt, still); n++; }
     assert(Math.abs(n * dt - L.downS) < 2.5 * dt, `down in downS (${(n * dt).toFixed(2)} s)`);
     assert(m.bones.every(Number.isFinite), 'finite');
     return `up ${((up - low) * 100).toFixed(0)} cm in ${L.upS} s, down in ${L.downS} s`;

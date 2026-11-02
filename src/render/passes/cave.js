@@ -10,12 +10,14 @@ import { makeBuffer, makeShaderModule } from '../../core/gpu.js';
 
 /** @typedef {import('../frame-graph.js').PassContext} PassContext */
 
-const FLOATS = 60;
+/** 60 for the spring's cave; then a lantern's 12 and the soot's 8 (the stack's mouth), zeros where there is none. */
+const FLOATS = 80;
 /** Floats a vertex: position, normal, colour (rgb albedo, a 1 for a made thing's own). */
 const VERT = 10;
 
 /**
- * @param {{ active: () => boolean }} o active: the cave zone is the one drawn now
+ * @param {{ active: () => boolean, name?: string }} o active: the cave zone is the one drawn now; name: the
+ *   pass's name, for a second cave zone drawn the same way (the stack's mouth, src/world/stack/mouth.js)
  */
 export function createCavePass(o) {
   /** @type {GPURenderPipeline} */ let rockPipe;
@@ -38,8 +40,9 @@ export function createCavePass(o) {
     if (!m.idx.length) { delete meshes[name]; return; }
     const vbuf = makeBuffer(device, { label: `cave-${name}-v`, size: Math.max(16, m.data.byteLength), usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST });
     const ibuf = makeBuffer(device, { label: `cave-${name}-i`, size: Math.max(16, Math.ceil(m.idx.byteLength / 4) * 4), usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST });
-    device.queue.writeBuffer(vbuf, 0, m.data);
-    device.queue.writeBuffer(ibuf, 0, m.idx);
+    // The meshes come from a worker as plain ArrayBuffers; the checker cannot tell, hence the casts.
+    device.queue.writeBuffer(vbuf, 0, /** @type {Float32Array<ArrayBuffer>} */ (m.data));
+    device.queue.writeBuffer(ibuf, 0, /** @type {Uint32Array<ArrayBuffer>} */ (m.idx));
     meshes[name] = { vbuf, ibuf, count: m.idx.length };
   }
 
@@ -53,7 +56,7 @@ export function createCavePass(o) {
   };
 
   return {
-    name: 'cave',
+    name: o.name ?? 'cave',
     reads: [],
     writes: ['hdr', 'depth', 'normalId'],
     enabled: () => o.active(),
@@ -160,7 +163,7 @@ export function createCavePass(o) {
      */
     beamPass() {
       return {
-        name: 'cave-beam', reads: ['depth'], writes: ['hdr'], enabled: () => o.active(),
+        name: `${o.name ?? 'cave'}-beam`, reads: ['depth'], writes: ['hdr'], enabled: () => o.active(),
         async setup() {}, resize() {},
         record(encoder, ctx) {
           if (!beamPipe || !group || !meshes.beam) return;

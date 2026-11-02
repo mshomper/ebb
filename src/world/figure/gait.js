@@ -11,6 +11,7 @@ import { lerp, smooth, DEG } from './kinematics.js';
 /**
  * The pace now, blended from the recipe's paces by speed, then toward wading by the water's depth.
  * @param {any} G recipes/world/figure.json gait @param {number} speed m/s @param {number} wade 0..1
+ * @returns {Record<string, number> & { tipDeg: number, carryDeg: number }} every pace in the recipe has tipDeg and carryDeg
  */
 export function paceAt(G, speed, wade) {
   const P = G.paces;
@@ -21,7 +22,7 @@ export function paceAt(G, speed, wade) {
       if (speed <= P[i].speed) { a = P[i - 1]; b = P[i]; t = Math.max(0, (speed - a.speed) / (b.speed - a.speed)); break; }
     }
   }
-  /** @type {Record<string, number>} */ const out = {};
+  /** @type {Record<string, number> & { tipDeg: number, carryDeg: number }} */ const out = /** @type {any} */ ({});
   for (const k of Object.keys(a)) out[k] = lerp(a[k], b[k], t);
   // The share of a stride each foot is down: over a half it walks; under, both feet leave the
   // ground between steps (the jog and the run's flight).

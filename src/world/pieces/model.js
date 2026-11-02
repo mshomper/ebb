@@ -33,11 +33,12 @@ import { cleanHoleFields } from '../dig/holes.js';
 // that module, never by the stone pass.
 
 /**
- * @typedef {{ id: string, kind: 'stone' | 'log' | 'stepping' | 'steps' | 'raft' | 'pile' | 'perch' | 'lantern', x: number, z: number, yaw: number, seed: number, size: number, length?: number,
+ * @typedef {{ id: string, kind: 'stone' | 'log' | 'stepping' | 'steps' | 'raft' | 'pile' | 'hole' | 'perch' | 'lantern', x: number, z: number, yaw: number, seed: number, size: number, length?: number,
  *   rise?: number, run?: string, x2?: number, z2?: number, top?: number, bottom?: number, risers?: number, placedHour: number,
- *   holds?: string, handfuls?: number, slot?: string }} Piece
+ *   holds?: string, handfuls?: number, slot?: string, mica?: boolean, depth?: number, layer?: string, cls?: string,
+ *   dugHour?: number, closedHour?: number, wetH?: number, seep?: boolean, side?: number, stays?: boolean }} Piece
  *   length: a log's length (m); rise, run: a pond stone's; x2, z2, top, bottom, risers: a flight's (yaw 0);
- *   holds, handfuls, slot: a pile's
+ *   holds, handfuls, slot: a pile's; depth to stays: a hole's (dig/holes.js cleanHoleFields)
  * @typedef {{ version: number, list: Piece[], nextId: number, arrived: boolean }} PiecesState
  *   nextId: the number the next piece's id takes; arrived: the reward's stones have come (once per island)
  */

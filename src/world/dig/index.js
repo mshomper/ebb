@@ -139,6 +139,14 @@ export function createDig(o) {
     closeWhere((h) => (o.water.sampleLive?.(h.x, h.z)?.depth ?? 0) > R.fill.waterM, 'water');
   }
 
+  /**
+   * Another story's spot under the ground (F20's midsummer pot, src/world/meadow): due says whether a
+   * dig at a point and depth finds it, found takes it, footprint keeps holes off its stone.
+   * @type {{ due: (x: number, z: number, depth: number) => boolean, found: (x: number, z: number, holeId: string | undefined) => void,
+   *   footprint: () => { x: number, z: number, r: number }[] } | null}
+   */
+  let special = null;
+
   // ---- where Dig is offered ----
 
   /** Placed pieces as footprint circles (holes and the camp's own piles left out). */
@@ -153,13 +161,13 @@ export function createDig(o) {
         out.push({ x: p.x, z: p.z, r: p.size }, { x: p.x2, z: p.z2, r: p.size }, { x: (p.x + p.x2) / 2, z: (p.z + p.z2) / 2, r: p.size });
       } else out.push({ x: p.x, z: p.z, r: p.size * 0.55 });
     }
-    out.push(...story.footprint());
+    out.push(...story.footprint(), ...(special?.footprint() ?? []));
     return out;
   }
-  /** The ground class at a point, or why not. @param {number} x @param {number} z */
+  /** The ground class at a point, or why not. @param {number} x @param {number} z @returns {ReturnType<typeof groundClass>} */
   function classAt(x, z) {
     const h = hab();
-    if (!h) return /** @type {const} */ ({ cls: null, k: -1, why: 'outside' });
+    if (!h) return { cls: null, k: -1, why: 'outside' };
     return groundClass(x, z, { hab: h, depthAt: (px, pz) => o.water.sampleLive?.(px, pz)?.depth ?? 0, pad: get('campPad') ?? null, pieces: footprints() }, R);
   }
 
@@ -171,7 +179,8 @@ export function createDig(o) {
    */
   function placeHole(x, z) {
     const c = classAt(x, z);
-    if (!c.cls) return { cls: null, why: c.why };
+    // No class is always the why branch (the checker cannot narrow on a null class here).
+    if (!c.cls) return { cls: null, why: /** @type {{ why: import('./layers.js').NoDig }} */ (c).why };
     if (!stemNear(x, z)) return { cls: c.cls, k: c.k, x, z };
     for (let ring = 1; ring <= R.hole.slideSteps; ring++) {
       const d = (R.hole.slideM * ring) / R.hole.slideSteps;
@@ -252,7 +261,7 @@ export function createDig(o) {
       ({ layer, depth } = next);
     }
     // The cache sits outside every rest rule.
-    const cacheHere = cacheDue(depth, story.at(x, z), state().cache) || (!p.hole && caveInDue(depth, x, z, story.spring(), sent(), state().spring, SP));
+    const cacheHere = cacheDue(depth, story.at(x, z), state().cache) || (!p.hole && caveInDue(depth, x, z, story.spring(), sent(), state().spring, SP)) || !!special?.due(x, z, depth);
     if (!cacheHere && rested(seasonEvents(state().events, day), k, day, depth)) { refuse('rest'); return; }
     o.walk.faceToward(x, z);
     if (!o.walk.act('dig')) return;
@@ -283,6 +292,11 @@ export function createDig(o) {
     // The keeper's cache, once per island; a sleeping toad in winter. Each its own moment.
     if (cacheDue(P.depth, st, state().cache)) { findCache(P, day, t); return; }
     if (!P.hole && caveInDue(P.depth, P.x, P.z, story.spring(), sent(), state().spring, SP)) { caveIn(P, day, t); return; }
+    if (special?.due(P.x, P.z, P.depth)) {
+      change((s) => ({ ...s, events: addEvent(s.events, { c: P.k, d: day, l: P.depth, k: 0 }, R) }));
+      special.found(P.x, P.z, openHole(P, t, false));
+      return;
+    }
     if (season === 3 && P.depth === 1 && P.layer === 'topsoil' && !P.hole && h0 && sleeperAt(seed, day, P.k, h0, state().sleepers, R.sleeper)) { findSleeper(P, day, t); return; }
     const at = {
       seed, cell: P.k, day, layer: P.layer, depth: P.depth, season,
@@ -609,6 +623,8 @@ export function createDig(o) {
     story, hasBlade,
     /** The words a dug keepsake's card says (its family's line). @param {(n: any) => string} fn */
     setKeepsakeWords(fn) { keepsakeLine = fn; },
+    /** Another story's spot under the ground (F20's midsummer pot). @param {NonNullable<typeof special>} s */
+    setSpecial(s) { special = s; },
 
     /** Each frame: the here-bar, a dig on its way, a scoop's kneel, the shovel in hand. @param {any} f */
     tick(f) {

@@ -58,7 +58,7 @@ const toLinear = (c) => { const s = c / 255; return s <= 0.04045 ? s / 12.92 : (
 export async function baseColorSampler(glb) {
   const map = materialMaps(glb).baseColor;
   if (!map || typeof createImageBitmap !== 'function' || typeof OffscreenCanvas !== 'function') return null;
-  const bmp = await createImageBitmap(new Blob([map.bytes], { type: map.mimeType }));
+  const bmp = await createImageBitmap(new Blob([/** @type {Uint8Array<ArrayBuffer>} */ (map.bytes)], { type: map.mimeType }));
   const cv = new OffscreenCanvas(bmp.width, bmp.height);
   const ctx = /** @type {OffscreenCanvasRenderingContext2D} */ (cv.getContext('2d'));
   ctx.drawImage(bmp, 0, 0);

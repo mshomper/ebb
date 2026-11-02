@@ -25,6 +25,12 @@ export function createCreatureSound(mixer, voices, store, recipe, pond) {
   let lastHen = -1;
   /** The last turnstone sound played, by its number; -1 until the first look. */
   let lastTurnstone = -1;
+  /** The last teal sound played, by its number; -1 until the first look. */
+  let lastTeal = -1;
+  /** The last purple sandpiper sound played, by its number; -1 until the first look. */
+  let lastSandpiper = -1;
+  /** The last seal sound played, by its number; -1 until the first look. */
+  let lastSeal = -1;
   /** The last rise played, by species, by its number; absent until the first look at that species. @type {Map<string, number>} */
   const lastRise = new Map();
   /** Where the ears are, and when (performance.now) a frog last called close to them. */
@@ -38,6 +44,9 @@ export function createCreatureSound(mixer, voices, store, recipe, pond) {
     if (feed?.schools && pond) pollRises(feed.schools());
     if (feed?.hens) pollHen(feed.hens());
     if (feed?.turnstones) pollTurnstones(feed.turnstones());
+    if (feed?.teals) pollTeals(feed.teals());
+    if (feed?.sandpipers) pollSandpipers(feed.sandpipers());
+    if (feed?.seals) pollSeals(feed.seals());
     if (!feed?.frogs) return;
     const heard = feed.frogs(since ?? Infinity);
     const first = since === null;
@@ -86,6 +95,42 @@ export function createCreatureSound(mixer, voices, store, recipe, pond) {
     lastTurnstone = Math.max(lastTurnstone, newest);
     if (from < 0 || mixer.ctx.state !== 'running') { if (from < 0) lastTurnstone = Math.max(0, newest); return; }
     for (const c of calls) if (c.n > from) voices.turnstone(c.kind, c.pos);
+  }
+
+  /**
+   * The teal's sounds since the last look (B3, the winter duck flock), as the turnstones': the first
+   * look plays nothing, nothing plays before the first touch. @param {{ n: number, kind: 'krik'|'murmur'|'whirr', pos: number[] }[]} calls
+   */
+  function pollTeals(calls) {
+    const newest = calls.length ? calls[calls.length - 1].n : lastTeal;
+    const from = lastTeal;
+    lastTeal = Math.max(lastTeal, newest);
+    if (from < 0 || mixer.ctx.state !== 'running') { if (from < 0) lastTeal = Math.max(0, newest); return; }
+    for (const c of calls) if (c.n > from) voices.teal(c.kind, c.pos);
+  }
+
+  /**
+   * The purple sandpipers' sounds since the last look (B3 wave 3), as the turnstones'.
+   * @param {{ n: number, kind: 'chatter'|'tuk'|'murmur', pos: number[] }[]} calls
+   */
+  function pollSandpipers(calls) {
+    const newest = calls.length ? calls[calls.length - 1].n : lastSandpiper;
+    const from = lastSandpiper;
+    lastSandpiper = Math.max(lastSandpiper, newest);
+    if (from < 0 || mixer.ctx.state !== 'running') { if (from < 0) lastSandpiper = Math.max(0, newest); return; }
+    for (const c of calls) if (c.n > from) voices.sandpiper(c.kind, c.pos);
+  }
+
+  /**
+   * The seals' sounds since the last look (B3 wave 3), as the turnstones': the first look plays
+   * nothing, nothing plays before the first touch. @param {{ n: number, kind: 'moan'|'snort'|'pup', pos: number[] }[]} calls
+   */
+  function pollSeals(calls) {
+    const newest = calls.length ? calls[calls.length - 1].n : lastSeal;
+    const from = lastSeal;
+    lastSeal = Math.max(lastSeal, newest);
+    if (from < 0 || mixer.ctx.state !== 'running') { if (from < 0) lastSeal = Math.max(0, newest); return; }
+    for (const c of calls) if (c.n > from) voices.seal(c.kind, c.pos);
   }
 
   /**

@@ -2,7 +2,7 @@
 
 > Offshore, on its own side of the island, a tall rock stands alone in the sea: a stack, stepped in ledges like a stair, with a dark band of old soot near its top and an iron bracket rusting there. Someone kept a light on it once. On a few evenings of the first week a small light flickers at its foot and the moths go out to it, and nothing can reach it. Halfway through the first spring the sea draws back further than it ever has and leaves a road of stones to the stack, and the road stays. In the stack's foot is the sea cave: a cold lantern on the floor, a note in an old hand, an arch ringed with soot, and a passage choked with rubble. This doc is the story that opens the Hollow (F16) early, so players who want a fight find one in their first season. It was drafted from Matt's session on November 1, 2026.
 
-**Status:** Decided (direction, November 1, 2026). Nothing built. It changes where F16's cave is (F16 is updated to match) and how a player first reaches it. The lamplighter's later story (who they were, the pages below, relighting the bracket) is Leaning: proposals to react to.
+**Status:** Decided (direction, November 1, 2026). Built November 1, 2026 on `claude/m2-stack-3a2727` (`src/world/stack/`, `recipes/setpieces/stack.json`, `recipes/world/stack-mouth.json`, the land recipes' `stack` blocks): the stack, its no-build ring, Go down, the lights at dusk, the causeway's reveal and the mouth room with the lantern lit as a real light; the grate, the box and the bracket's soot band are still to come. Matt, November 1, 2026: 11.5 m above the sea is tall enough (the ground's ceiling is 12 m); the rubble, dug to its end, says the rock beyond is packed too hard until the grate's branch. It changes where F16's cave is (F16 is updated to match) and how a player first reaches it. The lamplighter's later story (who they were, the pages below, relighting the bracket) is Leaning: proposals to react to.
 
 ## Decided so far
 
@@ -107,7 +107,7 @@ The lamplighter is someone older than the old keeper, who kept a light on the st
 
 **The first note, in the mouth (draft):**
 
-> Whoever finds the lamp: light it. Hang it by the arch. They don't like the light, and they don't come up past it. I kept the big lamp on the top of the rock for as long as I could carry the oil. If you go through, go with something in your hand, and come back before your light does.
+> Whoever finds the lamp: light it. Hang it by the arch. They don't like the light, and they don't come up past it. I kept the big lamp on the top of the rock for as long as I could carry the oil. If you go through, go with something in your hand, and come back before your light dies.
 
 **Later notes (Leaning, proposals):** one on each of the first guardian floors, telling in pieces who the lamplighter was, why the light was kept, and why it went out. The last says where the bracket's lamp went. They give the Lamplighter's trail (F16) its reason.
 

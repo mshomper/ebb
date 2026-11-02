@@ -17,9 +17,10 @@ import { cleanThreads, emptyThreads } from '../world/threads/model.js';
 import { cleanFishing, emptyFishing } from '../world/fishing/model.js';
 import { cleanShaped, emptyShaped } from '../world/ecology/shaped-live.js';
 import { cleanIslet, emptyIslet } from '../world/islet/model.js';
+import { cleanStack, emptyStack } from '../world/stack/model.js';
 
 /** The sections format 9 brings in, in the order they are written. */
-export const SECTIONS9 = /** @type {const} */ (['camp', 'pack', 'gather', 'dig', 'cook', 'dyes', 'sketchbook', 'kit', 'threads', 'fishing', 'shaped', 'islet']);
+export const SECTIONS9 = /** @type {const} */ (['camp', 'pack', 'gather', 'dig', 'cook', 'dyes', 'sketchbook', 'kit', 'threads', 'fishing', 'shaped', 'islet', 'stack']);
 
 /** @typedef {typeof SECTIONS9[number]} Section9 */
 
@@ -39,6 +40,7 @@ export function empty9(id) {
   if (id === 'fishing') return emptyFishing();
   if (id === 'shaped') return emptyShaped();
   if (id === 'islet') return emptyIslet();
+  if (id === 'stack') return emptyStack();
   return { version: 1 };
 }
 
@@ -72,9 +74,11 @@ export function clean9(id, v) {
   // The meadow islet (B3a, src/world/islet/model.js): likewise, a save without it reads as not
   // earned; one that has risen stays risen.
   if (id === 'islet') return cleanIslet(v);
+  // The stack (docs/future/19, src/world/stack/model.js): a save without it reads as "not yet", so the
+  // stack arrives on the next load.
+  if (id === 'stack') return cleanStack(v);
   if (!v || typeof v !== 'object' || Array.isArray(v) || v.version !== 1) return empty9(id);
   const out = structuredClone(v);
-  if (id === 'gather' && !Array.isArray(out.events)) out.events = [];
   return out;
 }
 

@@ -38,7 +38,8 @@
       "iris.seed": { "type": "seed", "window": [1.3, 2.6] },
       "marigold.seed": { "type": "seed", "window": [0.6, 1.6] },
       "campion.seed": { "type": "seed", "window": [2.25, 3.2] },
-      "gorse.seed": { "type": "seed", "window": [0.6, 1.4] }
+      "gorse.seed": { "type": "seed", "window": [0.6, 1.4] },
+      "rye.seed": { "type": "seed", "share": 0.15, "window": [1.75, 3.0], "note": "F20 (Matt, November 1, 2026): a handful of rye seed rubbed from the heads, from late summer (the islet first shows on day 27, season position 1.93, its wild stalks ripe) to the end of autumn, from the wild stalks by the marker stone or a strip. Into the seed tin (rye.seed); one handful sows a strip (sowing.json strips)." }
     }
   },
   "cover": { "note": "Cover plants picked by the cell (docs/future/13 4.2, P2c C1): a pick lowers the 1 m cell's share by coverShare of full, and it grows back toward what the ground supports at the cover's own rate (about a day or two). A cell can be picked while its share is at least readyShare of that target and at least minShare of full. species: each cover plant that gives a part, its part and window (season positions, as plant parts), and the line its card says out of season. October 29, 2026 (Matt): a young or spreading bed must give stems too, so readyShare is 0 and only minShare rests a cell (a full cell gives three picks, then rests).",

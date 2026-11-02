@@ -7,8 +7,9 @@
 // tools made. Recipes: recipes/world/cook.json.
 
 /**
- * @typedef {{ version: number, made: Record<string, number>, count: Record<string, number>, tools: string[] }} Cook
- *   made: the game hour each thing was first made or built; count: how many; tools: tools made (the shovel)
+ * @typedef {{ version: number, made: Record<string, number>, count: Record<string, number>, tools: string[], teas?: any, [k: string]: any }} Cook
+ *   made: the game hour each thing was first made or built; count: how many; tools: tools made (the shovel);
+ *   teas: the teapot's notes (camp/teapot.js); fields this build does not know are kept
  * @typedef {{ make: string | null, have: number[], missing: string[][], extra: number[], complete: boolean }} Layout
  *   make: the make shown (null: none uses what is laid); have: for each laid handful, the part it fills
  *   (-1 for none); missing: the kinds that would serve each part not yet laid (the pencil outlines);

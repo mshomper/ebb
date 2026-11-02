@@ -1,0 +1,48 @@
+{
+  "type": "bird",
+  "id": "teal",
+  "version": 1,
+  "note": "The Eurasian teal on the small-bird rig (B3 wave 3; src/world/creatures/bird-rig.js, src/world/teal/model.js). Unlike the turnstone the body is Matt's model (assets/models/teal, his teal.glb cut to the creature budget, never cut further): model.unitM turns its units into real metres (it is 1.887 units bill to tail; a real teal is about 0.36 m), and the shape below is where the rig's pivots sit on it, in real metres, head toward +z, feet on y = 0, the bird's left on +x. The file has no rig, so it is skinned in code: legs (below legY, ahead of legZ) to the shank and foot of their side, everything else along the spine (spine: points in order, each with its bone; a vertex takes the nearest point on the line and blends between the two ends' bones). wings: each flank's folded wing (|x| at least xMin, y and z within their spans, real metres) is copied, lifted liftM off the body along its normals and skinned whole, the part ahead of splitZ to the arm bone and the rest to the hand bone, so it can open in flight while the body under it keeps its own painted wing (as the hen's). shape.wing.armM 0: the hand does not slide out (the copied wing is one piece already). motion: the shared clips' numbers (bird-motion.js: breath, look, flap, preen, land, tuck, tail) and the teal's own (src/world/teal/motion.js): swim (paddling, real metres a stroke), dabble, upend, sleep, rise (the steep spring off the water, as dabbling ducks do, climbing forward at climbDeg, tipped up pitchDeg from its floating trim, which already sits breast high) and fly (Matt, November 2, 2026: flown stretched out flat, never upright as it floats: the body bodyDeg nose down from its floating trim, the neck neckDeg forward so the head rides level, the tail tailDeg up in line, leaning up to bankDeg into a turn).",
+  "model": { "single": "assets/models/teal/teal.glb", "flock": "assets/models/teal/teal-flock.glb", "unitM": 0.1908 },
+  "shape": {
+    "neck": { "base": [0, 0.172, 0.038], "top": [0, 0.229, 0.067] },
+    "tail": { "c": [0, 0.03, -0.155], "r": [0.02, 0.005, 0.03] },
+    "wing": { "shoulder": [0.04, 0.17, 0.034], "armM": 0, "leanDeg": 10, "tip": [0.03, 0.09, -0.155] },
+    "leg": { "hip": [0.023, 0.048, 0.01], "ankle": [0.025, 0.019, 0.015], "foot": [0.027, 0.004, 0.029] }
+  },
+  "skin": {
+    "legY": 0.022,
+    "legZ": -0.02,
+    "footY": 0.008,
+    "spine": [
+      { "at": [0, 0.025, -0.18], "bone": "tail" },
+      { "at": [0, 0.03, -0.131], "bone": "tail" },
+      { "at": [0, 0.09, -0.06], "bone": "body" },
+      { "at": [0, 0.08, 0.01], "bone": "body" },
+      { "at": [0, 0.172, 0.038], "bone": "body" },
+      { "at": [0, 0.229, 0.067], "bone": "neck" },
+      { "at": [0, 0.267, 0.086], "bone": "head" },
+      { "at": [0, 0.254, 0.18], "bone": "head" }
+    ]
+  },
+  "hatFeather": { "note": "The teal's feather in the teal hat's band (src/app/teal.js), as the hen's band feather (recipes/species/hen.json fond.feather): its shape (real metres) for featherMesh, srgb and rough its look in the camp's props pass, carried by the figure's bone at at (rest model metres, x left, y up, z ahead), turned turnDeg (pitch, yaw, roll), drawn scale times its size. On the hat's right, the hen's band feather on its left.", "lengthM": 0.15, "widthM": 0.05, "bendM": 0.018, "archM": 0.008, "srgb": [44, 120, 84], "rough": 0.45, "bone": "hat", "at": [-0.19, 1.6, -0.03], "turnDeg": [-65, -15, 75], "scale": 1.5 },
+  "wings": { "xMin": 0.031, "y": [0.086, 0.19], "z": [-0.162, 0.04], "splitZ": -0.06, "liftM": 0.0015 },
+  "motion": {
+    "breath": { "hz": 0.7, "swell": 0.018 },
+    "look": { "yawDeg": 40, "tiltDeg": 14 },
+    "swim": { "strideM": 0.035, "pitchDeg": 14, "bobDeg": 3 },
+    "dabble": { "s": 3.2, "dips": 3, "bodyDeg": 18, "neckDeg": 62, "headDeg": 70, "sieveHz": 7 },
+    "upend": { "s": 4.2, "bodyDeg": 112, "neckDeg": 18, "tailDeg": 22, "kickHz": 2.6, "liftM": 0.02 },
+    "sleep": { "headDeg": 10 },
+    "preen": { "s": 3.6, "neckYawDeg": 155, "neckPitchDeg": 20, "wingLift": 0.2 },
+    "rise": { "s": 1.5, "pitchDeg": 0, "beatK": 1.25, "climbDeg": 50 },
+    "fly": { "bodyDeg": 12, "neckDeg": 75, "headDeg": 0, "tailDeg": 22, "bankDeg": 25 },
+    "flap": { "hz": 9, "upDeg": 64, "downDeg": -38, "downShare": 0.55, "handLagDeg": 22, "handFoldDeg": 24, "sweepDeg": 8, "glideUpDeg": 6, "bodyPitchDeg": 6 },
+    "takeoff": { "s": 0.9, "runS": 0, "crouchDeg": 8, "climbDeg": 30, "climbMps": 1.6 },
+    "land": { "s": 1.6, "flareDeg": 32, "wingsUpS": 0.35, "wingsUpDeg": 70, "runOnM": 0.05 },
+    "run": { "strideM": 0.06, "duty": 0.42, "liftM": 0.01, "bobM": 0.002, "mps": 0.5, "leanDeg": 6 },
+    "walk": { "strideM": 0.04, "duty": 0.6, "liftM": 0.008, "bobM": 0.002, "mps": 0.2 },
+    "tuck": { "legDeg": 115, "shankDeg": 70, "footDeg": 60 },
+    "tail": { "fan": 1.3, "bobDeg": 5 }
+  }
+}

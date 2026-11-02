@@ -31,7 +31,7 @@ export async function start(ctx) {
   on('falls:lips', (/** @type {{ lips: Float32Array, count: number }} */ p) => { falls = groupFalls(p.lips, p.count, soundRecipe.falls); });
   // The shaper's trail (doc 13 "Trails"; src/world/shaper.js): the kinds of place you have made,
   // each noticed once, looked for when the water settles, every game hour and after time away.
-  const shaperWatch = createShaperWatch({ world, water, recipe: shaperRecipe, coveRecipe, falls: () => falls,
+  const shaperWatch = createShaperWatch({ world, water, recipe: shaperRecipe, coveRecipe, falls: () => (ctx.stack ? falls.filter((/** @type {any} */ f) => !ctx.stack.owns(f.pos[0], f.pos[2])) : falls),
     has: () => new Set(firstsOf(getStore('unlocks')?.earned ?? {}, 'shape').map((f) => f.id)),
     note: (id) => noteFirst({ trail: 'shape', kind: 'place', id, hour: clock.hourIndex() }) });
   // A first look a moment after the island is up (a loaded island notices what it already has).

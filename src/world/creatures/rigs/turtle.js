@@ -172,7 +172,7 @@ function layers(f, P) {
   /** @type {Record<string, { limbs: Limb[], ax: Axial }>} */ const out = {};
   const ax0 = () => ({ ext: 0, up: 0, yaw: 0, hUp: 0, hYaw: 0, jaw: 0, tail: 0, tailUp: 0 });
   // Limbs in order: front left, front right, hind left, hind right.
-  const order = [[true, 0], [true, 1], [false, 0], [false, 1]];
+  /** @type {[boolean, number][]} */ const order = [[true, 0], [true, 1], [false, 0], [false, 1]];
 
   if (f.w.swim > 1e-3) {
     const S = P.swim;

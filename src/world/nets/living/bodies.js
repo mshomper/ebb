@@ -19,6 +19,7 @@ const RES = /** @type {Record<string, number>} */ ({ eel: 90, goby: 60, pipe: 14
 const sph = (/** @type {number[]} */ c, /** @type {number} */ r, /** @type {string} */ region, k = 0) => ({ type: 'sphere', c, r, region, k });
 const ell = (/** @type {number[]} */ c, /** @type {number[]} */ r, /** @type {string} */ region, k = 0, rot = [0, 0, 0]) => ({ type: 'ellipsoid', c, r, region, k, rot });
 const cap = (/** @type {number[]} */ a, /** @type {number[]} */ b, /** @type {number[]} */ r, /** @type {string} */ region, k = 0) => ({ type: 'capsule', a, b, r, region, k });
+/** @typedef {ReturnType<typeof sph> | ReturnType<typeof ell> | ReturnType<typeof cap>} Prim */
 
 /**
  * The primitives for one catch. @param {BodyNumbers} n @param {number} t a fin's half thickness (m)
@@ -74,7 +75,7 @@ export function bodyPrims(n, t) {
     case 'shrimp': {
       // A spine from the head (s 0) to the tail (s 1): arched, the tail curling under.
       const at = (/** @type {number} */ s) => [0, (0.1 * Math.sin(Math.PI * s) - n.curl * Math.max(0, s - 0.65) ** 2 * 1.4) * L, (0.42 - 0.84 * s) * L];
-      const out = [ell(at(0.14), [W, H, 0.2 * L], 'back')];
+      /** @type {Prim[]} */ const out = [ell(at(0.14), [W, H, 0.2 * L], 'back')];
       for (let i = 0; i < 8; i++) {
         const s = 0.33 + i * 0.08, r = H * (0.92 - i * 0.085);
         out.push(ell(at(s), [r * (W / H), r, 0.06 * L], 'back', 0.03 * L));
@@ -93,7 +94,7 @@ export function bodyPrims(n, t) {
     }
     case 'crab': {
       const y0 = 0.32 * L;
-      const out = [ell([0, y0, 0], [W, H, 0.5 * L], 'back')];
+      /** @type {Prim[]} */ const out = [ell([0, y0, 0], [W, H, 0.5 * L], 'back')];
       // Four walking legs a side, each out and up to a knee, then down to its tip.
       [0.16, 0.02, -0.13, -0.27].forEach((z, i) => {
         out.push(...both((s) => {

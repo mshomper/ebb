@@ -88,9 +88,9 @@ export function addWalkTests(test, assert, eq) {
     const { R, grid } = await world(sandbar);
     const low = { level: -0.6 }, high = { level: 0.6 };
     const atLow = findPath(grid, rulesOf(R, seaDepth(grid, low)), [3, 10], [30, 10]);
-    assert(atLow.ok, `no way across the bar at low tide: ${!atLow.ok && atLow.reason}`);
+    assert(atLow.ok, `no way across the bar at low tide: ${atLow.ok === false && atLow.reason}`);
     const atHigh = findPath(grid, rulesOf(R, seaDepth(grid, high)), [3, 10], [30, 10]);
-    assert(!atHigh.ok && atHigh.reason === 'cut-off', 'the bar can be crossed at high tide');
+    assert(atHigh.ok === false && atHigh.reason === 'cut-off', 'the bar can be crossed at high tide');
     const lowDepth = depthAtLow(seaDepth(grid, high), (k) => grid.height[k], high.level, low.level);
     const line = crossingNote(grid, rulesOf(R, seaDepth(grid, high)), [3, 10], [30, 10], { reason: 'cut-off', lowDepth, hoursToLow: 4.2, words: R.words });
     eq(line, `${R.words.barUnder} ${R.words.lowTideIn.replace('{h}', '4')}`);
@@ -131,7 +131,7 @@ export function addWalkTests(test, assert, eq) {
   test(WALK, 'a cliff face is not a way up', async () => {
     const { R, grid } = await world((x) => (x < 20 ? 0.5 : 2.5));
     const r = findPath(grid, rulesOf(R, () => 0), [10, 10], [30, 10]);
-    assert(!r.ok && r.reason === 'cut-off', 'the walker climbed a 2 m face');
+    assert(r.ok === false && r.reason === 'cut-off', 'the walker climbed a 2 m face');
   });
 
   test(WALK, 'the figure strolls, creeps near a creature, hurries on a double tap, and stops where it was sent', async () => {
@@ -184,7 +184,7 @@ export function addWalkTests(test, assert, eq) {
     /** Walk to a point and run until the walk ends; where it ended, and the deepest water stood in. @param {number} x @param {number} z */
     const go = (x, z) => {
       const r = w.walkTo(x, z);
-      assert(r.ok, `no way to ${x.toFixed(1)}, ${z.toFixed(1)}: ${!r.ok && r.reason}`);
+      assert(r.ok, `no way to ${x.toFixed(1)}, ${z.toFixed(1)}: ${r.ok === false && r.reason}`);
       let wet = 0;
       for (let i = 0; i < 60 * 120 && w.moving; i++) { w.update(1 / 60); wet = Math.max(wet, depth(grid.cellAt(w.x, w.z))); }
       return { d: Math.hypot(w.x - x, w.z - z), wet };

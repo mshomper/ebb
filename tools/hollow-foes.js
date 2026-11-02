@@ -19,7 +19,7 @@ import { createWatcherStand } from './hollow-foes-watcher.js';
 const $ = (/** @type {string} */ id) => /** @type {HTMLElement} */ (document.getElementById(id));
 const view = /** @type {HTMLCanvasElement} */ ($('view'));
 const made = await createStage(view);
-if (!made.ok) { $('note').textContent = `This page needs WebGPU (${made.reason}).`; throw new Error(made.reason); }
+if (made.ok === false) { $('note').textContent = `This page needs WebGPU (${made.reason}).`; throw new Error(made.reason); }
 const stage = made.stage;
 const HR = await (await fetch(new URL('../recipes/world/hollow.json', import.meta.url))).json();
 const K = HR.foes.motes, M = K.mote, L = HR.lantern, CK = HR.foes.lunger, CR = CK.crawler;

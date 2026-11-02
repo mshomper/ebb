@@ -173,6 +173,18 @@
       "body": [
         "The tin by the wheel is nearly full. I'll need a second."
       ]
+    },
+    {
+      "id": "lamplighter-1",
+      "form": "Keeper page",
+      "title": "Whoever finds the lamp",
+      "body": [
+        "Whoever finds the lamp: light it. Hang it by the arch. They don't like the light, and they don't come up past it.",
+        "",
+        "I kept the great lamp on the rock for as long as I could carry the oil.",
+        "",
+        "If you go through, go with something in your hand, and come back before your light dies."
+      ]
     }
   ]
 }

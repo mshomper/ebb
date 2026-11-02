@@ -24,6 +24,8 @@ export async function start(ctx) {
   // The walker's kit (the Walker page, K1; src/world/kit): hat, lantern, in hand, coat and carrier.
   const kit = createKit({ recipe: await loadRecipe('world/kit'), pack, you: () => (walk.below ? walk.you() : null) });
   sim.addSystem(kit);
+  // The hat worn, dyed on the figure (kit.json figure.hat; null: as made).
+  sim.addSystem({ id: 'kit-looks', tick: () => walk.figure?.()?.dyeHat?.(kit.looks().hat) });
   Object.assign(ctx, { sketchRecipe, kit });
 }
 

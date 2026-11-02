@@ -191,7 +191,15 @@ export function addPlantRulesTests(test, assert, eq) {
   });
 
   // ---- A4: volunteers with a cause ----
-  test(G, 'causes: nettles wait for 3 lit days, then land only within 4 m of the ring; land plants wait', () => {
+  // November 2, 2026: nothing sets the habitat's land flag yet (docs/future/13 PR-39), so a plant
+  // whose recipe names volunteer.land would never come. Until it is wired up, no recipe may.
+  test(G, 'no plant waits for a land piece while nothing marks the land piece there', async () => {
+    const { flora, covers } = await loadRecipes();
+    const waits = Object.entries({ ...flora, ...covers }).filter(([, r]) => /** @type {any} */ (r)?.volunteer?.land).map(([sp]) => sp);
+    eq(waits.join(', '), '', 'plants naming volunteer.land');
+  });
+
+  test(G,'causes: nettles wait for 3 lit days, then land only within 4 m of the ring; land plants wait', () => {
     const N = HABITAT_CELLS;
     const rec = { volunteer: { cause: { kind: 'fire', reachM: 4, days: 3 } } };
     const fx = HABITAT_ORIGIN + 80.5, fz = HABITAT_ORIGIN + 80.5;
@@ -292,6 +300,11 @@ export function addPlantRulesTests(test, assert, eq) {
     const dry = restAfterPicks('gorse', 'flowers', gorse, gather, 1.5, 0), wet = restAfterPicks('gorse', 'flowers', gorse, gather, 1.5, 1);
     assert(dry.inARow >= 1 && dry.restH !== null && wet.restH !== null && wet.restH < dry.restH, `gorse rests ${dry.restH} h dry, ${wet.restH} h in rain`);
     eq(JSON.stringify(handfulsBySeason('gorse', 'flowers', gorse, gather)), JSON.stringify(handfulsBySeason('gorse', 'flowers', gorse, gather)), 'the same twice');
+    // A part picked twice a year (nettle tops, spring and autumn) reads both windows, as the game does
+    // (November 2, 2026: the lab read only one and showed no nettle tops at all).
+    const n = handfulsBySeason('nettle', 'tops', await json('flora/nettle'), gather);
+    assert(n.dry[0] > 0 && n.dry[2] > 0, `nettle tops in spring and autumn (${n.dry.join(', ')})`);
+    eq(n.dry[1], 0, 'no nettle tops in summer');
     return `gorse: ${dry.inARow} in a row, rest ${dry.restH} h dry, ${wet.restH} h wet`;
   });
 

@@ -232,6 +232,12 @@ function observeSchool(j, out, ctx, at, sp, rec, note) {
       else if (e.payload.why === 'scout') note(rec, 'scoutLeftUnseen', sp);
     } else if (e.name === 'creature:dormant' || e.name === 'creature:woke') {
       if (k.ever) { note(rec, e.name === 'creature:dormant' ? 'dormant' : 'woke', sp); learnOnce(k, e.name === 'creature:dormant' ? 'dormant' : 'woke'); }
+    } else if (e.name === 'creature:pup' || e.name === 'creature:pup-left') {
+      // Young that come on their own days (the seals' pup, src/world/seals/pup.js).
+      const born = e.name === 'creature:pup';
+      if (born) setFlag(j, `${sp}:pup`);
+      if (born && k.ever) learnOnce(k, 'pup');
+      note(rec, born ? (k.ever ? 'pup' : 'pupUnseen') : (k.ever ? 'pupLeft' : 'pupLeftUnseen'), sp);
     } else if (e.name === 'species:happy') {
       setFlag(j, `${sp}:happy`);
       if (k.ever) note(rec, 'happy', sp);

@@ -118,7 +118,7 @@ export const VIEWS = {
  */
 export async function createStage(canvas) {
   const r = await initGpu(canvas);
-  if (!r.ok) return { ok: false, reason: r.reason };
+  if (r.ok === false) return { ok: false, reason: r.reason };
   return { ok: true, stage: makeStage(canvas, r.gpu) };
 }
 
@@ -202,7 +202,7 @@ function makeStage(canvas, gpu) {
     onGroundClick(fn) { onGround = fn; },
     /**
      * Draw a frame. @param {number} dt
-     * @param {{ x: number, z: number, yaw: number, size: number, cut: number, bones: Float32Array, ringM: number, walker: { x: number, z: number, sit?: boolean } | null, groundHalf: number, follow?: boolean,
+     * @param {{ x: number, y?: number, z: number, yaw: number, size: number, cut: number, bones: Float32Array, ringM: number, walker: { x: number, z: number, sit?: boolean } | null, groundHalf: number, follow?: boolean,
      *   fire?: { x: number, z: number } | null, treat?: { x: number, z: number } | null, hole?: { x: number, z: number } | null }} s
      */
     draw(dt, s) {
@@ -212,6 +212,8 @@ function makeStage(canvas, gpu) {
       const ease = Math.min(1, dt * 6);
       for (const k of /** @type {const} */ (['yaw', 'pitch', 'dist'])) cam[k] += (cam.goal[k] - cam[k]) * ease;
       cam.at[0] += (s.x - cam.at[0]) * ease; cam.at[2] += (s.z - cam.at[2]) * ease;
+      // A bird in the air (the teal lab): the view rises with it.
+      cam.at[1] += ((s.y ?? 0) + 0.25 - cam.at[1]) * ease;
       // Following her heading (the clips), a side view stays side on as she walks round.
       const yaw = cam.yaw + (s.follow ? s.yaw : 0);
       const eye = [cam.at[0] + Math.sin(yaw) * Math.cos(cam.pitch) * cam.dist, cam.at[1] + Math.sin(cam.pitch) * cam.dist,
@@ -219,7 +221,7 @@ function makeStage(canvas, gpu) {
       const proj = mat4.perspective(0.7, canvas.width / Math.max(1, canvas.height), 0.05, 200);
       view = mat4.multiply(proj, mat4.lookAt(eye, cam.at, [0, 1, 0]));
       u.set(view, 0);
-      u.set([...eye, 1, 0.5, 0.9, 0.4, 0, s.x, 0, s.z, s.yaw, s.size, s.cut, s.ringM, s.groundHalf,
+      u.set([...eye, 1, 0.5, 0.9, 0.4, 0, s.x, s.y ?? 0, s.z, s.yaw, s.size, s.cut, s.ringM, s.groundHalf,
         s.walker?.x ?? 0, s.walker?.z ?? 0, s.walker ? 1 : 0, s.walker?.sit ? 1 : 0,
         s.fire?.x ?? 0, s.fire?.z ?? 0, s.treat?.x ?? 0, s.treat?.z ?? 0, s.hole?.x ?? 0, s.hole?.z ?? 0, 0, (s.fire ? 1 : 0) + (s.treat ? 2 : 0) + (s.hole ? 4 : 0)], 16);
       device.queue.writeBuffer(ubuf, 0, u);

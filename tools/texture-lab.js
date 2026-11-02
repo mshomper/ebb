@@ -138,8 +138,8 @@ async function fetchBytes(url, onBytes, who = 'Poly Haven', type = 'image/jpeg')
   const r = await fetch(url);
   if (!r.ok) throw new Error(`${who} answered ${r.status} for ${decodeURIComponent(url.split(/[/=]/).pop() || url)}`);
   const length = Number(r.headers.get('Content-Length')) || 0;
-  const reader = /** @type {ReadableStream<Uint8Array>} */ (r.body).getReader();
-  /** @type {Uint8Array[]} */ const parts = [];
+  const reader = /** @type {ReadableStream<Uint8Array<ArrayBuffer>>} */ (r.body).getReader();
+  /** @type {Uint8Array<ArrayBuffer>[]} */ const parts = [];
   let total = 0;
   for (;;) {
     const { done, value } = await reader.read();

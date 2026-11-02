@@ -73,10 +73,9 @@ export function caveShape(S, seed) {
     return H.radiusM + flare - Math.hypot(x, z);
   }
   /**
-   * The signed field at a point: positive in the air. @param {number} x @param {number} y @param {number} z @param {number} top
-   * the chimney's top (the island's ground at the hole, in this frame)
+   * The signed field at a point: positive in the air. @param {number} x @param {number} y @param {number} z
    */
-  function air(x, y, z, top) {
+  function air(x, y, z) {
     const b = S.blendM;
     let a = smin(smin(y - floorAt(x, z), ceilAt(x, z) - y, b), inside(x, z), b);
     // The chimney: from just under the ceiling up to the hole.

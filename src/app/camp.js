@@ -44,7 +44,7 @@ export function after(ctx) {
   const solidsLive = createSolidsLive({ walk, where: createWhere({ terrain }), benchAt: camp.stations.benchAt, rackYawDeg: campRecipe.rack?.yawDeg ?? 0,
     strand: () => pieces.strandLogs(), boat: () => (boat.visible ? boat.mooring?.boat ?? null : null), boatSize: boatRecipe.boat.hull,
     // The boulders round the way down above the spring (the dig, made below).
-    extra: () => ctx.dig?.story.mouthSolids() ?? [] });
+    extra: () => [...(ctx.dig?.story.mouthSolids() ?? []), ...(ctx.meadow?.solids() ?? [])] });
   sim.addSystem({ id: 'solids', tick: (/** @type {any} */ f) => solidsLive.update(f.realDt) });
   shadowPass.addCaster(camp.props.caster);
   midges.keepClear(() => camp.smokeClear());

@@ -45,9 +45,11 @@ import { keeperOfJournal } from '../keeper/route.js';
  * @param {{ world: { state: any, env: any }, words: any, island: any, web: any, wash?: any,
  *   creatures?: { frogAt: (x: number, z: number) => { x: number, z: number, id?: number } | null } | null,
  *   finds?: any, keepsakes?: any, pieces?: any, lift?: any, nets?: any, shore?: (() => Record<string, number> | null) | null, list?: any,
- *   schools?: { at: (x: number, z: number, y?: number) => { sp: string, id: number, x: number, z: number } | null }[] }} opts
+ *   schools?: { at: (x: number, z: number, y?: number) => { sp: string, id: number, x: number, z: number, one?: number } | null }[],
+ *   gather?: any, piles?: any, camp?: any, hen?: any, stores?: any, dig?: any, perch?: any, lanterns?: any, setpieces?: any[] }} opts
  *   schools: the live schools (minnows; src/world/creatures/schools.js), which say whether a tap
- *   landed on one
+ *   landed on one (one: a turtle's own id); gather, piles, camp, hen, stores, dig, perch, lanterns,
+ *   setpieces: the live modules whose cards and words a tap reads (each by its cardAt or the like)
  *   world: the live world (state and env of the hourly tick); words: recipes/world/journal.json;
  *   island: recipes/world/journal-island.json; web: recipes/world/journal-web.json;
  *   wash: recipes/world/journal-wash.json; creatures: the live creatures (src/world/creatures),
@@ -343,6 +345,8 @@ export function createJournal(opts) {
     }
     // A shell a winter storm tide left: the journal notes the storm tide, once.
     if (/** @type {any} */ (card).storm) commit(stormShells(journal, { state: world.state, hour: hourIndex(), words }));
+    // A card with no page of its own (a set piece's: the stack, its cave mouth) has no moments to catch.
+    if (!card.ground && !words.species[card.sp]) return;
     const list = card.ground ? words.moments.ground : words.moments[momentKind(words.species[card.sp])];
     const ids = momentsNow(list, now(card.stage), words.moments);
     const name = card.name.charAt(0).toLowerCase() + card.name.slice(1);
@@ -427,6 +431,13 @@ export function createJournal(opts) {
       commit(learn(journal, p.species, 'pick:refused', { state: world.state, hour: hourIndex(), words }))),
     // Flax (F1): pulled by hand, then steeped and lifted out as fibre (src/world/gather/retting.js).
     on('plant:picked', (/** @type {{ sp: string }} */ p) => { if (p?.sp === 'flax') commit(learn(journal, 'flax', 'pulled', { state: world.state, hour: hourIndex(), words })); }),
+    // Any other page learning from what was done (F20: rye cut and taken up, the marker stone's pot):
+    // the line it learns, and its flag <sp>:<what> for "gives" lines and tests.
+    on('journal:learn', (/** @type {{ sp: string, what: string }} */ p) => {
+      if (!p?.sp || !words.species[p.sp]) return;
+      const r = learn(journal, p.sp, p.what, { state: world.state, hour: hourIndex(), words }), f = `${p.sp}:${p.what}`;
+      commit(r.journal.flags?.includes(f) ? r : { ...r, journal: { ...r.journal, flags: [...(r.journal.flags ?? []), f] } });
+    }),
     on('retting:lifted', () => {
       const r = learn(journal, 'flax', 'retted', { state: world.state, hour: hourIndex(), words });
       // The flag inks flax's "gives" line (what its fibre is for).
@@ -518,6 +529,8 @@ export function createJournal(opts) {
     on('camp:known-rose', (/** @type {{ text: string }} */ p) => commit(noteOnce(journal, 'camp:known', p.text, { state: world.state, hour: hourIndex(), words }))),
     // The meadow islet first showed (src/world/islet): written once, and its flag starts its thread.
     on('islet:rose', (/** @type {{ text: string }} */ p) => commit(noteOnce(journal, 'setpiece:islet:rose', p.text, { state: world.state, hour: hourIndex(), words }, 'land'))),
+    // The causeway to the stack rose (docs/future/19, src/world/stack): written once, and its flag writes its thread's line.
+    on('stack:road', (/** @type {{ text: string }} */ p) => commit(noteOnce(journal, 'setpiece:stack:road', p.text, { state: world.state, hour: hourIndex(), words }, 'land'))),
     // The walker's first meal, an egg cooked on the hearth (docs/future/15 slice 4, cookpot.js).
     on('meal:eaten', (/** @type {{ text?: string }} */ p) => { if (p?.text) commit(noteOnce(journal, 'meal:first', p.text, { state: world.state, hour: hourIndex(), words })); }),
     // Watching a frog (or a school) from close by finds it too (src/world/creatures/index.js, schools.js).
@@ -561,7 +574,8 @@ export function createJournal(opts) {
       /** @type {JournalUiSlice} */ const u = get('journalUi');
       const open = a.toggle ? !u.open : a.open ?? u.open;
       /** @type {Partial<JournalUiSlice>} */ const patch = { open };
-      if (a.view) patch.view = a.view;
+      // The Keeper's views went to the Keeper above (keeperOfJournal), so what is left is the journal's.
+      if (a.view) patch.view = /** @type {JournalUiSlice['view']} */ (a.view);
       if (a.page !== undefined) {
         patch.page = a.page;
         if (a.page) patch.view = words.species[a.page] ? 'living' : island.ground[a.page] ? 'ground' : u.view;

@@ -83,9 +83,9 @@ startApp(canvas, { onDeviceLost: (rebuilding) => showRebuildingNote(rebuilding),
     // The loading screen (src/ui/loading.js) fades as the island shows, or goes at once for a card.
     if (r.ok) hideLoading(); else dropLoading();
     if (r.ok) { islandInfo = /** @type {any} */ (r).island ?? null; saveInfo = /** @type {any} */ (r).save ?? null; }
-    if (!r.ok && r.reason === 'elsewhere') { showElsewhere(r.takeOver, false); return; }
-    if (!r.ok && r.reason === 'damaged') { showDamaged(r.save, r.islands); return; }
-    if (!r.ok) showNoWebGPU(r.reason);
+    if (r.ok === false && r.reason === 'elsewhere') { showElsewhere(r.takeOver, false); return; }
+    if (r.ok === false && r.reason === 'damaged') { showDamaged(r.save, r.islands); return; }
+    if (r.ok === false) showNoWebGPU(r.reason);
     else if (new URLSearchParams(location.search).has('debug')) /** @type {any} */ (window).ebb = r;
     // Another window took the island over: say so, and offer it back.
     if (r.ok && saveInfo) on('save:moved-away', () => showElsewhere(saveInfo.takeOver, true));
@@ -135,7 +135,7 @@ startApp(canvas, { onDeviceLost: (rebuilding) => showRebuildingNote(rebuilding),
         finds: /** @type {any} */ (r).finds ?? null, keepsakes: /** @type {any} */ (r).keepsakes ?? null, pieces: /** @type {any} */ (r).pieces ?? null, lift: /** @type {any} */ (r).lift ?? null, nets: /** @type {any} */ (r).nets ?? null, shore: /** @type {any} */ (r).shorePresence ?? null,
         schools: /** @type {any} */ (r).schools ?? [], gather: /** @type {any} */ (r).gather ?? null, piles: /** @type {any} */ (r).piles ?? null,
         camp: /** @type {any} */ (r).camp ?? null, hen: /** @type {any} */ (r).hen ?? null, stores: /** @type {any} */ (r).stores ?? null, dig: /** @type {any} */ (r).dig ?? null,
-        perch: /** @type {any} */ (r).perchSticks ?? null, lanterns: /** @type {any} */ (r).lanterns ?? null, setpieces: [/** @type {any} */ (r).cairns, /** @type {any} */ (r).passingBoat].filter(Boolean) });
+        perch: /** @type {any} */ (r).perchSticks ?? null, lanterns: /** @type {any} */ (r).lanterns ?? null, setpieces: [/** @type {any} */ (r).cairns, /** @type {any} */ (r).passingBoat, /** @type {any} */ (r).meadow, /** @type {any} */ (r).kite, /** @type {any} */ (r).stack].filter(Boolean) });
       // One click below walks and uses: the app reads what a point holds from the journal's cards.
       /** @type {any} */ (r).setCards?.(journal.cardAt, words.species);
       mountIslandNotes(document.body, words, naturalist);

@@ -66,7 +66,7 @@ export async function createPortraitRenderer(o) {
     const vbuf = makeBuffer(device, { label: `portrait-${key}-v`, size: m.data.byteLength, usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST });
     device.queue.writeBuffer(vbuf, 0, m.data);
     const ibuf = makeBuffer(device, { label: `portrait-${key}-i`, size: m.indices.byteLength, usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST });
-    device.queue.writeBuffer(ibuf, 0, m.indices);
+    device.queue.writeBuffer(ibuf, 0, /** @type {Uint32Array<ArrayBuffer>} */ (m.indices));
     meshes.set(key, { vbuf, ibuf, count: m.indices.length });
   }
 
@@ -112,7 +112,7 @@ export async function createPortraitRenderer(o) {
       uniforms.set([eye[0], eye[1], eye[2], 1, c * lx + s * lz, ly, -s * lx + c * lz, L.lux, ...L.rgb, L.rim, ...L.sky, f.R.exposure], 16);
       uniforms.set(f.eyes, 32);
       device.queue.writeBuffer(ubuf, 0, uniforms);
-      device.queue.writeBuffer(bbuf, 0, f.bones);
+      device.queue.writeBuffer(bbuf, 0, /** @type {Float32Array<ArrayBuffer>} */ (f.bones));
       const enc = device.createCommandEncoder({ label: 'portrait' });
       const pass = enc.beginRenderPass({
         colorAttachments: [{ view: msaa.createView(), resolveTarget: ctx.getCurrentTexture().createView(), loadOp: 'clear', clearValue: [0, 0, 0, 0], storeOp: 'discard' }],

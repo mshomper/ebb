@@ -19,7 +19,7 @@ const strip = /** @type {HTMLCanvasElement} */ ($('strip'));
 const note = $('note');
 
 const made = await createStage(view);
-if (!made.ok) { note.textContent = `This page needs WebGPU (${made.reason}).`; throw new Error(made.reason); }
+if (made.ok === false) { note.textContent = `This page needs WebGPU (${made.reason}).`; throw new Error(made.reason); }
 const stage = made.stage;
 const R = await (await fetch('../recipes/world/figure.json')).json();
 const W = await (await fetch('../recipes/world/walker.json')).json();
@@ -62,7 +62,7 @@ function walkerRun(pace, goal, waitS) {
 /**
  * The strips. Each row: a run (a motion, and a step that moves it on one frame and returns what to
  * record), then picks frames from the record by time.
- * @type {Record<string, { title: string, view: { yaw: number, pitch: number, dist: number }, tile?: number[], rows: { name: string, view?: { yaw: number, pitch: number, dist: number }, extra?: (f: any) => string, run: () => { motion: any, step: () => any, place: () => number[] }, picks: (rec: any[]) => { i: number, label: string }[], curve?: { key: string, label: string, unit: string } }[] }>}
+ * @type {Record<string, { title: string, view: { yaw: number, pitch: number, dist: number }, tile?: number[], rows: { name: string, view?: { yaw: number, pitch: number, dist: number }, extra?: (f: any) => string, run: () => { motion: any, step: () => any, place: () => number[], props?: () => any }, picks: (rec: any[]) => { i: number, label: string }[], curve?: { key: string, label: string, unit: string }, overlay?: boolean, note?: string }[] }>}
  */
 const STRIPS = {
   lean: {

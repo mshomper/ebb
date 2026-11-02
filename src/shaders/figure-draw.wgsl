@@ -23,13 +23,27 @@ struct FigureStraps {
   colour: vec4f,   // rgb linear albedo, w how dark its edge is (a share of the colour)
 };
 
+// The hat worn, dyed (November 2, 2026; kit.json figure.hat): the skin that follows the hat's bones
+// takes the dye's hue, keeping the made hat's light and dark, so its weave and shading still read.
+struct FigureHat {
+  dye: vec4f,      // rgb linear albedo of the dye at the hat's mean brightness, w how much (0 as made)
+  bones: vec4f,    // x the hat bone, y the hat tip's bone, z the made hat's mean brightness (luminance)
+};
+
 struct FigureDraw {
   look: vec4f,     // x cloth roughness, y sheen strength, z contact shadow darkness 0..1, w contact radius (body lengths)
   body: vec4f,     // x body length (m, at size 1)
   glint: vec4f,    // unused here (the creature pass's eye glint)
   eyes: FigureEyes,
   straps: FigureStraps,
+  hat: FigureHat,
 };
+
+/** The made colour c, dyed by the hat's dye: the dye's hue, at c's brightness over the hat's mean. */
+fn hatDyed(c: vec3f, h: FigureHat) -> vec3f {
+  let l = dot(c, vec3f(0.2126, 0.7152, 0.0722));
+  return h.dye.rgb * (l / max(h.bones.z, 1e-4));
+}
 
 /** How much strap covers rest-pose point p (x, 0..1), and how much of that is its dark edge (y). */
 fn figureStraps(p: vec3f, s: FigureStraps) -> vec2f {
@@ -71,6 +85,7 @@ struct VsOut {
   @location(5) rx: vec3f,       // the skin's turn (rest to world), for the object-space normal map
   @location(6) ry: vec3f,
   @location(7) rz: vec3f,
+  @location(8) hat: f32,        // how much of the skin here follows the hat
 };
 
 struct FsOut {
@@ -117,10 +132,14 @@ fn vsBody(@location(0) position: vec3f, @location(1) normal: vec3f, @location(2)
   o.albedo = albedo;
   o.rest = position;
   var head = 0.0;
+  var hat = 0.0;
   for (var k = 0; k < 4; k++) {
-    if (f32(joints[k]) == fd.eyes.size.w) { head += weights[k]; }
+    let j = f32(joints[k]);
+    if (j == fd.eyes.size.w) { head += weights[k]; }
+    if (j == fd.hat.bones.x || j == fd.hat.bones.y) { hat += weights[k]; }
   }
   o.head = head;
+  o.hat = hat;
   return o;
 }
 
@@ -140,7 +159,9 @@ fn fsBody(in: VsOut) -> FsOut {
   let eye = figureEyes(in.rest, in.head, fd.eyes);
   let strap = figureStraps(in.rest, fd.straps);
   let strapColour = fd.straps.colour.rgb * mix(1.0, fd.straps.colour.w, strap.y);
-  let albedo = mix(mix(select(in.albedo, mapColour, mapped), strapColour, strap.x * (1.0 - in.head)), fd.eyes.albedo.rgb, eye);
+  let made = select(in.albedo, mapColour, mapped);
+  let worn = mix(made, hatDyed(made, fd.hat), clamp(in.hat, 0.0, 1.0) * fd.hat.dye.w);
+  let albedo = mix(mix(worn, strapColour, strap.x * (1.0 - in.head)), fd.eyes.albedo.rgb, eye);
   let direct = frame.sunIlluminance * max(dot(n, frame.sunDir), 0.0) * sunVis
              + frame.moonIlluminance * max(dot(n, frame.moonDir), 0.0) * moonVis
              + pointIllum(in.world, n, 0.15);

@@ -125,7 +125,7 @@ export function createLanterns(o) {
       } else if (a.type === 'lantern.takeUp') takeUp(a.id);
       else if (a.type === 'lantern.lift') lift(a.id);
     }),
-    registerCardAction({ id: 'lanternset', icon: 'setdown', order: 11, main: true, label: W.setHere, item: () => 'post-lantern', chip: 'setdown',
+    registerCardAction({ id: 'lanternset', icon: 'setdown', order: 11, main: true, label: W.setHere, item: () => 'post-lantern', chip: 'pile',
       when: (c) => c?.sp === 'pouch' && (c.kindId === 'post-lantern' || c.kindId === 'mica-lantern') && !!get('walk')?.below, action: () => ({ type: 'lantern.set' }) }),
     registerCardAction({ id: 'lanternlift', icon: 'carry', order: 12, label: W.lift,
       when: (c) => !!c?.lantern && !c.carrying, action: (c) => ({ type: 'lantern.lift', id: c.lantern }) }),
@@ -133,20 +133,27 @@ export function createLanterns(o) {
       when: (c) => !!c?.lantern && !c.carrying && !!get('walk')?.below, action: (c) => ({ type: 'lantern.takeUp', id: c.lantern }) }),
   );
 
+  /** Glows from elsewhere drawn with the lanterns' (addGlass). @type {(() => { glass: number[], look: number[] }[])[]} */
+  const extra = [];
+
   return {
     id: 'lanterns',
+    /** Another glow to draw with the lit lanterns: its glass and look, as tick's list. @param {() => { glass: number[], look: number[] }[]} fn */
+    addGlass(fn) { extra.push(fn); },
     /** pieces.json lantern. */
     recipe: L,
-    /** Each frame: the glass and moths of the lit lanterns (the camp's effects pass). @param {{ realDt: number }} f */
+    /** Each frame: the glass and moths of the lit lanterns (the camp's effects pass). */
     tick() {
       const g = glow();
       // The glow through the holes, drawn just on the pot's near side so the pot does not hide it.
       const eye = o.camera.eye, near = L.pot.radiusM * L.glass.nearShare;
-      const lit = g > 0.01 ? list().map((p) => {
+      const own = g > 0.01 ? list().map((p) => {
         const c = standing(p).glass, d = [eye[0] - c[0], eye[1] - c[1], eye[2] - c[2]], l = Math.hypot(d[0], d[1], d[2]) || 1;
         return { glass: [c[0] + (d[0] / l) * near, c[1] + (d[1] / l) * near, c[2] + (d[2] / l) * near, g], look: [L.glass.nits, L.glass.m] };
       }) : [];
-      o.camp.fx.setLanterns?.(lit, g > 0.5, performance.now() / 1000, 0);
+      // Other glows drawn the same way (the light at the stack's foot, src/world/stack).
+      const more = extra.flatMap((f) => f());
+      o.camp.fx.setLanterns?.([...own, ...more], g > 0.5 || more.length > 0, performance.now() / 1000, 0);
     },
     /**
      * The lit lanterns' point lights now (doc 06, Lanterns and small lights), for the lighting's

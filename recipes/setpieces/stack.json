@@ -1,0 +1,44 @@
+{
+  "type": "setpiece",
+  "version": 1,
+  "id": "stack",
+  "note": "The light on the stack (docs/future/19; src/world/stack). Its beats follow the calendar and the seed (src/world/stack/schedule.js), not the set-piece runner's spacing, so they never wait behind another set piece; it is not in recipes/world/setpieces.json order. Days count from the island's startDay: 0 for an island that had the stack in its first week (first loaded with it by lights.lastDay), else the day it first loaded with it (an older island: the lights over the next evenings and the road roadDay days later). Flags (the journal's): setpiece:stack:seen (your first look at it on foot), :lights (a light seen while you were there), :road (the causeway stood), :crossed (you walked out onto the stack), :lamp (the old lantern hung), :arch (the arch seen), :rubble (a stretch dug), later :through, :grate and :key.",
+
+  "seenM": 75,
+  "seenNote": "Your first look on foot: standing on the island within seenM of the stack's middle, facing it within 60 degrees, sets :seen and says words.seen once.",
+
+  "lights": { "days": [1, 2, 3, 4, 5, 6], "count": [2, 3], "lastDay": 6, "afterDuskH": 0.15, "forH": 1.0, "fade": 0.2,
+    "glass": { "nits": 2400, "m": 0.5 }, "light": { "lightK": 2100, "cd": 160, "rangeM": 14, "flicker": 0.25, "flickerHz": 1.7 }, "heightM": 0.9 },
+  "lightsNote": "The lights at dusk (Matt, November 1, 2026: simple; any weather, any tide, seen from anywhere on the island): on count (a [min, max] range, seeded) of the days in `days` after startDay, a small warm light at the stack's foot from afterDuskH after dusk for forH game hours (one game hour: a real minute at 1x), fading in and out over `fade` of that. glass: the glow's brightness (nits) and size (m), drawn by the camp's effects pass as a lantern's glass is, with moths circling it; light: the small light it casts (doc 06), lightK its colour temperature, cd its intensity, flickering. heightM: how high over the apron it hangs. lastDay: an island first loaded with the stack after this day counts its days from that load.",
+
+  "road": { "day": 7, "fromHour": 0, "topM": 0.95, "crownM": 0.05, "halfWidthM": 1.5, "wobbleM": 0.35, "flare": 0.3, "shoulderM": 4.5,
+    "boulderM": 0.09, "boulderScale": 0.7, "sideLumpM": 0.55, "revealS": 12, "settleS": 2, "stepS": 0.08,
+    "camera": { "distanceM": 70, "pitchDeg": 32, "share": 0.55 } },
+  "roadNote": "The causeway (spring day 7, Matt, November 1, 2026): it rises at the first low water on day startDay + `day` (from fromHour), from where the land is nearest on the line back from the stack's foot (src/world/stack/layout.js causewayFrom), to the foot. topM: its top, above the highest tide (amplitude 0.6 m with the springs' 15 percent: 0.69 m) so it is crossed at any tide; crownM more along its middle; halfWidthM either side (2.5 to 3.5 m across), its line wandering wobbleM and fanning out flare times more at each end; its sides fall to the seabed over shoulderM in lumps (sideLumpM); boulderM the knock of the boulders on its top at boulderScale cycles a meter (gentle enough to walk). The reveal (the game pauses to show it): time holds, the view glides out to frame the shore and the stack (camera: distanceM back, pitchDeg down, centred share of the way from the land end to the stack), and over revealS real seconds the boulders surface from the land end out to the stack, then settleS more before the view comes back; the ground is written every stepS. If you are away it plays when you next open the game, before the morning notes; if you are busy (a stroke, a card, the book, a zone) it waits until you are done.",
+
+  "ringNote": "The no-build ring's radius is the land recipe's stack.noBuildM. Its edge is drawn as the camp pad's is (land camp.dash), while a brush ring comes within dashWithinM of it.",
+  "dashWithinM": 4,
+
+  "rubble": { "stretches": 8 },
+  "rubbleNote": "The rubble in the mouth (F16): dug a stretch a game day with the shovel, `stretches` in all. At its end the grate and the box (a later branch); until then the card says the rock beyond is packed hard.",
+
+  "mouthModel": { "source": "C:/Users/mshom/Documents/Ebb/_assets/Ebb_Cave+Mouth.obj", "openingM": 2.3, "openingUnits": 370, "openingCenterX": 150, "openingFloorUnits": 40,
+    "triangles": 14000, "error": 0.004, "footprint": { "kneeM": 0.45, "cellM": 0.25, "insetCells": 2 },
+    "ao": { "voxelM": 0.08, "rays": 96, "startM": 0.12, "reachM": 7, "groundShare": 0.35 }, "sinkM": 0.04, "backIntoRockM": 0.6 },
+  "mouthModelNote": "Matt's cave mouth (November 2, 2026; tools/assets/build-cave-mouth.mjs makes assets/models/stack/cave-mouth.bin and its footprint from `source`, his original left untouched): scaled so its opening stands openingM tall (openingUnits in the model's own units, measured, its middle at openingCenterX and its floor openingFloorUnits above the model's base), thinned to about `triangles` (error, Matt: decimating is fine), its solid footprint taken at kneeM on cellM cells and shrunk insetCells so the raised ground stays hidden inside the rock; ao: its ambient occlusion baked per vertex and over its floor (rays through a voxelM grid of the rock, `rays` over the sphere from startM out to reachM, rays into the ground counting groundShare open), so its chamber is dark under its roof in any weather. In the game it stands on the apron at the stack's foot, its opening toward the island, sunk sinkM, its back backIntoRockM into the stack's face.",
+  "mouthDark": { "z": -6.2, "x": 0.1, "halfWidthM": 1.5, "springM": 1.5, "archM": 2.5 },
+  "mouthDarkNote": "The dark at the cave mouth's chamber back (mouth-mesh.js mouthDark), in its frame: z out toward the island (negative: in), x across, an arch halfWidthM either side, springing at springM, up to archM. A tap inside the chamber or its opening opens the cave mouth's card.",
+  "mouthLook": { "stone": [0.3, 0.29, 0.27], "floor": [0.25, 0.235, 0.215], "occlusion": { "floor": 0.06, "power": 1.6 } },
+  "mouthLookNote": "The cave mouth's stones on the island (src/world/stack/mouth-mesh.js): stone: their albedo under the rock scan (linear; the palette paints it); floor: the chamber floor's under its roof; occlusion: how dark no open sky makes them (floor, the share left) along a curve (power), from the baked occlusion (mouthModel.ao), so the chamber is dark in any weather.",
+
+  "words": {
+    "seen": "Someone kept a light out there once.",
+    "road": "The sea has left a road to the stack.",
+    "mouthName": "The cave mouth",
+    "mouth": "A cleft in the foot of the stack, and dark beyond it. Cold air comes out of it, smelling of the sea.",
+    "stackName": "The stack",
+    "stack": "A tall rock stepped in ledges, a dark band of old soot near its top and something iron rusting there.",
+    "stackRoad": "A tall rock stepped in ledges. The road of stones runs out to its foot, dry at any tide.",
+    "noSetDown": "Not out there. You come down on the shore."
+  }
+}

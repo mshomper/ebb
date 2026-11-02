@@ -14,6 +14,7 @@ const G = 'intro: director';
 
 async function recipe() {
   const url = new URL('../recipes/world/intro.json', import.meta.url);
+  // @ts-ignore Node only
   if (url.protocol === 'file:') { const fs = await import('node:fs/promises'); return JSON.parse(await fs.readFile(url, 'utf8')); }
   return (await fetch(url)).json();
 }
@@ -500,6 +501,7 @@ export function addIntroTests(test, assert, eq) {
 /** A recipe file, in the browser or in Node. @param {string} rel */
 async function json(rel) {
   const url = new URL(rel, import.meta.url);
+  // @ts-ignore Node only
   if (url.protocol === 'file:') { const fs = await import('node:fs/promises'); return JSON.parse(await fs.readFile(url, 'utf8')); }
   return (await fetch(url)).json();
 }

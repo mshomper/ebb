@@ -186,7 +186,7 @@ export const VIEWS = {
  */
 export async function createStage(canvas) {
   const r = await initGpu(canvas);
-  if (!r.ok) return { ok: false, reason: r.reason };
+  if (r.ok === false) return { ok: false, reason: r.reason };
   const lib = (await loadShader('lib-figure-eyes')) + '\n' + (await loadShader('lib-fx-light'));
   return { ok: true, stage: makeStage(canvas, r.gpu, lib) };
 }
@@ -413,7 +413,7 @@ function makeStage(canvas, gpu, lib) {
     /**
      * camera: an outside camera's eye and target (the arena runs the game's own); else the stage's orbit.
      * @param {{ bones: Float32Array, eyes: Float32Array, place: number[], weights: boolean, night: boolean, water: number, follow: number[], dt: number,
-     *   camera?: { eye: ArrayLike<number>, target: ArrayLike<number> }, scale?: number,
+     *   camera?: { eye: Iterable<number> & ArrayLike<number>, target: Iterable<number> & ArrayLike<number> }, scale?: number,
      *   lamp?: { at: number[], reachM: number, ambient: number, strength: number }, fade?: number[],
      *   extra?: (pass: GPURenderPassEncoder, u: Float32Array) => void, hideFigure?: boolean }} f
      *   lamp: dim, lit by the lantern alone (the Hollow); fade: a faded wall's fill and outline opacity;

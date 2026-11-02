@@ -122,15 +122,16 @@ export function packModel(buffer) {
 
 /**
  * @param {{ name?: string, recipe: { ember: number[], emberNits: number, emberHz: number, charAlbedo: number[], dryTint?: number[], dryMix?: number, rawAlbedo?: number[], rawKeep?: number },
- *   bias?: { depthBias: number, depthBiasSlopeScale: number }, canvas?: { C: any, P: any } }} opts
+ *   bias?: { depthBias: number, depthBiasSlopeScale: number }, canvas?: { C: any, P: any }, castOnly?: boolean }} opts
  *   recipe: recipes/world/camp.json props (the embers' glow and the charcoal's albedo); bias: the
  *   shadow pass's, so the props' shadows match the terrain's; canvas: camp.json canvas and poles (the
- *   tent's weathering look, C-35)
+ *   tent's weathering look, C-35); castOnly: its props only cast into the sun's shadow map and are never
+ *   drawn (a model drawn by another pass that should still throw shade: the stack's cave mouth)
  */
 export function createPropsPass(opts) {
   const R = opts.recipe;
   /** @type {GPUDevice | null} */ let device = null;
-  /** @type {Map<string, { pack: { data: Float32Array, indices: Uint32Array, maps: ReturnType<typeof materialMaps>, bounds: number[] }, look: PropLook,
+  /** @type {Map<string, { pack: { data: Float32Array, indices: Uint32Array, maps: ReturnType<typeof materialMaps>, bounds: number[], painted?: boolean }, look: PropLook,
    *   color?: number[], roughByte?: number, vbuf?: GPUBuffer, ibuf?: GPUBuffer, group?: GPUBindGroup, loading?: boolean }>} */
   const models = new Map();
   const inst = new Float32Array(MAX * PROP_FLOATS);
@@ -166,9 +167,9 @@ export function createPropsPass(opts) {
       { binding: 0, resource: base.createView() }, { binding: 1, resource: rough.createView() },
       { binding: 2, resource: normal.createView() }, { binding: 3, resource: sampler }] });
     const vbuf = makeBuffer(d, { label: `prop-${key}-vertices`, size: m.pack.data.byteLength, usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST });
-    d.queue.writeBuffer(vbuf, 0, m.pack.data);
+    d.queue.writeBuffer(vbuf, 0, /** @type {Float32Array<ArrayBuffer>} */ (m.pack.data));
     const ibuf = makeBuffer(d, { label: `prop-${key}-indices`, size: m.pack.indices.byteLength, usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST });
-    d.queue.writeBuffer(ibuf, 0, m.pack.indices);
+    d.queue.writeBuffer(ibuf, 0, /** @type {Uint32Array<ArrayBuffer>} */ (m.pack.indices));
     m.vbuf = vbuf; m.ibuf = ibuf;
     m.loading = false;
   }
@@ -213,7 +214,7 @@ export function createPropsPass(opts) {
     prepare(d, cascades) {
       if (!castPipe || !count || !castBuf) return false;
       flush(d);
-      d.queue.writeBuffer(castBuf, 0, cascades);
+      d.queue.writeBuffer(castBuf, 0, /** @type {Float32Array<ArrayBuffer>} */ (cascades));
       return true;
     },
     cast(pass, offset) {
@@ -228,7 +229,7 @@ export function createPropsPass(opts) {
     name: opts.name ?? 'props',
     reads: ['hdr', 'depth'],
     writes: ['hdr', 'depth', 'normalId'],
-    enabled: () => count > 0,
+    enabled: () => count > 0 && !opts.castOnly,
     caster,
 
     /**

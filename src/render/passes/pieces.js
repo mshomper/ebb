@@ -70,7 +70,7 @@ export function createPiecesPass(opts) {
     m.vbuf = makeBuffer(device, { label: `piece-vertices-${key}`, size: m.data.byteLength, usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST });
     device.queue.writeBuffer(m.vbuf, 0, m.data);
     m.ibuf = makeBuffer(device, { label: `piece-indices-${key}`, size: m.indices.byteLength, usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST });
-    device.queue.writeBuffer(m.ibuf, 0, m.indices);
+    device.queue.writeBuffer(m.ibuf, 0, /** @type {Uint32Array<ArrayBuffer>} */ (m.indices));
   }
 
   /** The bind group, rebuilt when the ground detail's arrays are replaced (their maps loading). */

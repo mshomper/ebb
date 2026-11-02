@@ -18,6 +18,8 @@ import { DYES } from './items-made.js';
 import { CAMP_ROWS } from './items-camp.js';
 import { METAL_POUCH_ROWS, METAL_MAKE_ROWS } from './items-metal.js';
 import { FLAX_POUCH_ROWS, FLAX_PART_ROWS } from './items-flax.js';
+import { RYE_POUCH_ROWS, RYE_MAKE_ROWS } from './items-rye.js';
+import { KITE_POUCH_ROWS, KITE_MAKE_ROWS } from './items-kite.js';
 
 /**
  * @typedef {{ id: string, icon: string, name: string, tier: string, phase: number }} ItemRow
@@ -53,6 +55,12 @@ export const POUCH_KINDS = /** @type {[string, string, string, string, number][]
   ...METAL_POUCH_ROWS,
   // Flax and linen (F1): the fibre from steeped flax, and the cloth woven from it.
   ...FLAX_POUCH_ROWS,
+  // The teal's gift (B3 wave 3): their wing feather, in a pouch until it goes into the teal hat.
+  ['teal-feather', 'teal-feather', 'Teal feather', 'T3', 3],
+  // The rye and the sickle (F20): straw from the stooks, the old blade from the pot under the marker stone.
+  ...RYE_POUCH_ROWS,
+  // The kite (docs/future/20): the torn kite washed in, carried to the workbench.
+  ...KITE_POUCH_ROWS,
 ]).map(row);
 
 /** Plant parts, '<species>.<part>' (docs/future/13 sections 4.1 and 5.3). @type {ItemRow[]} */
@@ -109,8 +117,13 @@ export const MAKES = /** @type {[string, string, string, string, number][]} */ (
   ['sinker-stones', 'sinker-stones', 'Grooved sinker stones', 'T6', 5],
   // The fishing line (F17, October 31, 2026): a withy rod, rush cord and a gorse thorn hook.
   ['line', 'fishing-line', 'Fishing line', 'T3', 3],
+  // The driftwood staff (F19): a stick and rush cord, once the arch in the stack's mouth is seen.
+  ['driftwood-staff', 'driftwood-staff', 'Driftwood staff', 'T2', 2],
   ...CAMP_ROWS,
   ...METAL_MAKE_ROWS,
+  ...RYE_MAKE_ROWS,
+  // The kite (docs/future/20): mended at the workbench.
+  ...KITE_MAKE_ROWS,
 ]).map(row);
 
 /** Treats and offerings (docs/future/13 section 8). @type {ItemRow[]} */

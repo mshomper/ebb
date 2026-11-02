@@ -1,5 +1,6 @@
 // @ts-check
-// The turnstones in the game (B3 wave 2): the flock the hourly tick keeps (src/world/creatures/flock.js,
+// The turnstones in the game (B3 wave 2; the purple sandpipers, wave 3, are the same code with
+// their own recipes and their sea wall's rock as `wrack`, src/app/sandpipers.js): the flock the hourly tick keeps (src/world/creatures/flock.js,
 // state.creatures.turnstones), alive on the strand (live.js), and a visit's few birds before their
 // home exists (visit:start, src/world/ecology/visits.js). The bird is R1's turnstone, made in code
 // (recipes/birds/turnstone.json; baked on the worker pool, the flock bake) and posed by the
@@ -73,12 +74,13 @@ export function createTurnstones(o) {
   let testAt = null;
   /** Bones per bird, kept by id. @type {Map<number, Float32Array>} */ const bones = new Map();
   const B0 = B.bake;
-  // Both plumages, the flock bake each: each bird wears one by the time of year (home.js plumageOf).
-  for (const plumage of /** @type {const} */ (['winter', 'breeding'])) {
+  // Each plumage the bird has, the flock bake each: each bird wears one by the time of year (home.js
+  // plumageOf). The purple sandpipers have their winter plumage only.
+  for (const plumage of Object.keys(B.plumage)) {
     run(BAKE_JOB, { shape: B.shape, plumage: B.plumage[plumage], wingPattern: B.wingPattern, cellM: B0.cellM, wingCellM: B0.wingCellM,
       blendM: B0.blendM, maxTris: B0.flockTris, wingShare: B0.wingShare, attrWeight: B0.attrWeight })
       .then((/** @type {any} */ m) => { pass.setMesh(plumage, m); ready = true; })
-      .catch((/** @type {any} */ err) => console.error(`The turnstones (${plumage}) did not bake:`, err));
+      .catch((/** @type {any} */ err) => console.error(`The ${key} (${plumage}) did not bake:`, err));
   }
 
   /** The flock's state now. */
@@ -103,7 +105,7 @@ export function createTurnstones(o) {
       let m = bones.get(b.id);
       if (!m) { m = new Float32Array(BONES * 16); bones.set(b.id, m); }
       poseSkeleton(rig.skeleton, life.moves(rig, b), m, 0);
-      list.push({ x: b.x, y: o.ground(b.x, b.z) + b.y, z: b.z, yaw: b.yaw, size: k * c.k, mesh: plumageOf(pos, (hash32(b.id, 0x9e3) >>> 8) / 16777216, R.body.plumageTurn), bones: m });
+      list.push({ x: b.x, y: o.ground(b.x, b.z) + b.y, z: b.z, yaw: b.yaw, size: k * c.k, mesh: R.body.plumageTurn ? plumageOf(pos, (hash32(b.id, 0x9e3) >>> 8) / 16777216, R.body.plumageTurn) : 'winter', bones: m });
     }
     pass.setBeings(list);
   }

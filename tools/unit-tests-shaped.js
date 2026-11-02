@@ -8,7 +8,8 @@
 // home is made; and a visit hint waits for the morning after, repeats now and then, and rings the spot.
 
 import { patchOf, patches, shapedReport, homeOf, homeFit } from '../src/world/ecology/shaped.js';
-import { rememberPonds, wrackSince, noteStep, quietAt, cleanShaped, emptyShaped } from '../src/world/ecology/shaped-live.js';
+import { rememberPonds, wrackSince, noteStep, quietAt, cleanShaped, emptyShaped, createShapedWatch } from '../src/world/ecology/shaped-live.js';
+import { emit } from '../src/core/events.js';
 import { visitInWindow, visitsBetween, visitStep, visitorsOf } from '../src/world/ecology/visits.js';
 import { pickHint, showMeOf, visitAt, hintDone, shownFlag } from '../src/world/hints/morning.js';
 import { SECTIONS9, clean9 } from '../src/save/migrate-format9.js';
@@ -37,6 +38,23 @@ export function addShapedTests(test, assert, eq) {
     if (!islands.has(key)) islands.set(key, shapedIsland(await RP, kinds));
     return islands.get(key);
   };
+
+  test(G, 'the watch looks again after every stroke and every game hour, not only once (November 2, 2026)', async () => {
+    const R = (await RP).shaped;
+    const hab = (await island(['wall'])).model.habitat;
+    let looks = 0, h = 0;
+    const w = createShapedWatch({ R, world: { env: { habitat: () => hab }, state: {} }, nowH: () => h, you: () => null, onLook: () => { looks++; } });
+    const run = (/** @type {number} */ s) => { for (let t = 0; t < s; t += 0.1) w.tick({ realDt: 0.1 }); };
+    run(4);
+    eq(looks, 1, 'the first look, a moment after loading');
+    emit('terrain:stroke-ended', {});
+    run(2);
+    eq(looks, 2, 'a stroke brings another look');
+    h = 1.5;
+    run(1);
+    eq(looks, 3, 'so does a new game hour');
+    w.dispose();
+  });
 
   test(G, 'a patch reads its length and width from its spread', () => {
     const n = 20, cells = [];

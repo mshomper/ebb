@@ -312,7 +312,7 @@ export function beetleMesh(S) {
   const headY = (/** @type {number} */ u, /** @type {number} */ z) => cl * 0.9 + S.headDomeM * (0.6 + 0.4 * Math.sin(Math.PI * (0.2 + 0.6 * headT(z)))) * (1 - u * u) ** 0.7;
   /** The body's half width at z, for where the legs leave it. @param {number} z */
   const bodyHw = (z) => (z > zPro0 ? proHw(z) : elHw(z));
-  const tone = (/** @type {number} */ ...k) => 1 + S.mottle * (u01(hash32(S.seed, ...k)) - 0.5) * 2;
+  const tone = (/** @type {number[]} */ ...k) => 1 + S.mottle * (u01(hash32(S.seed, ...k)) - 0.5) * 2;
 
   // Wing cases: one domed sheet with a fine groove down the middle where the two meet.
   {

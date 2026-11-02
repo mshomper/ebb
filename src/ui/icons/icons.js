@@ -4,6 +4,8 @@
 // Style: 24 px grid, 2 px padding, stroke 1.75, round caps and joins,
 // stroke="currentColor", optional accent fill at 20 percent. See README.md.
 
+import { MEADOW_ICONS } from './icons-meadow.js';
+
 const STROKE = 'fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"';
 const ACCENT = 'fill="currentColor" fill-opacity="0.2" stroke="none"';
 
@@ -635,6 +637,34 @@ const ICONS = {
     <path d="M7.5 19.2H13"/>
     <path d="M4.2 8.4C4.8 6.2 6.6 4.8 8.8 4.6M7.2 3.4L8.8 4.6L7.6 6.2"/>
     <path d="M2.5 20.8H21.5"/>`,
+  // The kite (docs/future/20, src/world/kite): a diamond of cloth on its crossed sticks, a short
+  // tail of two bows from its foot.
+  kite: `
+    <path ${ACCENT} d="M12 2.8L17.6 8.6L12 17.2L6.4 8.6Z"/>
+    <path d="M12 2.8L17.6 8.6L12 17.2L6.4 8.6Z"/>
+    <path d="M12 2.8V17.2M6.4 8.6H17.6"/>
+    <path d="M12 17.2C11 18.6 13 19.6 12 21.2"/>
+    <path d="M10.4 18.6L11.6 19.2M12.4 20.2L13.6 20.8"/>`,
+  // Fly the kite: the kite high in the top corner, its line curving down to a hand-held spool.
+  fly: `
+    <path ${ACCENT} d="M17 2.6L21 6.6L17 12L13 6.6Z"/>
+    <path d="M17 2.6L21 6.6L17 12L13 6.6Z"/>
+    <path d="M17 12C14 15.6 8.6 15.4 5.4 19"/>
+    <circle cx="4.6" cy="19.8" r="1.8"/>
+    <path d="M9.6 4.6L10.8 5.6M8.4 8L9.8 8.6"/>`,
+  // Rise with it: an eye over the island seen from high, a small kite above it.
+  kiteview: `
+    <path ${ACCENT} d="M3 17.6C5.6 15.6 9 15.2 12 16.2C15 17.2 18.4 16.8 21 15.2V20.6H3Z"/>
+    <path d="M3 17.6C5.6 15.6 9 15.2 12 16.2C15 17.2 18.4 16.8 21 15.2"/>
+    <path d="M12 3L15 6.2L12 10.4L9 6.2Z"/>
+    <path d="M12 10.4V13.4M10.2 11.8L12 13.6L13.8 11.8"/>`,
+  // Reel in: the line wound back onto a spool, an arrow round it.
+  reel: `
+    <ellipse ${ACCENT} cx="12" cy="14" rx="5" ry="5"/>
+    <circle cx="12" cy="14" r="5"/>
+    <circle cx="12" cy="14" r="1.6"/>
+    <path d="M17 13C18.6 8.6 18 5 15.6 3"/>
+    <path d="M5.4 5.6C7.6 3.2 11.4 2.6 14.2 4.2M12.4 2.4L14.4 4.2L12.6 6.2"/>`,
   // The shelf (keepsakes, docs/future/12): a plank on two brackets holding a coiled shell, a pebble
   // and a feather leaning up.
   shelf: `
@@ -862,6 +892,15 @@ const ICONS = {
     <path d="M6.5 17.5C6 12.5 9.5 6.5 19.5 4.5C18.5 13 13 17.5 6.5 17.5Z"/>
     <path d="M3.5 20.5C8 16 13 10.5 19.5 4.5"/>
     <path d="M9.5 14.8L8.3 11.6M12.4 11.8L11.8 8.4M10.8 13.5L13.6 15.4M13.8 10.4L16.6 11.8"/>`,
+  // A teal's wing feather (the teal's gift, B3): a straighter, narrower flight feather lying corner
+  // to corner, the green speculum a darker band across its vane near the tip.
+  'teal-feather': `
+    <path ${ACCENT} d="M7 17C7.4 13.2 11.6 8 19.5 4.5C17.4 11.4 12.6 16 7 17Z"/>
+    <path fill="currentColor" fill-opacity="0.55" stroke="none" d="M12.4 8.4L14.6 6.6L17.6 9.6L16 12Z"/>
+    <path d="M7 17C7.4 13.2 11.6 8 19.5 4.5C17.4 11.4 12.6 16 7 17Z"/>
+    <path d="M12.4 8.4L16 12M14.6 6.6L17.6 9.6"/>
+    <path d="M4 20.5C8.5 16 13.5 10.5 19.5 4.5"/>
+    <path d="M9.4 14.4L8.6 12.4M11 13.4L13.2 15"/>`,
   // Common toad (spring marker): squat and low on the ground, walking, its back dotted with warts.
   toad: `
     <path ${ACCENT} d="M3.5 18C3.8 14.4 7.2 12.2 11.5 12C12.4 10.4 15 10.2 16.2 11.6C18.6 12 20.5 13.4 20.5 15C20.5 16.6 18.8 17.4 16.6 17.6L15 18Z"/>
@@ -919,12 +958,6 @@ const ICONS = {
     <path d="M10.6 6.2C10.6 4.8 13.4 4.8 13.4 6.2"/>
     <path d="M11.2 4.6C10.4 3 9.2 2.2 7.6 2M12.8 4.6C13.6 3 14.8 2.2 16.4 2"/>
     <path d="M9.4 8.2L6.4 6.6L5.2 4.8M14.6 8.2L17.6 6.6L18.8 4.8M8.2 13L5 13.4L3.6 15M15.8 13L19 13.4L20.4 15M8.4 17L5.6 19L5 21M15.6 17L18.4 19L19 21"/>`,
-  // The floating reed raft (the turtles' gift): a low mat of reeds on the water, stems standing up.
-  raft: `
-    <path ${ACCENT} d="M3.5 16C5 14.6 19 14.6 20.5 16C19 17.4 5 17.4 3.5 16Z"/>
-    <path d="M3.5 16C5 14.6 19 14.6 20.5 16C19 17.4 5 17.4 3.5 16Z"/>
-    <path d="M7 15V8M9.5 15V5.5M15 15V7M17 15V9.5"/>
-    <path d="M2.5 20C4.2 19.2 5.8 19.2 7.5 20S10.8 20.8 12.5 20S15.8 19.2 17.5 20S20 20.6 21.5 20"/>`,
   // Minnows (M2): a small fish under the water line, a ring above where one rose.
   minnow: `
     <path d="M2.5 7.5C4 6.5 5.5 8.5 7 7.5S10 6.5 11.5 7.5M15 7.5H21.5"/>
@@ -946,6 +979,15 @@ const ICONS = {
     <path ${ACCENT} d="M18.8 20.5C18.8 18.6 21.6 18.2 21.6 20.5Z"/>
     <path d="M18.8 20.5C18.8 18.6 21.6 18.2 21.6 20.5"/>
     <path d="M2.5 20.5H18.4"/>`,
+  // Eurasian teal (B3): a small dabbling duck swimming, from the side, its rounded body low on a
+  // ripple, the pointed tail up, a short bill, the eye stripe sweeping back to the nape.
+  teal: `
+    <path ${ACCENT} d="M3.5 12C5.4 12.4 7.6 11.2 10.4 11.2C12 11.2 13.2 11.3 13.8 11.4C13.6 10.2 13.6 8.6 14.2 7.6C14.8 6.4 16.4 6 17.6 6.6C18.4 7 18.8 7.8 18.8 8.6L20.8 9.4C20.6 10 19.8 10.2 18.6 10C18 10.6 17.6 11.6 17.4 12.8C18 13.6 18 15 17 15.8C16.4 16.2 15.8 16.4 15 16.4H7.4C5.2 16.4 3.8 14.6 3.5 12Z"/>
+    <path d="M3.5 12C5.4 12.4 7.6 11.2 10.4 11.2C12 11.2 13.2 11.3 13.8 11.4C13.6 10.2 13.6 8.6 14.2 7.6C14.8 6.4 16.4 6 17.6 6.6C18.4 7 18.8 7.8 18.8 8.6L20.8 9.4C20.6 10 19.8 10.2 18.6 10C18 10.6 17.6 11.6 17.4 12.8C18 13.6 18 15 17 15.8C16.4 16.2 15.8 16.4 15 16.4H7.4C5.2 16.4 3.8 14.6 3.5 12Z"/>
+    <circle cx="17.2" cy="8.2" r="0.55" fill="currentColor" stroke="none"/>
+    <path d="M16.8 8.9C15.9 9.4 14.8 9.3 14 8.7"/>
+    <path d="M7.4 13.2C9.6 14.4 12.4 14.4 14.4 13.4"/>
+    <path d="M2.5 18.2C4.2 17.4 5.8 17.4 7.5 18.2S10.8 19 12.5 18.2S15.8 17.4 17.5 18.2S20 18.8 21.5 18.2"/>`,
   // Eels (B3): a long body in one wave under the water line, a soft fin ridge along its back half,
   // the pond floor below.
   eel: `
@@ -955,6 +997,30 @@ const ICONS = {
     <path d="M11.6 10.9C13.6 13.5 15.8 14.2 17.9 12"/>
     <circle cx="4.9" cy="12.1" r="0.8" fill="currentColor" stroke="none"/>
     <path d="M2.5 20.5H21.5"/>`,
+  // Purple sandpiper (B3, a winter flock): from the side, plump and low on short legs on the
+  // stones of a sea wall, its long bill drooping a little at the tip, a wave at the wall's foot.
+  sandpiper: `
+    <path ${ACCENT} d="M3 8.6C5.4 9 7.4 9.8 9 10.4C10.8 8.8 13.6 8.4 15.6 9.6C16.6 10.2 17.2 11 17.4 11.8C17 14 15.2 15.2 12.4 15.2C9.6 15.2 7.2 13.8 6.4 12Z"/>
+    <path d="M3 8.6C5.4 9 7.4 9.8 9 10.4C10.8 8.8 13.6 8.4 15.6 9.6C16.6 10.2 17.2 11 17.4 11.8C17 14 15.2 15.2 12.4 15.2C9.6 15.2 7.2 13.8 6.4 12L3 8.6Z"/>
+    <path d="M17.4 11.6C19 11.8 20.4 12.4 21.5 13.6"/>
+    <circle cx="15.6" cy="10.9" r="0.55" fill="currentColor" stroke="none"/>
+    <path d="M8.2 11.4C10.2 12.8 12.4 12.8 14 11.8"/>
+    <path d="M11.2 15.2L11 17M13.4 15L13.6 17"/>
+    <path ${ACCENT} d="M7 17H19V21.5H7Z"/>
+    <path d="M7 17H19V21.5H7ZM13 17V19.2M7 19.2H19M10 19.2V21.5M16 19.2V21.5"/>
+    <path d="M2.5 20C3.5 19.2 4.5 19.2 5.5 20"/>`,
+  // Grey seal (B3 wave 3): hauled out on a sandbar, from the side, curved like a banana with the
+  // head and the tail flippers lifted, a fore flipper under it and blotches on the coat.
+  seal: `
+    <path ${ACCENT} d="M3.2 14.6C6 14 9 13.2 11.4 12.6C14.2 12 15.8 10.8 16.8 8.6C17.4 7.2 18.8 6.4 20.2 6.9L21.4 7.8C21.4 8.5 20.8 8.8 20.1 8.8C19.4 9 19 9.8 19 11.2C19 14.8 17.2 17.2 13.8 17.2H7C5.2 17.2 4 16.2 3.2 14.6Z"/>
+    <path d="M3.2 14.6C6 14 9 13.2 11.4 12.6C14.2 12 15.8 10.8 16.8 8.6C17.4 7.2 18.8 6.4 20.2 6.9L21.4 7.8C21.4 8.5 20.8 8.8 20.1 8.8C19.4 9 19 9.8 19 11.2C19 14.8 17.2 17.2 13.8 17.2H7C5.2 17.2 4 16.2 3.2 14.6Z"/>
+    <path d="M3.2 14.6L1.9 12.8M3.2 14.6L1.8 15.6"/>
+    <path d="M13 16.4C14.4 16.4 15.8 17 16.6 17.8"/>
+    <circle cx="19.3" cy="7.9" r="0.55" fill="currentColor" stroke="none"/>
+    <circle cx="9" cy="15" r="0.5" fill="currentColor" stroke="none"/>
+    <circle cx="12.4" cy="14.4" r="0.45" fill="currentColor" stroke="none"/>
+    <circle cx="15.6" cy="13.2" r="0.45" fill="currentColor" stroke="none"/>
+    <path d="M2.5 20C7 18.6 17 18.6 21.5 20"/>`,
 
   // The Web's shore features (journal-web.json). Rock pool: water held between two rocks.
   pool: `
@@ -1577,6 +1643,42 @@ const ICONS = {
     <path ${ACCENT} d="M10 15.5L18.2 7.3L20.7 9.8L12.5 18Z"/>
     <path d="M10 15.5L18.2 7.3L20.7 9.8L12.5 18L9.2 18.8Z"/>
     <path d="M16.6 8.9L19.1 11.4"/>`,
+  // The meadow islet's rye, its stooks, the marker stone and the sickle (F20, icons-meadow.js).
+  ...MEADOW_ICONS,
+  // The stack (docs/future/19): a tall rock stepped in ledges down one side, standing in the sea, a
+  // small flame on its top.
+  stack: `
+    <path ${ACCENT} d="M8 20V7.6H12.4V11.2H14.6V14.4H16.8V20Z"/>
+    <path d="M8 20V7.6H12.4V11.2H14.6V14.4H16.8V20"/>
+    <path d="M10.2 5.6C9.4 4.8 9.6 3.6 10.2 2.6C10.8 3.6 11 4.8 10.2 5.6Z"/>
+    <path d="M2.5 20H21.5"/>
+    <path d="M3 22C4.5 21.2 6 21.2 7.5 22M16.5 22C18 21.2 19.5 21.2 21 22"/>`,
+  // An iron grate across a passage: an arched frame with bars and a padlock hanging from it.
+  grate: `
+    <path ${ACCENT} d="M5 20.5V10A7 7 0 0 1 19 10V20.5Z"/>
+    <path d="M5 20.5V10A7 7 0 0 1 19 10V20.5"/>
+    <path d="M9.5 4.2V20.5M14.5 4.2V20.5M5 13.5H19"/>
+    <path d="M11 15.6H13M10.8 17.4H13.2V20H10.8Z"/>`,
+  // The old lantern: a round iron lantern with a ring on top and a flame behind its panes.
+  lamp: `
+    <path d="M12 2.8A1.4 1.4 0 1 1 12 5.6A1.4 1.4 0 1 1 12 2.8"/>
+    <path d="M8.6 8.2L12 5.6L15.4 8.2Z"/>
+    <path ${ACCENT} d="M8.4 8.2H15.6V18H8.4Z"/>
+    <path d="M8.4 8.2H15.6V18H8.4ZM7.6 18H16.4V20.2H7.6Z"/>
+    <path d="M12 15.6C10.8 14.8 10.9 13.2 12 11.6C13.1 13.2 13.2 14.8 12 15.6Z"/>`,
+  // Hang it: an iron hook out of a wall, a lantern's ring hanging on it.
+  hook: `
+    <path d="M3.5 3V21"/>
+    <path d="M3.5 7.4H13.4C15 7.4 15.8 8.2 15.8 9.6V10.6"/>
+    <path ${ACCENT} d="M15.8 12.6A2.4 2.4 0 1 1 15.8 17.4A2.4 2.4 0 1 1 15.8 12.6"/>
+    <path d="M15.8 12.6A2.4 2.4 0 1 1 15.8 17.4A2.4 2.4 0 1 1 15.8 12.6"/>
+    <path d="M15.8 10.6V12.6"/>`,
+  // The cave mouth: a dark cleft in a rock face, a ground line running into it.
+  cavemouth: `
+    <path d="M2.5 20.5L5.5 7.5L10 3.5L15.5 5L19.5 10.5L21.5 20.5"/>
+    <path ${ACCENT} d="M9.4 20.5C9.4 15.4 10.4 11.2 12 9.4C13.6 11.2 14.6 15.4 14.6 20.5Z"/>
+    <path d="M9.4 20.5C9.4 15.4 10.4 11.2 12 9.4C13.6 11.2 14.6 15.4 14.6 20.5"/>
+    <path d="M2.5 20.5H21.5"/>`,
 };
 
 /** Names of every icon in the sprite. */

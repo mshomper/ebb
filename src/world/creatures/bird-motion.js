@@ -26,20 +26,21 @@ const mix = (/** @type {number} */ a, /** @type {number} */ b, /** @type {number
  *   t: number, breath: number,
  *   gait: { phase: number, w: number, strideM: number, duty: number, liftM: number },
  *   feet: { dz: number, dy: number }[],
- *   bodyPitch: number, bodyLift: number, bodyLunge: number,
+ *   bodyPitch: number, bodyRoll: number, bodyLift: number, bodyLunge: number,
  *   neckPitch: number, neckYaw: number, headPitch: number, headYaw: number, headTilt: number,
  *   tailUp: number, tailFan: number,
  *   wing: WingPose, wingL: Partial<WingPose> | null, wingR: Partial<WingPose> | null,
  *   air: number, reach: number,
  * }} BirdPose
  *   headPitch: the head's pitch in the world (held level against the body and neck);
+ *   bodyRoll: the lean into a turn in flight (positive lifts the left wing);
  *   air: 0 legs on the ground, 1 tucked for flight; reach: legs swung forward to land
  */
 
 /** @returns {BirdPose} the bird standing still, wings folded. */
 export function restPose() {
   return { t: 0, breath: 1, gait: { phase: 0, w: 0, strideM: 0.05, duty: 0.6, liftM: 0.01 }, feet: [{ dz: 0, dy: 0 }, { dz: 0, dy: 0 }],
-    bodyPitch: 0, bodyLift: 0, bodyLunge: 0, neckPitch: 0, neckYaw: 0, headPitch: 0, headYaw: 0, headTilt: 0,
+    bodyPitch: 0, bodyRoll: 0, bodyLift: 0, bodyLunge: 0, neckPitch: 0, neckYaw: 0, headPitch: 0, headYaw: 0, headTilt: 0,
     tailUp: 0, tailFan: 1, wing: { spread: 0, up: 0, sweep: 0, handUp: 0, handFold: 0 }, wingL: null, wingR: null, air: 0, reach: 0 };
 }
 
@@ -74,7 +75,7 @@ export function poseBird(rig, P, M) {
   const sw = M.breath.swell * P.breath * (0.5 + 0.5 * Math.sin(P.t * M.breath.hz * Math.PI * 2));
   // Breathing swells the flanks only: a sideways stretch turns with the legs' own turns (about x),
   // so it never moves a foot along the ground or up off it.
-  moves[at.body] = { q: qAxis(0, P.bodyPitch), t: [0, P.bodyLift, P.bodyLunge], s: [1 + sw, 1, 1] };
+  moves[at.body] = { q: P.bodyRoll ? qmul(qAxis(2, P.bodyRoll), qAxis(0, P.bodyPitch)) : qAxis(0, P.bodyPitch), t: [0, P.bodyLift, P.bodyLunge], s: [1 + sw, 1, 1] };
   moves[at.neck] = { q: qmul(qAxis(1, P.neckYaw), qAxis(0, P.neckPitch)) };
   // The head holds its own pitch in the world (as a bird's does), whatever the body and neck do.
   moves[at.head] = { q: qmul(qAxis(1, P.headYaw), qmul(qAxis(0, P.headPitch - P.bodyPitch - P.neckPitch), qAxis(2, P.headTilt))) };
@@ -158,16 +159,17 @@ export function idlePose(t, M, seed = 0) {
 
 /**
  * Walking or running at a gait phase (metres walked / strideM): short quick steps, the body
- * bobbing twice a stride and leaning into a run.
- * @param {number} t @param {number} phase @param {any} M @param {'walk' | 'run'} kind
+ * bobbing twice a stride and leaning into a run. A creep (the purple sandpiper's, over wet rock)
+ * is a walk with its own lean, crouch (crouchM) and neck (neckDeg) from its recipe block.
+ * @param {number} t @param {number} phase @param {any} M @param {'walk' | 'run' | 'creep'} kind
  */
 export function gaitPose(t, phase, M, kind) {
-  const G = M[kind], P = restPose();
+  const G = M[kind], P = restPose(), run = kind === 'run';
   P.t = t;
   P.gait = { phase, w: 1, strideM: G.strideM, duty: G.duty, liftM: G.liftM };
-  P.bodyLift = -G.bobM * (0.5 + 0.5 * Math.cos(phase * Math.PI * 4)) - (kind === 'run' ? 0.004 : 0);
-  P.bodyPitch = (kind === 'run' ? G.leanDeg : 2) * DEG;
-  P.neckPitch = (kind === 'run' ? -10 : -2) * DEG + Math.sin(phase * Math.PI * 4) * 2.5 * DEG;
+  P.bodyLift = -G.bobM * (0.5 + 0.5 * Math.cos(phase * Math.PI * 4)) - (G.crouchM ?? (run ? 0.004 : 0));
+  P.bodyPitch = (run || G.leanDeg !== undefined ? G.leanDeg : 2) * DEG;
+  P.neckPitch = (G.neckDeg ?? (run ? -10 : -2)) * DEG + Math.sin(phase * Math.PI * 4) * 2.5 * DEG;
   P.headPitch = 4 * DEG;
   P.tailUp = Math.sin(phase * Math.PI * 4 + 1) * M.tail.bobDeg * 0.4 * DEG;
   return P;
@@ -317,4 +319,41 @@ export function landPose(t, u, phase, M, fromM = 0.25) {
   const y = u < touch ? fromM * Math.pow(1 - k, 1.6) : 0;
   const v = u < touch ? mix(0.9, 0.55, ramp(u, 0.3, touch)) : 0.55 * (1 - ramp(u, touch, 0.7));
   return { pose: P, y, v };
+}
+
+/**
+ * A bob (the purple sandpiper's): standing, the body dips quickly n times, the tail flicking up
+ * with each dip and the head held level. @param {number} t @param {number} u 0..1 through it @param {any} M
+ */
+export function bobPose(t, u, M) {
+  const K = M.bob, P = idlePose(t, M);
+  const d = Math.pow(Math.max(0, Math.sin(u * Math.PI * K.n)), 2);
+  P.bodyPitch = K.dipDeg * DEG * d;
+  P.bodyLift = -K.dropM * d;
+  P.neckPitch = -K.dipDeg * 0.6 * DEG * d;
+  P.headPitch = -K.dipDeg * 0.4 * DEG * d;
+  P.tailUp = K.tailDeg * DEG * d;
+  return P;
+}
+
+/**
+ * Roosting tucked (the purple sandpiper's, on the wall at high tide): the body sunk onto bent legs,
+ * the head turned back over the shoulder with the bill in the back feathers, breathing slowly; it
+ * eases in over settleS from standing. `side` picks the shoulder (+1 left, -1 right).
+ * @param {number} t @param {number} s seconds since it began roosting @param {any} M @param {number} [side]
+ */
+export function roostPose(t, s, M, side = 1) {
+  const K = M.roost, P = restPose();
+  P.t = t;
+  const k = ease(Math.min(1, s / K.settleS));
+  P.breath = 0.6;
+  P.bodyLift = -K.dropM * k;
+  P.bodyPitch = -3 * DEG * k;
+  P.neckYaw = side * K.neckYawDeg * DEG * 0.55 * k;
+  P.headYaw = side * K.neckYawDeg * DEG * 0.45 * k;
+  P.neckPitch = K.neckPitchDeg * DEG * k;
+  P.headPitch = 10 * DEG * k;
+  P.headTilt = side * 12 * DEG * k;
+  P.tailFan = 1;
+  return P;
 }

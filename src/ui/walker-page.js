@@ -193,7 +193,9 @@ export function mountKitPage(host, o) {
     }
     if (sel.kind === 'belt') {
       const T = R.belt.find((/** @type {any} */ q) => q.id === sel.id);
-      return { belt: sel.id, owned: v.belt.find((/** @type {any} */ t) => t.id === sel.id)?.owned, name: T?.name ?? '', icon: T?.icon ?? '', text: T?.line ?? '', noPage: true };
+      const bt = v.belt.find((/** @type {any} */ t) => t.id === sel.id);
+      // A tool's own line for now follows its words (the kite: where and when it can fly).
+      return { belt: sel.id, owned: bt?.owned, name: T?.name ?? '', icon: T?.icon ?? '', text: [T?.line ?? '', bt?.owned ? bt?.note ?? '' : ''].filter(Boolean).join(' '), noPage: true };
     }
     const i = Number(sel.id), p = pv?.pouches?.[i];
     if (!p) return null;

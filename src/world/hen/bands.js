@@ -77,7 +77,7 @@ export function besideSpot(B, you, ring) {
   return { x: you.x + (dz / l) * d, z: you.z - (dx / l) * d };
 }
 
-/** Is the walker sitting by the ring (within fondDo.sitM)? @param {any} B @param {HenSee} s */
+/** Is the walker sitting by the ring (within fondDo.sitM)? @param {any} B @param {Pick<HenSee, 'walker' | 'ring'>} s */
 export const sitsByFire = (B, s) => !!s.walker?.sit && !!s.ring && Math.hypot(s.walker.x - s.ring.x, s.walker.z - s.ring.z) <= B.fondDo.sitM;
 
 /**
@@ -95,7 +95,7 @@ export function choosePlan(R, s) {
   // perch once Familiar, or in her scrub. With neither, life.js takes her home to stand.
   if (s.roosting) {
     if (b >= 4 && w && s.ring && sitsByFire(B, s)) { const at = besideSpot(B, w, s.ring); return { purpose: 'beside', ...at, pace: pace(dHen(at)) }; }
-    const r = b >= 3 && s.perch ? s.perch : s.roost;
+    /** @type {{ x: number, z: number, h: number, yaw?: number } | null} */ const r = b >= 3 && s.perch ? s.perch : s.roost;
     if (r) return { purpose: 'roost', x: r.x, z: r.z, h: r.h, yaw: 'yaw' in r ? r.yaw : undefined, pace: pace(dHen(r)) };
     // A test ground with no scrub: by the ring for the night once Familiar, as slice 2 had it.
     if (b >= 3 && s.ring && isDusk(B, s.hourOfDay)) return { purpose: 'ring', ...ringSpot(B, s.ring, s.home), pace: pace(dHen(ringSpot(B, s.ring, s.home))) };

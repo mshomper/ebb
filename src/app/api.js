@@ -15,7 +15,7 @@ import { PALETTES } from './recipes.js';
  * @param {() => void} stop
  */
 export function result(ctx, stop) {
-  const { applyTier, autumn, autumnMoods, autumnRecipe, baker, cairns, camera, camp, canvas, creatures, dig, figureRecipe, finds, fishing, fishingRecipe, frogScale, gather, glints, gpu, growth, hen, intro, island, islands, keepTestLog, keepsakesApi, keepsakesRecipe, kit, lanterns, lift, live, midges, nets, netsRecipe, pack, passingBoat, perchSticks, photo, pieces, piles, planting, presence, reasons, save, schools, setpieces, sowing, speciesRecipes, springCave, stores, terrain, testSwarms, tickHour, tonemap, walk, water, world, ww, zones } = ctx;
+  const { applyTier, autumn, autumnMoods, autumnRecipe, baker, cairns, camera, camp, canvas, creatures, dig, figureRecipe, finds, fishing, fishingRecipe, frogScale, gather, glints, gpu, growth, hen, intro, island, islands, keepTestLog, keepsakesApi, keepsakesRecipe, kit, kite, lanterns, lift, live, midges, nets, netsRecipe, pack, passingBoat, perchSticks, photo, pieces, piles, planting, presence, reasons, save, schools, setpieces, sowing, speciesRecipes, springCave, stack, stackMouth, stackReveal, stackShade, stores, terrain, testSwarms, tickHour, tonemap, walk, water, world, ww, zones } = ctx;
   return {
     ok: /** @type {const} */ (true), get tier() { return ctx.tier; }, tierReasons: reasons,
     adapterInfo: gpu.adapter.info ?? null,
@@ -87,12 +87,22 @@ export function result(ctx, stop) {
     lanterns,
     /** Set pieces (docs/future/14): the runner's live core, and the cairns' and the boat's taps and cards. */
     setpieces, cairns, passingBoat,
+    /** The marker stone and the rye (F20, src/world/meadow): the stone's, the light's and the stooks' cards. */
+    meadow: ctx.meadow ?? null,
+    /** The kite (docs/future/20, src/world/kite): the torn kite's and the hung kite's cards. */
+    kite,
+    /** The light on the stack (docs/future/19): its cards on the island, the reveal and the mouth room. */
+    stack, stackReveal, stackMouth, stackShade,
     /**
      * Testing helpers, on window.ebb with `?debug`: autumn's misty morning and kept logs, skipping to
      * a time of year, and bringing a settled school or swarm. They change this island's time and
      * pieces, so use them on a test link (such as `?debug&autumn`, unsaved) to leave your own island alone.
      */
     debug: {
+      /** Run n frames now, dtMs apart (a hidden tab gets no animation frames; tools step it to see it). @param {number} n @param {number} [dtMs] */
+      stepFrames: (n, dtMs) => ctx.stepFrames?.(n, dtMs),
+      /** Draw at this size whatever the page's (a hidden tab is never measured; tools set it to see it). @param {number} w @param {number} h CSS and device pixels */
+      setViewSize: (w, h) => Object.assign(ctx.size, { cssW: w, cssH: h, devW: w, devH: h }),
       /**
        * Jump to the next misty autumn morning on which fungi have grown in (autumn.js
        * mistyAutumnMorning), at the webs' test hour, and run that hour so its weather is the day's.

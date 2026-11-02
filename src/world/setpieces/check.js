@@ -29,7 +29,7 @@ export function setpieceRun(a) {
   for (let hour = 0; hour < a.days * 24; hour++) {
     const day = Math.floor(hour / 24), hod = hour % 24;
     // Away some nights (every third, 22:00 to 08:00): beats that need you wait.
-    /** @type {any} */ (env).away = day % 3 === 1 && (hod >= 22 || hod < 8);
+    env.away = day % 3 === 1 && (hod >= 22 || hod < 8);
     const sp = setpiecesOf(state), cairns = sp.runs?.cairns, boat = sp.runs?.boat;
     // What a player does, live only.
     if (!env.away) {

@@ -12,7 +12,7 @@ if (params.get('camp') !== 'canvas') location.search = '?camp=canvas&hour=10';
 
 const $ = (/** @type {string} */ s) => /** @type {HTMLElement} */ (document.querySelector(s));
 const r = await startApp(/** @type {HTMLCanvasElement} */ ($('#view')));
-if (!r.ok) throw new Error(r.reason);
+if (r.ok === false) throw new Error(r.reason);
 const app = /** @type {any} */ (r);
 /** @type {any} */ (globalThis).canvasCheck = app;
 const R = await (await fetch(new URL('../recipes/world/camp.json', import.meta.url))).json();

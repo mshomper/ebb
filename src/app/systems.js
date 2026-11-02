@@ -8,6 +8,7 @@ import * as boot from './boot.js';
 import * as world from './world.js';
 import * as view from './view.js';
 import * as islet from './islet.js';
+import * as stack from './stack.js';
 import * as light from './light.js';
 import * as ground from './ground.js';
 import * as creatures from './creatures.js';
@@ -24,10 +25,14 @@ import * as zones from './zones.js';
 import * as fixtures from './fixtures.js';
 import * as setpieces from './setpieces.js';
 import * as kit from './kit.js';
+import * as kite from './kite.js';
 import * as fishing from './fishing.js';
 import * as shaped from './shaped.js';
 import * as turnstones from './turnstones.js';
 import * as eels from './eels.js';
+import * as teal from './teal.js';
+import * as sandpipers from './sandpipers.js';
+import * as seals from './seals.js';
 import * as graph from './graph.js';
 import * as photo from './photo.js';
 import * as quality from './quality.js';
@@ -40,6 +45,8 @@ import * as save from './save.js';
 import * as testLinks from './test-links.js';
 import * as testCamp from './test-links-camp.js';
 import * as testFlax from './test-links-flax.js';
+import * as meadow from './meadow.js';
+import * as testMeadow from './test-links-meadow.js';
 
 /** @type {import('./context.js').StartStep[]} */
 export const SYSTEMS = [
@@ -47,6 +54,7 @@ export const SYSTEMS = [
   world.land,
   testLinks.startTime,
   islet.land,
+  stack.land,
   world.start,
   view.start,
   islet.start,
@@ -71,21 +79,29 @@ export const SYSTEMS = [
   testLinks.springCave,
   testLinks.digStood,
   dig.run,
+  meadow.start,
   fixtures.start,
   testLinks.lanterns,
   testLinks.perch,
   setpieces.start,
+  stack.start,
+  stack.tests,
   kit.start,
+  kite.start,
   fishing.start,
   shaped.start,
   shaped.tests,
   turnstones.start,
   eels.start,
+  teal.start,
+  sandpipers.start,
+  seals.start,
   testLinks.packs,
   testCamp.camp,
   testCamp.teas,
   testCamp.spring,
   testFlax.flax,
+  testMeadow.meadow,
   kit.teaReveal,
   testLinks.autumn,
   testLinks.frogScale,

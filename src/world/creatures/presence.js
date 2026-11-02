@@ -34,7 +34,7 @@
  */
 
 /**
- * @param {{ camera: { eye: ArrayLike<number>, driven: () => boolean }, smoothS?: number, stillMps?: number,
+ * @param {{ camera: { eye: ArrayLike<number>, driven: () => boolean, free?: boolean }, smoothS?: number, stillMps?: number,
  *   cameraBody?: boolean, walker?: () => WalkerNow | null, heightM?: Record<string, number>, ringK?: () => number,
  *   known?: () => { x: number, z: number, r: number, k: number } | null }} opts
  *   smoothS: how quickly the speed follows the eye (s); stillMps: slower than this counts as still;

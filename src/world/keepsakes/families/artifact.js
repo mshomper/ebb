@@ -197,7 +197,7 @@ export function artifactMesh(n, K) {
   let idx = B.idx, flag = new Uint8Array(N), cutInfo = null;
   if (n.cut) {
     cutInfo = cutPositions(P, n.cut);
-    flag = cutInfo.flag;
+    flag = /** @type {Uint8Array<ArrayBuffer>} */ (cutInfo.flag);
     for (let i = 0; i < N; i++) if (flag[i]) { const fresh = /** @type {Rgb} */ (kind.fresh), p = mix([col[i * 3], col[i * 3 + 1], col[i * 3 + 2]], fresh, 0.7); col.set(p, i * 3); }
   }
   let colors = col;

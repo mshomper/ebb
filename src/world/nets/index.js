@@ -129,7 +129,7 @@ export function createNets(opts) {
         return { did: 'said', message: words(net) };
       }
       const r = api.check(p);
-      if (!r.ok) { sync({ message: r.message, refused: true }); return { did: 'refused', message: r.message }; }
+      if (r.ok === false) { sync({ message: r.message, refused: true }); return { did: 'refused', message: r.message }; }
       const readyNow = !!opts.test && !!NR.test?.readyNow;
       update('nets', () => cast(state(), net.id, p[0], p[2], nowH, tideP, { readyNow }));
       emitDeferred('keepsake:sound', { name: 'net-set' });
@@ -151,7 +151,7 @@ export function createNets(opts) {
       const live = water.sampleLive?.(p[0], p[2]);
       const at = { ...placeOf(p[0], p[2]), depth: live?.depth ?? 0, ground: terrain.sampleHeight(p[0], p[2]) };
       const r = netSpot(at, nowH, tideP, NR.set, netState(net, nowH, tideP).state === 'ready');
-      return r.ok ? r : { ok: false, reason: r.reason, message: r.reason === 'full' ? W.fullStays : W.refused[r.reason] };
+      return r.ok === true ? r : { ok: false, reason: r.reason, message: r.reason === 'full' ? W.fullStays : W.refused[r.reason] };
     },
 
     /** Bring the net in without lifting a haul. @param {number} id */
