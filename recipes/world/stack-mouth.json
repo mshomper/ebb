@@ -62,7 +62,7 @@
     "note": { "at": [3.0, -2.15], "sizeM": [0.16, 0.11], "tapM": 0.25 },
     "hook": { "fromArchM": 0.55, "heightM": 1.6, "armM": 0.2, "standM": 0.75 },
     "soot": { "radiusM": 1.7, "darken": 0.96 },
-    "rubble": { "stones": 220, "sizeM": [0.16, 0.5], "seed": 7193, "lump": 0.3, "flat": 0.6, "occFloor": 0.45, "heapM": 1.2 },
+    "rubble": { "stones": 340, "sizeM": [0.16, 0.5], "seed": 7193, "lump": 0.3, "flat": 0.8, "occFloor": 0.45, "heapM": 1.2 },
     "door": { "tapM": 0.9 }
   },
   "thingsNote": "Where the things lie (mouth frame): the old lantern on its side at `at` (radiusM, heightM; tapM how far past it a tap still finds it), the note beside it, the hook on the wall fromArchM along the wall from the arch's side at heightM, its iron arm armM out from where it meets the rock (found by marching the field to the wall), and you stand standM out from its tip to hang the lantern (Hang it walks you there carrying it); the soot on the stone round the arch's opening, out to radiusM from its middle (thicker above, as smoke rises), darkening the rock by up to darken; the rubble's stones stacked in its passage from the floor up, each resting on the floor or the stones under it (each dug stretch clears its share, front first), and the way out under the cleft (door: within tapM of the arrival spot). rubble (decision 0001): stones stones sizeM across from its seed, each a broken lump (its corners pushed in or out by up to lump, squashed to flat) drawn as the room's rock, its sight of the lantern taken from where it lies and darker the deeper in the heap it sits (occFloor at the bottom of heapM). The pool's stones are drawn the same way, bedded on the lowest ground under them.",

@@ -235,7 +235,7 @@ export function createStackMouth(o) {
       for (let k = 0; k < 6; k++) low = Math.min(low, shape.floorAt(x + Math.cos(k * 1.047) * r0, z + Math.sin(k * 1.047) * r0));
       const cy = low + r0 * 0.6;
       const sf = lampSight(shape, x, cy, z, flameAt.floor, R.bake), sh = lampSight(shape, x, cy, z, flameAt.hook, R.bake);
-      parts.push(brokenStone(x, low - r0 * 0.5, z, r0, (k) => u(i, k + 4), sf, sh, 0.7));
+      parts.push(brokenStone(x, low - r0 * 0.25, z, r0, (k) => u(i, k + 4), sf, sh, 0.7));
     }
     const all = join(parts);
     return { data: Array.from(all.data), idx: Array.from(all.idx) };
@@ -256,7 +256,8 @@ export function createStackMouth(o) {
       // The bottom flattened where it rests; the long axis turned by the seed.
       const sx = Math.sin(th) * Math.cos(ph) * k, sy = Math.max(-0.35, Math.cos(th)) * B.flat * k, sz = Math.sin(th) * Math.sin(ph) * k * (0.75 + u(2) * 0.5);
       const ca = Math.cos(u(3) * 6.28), sa = Math.sin(u(3) * 6.28);
-      pts.push([x + (sx * ca - sz * sa) * r, y0 + r * 0.4 + sy * r, z + (sx * sa + sz * ca) * r]);
+      // Its middle just over y0, so its base sits a little into what it rests on (never over it).
+      pts.push([x + (sx * ca - sz * sa) * r, y0 + r * B.flat * 0.3 + sy * r, z + (sx * sa + sz * ca) * r]);
     }
     /** @type {number[]} */ const data = [], idx = [];
     const tri = (/** @type {number[]} */ p, /** @type {number[]} */ q, /** @type {number[]} */ s) => {
@@ -264,7 +265,7 @@ export function createStackMouth(o) {
       let nx = uy * vz - uz * vy, ny = uz * vx - ux * vz, nz = ux * vy - uy * vx;
       const l = Math.hypot(nx, ny, nz) || 1; nx /= l; ny /= l; nz /= l;
       // Facing out from the stone's middle.
-      const mx = (p[0] + q[0] + s[0]) / 3 - x, my = (p[1] + q[1] + s[1]) / 3 - (y0 + r * 0.4), mz = (p[2] + q[2] + s[2]) / 3 - z;
+      const mx = (p[0] + q[0] + s[0]) / 3 - x, my = (p[1] + q[1] + s[1]) / 3 - (y0 + r * B.flat * 0.3), mz = (p[2] + q[2] + s[2]) / 3 - z;
       if (nx * mx + ny * my + nz * mz < 0) { nx = -nx; ny = -ny; nz = -nz; [q, s] = [s, q]; }
       const o = (B.occFloor + (1 - B.occFloor) * occ) * (0.7 + 0.3 * Math.max(0, ny));
       const base = data.length / 10;
@@ -292,10 +293,13 @@ export function createStackMouth(o) {
     for (const c of cand) {
       const t = (u(c.i, 2) - 0.5) * 2 * Math.max(0, P.halfWidthM - c.r * 0.7);
       const x = P.at[0] + P.dir[0] * c.s - P.dir[1] * t, z = P.at[1] + P.dir[1] * c.s + P.dir[0] * t;
-      let base = shape.floorAt(x, z) - c.r * 0.15;
-      for (const q of laid) if (Math.hypot(q.x - x, q.z - z) < (q.r + c.r) * 0.8) base = Math.max(base, q.top - c.r * 0.45);
+      // Resting on the lowest floor under it, or bedded into the top of a stone it overlaps (heights
+      // as brokenStone makes them: its middle flat * 0.3 r over its base, flat r high above that).
+      let base = shape.floorAt(x, z);
+      for (let k = 0; k < 6; k++) base = Math.min(base, shape.floorAt(x + Math.cos(k * 1.047) * c.r, z + Math.sin(k * 1.047) * c.r));
+      for (const q of laid) if (Math.hypot(q.x - x, q.z - z) < (q.r + c.r) * 0.85) base = Math.max(base, q.top - c.r * T.rubble.flat * 0.5);
       const roof = P.heightM * Math.sqrt(Math.max(0, 1 - (t / P.halfWidthM) ** 2)) - 0.08;
-      const top = base + c.r * 1.3;
+      const top = base + c.r * T.rubble.flat * 1.2;
       if (top > Math.min(roof, 0.4 + (c.s - front) * 1.15)) continue;
       laid.push({ x, z, r: c.r, top });
       // Its light from where it lies: its sight of the lantern's spots from just above it, and how
