@@ -13,7 +13,7 @@ if (params.get('camp') !== 'hearth') location.search = '?camp=hearth&shaped&hour
 
 const $ = (/** @type {string} */ s) => /** @type {HTMLElement} */ (document.querySelector(s));
 const r = await startApp(/** @type {HTMLCanvasElement} */ ($('#view')));
-if (!r.ok) throw new Error(r.reason);
+if (r.ok === false) throw new Error(r.reason);
 const app = /** @type {any} */ (r);
 /** @type {any} */ (globalThis).hearthCheck = app;
 

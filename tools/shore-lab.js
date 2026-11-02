@@ -35,7 +35,7 @@ const A0 = waterRecipe.tide.amplitudeM;
 const names = Object.fromEntries(shoreRecipe.zones.map((/** @type {any} */ z) => [z.id, z.name]));
 
 const r = await startApp(/** @type {HTMLCanvasElement} */ ($('view')));
-if (!r.ok) {
+if (r.ok === false) {
   $('status').textContent = `WebGPU is not available here (${r.reason}). Open this page in current Chrome or Edge.`;
 } else {
   // The game's tool bar, on the game's HUD layer (it keeps to the window's edges).

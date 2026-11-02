@@ -65,7 +65,7 @@ async function bench() {
 
   status.textContent = 'Starting the graphics card';
   const g = await initGpu(/** @type {HTMLCanvasElement} */ ($('view')));
-  if (!g.ok) { status.textContent = `WebGPU is not available here (${g.reason}).`; button.disabled = false; return; }
+  if (g.ok === false) { status.textContent = `WebGPU is not available here (${g.reason}).`; button.disabled = false; return; }
   const { device } = g.gpu;
   // GPU timestamps for the settling pass, when the browser allows them.
   const canTime = g.gpu.features.has('timestamp-query');

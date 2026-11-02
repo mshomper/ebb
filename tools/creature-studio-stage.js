@@ -88,7 +88,7 @@ export const VIEWS = {
  */
 export async function createStage(canvas) {
   const r = await initGpu(canvas);
-  if (!r.ok) return { ok: false, reason: r.reason };
+  if (r.ok === false) return { ok: false, reason: r.reason };
   return { ok: true, stage: makeStage(canvas, r.gpu) };
 }
 

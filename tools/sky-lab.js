@@ -398,7 +398,7 @@ refresh();
 try {
   const { startApp } = await import('../src/app.js');
   const result = await startApp(canvas);
-  if (!result.ok) {
+  if (result.ok === false) {
     setStatus(ICON_WARN, `WebGPU is not available here (${result.reason}), so the island cannot be drawn. The controls and numbers below still work. Open this page in current Chrome or Edge to see the sky.`);
   } else {
     setStatus(ICON_OK, `The island is running (tier ${result.tier}). Orbit and zoom it while you move the sliders.`);

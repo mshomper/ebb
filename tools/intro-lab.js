@@ -41,7 +41,7 @@ initWorkers({ size: defaultPoolSize() });
  * @property {number} seed @property {Float32Array} h  heights, N x N cells @property {Uint8Array} m  four weights a cell
  * @property {any} pad @property {any} moor @property {{ x: number, z: number } | null} spring
  * @property {{ x: number, z: number, yaw: number }} start
- * @property {{ stakeFound: boolean, outM: number, startH: number, dryAtHigh: boolean, sandy: boolean, springM: number }} check
+ * @property {{ stakeFound: boolean, outM: number, startH: number, highStepM: number, highOk: boolean, springM: number }} check
  */
 
 /** @param {number} seed world seed @returns {Promise<Isle>} */

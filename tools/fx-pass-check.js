@@ -12,7 +12,7 @@ import { LIGHT_FLOATS, SPARK_FLOATS, THREAD_FLOATS, MOTH_FLOATS } from '../src/w
 const $ = (/** @type {string} */ id) => /** @type {HTMLElement} */ (document.getElementById(id));
 const view = /** @type {HTMLCanvasElement} */ ($('view'));
 const made = await createStage(view);
-if (!made.ok) { $('note').textContent = `This page needs WebGPU (${made.reason}).`; throw new Error(made.reason); }
+if (made.ok === false) { $('note').textContent = `This page needs WebGPU (${made.reason}).`; throw new Error(made.reason); }
 const stage = made.stage;
 const fx = await createFxPass(stage.gpu);
 stage.setGround(() => 0, 14, 70);

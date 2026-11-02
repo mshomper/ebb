@@ -186,7 +186,7 @@ export const VIEWS = {
 /** @param {HTMLCanvasElement} probe a canvas to start the device with @param {any} body the turtle recipe's body */
 export async function createStage(probe, body) {
   const r = await initGpu(probe);
-  if (!r.ok) return { ok: /** @type {const} */ (false), reason: r.reason };
+  if (r.ok === false) return { ok: /** @type {const} */ (false), reason: r.reason };
   // The game shader's own shell plates (creature-draw.wgsl, between its shell heading and the fragment).
   const src = await fetch('../src/shaders/creature-draw.wgsl').then((x) => x.text());
   const shellCode = src.slice(src.indexOf('// ---- a turtle'), src.indexOf('@fragment'));

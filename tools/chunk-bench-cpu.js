@@ -47,7 +47,7 @@ const median = (a) => {
 
 /** @param {Uint8Array} bytes */
 async function gzipSize(bytes) {
-  const s = new Blob([bytes]).stream().pipeThrough(new CompressionStream('gzip'));
+  const s = new Blob([/** @type {BlobPart} */ (bytes)]).stream().pipeThrough(new CompressionStream('gzip'));
   return (await new Response(s).arrayBuffer()).byteLength;
 }
 

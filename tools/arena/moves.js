@@ -43,7 +43,7 @@ export function createMoveLayer(o) {
   let readied = null;
   /** The wick snare on the floor (one at a time). @type {{ x: number, z: number } | null} */
   let wick = null;
-  /** Moths in the air: where they are, where they go, how long left. @type {{ x: number, z: number, tx: number, tz: number, left: number }[]} */
+  /** Moths in the air: where they are, where they go, how long left. @type {{ x: number, z: number, tx: number, tz: number, left: number, key: string }[]} */
   let swarms = [];
   /** A crack racing out (Groundline): from, way, how far it has gone, what it already tripped. */
   /** @type {{ x: number, z: number, ux: number, uz: number, m: number, to: number, done: Set<number> } | null} */
@@ -55,6 +55,7 @@ export function createMoveLayer(o) {
   let snuffing = false;
 
   const M = (/** @type {string} */ id) => MR.moves[id];
+  /** The live foes (arena/hollow.js). @type {() => { x: number, z: number, id: number, size: number, broken?: boolean, foe: any }[]} */
   const foes = () => hollow.foes();
   const world = () => ({ open: hollow.youExtra().open });
 
