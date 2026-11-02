@@ -1,0 +1,348 @@
+{
+  "id": 1,
+  "slug": "stack-cave-rock-look",
+  "title": "How should the stack's mouth room get rock that reads as stone?",
+  "date": "2026-11-02",
+  "mode": "quick",
+  "deep": true,
+  "lenses": [
+    "ui",
+    "architecture"
+  ],
+  "status": "decided",
+  "context": "F19's mouth room was passed for now, with its polish left for later: the walls read as smoke, the floor as rolling dunes, and the rubble as flat outlined shapes. The cause is in the code. The walls get only two soft noise octaves and a faint shader bump, with no texture. The floor is one smooth noise octave. The rubble stones are faceted balls with flat colour and an outline, and they get no shadow or occlusion. The way this is fixed sets how the spring cave and the Hollow's rooms will look too, since they share the same field and shader.",
+  "depends_on": [],
+  "conflicts": [],
+  "options": [
+    {
+      "key": "A",
+      "name": "Detail in the shader only",
+      "summary": "Keep the room's shape as it is. Paint the cliffs' photographed rock onto it with triplanar mapping (albedo and normal), add a baked crease darkening and a wet sheen near the floor, and rebuild the rubble's shading.",
+      "sketch": "<svg viewBox='0 0 320 180' xmlns='http://www.w3.org/2000/svg'><rect x='0' y='0' width='320' height='180' fill='none'/><path d='M20 30 C 70 20, 90 70, 130 60 S 200 30, 230 70 S 290 90, 300 80 L300 150 L20 150 Z' fill='var(--muted)' opacity='0.35'/><path d='M20 30 C 70 20, 90 70, 130 60 S 200 30, 230 70 S 290 90, 300 80' fill='none' stroke='currentColor' stroke-width='3'/><g fill='var(--accent)'><circle cx='40' cy='40' r='2.5'/><circle cx='62' cy='34' r='2.5'/><circle cx='95' cy='55' r='2.5'/><circle cx='120' cy='66' r='2.5'/><circle cx='150' cy='54' r='2.5'/><circle cx='180' cy='42' r='2.5'/><circle cx='210' cy='50' r='2.5'/><circle cx='240' cy='76' r='2.5'/><circle cx='270' cy='86' r='2.5'/><circle cx='292' cy='84' r='2.5'/></g><text x='20' y='172' font-size='13' fill='currentColor'>shape stays smooth</text><text x='190' y='20' font-size='13' fill='currentColor'>texture on top</text></svg>",
+      "pros": [
+        "The smallest change: no new mesh, no change to walking or to the baked lantern light.",
+        "The rock matches the cliff outside, since it uses the same photographed texture and the same palette scaling as the pieces pass.",
+        "Cheap at run time: about six texture reads a pixel for albedo and normal."
+      ],
+      "cons": [
+        "The outlines stay blobby. Shader detail never changes silhouettes or shadows, and the smoke read comes mostly from the soft shapes.",
+        "The floor still rolls like dunes. A texture on a dune is a textured dune.",
+        "Triplanar blending can show smears on diagonal faces."
+      ],
+      "effort": "About 2 to 3 days of code.",
+      "source": "claude",
+      "assumptions": [
+        "The cliffs' rock scan reads well up close at 1 to 3 m, as it does on the cave mouth's outside.",
+        "Crease darkening can be baked from the field into the vertex colour beside the lantern's baked sight."
+      ],
+      "risks": [
+        "It looks better but still soft, and a second polish pass is needed later anyway.",
+        "Photo colour fights the palette rule unless it is scaled by the scan's mean, as the pieces pass already does."
+      ],
+      "estimates": [
+        {
+          "what": "Code",
+          "value": "2 to 3 days",
+          "basis": "triplanar scan port from piece-draw.wgsl (1 day), baked creases (half a day), rubble shading and wet floor (1 day)"
+        },
+        {
+          "what": "Frame cost",
+          "value": "about 6 extra texture reads a pixel",
+          "basis": "3 projections for albedo and 3 for normal"
+        }
+      ]
+    },
+    {
+      "key": "B",
+      "name": "Stone forms in the field, texture on top",
+      "summary": "Give the room's field stone shapes at the current mesh size: flat bedding ledges and floor slabs (terraced), faceted boulder bulges (a stacked-rocks layer that keeps the field a true distance), shallow joint grooves, and a rougher ceiling. Then add the cliffs' triplanar rock texture for the fine grain, and rebuild the rubble as real stones that take the lantern's shadow and the scan, with no outline.",
+      "sketch": "<svg viewBox='0 0 320 180' xmlns='http://www.w3.org/2000/svg'><rect x='0' y='0' width='320' height='180' fill='none'/><path d='M20 28 L60 28 L66 44 L110 44 L114 60 L150 56 L160 38 L200 38 L206 62 L250 66 L256 82 L300 82 L300 150 L20 150 Z' fill='var(--muted)' opacity='0.35'/><path d='M20 28 L60 28 L66 44 L110 44 L114 60 L150 56 L160 38 L200 38 L206 62 L250 66 L256 82 L300 82' fill='none' stroke='currentColor' stroke-width='3'/><path d='M40 100 L70 100 M90 112 L140 112 M180 104 L230 104' stroke='currentColor' stroke-width='2' opacity='0.6'/><g fill='var(--accent)'><circle cx='40' cy='34' r='2.5'/><circle cx='88' cy='50' r='2.5'/><circle cx='132' cy='62' r='2.5'/><circle cx='180' cy='44' r='2.5'/><circle cx='228' cy='70' r='2.5'/><circle cx='280' cy='88' r='2.5'/></g><text x='20' y='172' font-size='13' fill='currentColor'>ledges and slabs in the shape</text><text x='200' y='20' font-size='13' fill='currentColor'>texture on top</text></svg>",
+      "pros": [
+        "Fixes all three problems at their cause: the walls get ledges and edges, the floor gets slabs and sand pockets, and the rubble becomes stones.",
+        "The rubble joins the lantern's light: it casts and takes shadow and loses the cartoon outline.",
+        "The same field helpers serve the spring cave and the Hollow's rooms later, so the work pays back.",
+        "No new art from you: it is all procedural, tuned through recipes/world/stack-mouth.json."
+      ],
+      "cons": [
+        "Edges stay a little rounded at the 12 cm mesh size. Truly crisp cracks need a finer mesh or a different mesher, which this option does not include.",
+        "A richer field costs more to build: the room's mesh, built in a worker on entering, takes longer.",
+        "The walk surface changes, so the walking checks and the lantern spots need checking again."
+      ],
+      "effort": "About 3 to 4 days of code.",
+      "source": "claude",
+      "assumptions": [
+        "Forms of 20 cm and up read at the current 12 cm cell, and the triplanar texture carries everything finer.",
+        "The worker build stays short enough on entering (time it before and after; the room now builds in the zone's fade)."
+      ],
+      "risks": [
+        "Terraced and ridged shapes under the mesher can make stair-steps and slivers. Smoothing them back with soft blends brings the softness back, so the blend widths need tuning.",
+        "The baked lantern sight must be rebaked on the new shape, and walking must still clear the new ledges."
+      ],
+      "estimates": [
+        {
+          "what": "Code",
+          "value": "3 to 4 days",
+          "basis": "field forms: terraces, rock layer, joints (1.5 days); triplanar scan port (1 day); rubble as lit stones, no outline (half a day); retune and walk checks (half a day)"
+        },
+        {
+          "what": "Room build time",
+          "value": "about 3 to 10 times today's",
+          "basis": "each field sample gets several more noise and Voronoi evaluations at the same grid size"
+        },
+        {
+          "what": "Triangles",
+          "value": "about the same as today",
+          "basis": "the mesh size stays 12 cm"
+        }
+      ]
+    },
+    {
+      "key": "C",
+      "name": "A sculpted interior from you",
+      "summary": "You sculpt the room's inside as one model, with its normal and occlusion baked, and export it as a glb, as you did for the cave mouth's outside. The game draws your model with the cliffs' rock texture, and keeps the field only for walking and the lantern's light.",
+      "sketch": "<svg viewBox='0 0 320 180' xmlns='http://www.w3.org/2000/svg'><rect x='0' y='0' width='320' height='180' fill='none'/><polygon points='20,40 70,22 96,48 140,36 170,58 214,30 250,62 300,52 300,150 20,150' fill='var(--accent)' opacity='0.45'/><polyline points='20,40 70,22 96,48 140,36 170,58 214,30 250,62 300,52' fill='none' stroke='currentColor' stroke-width='3'/><path d='M20 52 C 80 44, 120 60, 170 62 S 260 60, 300 64' fill='none' stroke='currentColor' stroke-width='2' stroke-dasharray='6 5'/><text x='20' y='172' font-size='13' fill='currentColor'>your sculpted model</text><text x='170' y='88' font-size='13' fill='currentColor'>field: walking only</text></svg>",
+      "pros": [
+        "The best look: real sculpted stone, with crisp edges and baked detail exactly where you want it.",
+        "Your eye sets the room, as with the cave mouth's outside.",
+        "One small room costs little to draw: about 20,000 to 40,000 triangles."
+      ],
+      "cons": [
+        "Your time: a sculpt, a decimate, UVs and a bake before any code.",
+        "Walking and the model can drift apart: feet float or sink where the model leaves the field by more than 5 to 10 cm.",
+        "It does not carry to the Hollow's rooms, which are procedural, so their rock still needs the field route later."
+      ],
+      "effort": "About 8 to 16 hours of your time, plus 1 to 1.5 days of code.",
+      "source": "claude",
+      "assumptions": [
+        "You want to make it, and the room's layout (the arch, the rubble passage, the hook, the pool) stays where the code puts it.",
+        "The model can be fitted to within 5 to 10 cm of the walking field, or walking switches to the model's own surface."
+      ],
+      "risks": [
+        "The baked occlusion fights the physically computed light if used as colour. It has to be occlusion only.",
+        "Any later change to the room's layout means a new sculpt."
+      ],
+      "estimates": [
+        {
+          "what": "Your time",
+          "value": "8 to 16 hours",
+          "basis": "sculpt, decimate or retopo, UVs, normal and occlusion bake, glb export"
+        },
+        {
+          "what": "Code",
+          "value": "1 to 1.5 days",
+          "basis": "load the glb into the cave pass, sample its maps, align to the field, check walking"
+        },
+        {
+          "what": "Memory",
+          "value": "about 10 to 20 MB",
+          "basis": "20,000 to 40,000 triangles and 2k normal and occlusion maps"
+        }
+      ]
+    }
+  ],
+  "criteria": [
+    {
+      "name": "Reads as stone",
+      "scores": {
+        "A": 1,
+        "B": 2,
+        "C": 3
+      },
+      "note": "A leaves the soft shapes; B gives ledges and slabs; C gives crisp sculpted stone"
+    },
+    {
+      "name": "Matches the cliff outside",
+      "scores": {
+        "A": 3,
+        "B": 3,
+        "C": 3
+      },
+      "note": "all three use the cliffs' rock texture"
+    },
+    {
+      "name": "Your time",
+      "scores": {
+        "A": 3,
+        "B": 3,
+        "C": 1
+      }
+    },
+    {
+      "name": "Code effort",
+      "scores": {
+        "A": 3,
+        "B": 2,
+        "C": 2
+      }
+    },
+    {
+      "name": "Carries to the spring cave and the Hollow",
+      "scores": {
+        "A": 2,
+        "B": 3,
+        "C": 1
+      },
+      "note": "the field and shader are shared; a sculpt is for this room only"
+    }
+  ],
+  "evidence": [
+    {
+      "claim": "Bump and normal detail never change silhouettes or shadows; only real geometry does.",
+      "options": [
+        "A",
+        "B"
+      ],
+      "source": "Bump mapping (Wikipedia)",
+      "url": "https://en.wikipedia.org/wiki/Bump_mapping"
+    },
+    {
+      "claim": "Triplanar mapping blends three axis projections by the normal, about three texture reads per map, and needs no stored tangents.",
+      "options": [
+        "A",
+        "B",
+        "C"
+      ],
+      "source": "GPU Gems 3, ch. 1: Generating Complex Procedural Terrains Using the GPU",
+      "url": "https://developer.nvidia.com/gpugems/gpugems3/part-i-geometry/chapter-1-generating-complex-procedural-terrains-using-gpu"
+    },
+    {
+      "claim": "Stacking octaves of hashed rock-like spheres with smooth max and min gives faceted boulder detail while the field stays a true distance, unlike adding plain noise.",
+      "options": [
+        "B"
+      ],
+      "source": "Inigo Quilez, FBM detail in SDFs",
+      "url": "https://iquilezles.org/articles/fbmsdf/"
+    },
+    {
+      "claim": "A terrace curve keeps most of each step flat and rises steeply between them: the shape of bedding ledges and floor slabs.",
+      "options": [
+        "B"
+      ],
+      "source": "noise crate, Terrace modifier source",
+      "url": "https://docs.rs/crate/noise/0.8.1/source/src/noise_fns/modifiers/terrace.rs"
+    },
+    {
+      "claim": "Even-width crack lines come from a corrected Voronoi edge distance, suited to rock joints.",
+      "options": [
+        "B"
+      ],
+      "source": "Inigo Quilez, voronoi edges",
+      "url": "https://iquilezles.org/articles/voronoilines/"
+    },
+    {
+      "claim": "Deep Rock Galactic carves rooms from simple shapes and roughens them with a different noise per biome (sharp ridges in one, eroded walls in another).",
+      "options": [
+        "B"
+      ],
+      "source": "Below Decks at Ghost Ship: Cave Generation in Deep Rock Galactic (community repost)",
+      "url": "https://devtrackers.gg/deep-rock-galactic/p/8cd5ca9c-below-decks-at-ghost-ship-cave-generation-in-deep-rock-galactic"
+    },
+    {
+      "claim": "Organic caves built from modelled pieces still need free pieces on top and lighting to hide joins; seams and repeated detail are the main risks.",
+      "options": [
+        "C"
+      ],
+      "source": "Skyrim's Modular Approach to Level Design (GDC 2013 write-up)",
+      "url": "https://www.gamedeveloper.com/design/skyrim-s-modular-approach-to-level-design"
+    },
+    {
+      "claim": "Baking normal and occlusion maps from a high sculpt onto a low mesh is built into Blender.",
+      "options": [
+        "C"
+      ],
+      "source": "Render Baking, Blender Manual",
+      "url": "https://docs.blender.org/manual/en/latest/render/cycles/baking.html"
+    },
+    {
+      "claim": "The cliffs' photographed rock already exists as a texture array and is sampled triplanar in piece-draw.wgsl, scaled by its mean so the palette still sets the colour; the cave pass binds no textures today and could take the same maps.",
+      "options": [
+        "A",
+        "B",
+        "C"
+      ],
+      "judgment": true
+    },
+    {
+      "claim": "The smoke read comes mostly from the field: two soft noise octaves on the walls (0.9 and 3.6 cycles a metre), one on the floor, and rubble as faceted balls with outlines and no shadow.",
+      "options": [
+        "A",
+        "B"
+      ],
+      "judgment": true
+    }
+  ],
+  "recommended": "B",
+  "recommendation": "Only real shape changes the smoke read, and B fixes the walls, the floor and the rubble at their cause with no art time from you. The work also carries to the spring cave and the Hollow.",
+  "confidence": "lean",
+  "change_mind": "If you would rather sculpt this one room yourself and want it crisper than procedural shapes give at a 12 cm mesh, C wins. If the richer field makes entering the room slow (more than about a second of build), B shrinks back toward A plus a lighter set of forms.",
+  "chosen": "B",
+  "reason": null,
+  "decided_on": "2026-11-02",
+  "superseded_by": null,
+  "challenge": null,
+  "settles": [
+    {
+      "key": "procedural cave rock look",
+      "value": "stone forms (terraced ledges, rock-sphere detail layer, Voronoi joints) in the signed distance field at mesh scale; the photographed rock scan, triplanar and scaled by its mean, for fine grain"
+    }
+  ],
+  "brief": {
+    "files": [
+      {
+        "path": "src/world/spring/cave-field.js",
+        "change": "add shared stone-form helpers: a terrace curve for bedding ledges and floor slabs, a stacked rock-sphere detail layer joined with smooth max and min (stays a true distance), Voronoi edge grooves for joints; floorAt gets slabs and sand pockets in place of the one smooth octave"
+      },
+      {
+        "path": "src/world/stack/mouth-field.js",
+        "change": "mouthShape uses the new forms for the chamber, ceiling and passages; numbers from the recipe; rebake the lantern sight and occlusion on the new shape"
+      },
+      {
+        "path": "src/render/passes/cave.js",
+        "change": "bind the ground-detail texture arrays (views a and b) and their sampler in the rock layout, as the pieces pass does"
+      },
+      {
+        "path": "src/shaders/cave-draw.wgsl",
+        "change": "port scanRead from piece-draw.wgsl: triplanar cliff layer on the sides and rock layer on top, albedo scaled by the scan mean, normal blended; keep the sin-noise bump only as a faint extra; things get the scan too"
+      },
+      {
+        "path": "src/world/stack/mouth.js",
+        "change": "rubble as real stones: lumped stones with their own normals, given the baked lantern sight and occlusion, written as rock (normal group 0) so they lose the outline"
+      },
+      {
+        "path": "recipes/world/stack-mouth.json",
+        "change": "every new number: terrace step and sharpness, rock layer octaves and size, joint spacing and depth, slab size, scan tile and strength"
+      },
+      {
+        "path": "tools/unit-tests-stack.js",
+        "change": "tests: the field stays a usable distance (gradient near 1), the floor has flat slabs within a tolerance, rubble vertices carry sight and occlusion, mesh build time within budget"
+      }
+    ],
+    "steps": [
+      "Time the current mouth mesh build in the worker and note its triangle count (the baseline).",
+      "Add the stone-form helpers in cave-field.js and switch the mouth room's walls, ceiling and floor to them, at the same 12 cm cell.",
+      "Rebake the lantern sight and occlusion; check walking clears the new ledges and the lantern spots, hook and note still sit right.",
+      "Bind the rock scan in the cave pass and port the triplanar read into cave-draw.wgsl.",
+      "Rebuild the rubble as lit, outline-free stones with the scan.",
+      "Tune in the game with screenshots at day and at night with the lantern hung (?stack=mouth, ?stack=lamp&hour=22); send them to Matt before handing over.",
+      "Leave the spring cave's look as it is unless the shared helpers change it; if they do, check its screenshots too."
+    ],
+    "done_when": [
+      "Side by side with today's shots, the walls show ledges and edges, the floor shows slabs and sand pockets, the rubble reads as stones with shadows and no outline.",
+      "The rock up close matches the cliff texture outside the cave mouth.",
+      "Entering the room stays within the zone's fade (mesh build under about one second).",
+      "Typecheck at 0, affected tests pass, determinism unchanged (the room is live only)."
+    ],
+    "validation": [
+      "node tools/run-tests.mjs --affected and node tools/typecheck.mjs.",
+      "Screenshots in the game at the same camera spots as stack-cave-shots-2026-11-02, checked by Claude before they reach Matt.",
+      "Build time logged before and after."
+    ],
+    "avoid": [
+      "Plain noise added onto the distance field (breaks distances and the baked soft shadows); use the rock-sphere layer.",
+      "Smooth blends so wide they round the ledges back into blobs.",
+      "Painting colour into the rock to fake the style; the palette stays at the tonemap.",
+      "Shrinking the mesh cell or switching mesher; that was left out of this option.",
+      "Changing the room's layout (arch, rubble passage, hook, pool) or the walking rules."
+    ]
+  }
+}
