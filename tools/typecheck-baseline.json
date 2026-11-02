@@ -1,19 +1,8 @@
 {
  "checker": "typescript@5.9.3",
- "total": 391,
+ "total": 344,
  "byFile": {
   "src/app.js": {
-   "TS2322": 1
-  },
-  "src/app/actions.js": {
-   "TS2339": 11,
-   "TS2367": 15,
-   "TS2678": 3
-  },
-  "src/app/camp.js": {
-   "TS2353": 1
-  },
-  "src/app/test-links.js": {
    "TS2322": 1
   },
   "src/audio/keepsake-sounds.js": {
@@ -21,9 +10,6 @@
   },
   "src/audio/music/synth/bell.js": {
    "TS2339": 1
-  },
-  "src/input/desktop.js": {
-   "TS2322": 2
   },
   "src/main.js": {
    "TS2339": 8,
@@ -74,16 +60,16 @@
    "TS2349": 1
   },
   "src/ui/pack.js": {
-   "TS2322": 4
+   "TS2322": 1
   },
   "src/ui/station.js": {
-   "TS2322": 9
+   "TS2322": 5
   },
   "src/ui/tools.js": {
    "TS2339": 1
   },
   "src/ui/walk.js": {
-   "TS2322": 8
+   "TS2322": 1
   },
   "src/ui/walker-page.js": {
    "TS2322": 2

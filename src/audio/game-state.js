@@ -25,6 +25,7 @@ const DAY = 24 * H;
  * @property {number[]} target     camera target [x, y, z]
  * @property {import('../world/sound-near.js').SoundNear} near
  * @property {string[]} residents  settled species ids
+ * @property {number} [under]      0..1, how far down in a zone below the island
  */
 
 /**

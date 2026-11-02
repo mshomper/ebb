@@ -40,8 +40,9 @@ export function createCavePass(o) {
     if (!m.idx.length) { delete meshes[name]; return; }
     const vbuf = makeBuffer(device, { label: `cave-${name}-v`, size: Math.max(16, m.data.byteLength), usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST });
     const ibuf = makeBuffer(device, { label: `cave-${name}-i`, size: Math.max(16, Math.ceil(m.idx.byteLength / 4) * 4), usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST });
-    device.queue.writeBuffer(vbuf, 0, m.data);
-    device.queue.writeBuffer(ibuf, 0, m.idx);
+    // The meshes come from a worker as plain ArrayBuffers; the checker cannot tell, hence the casts.
+    device.queue.writeBuffer(vbuf, 0, /** @type {Float32Array<ArrayBuffer>} */ (m.data));
+    device.queue.writeBuffer(ibuf, 0, /** @type {Uint32Array<ArrayBuffer>} */ (m.idx));
     meshes[name] = { vbuf, ibuf, count: m.idx.length };
   }
 

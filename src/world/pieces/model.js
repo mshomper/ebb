@@ -35,7 +35,7 @@ import { cleanHoleFields } from '../dig/holes.js';
 /**
  * @typedef {{ id: string, kind: 'stone' | 'log' | 'stepping' | 'steps' | 'raft' | 'pile' | 'perch' | 'lantern', x: number, z: number, yaw: number, seed: number, size: number, length?: number,
  *   rise?: number, run?: string, x2?: number, z2?: number, top?: number, bottom?: number, risers?: number, placedHour: number,
- *   holds?: string, handfuls?: number, slot?: string }} Piece
+ *   holds?: string, handfuls?: number, slot?: string, mica?: boolean }} Piece
  *   length: a log's length (m); rise, run: a pond stone's; x2, z2, top, bottom, risers: a flight's (yaw 0);
  *   holds, handfuls, slot: a pile's
  * @typedef {{ version: number, list: Piece[], nextId: number, arrived: boolean }} PiecesState

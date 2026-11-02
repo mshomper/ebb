@@ -73,7 +73,7 @@ export function pieceSolids(list, carried, strand) {
 /**
  * Keep the walk's solids in step with the island.
  * @param {{ walk: { setSolids: (list: Solid[]) => void }, where: { slotAt: (id: string) => any }, benchAt: (id: string) => any,
- *   rackYawDeg: number, strand: () => any[], boat: () => { x: number, z: number, yaw: number } | null, boatSize: { beamM: number, lengthM: number } }} o
+ *   rackYawDeg: number, strand: () => any[], boat: () => { x: number, z: number, yaw: number } | null, boatSize: { beamM: number, lengthM: number }, extra?: () => Solid[] }} o
  */
 export function createSolidsLive(o) {
   let key = '', strandKey = '', acc = 0, dirty = true;

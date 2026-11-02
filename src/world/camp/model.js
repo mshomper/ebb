@@ -18,7 +18,7 @@ import { cleanLoad } from './furnace.js';
 /**
  * @typedef {{ slot: string, kind: string, seed: number, placedHour: number, stack?: number,
  *   holds?: import('../pack/store.js').Holds, bunches?: import('../pack/piles.js').Bunches,
- *   pot?: string | null, water?: import('./pots.js').Water, shaped?: string[], u?: number, v?: number, load?: import('./furnace.js').Load }} SlotRecord
+ *   pot?: string | null, water?: import('./pots.js').Water, shaped?: string[], u?: number, v?: number, load?: import('./furnace.js').Load, slip?: boolean }} SlotRecord
  *   stack, holds: the hamper's (P2j); bunches: the drying rack's (S2); pot: the hearth's pot; water:
  *   a pot's; shaped: the pieces waiting pale on the workbench (S4, S5); u, v: a rim slot's own place (the nest box);
  *   load: the clay furnace's ore and charcoal, burning through the night (furnace.js)
