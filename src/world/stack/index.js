@@ -21,13 +21,18 @@ import { kelvinRgb, flicker } from '../camp/light.js';
 import { stackLayout, makeStackShape, makeCauseway, causewayFrom, inBox } from './layout.js';
 import { startDayOf, lightDays, lightAt, roadH, duskOf } from './schedule.js';
 import { cleanStack } from './model.js';
+import { readMouth, mouthPieceMesh, mouthPropMesh, mouthDark, mouthFloor } from './mouth-mesh.js';
+import { packMesh } from '../creatures/bodies.js';
+
+const IDENTITY = new Float32Array([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
 
 const N = WORLD_CELLS;
 
 /**
  * @param {{ S: any, R: any, land: any, terrain: import('../terrain/index.js').Terrain, seed: number, terrainSeed: number,
  *   isletDeg: number | null, tide: { periodH: number, phaseH: number }, hours: () => number, base: (x: number, z: number) => number[],
- *   test?: string | null }} o
+ *   test?: string | null, mouth?: { footprint: any, model: ArrayBuffer | null } }} o
+ *   mouth: Matt's cave mouth (assets/models/stack): its footprint (the ground under its walls is raised) and its model
  *   S: the land recipe's stack block; R: recipes/setpieces/stack.json; seed: subSeed(world, 'stack');
  *   hours: game hours now (world time); base: the island as generated (landform baseSampler: height and paint shares);
  *   test: `?stack` ('' the road up now, 'road' its reveal now, 'lights' an evening with the light, 'mouth' you in the mouth)
@@ -37,7 +42,10 @@ export function createStack(o) {
   const seabed = o.land.seabedDepth ?? -3;
   const L = stackLayout(S, o.land, o.terrainSeed, o.seed, (x, z) => o.base(x, z)[0], o.isletDeg);
   if (!L) return null;
-  const shape = makeStackShape(L, S, o.seed, seabed);
+  const shape = makeStackShape(L, S, o.seed, seabed, o.mouth?.footprint ?? null);
+  const mouthYaw = Math.atan2(-L.ux, -L.uz), myc = Math.cos(mouthYaw), mys = Math.sin(mouthYaw);
+  /** A world point in the cave mouth's frame [x across, z out toward the island]. @param {number} x @param {number} z */
+  const inMouthFrame = (x, z) => { const dx = x - L.front[0], dz = z - L.front[1]; return [dx * myc - dz * mys, dx * mys + dz * myc]; };
   const center = islandCenter(o.land);
   const open = terrain.openBounds();
   const inOpen = (/** @type {number} */ x, /** @type {number} */ z) => x >= open.openMin[0] && x <= open.openMax[0] && z >= open.openMin[1] && z <= open.openMax[1];
@@ -225,6 +233,12 @@ export function createStack(o) {
     return [L.shore[0], L.shore[1]];
   }
 
+  /** Is a point in the cave mouth's chamber or its opening? @param {number} x @param {number} z */
+  function atMouth(x, z) {
+    const [mx, mz] = inMouthFrame(x, z), D = R.mouthDark;
+    return Math.abs(mx - D.x) < D.halfWidthM + 0.8 && mz > D.z - 1.5 && mz < 0.6;
+  }
+
   return {
     id: 'stack',
     layout: L,
@@ -240,10 +254,26 @@ export function createStack(o) {
     /** The ring's dashed edge for the brush marks (the camp pad's style). */
     ring: { x: L.x, z: L.z, r: L.noBuildM },
     /**
-     * The systems made after it (src/app/stack.js). @param {{ camera: any, water?: any, dayLengthH: () => number, walker: () => { x: number, z: number, yaw: number } | null }} a
+     * The systems made after it (src/app/stack.js). @param {{ camera: any, water?: any, pieces?: any, shadowProps?: any, dayLengthH: () => number, walker: () => { x: number, z: number, yaw: number } | null }} a
      */
     attach(a) {
       dayLengthH = a.dayLengthH; walker = a.walker; water = a.water ?? null;
+      // Matt's cave mouth: drawn with the pieces (the rock scan, the same stone as the cliff), cast
+      // into the sun's shadow by a cast-only props pass (so its chamber is in its own shade), and the
+      // dark at the chamber's back where the way on goes in.
+      if (o.mouth?.model && a.pieces?.pass && a.pieces.addBeings) {
+        const K = R.mouthLook, m = readMouth(o.mouth.model), pm = mouthPieceMesh(m, K.stone, K.occlusion), dk = mouthDark(R.mouthDark);
+        const fl = mouthFloor(o.mouth.footprint, K.floor, K.occlusion, R.mouthModel.sinkM + 0.012);
+        a.pieces.pass.setMesh('stack-mouth', { data: packMesh(pm), indices: pm.indices });
+        a.pieces.pass.setMesh('stack-mouth-dark', { data: packMesh(dk), indices: dk.indices });
+        a.pieces.pass.setMesh('stack-mouth-floor', { data: packMesh(fl), indices: fl.indices });
+        const at = { x: L.front[0], y: L.apronM - R.mouthModel.sinkM, z: L.front[1], yaw: mouthYaw, size: 1, bone: IDENTITY, slope: [0, 0], seed: 3.1, half: [3.3, 7.6] };
+        a.pieces.addBeings(() => [{ ...at, mesh: 'stack-mouth' }, { ...at, mesh: 'stack-mouth-floor' }, { ...at, mesh: 'stack-mouth-dark', plain: true }]);
+        if (a.shadowProps) {
+          a.shadowProps.addMesh('stack-mouth', mouthPropMesh(m), [120, 116, 108], 0.9);
+          a.shadowProps.setProps([{ key: 'stack-mouth', x: at.x, y: at.y, z: at.z, yaw: mouthYaw }]);
+        }
+      }
       a.camera?.addReach({ ax: center.x, az: center.z, bx: L.x, bz: L.z, r: L.reachM + S.cameraMarginM });
       const live = get('terrainLive');
       if (live?.mirror) guardNow(live.mirror);
@@ -286,7 +316,7 @@ export function createStack(o) {
     /** The card a tap on the stack or at its mouth opens, or null. @param {number} x @param {number} z */
     cardAt(x, z) {
       const W = R.words;
-      if (saved().risen && Math.hypot(x - L.mouth[0], z - L.mouth[1]) <= 1.4) {
+      if (saved().risen && atMouth(x, z)) {
         return { sp: 'setpiece:stack-mouth', stackMouth: true, name: W.mouthName, sub: null, icon: 'stack', text: W.mouth,
           wx: L.stand[0], wz: L.stand[1], r: 0.4, reachR: 0.9, stage: -1, noPage: true, canCarry: false };
       }

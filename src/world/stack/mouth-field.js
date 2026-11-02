@@ -32,8 +32,10 @@ export function mouthShape(S, seed) {
    */
   function passage(P, x, y, z) {
     const dx = x - P.at[0], dz = z - P.at[1], s = dx * P.dir[0] + dz * P.dir[1], t = Math.abs(-dx * P.dir[1] + dz * P.dir[0]);
-    const roof = P.heightM * Math.sqrt(Math.max(0, 1 - (t / P.halfWidthM) ** 2));
-    return Math.min(P.halfWidthM - t, roof - y, y + 0.05, P.lengthM - s, s + 1.2);
+    // Ragged, not a doorway: its width and roof wander with the rock (seeded, the same every time).
+    const g = S.passageRag, k = 1 + g.amount * (noise3(seed + 11, x * g.scale, y * g.scale, z * g.scale) - 0.5) * 2;
+    const hw = P.halfWidthM * k, roof = P.heightM * (1 + g.amount * (noise3(seed + 13, x * g.scale, 0.5, z * g.scale) - 0.5) * 2) * Math.sqrt(Math.max(0, 1 - (t / hw) ** 2));
+    return Math.min(hw - t, roof - y, y + 0.05, P.lengthM - s, s + 1.2);
   }
   /** The rock's wear, as the chamber's (cave-field.js air): the passages are worn the same. @param {number} x @param {number} y @param {number} z */
   const wear = (x, y, z) => {
@@ -42,8 +44,9 @@ export function mouthShape(S, seed) {
   };
   /** @param {number} x @param {number} y @param {number} z */
   function air(x, y, z) {
-    let a = base.air(x, y, z, 0);
-    for (const P of [S.arch, S.rubble]) { const q = passage(P, x, y, z); if (q > -0.8) a = smax(a, q + wear(x, y, z) * 1.4, 0.25); }
+    // No chimney top: the spring cave's air() drops that input (claude/typecheck-18); the cast reads either form.
+    let a = /** @type {any} */ (base).air(x, y, z);
+    for (const P of [S.arch, S.rubble]) { const q = passage(P, x, y, z); if (q > -0.8) a = smax(a, q + wear(x, y, z) * S.passageRag.wear, 0.25); }
     return a;
   }
   /** The floor: the chamber's, or level in a passage. @param {number} x @param {number} z */

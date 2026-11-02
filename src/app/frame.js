@@ -32,7 +32,7 @@ export function start(ctx) {
     raf = requestAnimationFrame(frame);
     const cpuStart = performance.now();
     if (frameIndex === 0) last = now; // the first interval includes loading; don't count it
-    const realDt = Math.min((now - last) / 1000, 0.25);
+    const realDt = Math.max(0, Math.min((now - last) / 1000, 0.25));
     const frameMs = now - last;
     last = now;
 
@@ -222,6 +222,16 @@ export function start(ctx) {
     frameIndex++;
   }
   raf = requestAnimationFrame(frame);
+  /**
+   * Run n frames now, dtMs apart, without waiting on the browser (a page whose tab is hidden gets no
+   * animation frames: tools and testing step it by hand to see it). @param {number} n @param {number} [dtMs]
+   */
+  ctx.stepFrames = (n, dtMs = 33) => {
+    for (let i = 0; i < n && running; i++) { frame(last + dtMs); cancelAnimationFrame(raf); }
+    // Back to the browser's own time, so the next real frame never steps backwards.
+    last = performance.now();
+    if (running) raf = requestAnimationFrame(frame);
+  };
   /** Stops the loop (src/app.js stop). */
   ctx.stopFrames = () => {
     running = false;

@@ -30,6 +30,8 @@ struct CaveUniforms {
   lamp: vec4f,      // xyz: its flame (world); w: its glass's glow (nits), 0 when it is cold
   lampE: vec4f,     // rgb: its luminous intensity (cd, flicker folded in); w: 1 when the rock carries baked light (vertex col: r, g lamp sight, b occlusion)
   lampMix: vec4f,   // x: which baked sight (0 the floor spot, 1 the hook); y: its bounce per cd (lux); z: the air's scatter per meter; w: wet glint strength
+  soot: vec4f,      // xyz: the middle of a sooted opening (world; the mouth's arch); w: how far the soot reaches (m), 0 for none
+  sootLook: vec4f,  // x: how dark it goes (0..1); yzw: unused
 };
 
 @group(0) @binding(0) var<uniform> frame: FrameUniforms;
@@ -60,8 +62,11 @@ fn vnoise(p: vec3f) -> f32 {
 
 /** The rock's bump height: a coarse and a fine layer of noise (m, small). */
 fn bump(w: vec3f) -> f32 {
-  let p = local(w);
-  return vnoise(p * 7.0) * 0.6 + vnoise(p * 23.0) * 0.3 + smoothstep(0.35, 0.65, vnoise(vec3f(p.x * 1.6, p.y * 11.0, p.z * 1.6))) * 0.3;
+  // The stack's mouth (lit raking by its lantern) takes a broader, softer grain: the finest layer read
+  // as blocks there. The spring's cave keeps its own.
+  let soft = cu.soot.w > 0.0;
+  let p = local(w) * select(1.0, 0.55, soft);
+  return vnoise(p * 7.0) * 0.6 + vnoise(p * 23.0) * select(0.3, 0.08, soft) + smoothstep(0.35, 0.65, vnoise(vec3f(p.x * 1.6, p.y * 11.0, p.z * 1.6))) * select(0.3, 0.12, soft);
 }
 
 /** A point in the cave's own frame (the noise stays precise near the world's far corners). */
@@ -181,10 +186,22 @@ fn lampHaze(p: vec3f) -> vec3f {
     let up = smoothstep(0.55, 0.85, n.y);
     // Mottled and banded like limestone, darker in the hollows that face away from the light.
     let q = local(p);
-    let band = 0.8 + 0.4 * smoothstep(0.35, 0.65, vnoise(vec3f(q.x * 0.8, q.y * 9.0, q.z * 0.8)));
-    let grain = 0.75 + 0.5 * vnoise(q * 11.0);
+    let soft = cu.soot.w > 0.0;
+    let band = 0.8 + 0.4 * smoothstep(select(0.35, 0.2, soft), select(0.65, 0.8, soft), vnoise(vec3f(q.x * 0.8, q.y * select(9.0, 3.2, soft), q.z * 0.8)));
+    let grain = 0.75 + 0.5 * vnoise(q * select(11.0, 4.0, soft));
     let m = (0.7 + 0.6 * smoothstep(0.3, 0.7, vnoise(q * 2.3))) * band * grain * mix(0.6, 1.0, smoothstep(-0.3, 0.6, n.y));
     albedo = mix(mix(cu.rock.rgb, cu.floorAlb.rgb, up), cu.rockWet.rgb, wet * 0.8) * m;
+    // Old soot round the arch's opening, thicker above it where the smoke went up, and the scratched
+    // signs in it: pale fine lines where the soot was scored through.
+    if (cu.soot.w > 0.0) {
+      let sd = (p - cu.soot.xyz) / vec3f(cu.soot.w, cu.soot.w * 1.35, cu.soot.w);
+      let up = smoothstep(-0.6, 0.7, (p.y - cu.soot.y) / cu.soot.w);
+      // A band hugging the opening's rim (the opening itself is air), heaviest above it.
+      let dn = length(sd);
+      let sootK = smoothstep(0.28, 0.42, dn) * (1.0 - smoothstep(0.7, 1.0, dn)) * (0.4 + 0.6 * up) * (0.7 + 0.3 * vnoise(q * 4.0));
+      let scratch = smoothstep(0.9, 0.96, vnoise(vec3f(q.x * 26.0, q.y * 2.2, q.z * 26.0))) * smoothstep(0.25, 0.6, sootK) * (1.0 - smoothstep(0.75, 0.95, sootK));
+      albedo *= (1.0 - cu.sootLook.x * sootK) + scratch * 1.4;
+    }
     // Under the water: darker still, weed-stained, and broken up (the bed of a rock pool).
     let under = 1.0 - smoothstep(cu.pool.y - 0.06, cu.pool.y, p.y);
     albedo *= mix(1.0, 0.45 + 0.5 * vnoise(q * 6.0), under);
@@ -259,7 +276,10 @@ fn waterNormal(p: vec3f) -> vec3f {
   let f = cu.water.w + (1.0 - cu.water.w) * pow(1.0 - max(dot(n, v), 0.0), 5.0);
   // The reflection: the hole's bright disc where the mirrored ray meets it, else the dim rock above.
   let r = reflect(-v, n);
-  var refl = cu.bounce.rgb * select(0.15, 0.04, cu.lamp.w > 0.0);
+  // The dark cave mirrored: little but what is bright (the hole, a lantern), the ripples breaking it up
+  // (the stack's mouth, with soot set: darker still, as still cave water reads).
+  let dimRefl = select(0.15, 0.025, cu.soot.w > 0.0);
+  var refl = cu.bounce.rgb * dimRefl * (0.5 + vnoise(local(p) * 3.0 + n * 6.0));
   if (r.y > 0.01) {
     let q = p + r * ((cu.hole.y - p.y) / r.y);
     let inHole = 1.0 - smoothstep(cu.hole.w * 0.8, cu.hole.w * 1.1, length(q.xz - cu.hole.xz));
@@ -274,16 +294,15 @@ fn waterNormal(p: vec3f) -> vec3f {
   let lampScatter = cu.tint.rgb * (lampIn / PI) * (1.0 - T) * frame.exposure;
   var lampRefl = vec3f(0.0);
   if (cu.lamp.w > 0.0) {
-    // The lit rock over the pool, mirrored: the reflected ray meets the roof about a metre and a half
-    // up, lit by the lantern as the rock is (dim, warm, moving with the ripples).
-    let q = p + r * 1.6; let tq = cu.lamp.xyz - q;
-    let grain = 0.25 + 1.1 * smoothstep(0.2, 0.8, vnoise(local(q) * 2.6)) * (0.6 + 0.4 * vnoise(local(q) * 9.0));
-    lampRefl = cu.rock.rgb * 0.45 * grain * cu.lampE.rgb / max(dot(tq, tq), 0.15) / PI;
     // The flame itself, a bright smear broken by the ripples.
     let toL = cu.lamp.xyz - p; let lr = max(dot(r, normalize(toL)), 0.0);
-    lampRefl += vec3f(1.0, 0.6, 0.28) * cu.lamp.w * (pow(lr, 2000.0) + pow(lr, 160.0) * 0.04);
+    lampRefl = vec3f(1.0, 0.6, 0.28) * cu.lamp.w * (pow(lr, 4000.0) + pow(lr, 600.0) * 0.0015);
   }
-  let color = mix(under * T + scatter + lampScatter, (refl + lampRefl) * frame.exposure, f) + own + lampHaze(p) * frame.exposure;
+  // The air's glow round a lantern: what shows through the water already carries it (the copy), so it
+  // comes off before the water dims what is under it, and goes on once, in front.
+  let hz = lampHaze(p) * frame.exposure;
+  let below = max(under - hz, vec3f(0.0));
+  let color = mix(below * T + scatter + lampScatter, (refl + lampRefl) * frame.exposure, f) + own + hz;
   return FsOut(vec4f(color, 1.0), vec4f(octEncode(n), 1.0, 0.0));
 }
 

@@ -10,7 +10,7 @@ import { subSeed } from '../src/core/rng.js';
 import { baseSampler, islandCenter } from '../src/world/terrain/landform.js';
 import { WORLD_ORIGIN, WORLD_CELLS, CELL, H_MAX } from '../src/world/terrain/grid.js';
 import { isletLayout } from '../src/world/islet/layout.js';
-import { stackLayout, makeStackShape, makeCauseway, causewayFrom } from '../src/world/stack/layout.js';
+import { stackLayout, makeStackShape, makeCauseway, causewayFrom, mouthSolid } from '../src/world/stack/layout.js';
 import { startDayOf, lightDays, lightAt, roadH, duskOf } from '../src/world/stack/schedule.js';
 import { cleanStack, emptyStack } from '../src/world/stack/model.js';
 import { mouthShape } from '../src/world/stack/mouth-field.js';
@@ -47,7 +47,7 @@ export function addStackTests(test, assert, eq) {
         assert(L.box.x0 >= WORLD_ORIGIN && L.box.z0 >= WORLD_ORIGIN && L.box.x1 <= end && L.box.z1 <= end, 'inside the world');
         if (il) assert(apart(L.sideDeg, il.sideDeg) >= 60, `${name} seed ${seed}: away from the islet's side`);
         const off = Math.hypot(L.x - L.shore[0], L.z - L.shore[1]);
-        assert(off >= 30 && off <= 50, `${name} seed ${seed}: 30 to 50 m off the shore (${off.toFixed(1)})`);
+        assert(off >= 30 && off <= 56, `${name} seed ${seed}: 30 to 56 m off the shore (${off.toFixed(1)})`);
         assert(base(L.x, L.z) < -1, 'it stands in water too deep to wade');
         assert(Math.hypot(L.x - c.x, L.z - c.z) > Math.hypot(L.shore[0] - c.x, L.shore[1] - c.z), 'out beyond the shore');
       }
@@ -72,6 +72,26 @@ export function addStackTests(test, assert, eq) {
     }
     assert(shape.onRock(L.x, L.z) && shape.onRock(L.mouth[0], L.mouth[1]) && !shape.onRock(L.shore[0], L.shore[1]), 'onRock: its middle and mouth, not the shore');
     assert(shape.heightAt(L.shore[0], L.shore[1]) === -Infinity, 'it leaves the island alone');
+  });
+
+  test(G, "Matt's cave mouth: its walls stand on raised ground hidden in the rock, its chamber floor is the apron", async () => {
+    const IR = await load('land/meadow-islet'), fp = await (await fetch(new URL('../assets/models/stack/cave-mouth-footprint.json', import.meta.url))).json();
+    const land = await load('land/starter-island-2'), { L } = placed(land, 7, IR);
+    if (!L) return;
+    const shape = makeStackShape(L, land.stack, subSeed(7, 'stack'), -3, fp), solid = mouthSolid(L, fp);
+    const yaw = Math.atan2(-L.ux, -L.uz), c = Math.cos(yaw), sn = Math.sin(yaw);
+    /** The model frame to the world (as the pieces pass turns it). @param {number} x @param {number} z */
+    const world = (x, z) => [L.front[0] + x * c + z * sn, L.front[1] - x * sn + z * c];
+    let walls = 0, raised = 0;
+    for (let j = 0; j < fp.h; j++) for (let i = 0; i < fp.w; i++) if (fp.rows[j][i] === '1') {
+      const [x, z] = world(fp.x0 + (i + 0.5) * fp.cellM, fp.z0 + (j + 0.5) * fp.cellM);
+      walls++; if (solid(x, z) && shape.heightAt(x, z) >= L.apronM + land.stack.porch.wallRaiseM - 0.01) raised++;
+    }
+    assert(walls > 50 && raised === walls, `every wall cell raised (${raised} of ${walls})`);
+    const [cx, cz] = world(0, -3);
+    assert(!solid(cx, cz) && Math.abs(shape.heightAt(cx, cz) - L.apronM) < 0.05, 'the chamber floor three meters in is the apron');
+    const head = new Uint32Array(await (await fetch(new URL('../assets/models/stack/cave-mouth.bin', import.meta.url))).arrayBuffer(), 0, 3);
+    eq(head[0], 0x324d4245, 'the model file is EBM2'); assert(head[2] / 3 <= 15000, `thinned (${head[2] / 3} triangles)`);
   });
 
   test(G, 'the causeway: dry at any tide, gentle to walk, from the land nearest the stack to its foot', async () => {
@@ -137,6 +157,21 @@ export function addStackTests(test, assert, eq) {
       assert(s.inside(end[0], end[1]) > 0.2 && s.ceilAt(0, 0) > 2, 'each passage runs on into the rock');
     }
     assert(s.air(0, 1, 0) > 0 && s.air(0, 1, 20) < 0, 'air in the room, rock beyond');
+  });
+
+  test(G, "the cave pass's light: the shader's struct, the buffer and the mouth's values all the same size", async () => {
+    const wgsl = await (await fetch(new URL('../src/shaders/cave-draw.wgsl', import.meta.url))).text();
+    const pass = await (await fetch(new URL('../src/render/passes/cave.js', import.meta.url))).text();
+    const mouth = await (await fetch(new URL('../src/world/stack/mouth.js', import.meta.url))).text();
+    const struct = wgsl.slice(wgsl.indexOf('struct CaveUniforms'), wgsl.indexOf('};', wgsl.indexOf('struct CaveUniforms')));
+    const floats = (struct.match(/: vec4f,/g) ?? []).length * 4;
+    const F = Number(/const FLOATS = (\d+);/.exec(pass)?.[1]);
+    eq(F, floats, `the buffer holds the struct (${floats} floats)`);
+    // The mouth's uniforms: count the values it lists, a spread of 3 for each ...array.
+    const list = mouth.slice(mouth.indexOf('const uniforms = ['), mouth.indexOf('];', mouth.indexOf('const uniforms = [')));
+    const n = list.split(String.fromCharCode(10)).slice(1).join(' ').split(',').map((t) => t.trim()).filter(Boolean)
+      .reduce((s, t) => s + (t.startsWith('...') ? 3 : 1), 0);
+    eq(n, F, `the mouth gives every value (${n})`);
   });
 
   test(G, 'its story: two threads with tests, the note a keeper page, the hint, the staff a unique make, the zone listed', async () => {

@@ -19,6 +19,7 @@ import { createStack } from '../world/stack/index.js';
 import { createRoadReveal } from '../world/stack/reveal.js';
 import { createStackMouth } from '../world/stack/mouth.js';
 import { createCavePass } from '../render/passes/cave.js';
+import { createPropsPass } from '../render/passes/props.js';
 import { edgeTarget, stepEdge, edgeMark } from '../world/camp/edge.js';
 
 /** @param {import('./context.js').AppContext} ctx */
@@ -27,9 +28,16 @@ export async function land(ctx) {
   if (!landRecipe.stack) return;
   const R = await loadRecipe('setpieces/stack');
   const terrainSeed = subSeed(seed, 'terrain');
+  // Matt's cave mouth (assets/models/stack, tools/assets/build-cave-mouth.mjs): its footprint shapes
+  // the ground under its walls, so it is read before the ground is written.
+  const asset = (/** @type {string} */ f) => new URL(`../../assets/models/stack/${f}`, import.meta.url);
+  const [footprint, model] = await Promise.all([
+    fetch(asset('cave-mouth-footprint.json')).then((r) => (r.ok ? r.json() : null)).catch(() => null),
+    fetch(asset('cave-mouth.bin')).then((r) => (r.ok ? r.arrayBuffer() : null)).catch(() => null),
+  ]);
   const stack = createStack({ S: landRecipe.stack, R, land: landRecipe, terrain, seed: subSeed(seed, 'stack'), terrainSeed,
     isletDeg: ctx.islet?.layout?.sideDeg ?? null, tide: tideParams(waterRecipe.tide), hours: () => clock.worldT() / clock.SECONDS_PER_HOUR,
-    base: baseSampler(landRecipe, terrainSeed), test: params.has('stack') ? params.get('stack') ?? '' : null });
+    base: baseSampler(landRecipe, terrainSeed), test: params.has('stack') ? params.get('stack') ?? '' : null, mouth: { footprint, model } });
   Object.assign(ctx, { stack, stackRecipe: R });
 }
 
@@ -37,7 +45,11 @@ export async function land(ctx) {
 export async function start(ctx) {
   const { camera, sim, stack, stackRecipe: R, terrain, walk, world, zones } = ctx;
   if (!stack) return;
-  stack.attach({ camera, water: ctx.water, dayLengthH: () => world.state?.seasons?.dayLengthH ?? 12,
+  // The cave mouth throws the sun's shadow (into its own chamber) through a cast-only props pass;
+  // the pieces pass draws it (src/world/stack/mouth-mesh.js).
+  const shadowProps = createPropsPass({ name: 'stack-shade', recipe: ctx.campRecipe.props, bias: ctx.shadowPass.bias, castOnly: true });
+  ctx.shadowPass.addCaster(shadowProps.caster);
+  stack.attach({ camera, water: ctx.water, pieces: ctx.pieces, shadowProps, dayLengthH: () => world.state?.seasons?.dayLengthH ?? 12,
     walker: () => { const w = walk.walker; return walk.below && !walk.zone && w?.placed ? { x: w.x, z: w.z, yaw: w.yaw } : null; } });
   // Go down never sets you on the stack, its ledges or in the cave (docs/23; src/world/walk).
   walk.setLanding?.((/** @type {number} */ x, /** @type {number} */ z) => {
@@ -86,7 +98,7 @@ export async function start(ctx) {
     edge = stepEdge(edge, edgeTarget(/** @type {any} */ (pad), ring, tools), dt, dash.opacity ?? 0.55, dash.fadeS);
     return edgeMark(/** @type {any} */ (pad), edge);
   };
-  Object.assign(ctx, { stackReveal: reveal, stackMouth: mouth, mouthPass, mouthBeam, stackMark });
+  Object.assign(ctx, { stackReveal: reveal, stackMouth: mouth, mouthPass, mouthBeam, stackMark, stackShade: shadowProps });
 }
 
 /** `?stack`, `?stack=road`, `?stack=mouth` (test links, unsaved). @param {import('./context.js').AppContext} ctx */
