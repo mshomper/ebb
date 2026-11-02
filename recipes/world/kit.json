@@ -77,8 +77,8 @@
     "exposure": 1.0
   },
   "figure": {
-    "note": "Hat and coat looks for Phase 4 dyes: per id, a linear tint [r, g, b] for that part (null: as made). Read by src/world/kit/model.js looksOf; the walker's own are as made.",
-    "hat": { "own": null, "teal": null },
+    "note": "Hat and coat looks for Phase 4 dyes: per id, a linear tint [r, g, b] for that part (null: as made). Read by src/world/kit/model.js looksOf; the walker's own are as made. A hat's tint is its dye at the made hat's mean brightness (figure.json hatDye): figure-draw.wgsl keeps the made hat's light and dark and takes the dye's hue. The teal hat (Matt, November 2, 2026: a colour of its own): a deep blue-green, bluer than its green feather.",
+    "hat": { "own": null, "teal": [0.035, 0.17, 0.25] },
     "coat": { "own": null }
   }
 }

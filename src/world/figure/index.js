@@ -12,8 +12,8 @@ import { carriedOn, partIndices } from './carry.js';
 
 export { loadFigureClips } from './clips.js';
 
-/** The eyes' 20 floats, then the painted straps' 12 (figure-draw.wgsl FigureStraps). */
-const EXTRA = 32;
+/** The eyes' 20 floats, the painted straps' 12 (figure-draw.wgsl FigureStraps), then the hat's dye 8 (FigureHat). */
+const EXTRA = 40;
 
 /** Fetch the model named by the recipe (a path from the repo root). @param {any} R */
 export async function loadFigureModel(R) {
@@ -50,6 +50,16 @@ export function strapUniforms(S, on, out) {
 }
 
 /**
+ * The hat's dye uniforms (figure-draw.wgsl FigureHat), after the straps: the dye (linear, or null as
+ * made), the hat's two bones and the made hat's mean brightness (figure.json hatDye.meanLuminance).
+ * @param {number[] | null} dye @param {number[]} bones @param {number} mean @param {Float32Array} out
+ */
+export function hatUniforms(dye, bones, mean, out) {
+  out.set([dye?.[0] ?? 0, dye?.[1] ?? 0, dye?.[2] ?? 0, dye ? 1 : 0, bones[0], bones[1], mean, 0], 32);
+  return out;
+}
+
+/**
  * The figure's draw pass, ready before the model has loaded (the frame graph takes it at boot).
  * @param {any} R recipes/world/figure.json @param {string} [name]
  */
@@ -80,6 +90,8 @@ export function createFigure(o) {
   let hung = null;
   const uniforms = new Float32Array(EXTRA);
   let visible = false, straps = false;
+  /** The worn hat's dye (linear rgb), or null as made. @type {number[] | null} */ let dye = null;
+  const hatBones = ['hat', 'hatTip'].map((n) => built.skeleton.findIndex((b) => b.name === n));
   /** Where the figure stood and faced last frame, for hand(). */
   let at = { x: 0, y: 0, z: 0, yaw: 0 };
   const hands = { l: built.skeleton.findIndex((b) => b.name === 'hand.l'), r: built.skeleton.findIndex((b) => b.name === 'hand.r') };
@@ -127,6 +139,8 @@ export function createFigure(o) {
     hangPack(place) { hung = place; },
     /** Paint the carrier's straps on the coat, or not (October 29, 2026). @param {boolean} on */
     wearStraps(on) { straps = on; },
+    /** Dye the hat worn (kit.json figure.hat: linear rgb), or wear it as made (null). @param {number[] | null} rgb */
+    dyeHat(rgb) { dye = rgb; },
     /** Vertices and triangles, for the tools page's cost line. */
     size: { vertices: built.count, triangles: built.indices.length / 3, bytes: built.data.byteLength + built.indices.byteLength },
     /**
@@ -145,7 +159,7 @@ export function createFigure(o) {
       const r = motion.update(dt, s);
       at = { x: s.x, y: s.y, z: s.z, yaw: r.yaw };
       pass.setBeings([{ x: s.x, y: s.y, z: s.z, yaw: r.yaw, size: k, bones: motion.bones }, ...hangs]);
-      pass.setExtra(strapUniforms(R.straps, straps, eyeUniforms(R.eyes, headBone, r.eyes, uniforms)));
+      pass.setExtra(hatUniforms(dye, hatBones, R.hatDye?.meanLuminance ?? 0.2, strapUniforms(R.straps, straps, eyeUniforms(R.eyes, headBone, r.eyes, uniforms))));
       return r.footfalls;
     },
   };
