@@ -42,7 +42,7 @@ export const GROW = 1, FLOWER = 2, DORMANT = 4;
  */
 
 /**
- * @typedef {{ hour: number, date: string, text: string, sp: string | null, kind?: string }} Note
+ * @typedef {{ hour: number, date: string, text: string, sp: string | null, kind?: string, at?: { x: number, z: number } }} Note
  *   kind: what the note is about, shared by every species (arrived, settled, flower, spread,
  *   season, ...); the reveal ranks notes by it (journal.json `reveal.rank`). Older notes have none.
  */
@@ -438,7 +438,7 @@ export function noteOnce(journal, fl, text, ctx, kind = 'camp') {
  * The island gave you something (world/expansion.js): a naturalist's reward or a species' gift.
  * Written once, as a note of kind 'gift' that carries its title and icon, so the island can show
  * it as a card.
- * @param {Journal} journal @param {{ id: string, title: string, line: string, icon: string, page: string | null }} g
+ * @param {Journal} journal @param {{ id: string, title: string, line: string, icon: string, page: string | null, trail?: string }} g
  * @param {{ state: any, hour: number, words: any }} ctx
  * @returns {{ journal: Journal, notes: Note[] }}
  */

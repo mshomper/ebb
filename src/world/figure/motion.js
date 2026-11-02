@@ -109,6 +109,12 @@ export function createFigureMotion(R, skeleton, clipFile = null) {
   /** @type {{ feed: number | null, arrive: number | null, leave: number | null, retreat: number | null, retreatSide: number }} */
   const acts = { feed: null, arrive: null, leave: null, retreat: null, retreatSide: 1 };
   let wasRetreating = false, wasRolling = false;
+  /**
+   * What the last frame did, for the tools (empty before the first frame).
+   * @type {{ mode?: 'plant' | 'gait', m?: number, wade?: number, sitW?: number, kneelW?: number, crawlW?: number, phase?: number,
+   *   pace?: ReturnType<typeof paceAt>, leanDeg?: number, looking?: any, look?: any, expression?: import('./eyes.js').Expression,
+   *   act?: string | null, gesture?: string | null, clip?: { weight: number, roll: number, phase: number } | null }}
+   */
   let info = {};
   /** Holding the pot in both arms (S5), and how far the hands have come to it 0..1. */
   let holding = false, holdE = 0;

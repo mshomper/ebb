@@ -32,7 +32,9 @@ function textHash(s) {
 /**
  * @param {{ worldSeed: number, camp: any, pack?: any }} a camp: recipes/world/camp.json; pack: recipes/world/pack.json (the keeps)
  * @returns {{ timeline: number, ticked: number, read: number, lightings: number, litDays: number, hours: number,
- *   rack?: number, rackRead?: number, hamper?: number, bunches?: number, kinds?: number }}
+ *   rack?: number, rackRead?: number, hamper?: number, bunches?: number, kinds?: number,
+ *   nights: number, nightsRead: number, fireNights: number, work: number, workRead: number, workDone: number,
+ *   clay?: number, clayRead?: number, clayEnd?: number, clayEndRead?: number, star?: number, starRead?: number, clayDone?: number }}
  */
 export function campCheckJob(a) {
   const F = a.camp.fire;
@@ -157,7 +159,7 @@ function clayCheck(ops, apply, F, A, HOURS, worldSeed) {
  * The keeps (S2, P2j): a seeded month of herbs hung on the rack and taken down, and handfuls put in
  * the hamper and taken out (two hampers from day 10). The rack's words every hour as play watches
  * them must match the same rack read from its saved bunches afterwards: drying is worked out from
- * the hour each bunch was hung. @param {{ worldSeed: number, camp: any, pack: any }} a @param {number} HOURS
+ * the hour each bunch was hung. @param {{ worldSeed: number, camp: any, pack?: any }} a @param {number} HOURS
  */
 function keepsCheck(a, HOURS) {
   const P = a.pack, R = a.camp.rack;

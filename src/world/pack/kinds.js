@@ -6,7 +6,8 @@
 // works: it sorts last, wears the plain sketch and keeps its id.
 
 /**
- * @typedef {{ id: string, group: string, sketch: string, camp: string, line: string }} Kind
+ * @typedef {{ id: string, name?: string, group: string, sketch: string, camp: string, line: string }} Kind
+ *   name: its card name (every pack.json kind has one; a plant part's kind takes its name from partNames)
  * @typedef {{ list: Kind[], byId: Map<string, Kind>, groups: string[],
  *   groupOf: (id: string) => string | null, order: (id: string) => number, compare: (a: string, b: string) => number,
  *   sketchOf: (id: string) => string, lineOf: (id: string) => string, campOf: (id: string) => string }} Kinds

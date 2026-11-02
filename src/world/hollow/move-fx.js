@@ -91,7 +91,7 @@ export function createMoveFx(FX, o) {
   }
 
   // ---- lights: as many as are asked for, the brightest eight drawn ----
-  /** @type {{ x: number, y: number, z: number, spec: LightSpec, age: number, life: number, k: number, ph: number }[]} */
+  /** held: kept for one frame by something lasting (light below) @type {{ x: number, y: number, z: number, spec: LightSpec, age: number, life: number, k: number, ph: number, held?: boolean }[]} */
   let lights = [];
   const lightOut = new Float32Array(MAX_FX_LIGHTS * LIGHT_FLOATS);
   let nLights = 0;

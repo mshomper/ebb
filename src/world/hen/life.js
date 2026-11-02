@@ -33,7 +33,8 @@ const DIG_FRESH_S = 6;
  * The scrub she lives in: the middle of the largest cluster of grown bushes, or null while there is
  * none. Pure. @param {{ sp: string, x: number, z: number, size: number }[]} plants
  * @param {{ species: string[], minSize: number, minBushes: number, clusterM: number }} H recipes/species/hen.json home
- * @returns {{ x: number, z: number, bushes: number } | null}
+ * @returns {{ x: number, z: number, bushes: number, list: { sp: string, x: number, z: number, size: number }[] } | null}
+ *   list: the cluster's bushes
  */
 export function scrubHome(plants, H) {
   const bushes = plants.filter((p) => H.species.includes(p.sp) && p.size >= H.minSize);

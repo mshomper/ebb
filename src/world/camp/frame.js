@@ -19,8 +19,8 @@ import { tentWeather, canvasWear, canvasPatches } from './canvas.js';
 const DEG = Math.PI / 180;
 
 /**
- * @param {import('./cards.js').CampKit & { o: any, props: any, fx: any, fire: any, sunAlt: () => number }} k
- *   o: createCamp's options (lighting, world); props, fx: the camp's draw passes
+ * @param {import('./cards.js').CampKit & { o: any, props: any, fx: any, fire: any, sunAlt: () => number, holdingPot?: () => boolean }} k
+ *   o: createCamp's options (lighting, world); props, fx: the camp's draw passes; holdingPot: is the pot in your arms
  */
 export function createCampFrame(k) {
   const R = k.R, F = R.fire, o = k.o;

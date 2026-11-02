@@ -90,7 +90,7 @@ export async function createWaterSim(device, terrainTex) {
    * @param {{ x: number, y: number, w: number, h: number }} r @param {Float32Array} d
    */
   function seed(r, d) {
-    for (const t of depth) device.queue.writeTexture({ texture: t, origin: [r.x, r.y] }, d, { bytesPerRow: r.w * 4, rowsPerImage: r.h }, [r.w, r.h]);
+    for (const t of depth) device.queue.writeTexture({ texture: t, origin: [r.x, r.y] }, /** @type {Float32Array<ArrayBuffer>} */ (d), { bytesPerRow: r.w * 4, rowsPerImage: r.h }, [r.w, r.h]);
     const zero = new Float32Array(r.w * r.h * 4);
     for (const t of flux) device.queue.writeTexture({ texture: t, origin: [r.x, r.y] }, zero, { bytesPerRow: r.w * 16, rowsPerImage: r.h }, [r.w, r.h]);
     device.queue.writeTexture({ texture: vel, origin: [r.x, r.y] }, new Float32Array(r.w * r.h * 2), { bytesPerRow: r.w * 8, rowsPerImage: r.h }, [r.w, r.h]);
@@ -101,7 +101,7 @@ export async function createWaterSim(device, terrainTex) {
    * @param {{ x: number, y: number, w: number, h: number }} r @param {Float32Array} d
    */
   function setTarget(r, d) {
-    device.queue.writeTexture({ texture: target, origin: [r.x, r.y] }, d, { bytesPerRow: r.w * 4, rowsPerImage: r.h }, [r.w, r.h]);
+    device.queue.writeTexture({ texture: target, origin: [r.x, r.y] }, /** @type {Float32Array<ArrayBuffer>} */ (d), { bytesPerRow: r.w * 4, rowsPerImage: r.h }, [r.w, r.h]);
   }
 
   /**
@@ -110,7 +110,7 @@ export async function createWaterSim(device, terrainTex) {
    * @param {{ x: number, y: number, w: number, h: number }} r @param {Uint8Array} m
    */
   function setDamp(r, m) {
-    device.queue.writeTexture({ texture: damp, origin: [r.x, r.y] }, m, { bytesPerRow: r.w * 2, rowsPerImage: r.h }, [r.w, r.h]);
+    device.queue.writeTexture({ texture: damp, origin: [r.x, r.y] }, /** @type {Uint8Array<ArrayBuffer>} */ (m), { bytesPerRow: r.w * 2, rowsPerImage: r.h }, [r.w, r.h]);
   }
 
   /**

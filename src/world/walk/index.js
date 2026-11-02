@@ -626,7 +626,7 @@ export function createWalk(o) {
         if (walker.walkTo(near[0], near[1], double).ok) return true;
       }
       const r = walker.walkTo(to[0], to[1], double);
-      if (r.ok) return true;
+      if (r.ok === true) return true;
       const hours = o.hours();
       const lowDepth = depthAtLow(depth, (k) => grid.height[k], water.tide, tideLevel(hours + hoursToLow(hours, o.tide), tideP));
       say(crossingNote(grid, walker.rules, [walker.x, walker.z], to, { reason: r.reason, lowDepth, hoursToLow: hoursToLow(hours, o.tide), words: R.words }));

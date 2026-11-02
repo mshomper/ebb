@@ -52,7 +52,7 @@ export function letGo(s, id) {
 
 /**
  * Let one go to make room for another, which takes its place on the shelf.
- * @param {ShelfState} s @param {number} outId @param {{ n: any, hour: number, spring: boolean }} k
+ * @param {ShelfState} s @param {number} outId @param {{ n: any, hour: number, spring: boolean, letter?: string }} k
  * @returns {ShelfState}
  */
 export function swap(s, outId, k) {

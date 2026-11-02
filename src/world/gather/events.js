@@ -99,7 +99,8 @@ const isInt = (v) => typeof v === 'number' && Number.isInteger(v);
  * trailing part-triple too. Triples written as nested [key, period, taken] arrays are flattened.
  * The ash patches spread on the ground (P2i, ashes.js) ride along as `ashes` once there are any.
  * Flax steeping in the shallows (F1, retting.js) as `retting`.
- * @param {any} v @returns {{ version: 1, events: number[], ashes?: import('./ashes.js').AshPatch[], retting?: import('./retting.js').Bundle[] }}
+ * @param {any} v @returns {{ version: 1, events: number[], ashes?: import('./ashes.js').AshPatch[], treats?: import('../creatures/treat-rules.js').LyingTreat[],
+ *   retting?: import('./retting.js').Bundle[] }}
  */
 export function cleanGather(v) {
   const ashes = cleanAshes(v?.ashes), treats = cleanTreats(v?.treats), retting = cleanRetting(v?.retting);

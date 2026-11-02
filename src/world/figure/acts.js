@@ -30,7 +30,7 @@ export const ACTS = ['drink', 'pitch', 'lay', 'strike', 'crawlIn', 'climbOut', '
  */
 
 const START = { t: 0, kneel: 0, crawl: 0, lean: 0, head: 0, yaw: 0, drop: 0, arms: 0, l: [0.12, 0.5, 0.25], r: [-0.12, 0.5, 0.25], twist: 0 };
-/** Keys with everything filled in from the key before. @type {WeakMap<object[], ActPose & { t: number }[]>} */
+/** Keys with everything filled in from the key before. @type {WeakMap<object[], (ActPose & { t: number })[]>} */
 const resolved = new WeakMap();
 
 /** @param {object[]} keys */

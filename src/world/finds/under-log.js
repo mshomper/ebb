@@ -135,7 +135,8 @@ export function chanceOf(K, c, G) {
  */
 export function rollUnder(seed, piece, c, R) {
   /** @type {UnderOne[]} */ const found = [];
-  /** @type {Record<string, number>} */ const counts = {}, chances = {};
+  /** @type {Record<string, number>} */ const counts = {};
+  /** @type {Record<string, number>} */ const chances = {};
   const len = piece.kind === 'log' ? piece.length ?? 1 : 0;
   const half = piece.kind === 'log' ? piece.size * 0.5 : piece.size * 0.35;
   UNDER_KINDS.forEach((sp, salt) => {

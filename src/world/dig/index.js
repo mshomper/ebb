@@ -156,10 +156,10 @@ export function createDig(o) {
     out.push(...story.footprint());
     return out;
   }
-  /** The ground class at a point, or why not. @param {number} x @param {number} z */
+  /** The ground class at a point, or why not. @param {number} x @param {number} z @returns {ReturnType<typeof groundClass>} */
   function classAt(x, z) {
     const h = hab();
-    if (!h) return /** @type {const} */ ({ cls: null, k: -1, why: 'outside' });
+    if (!h) return { cls: null, k: -1, why: 'outside' };
     return groundClass(x, z, { hab: h, depthAt: (px, pz) => o.water.sampleLive?.(px, pz)?.depth ?? 0, pad: get('campPad') ?? null, pieces: footprints() }, R);
   }
 
@@ -171,7 +171,8 @@ export function createDig(o) {
    */
   function placeHole(x, z) {
     const c = classAt(x, z);
-    if (!c.cls) return { cls: null, why: c.why };
+    // No class is always the why branch (the checker cannot narrow on a null class here).
+    if (!c.cls) return { cls: null, why: /** @type {{ why: import('./layers.js').NoDig }} */ (c).why };
     if (!stemNear(x, z)) return { cls: c.cls, k: c.k, x, z };
     for (let ring = 1; ring <= R.hole.slideSteps; ring++) {
       const d = (R.hole.slideM * ring) / R.hole.slideSteps;

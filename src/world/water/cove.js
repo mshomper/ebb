@@ -27,6 +27,7 @@ const MIN_RUN = 2;
  * @property {number} rays @property {number} reachM @property {number} entryM
  * @property {number} minSeawardRays @property {number} farWeight @property {number} gain
  * @property {number} smoothRadius
+ * @property {number} [seaFillM]  how far the score reaches into the band's cells under the mean sea (m)
  */
 
 /**

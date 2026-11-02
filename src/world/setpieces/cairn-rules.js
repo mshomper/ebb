@@ -127,6 +127,7 @@ export function cairnMesh(stones, seed, L, leanDeg, moss, letter) {
 /** A thin flat box (the folded letter), base at y 0. @param {number} w @param {number} h @param {number} d @param {number[]} col @returns {Mesh} */
 export function slabMesh(w, h, d, col) {
   const v = [], idx = [];
+  /** @type {[number[], number[][]][]} */
   const faces = [[[0, 1, 0], [[-1, 1, -1], [1, 1, -1], [1, 1, 1], [-1, 1, 1]]], [[0, -1, 0], [[-1, 0, 1], [1, 0, 1], [1, 0, -1], [-1, 0, -1]]],
     [[1, 0, 0], [[1, 0, -1], [1, 0, 1], [1, 1, 1], [1, 1, -1]]], [[-1, 0, 0], [[-1, 0, 1], [-1, 0, -1], [-1, 1, -1], [-1, 1, 1]]],
     [[0, 0, 1], [[1, 0, 1], [-1, 0, 1], [-1, 1, 1], [1, 1, 1]]], [[0, 0, -1], [[-1, 0, -1], [1, 0, -1], [1, 1, -1], [-1, 1, -1]]]];

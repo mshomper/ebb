@@ -137,7 +137,7 @@ export function createLanterns(o) {
     id: 'lanterns',
     /** pieces.json lantern. */
     recipe: L,
-    /** Each frame: the glass and moths of the lit lanterns (the camp's effects pass). @param {{ realDt: number }} f */
+    /** Each frame: the glass and moths of the lit lanterns (the camp's effects pass). */
     tick() {
       const g = glow();
       // The glow through the holes, drawn just on the pot's near side so the pot does not hide it.

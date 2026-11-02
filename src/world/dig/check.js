@@ -38,7 +38,7 @@ function bankHabitat() {
 
 /**
  * One season of digging, then three days later. @param {{ worldSeed: number, dig: any, keepsakes: any, land?: any }} a
- * @returns {{ finds: number, events: number, holes: number, keepsakes: number, worms: number, clay: number, sleepers: number, story: number, storyAgain: number }}
+ * @returns {{ finds: number, events: number, holes: number, keepsakes: number, worms: number, clay: number, sleepers: number, sherds: number, story: number, storyAgain: number }}
  */
 function season(a) {
   const R = a.dig, K = a.keepsakes, seed = subSeed(a.worldSeed, 'dig'), hab = bankHabitat();

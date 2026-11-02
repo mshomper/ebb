@@ -77,7 +77,7 @@ export function plantStarters(g, hab, env, pos = 0) {
       // Not on a plant of a species placed before (marsh marigold and iris like the same bank);
       // the species placed first are unchanged by this.
       if (g.plants.some((p) => (p.x - x) * (p.x - x) + (p.z - z) * (p.z - z) < 0.36)) continue;
-      const p = { id: g.nextId++, sp, x, z, age: 48, size: rec.growth.stages.matureSize + 0.1, best: 0, stage: STAGE.mature, low: 0, drown: 0, last: 0 };
+      /** @type {Plant} */ const p = { id: g.nextId++, sp, x, z, age: 48, size: rec.growth.stages.matureSize + 0.1, best: 0, stage: STAGE.mature, low: 0, drown: 0, last: 0 };
       p.best = p.size;
       // In the season's stage at once (in flower in its window), not only from the next hour.
       p.stage = stageOf(rec, p, pos);
@@ -126,7 +126,7 @@ function basinStarters(g, hab, env, pos = 0) {
         const x = HABITAT_ORIGIN + (c.k % hab.n) + 0.5, z = HABITAT_ORIGIN + Math.floor(c.k / hab.n) + 0.5;
         if (g.plants.some((p) => p.sp === sp && (p.x - x) * (p.x - x) + (p.z - z) * (p.z - z) < sp2)) continue;
         const size = rec.growth.stages.matureSize + 0.1;
-        const p = { id: g.nextId++, sp, x, z, age: 48, size, best: size, stage: STAGE.mature, low: 0, drown: 0, last: 0 };
+        /** @type {Plant} */ const p = { id: g.nextId++, sp, x, z, age: 48, size, best: size, stage: STAGE.mature, low: 0, drown: 0, last: 0 };
         p.stage = stageOf(rec, p, pos);
         g.plants.push(p);
         placed++;

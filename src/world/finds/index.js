@@ -108,7 +108,7 @@ export function poolCells(s, z, rockAt = () => true) {
  * @returns {{ x: number, z: number, yaw: number, r: number, key: string }[]}
  */
 export function groupAt(seed, kind, k, K, cx, cz, tide) {
-  const salt = KINDS.indexOf(kind) + 1;
+  const salt = /** @type {readonly string[]} */ (KINDS).indexOf(kind) + 1;
   const moving = kind === 'lugworm';
   const h0 = hash32(seed, k, salt * 7919 + (moving ? tide * 31 : 0));
   if (u01(h0) >= K.density) return [];
@@ -177,7 +177,7 @@ export function createFinds(opts) {
   const force = { season: null, storm: null, dense: false };
   // The meshes arrive a moment after boot; until then nothing is drawn (casts need none).
   let ready = false;
-  /** Rigged finds by kind (rig.js), posed each frame while they walk. @type {Record<string, import('./rig.js').Rig>} */
+  /** Rigged finds by kind (rig.js rigs, { legs } leg rigs, a mussel's { hinge }), posed each frame while they walk. @type {Record<string, any>} */
   let rigs = {};
   loadModels(pass, recipe).then((r) => { rigs = r; ready = true; }).catch((e) => console.warn('finds: models did not load', e));
   /** The casts near the view for the terrain pass: (x, z, size, yaw), ending at size 0. */
@@ -208,7 +208,7 @@ export function createFinds(opts) {
   /**
    * What is near the view now, nearest first: each find's drawing (b) and, for the crabs, their
    * spot and recipe so stepCrabs can move them between scans.
-   * @type {{ b: any, d: number, sp: string, g: any, R: any, depth: number }[]}
+   * @type {{ b: any, d: number, sp: string, g: any, R: any, depth: number, item?: string, storm?: boolean }[]}
    */
   let list = [];
   /** What the last scan saw of the strandline (tools). */
@@ -242,7 +242,7 @@ export function createFinds(opts) {
           // Pond skaters stand on the water, so only where there is some.
           if (kind === 'pondskaters' && depth <= R.minDepthM) continue;
           const y = terrain.sampleHeight(g.x, g.z);
-          let mesh = kind, size = R.scale;
+          /** @type {string} */ let mesh = kind, size = R.scale;
           /** @type {Float32Array | undefined} */ let pose;
           if (kind === 'anemone' || kind === 'barnacles' || kind === 'mussels') {
             const near = Math.hypot(eye[0] - g.x, eye[1] - y, eye[2] - g.z) < R.closeM;
