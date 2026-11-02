@@ -12,13 +12,13 @@
 import { get, update } from '../../core/store.js';
 import { emitDeferred, on } from '../../core/events.js';
 import { hash32 } from '../../core/rng.js';
-import { run } from '../../core/workers.js';
+import { run, poolSize } from '../../core/workers.js';
 import { dispatch, onAction } from '../../input/actions.js';
 import { registerCardAction } from '../../ui/card-actions.js';
 import { cleanCook } from '../camp/making.js';
 import { kelvinRgb, flicker } from '../camp/light.js';
 import { lathe, tube, lumpStone, join } from '../spring/cave-live.js';
-import { mouthShape } from './mouth-field.js';
+import { mouthShape, mouthGrid, lampSight, rubbleHeap } from './mouth-field.js';
 import { cleanStack } from './model.js';
 
 const ID = 'stack-mouth';
@@ -96,13 +96,36 @@ export function createStackMouth(o) {
   const rubbleFront = () => -0.6 + (S.rubble.lengthM + 0.6) * Math.min(1, saved().rubble / Math.max(1, o.stretches));
 
   let built = false, building = false;
+  /**
+   * The rock's mesh and its baked lantern light, on every worker at once: the field sampled in
+   * shares of its rows, meshed, then the bake in shares of the vertices (mouth-field.js).
+   * @returns {Promise<{ pos: Float32Array, nrm: Float32Array, idx: Uint32Array, count: number, light: Float32Array }>}
+   */
+  async function buildRock() {
+    const job = (/** @type {string} */ fn) => ({ module: './world/stack/mouth-field.js', fn });
+    const lane = /** @type {const} */ ('interactive'), parts = Math.max(1, poolSize());
+    const nz = mouthGrid(S, R.depthM)[2], rows = Math.ceil(nz / parts);
+    const shares = await Promise.all(Array.from({ length: Math.ceil(nz / rows) }, (_, p) =>
+      run(job('mouthFieldJob'), { S, seed: R.seed, top: R.depthM, k0: p * rows, k1: Math.min(nz, (p + 1) * rows) }, { lane })));
+    const field = new Float32Array(shares.reduce((t, s) => t + s.field.length, 0));
+    let at = 0;
+    for (const s of shares) { field.set(s.field, at); at += s.field.length; }
+    const m = await run(job('mouthNetsJob'), { S, top: R.depthM, field }, { lane });
+    const lamps = [flameAt.floor, flameAt.hook], per = Math.ceil(m.count / parts);
+    const light = new Float32Array(m.count * 3);
+    await Promise.all(Array.from({ length: Math.ceil(m.count / per) }, (_, p) => {
+      const i0 = p * per, i1 = Math.min(m.count, i0 + per);
+      return run(job('mouthBakeJob'), { S, seed: R.seed, pos: m.pos, nrm: m.nrm, i0, i1, lamps, bake: R.bake }, { lane })
+        .then((/** @type {{ light: Float32Array }} */ r) => light.set(r.light, i0 * 3));
+    }));
+    return { ...m, light };
+  }
   function build() {
     if (built || building) return;
     building = true;
     // The rock and its light baked for the lantern's two spots (its sight of each, and the occlusion),
     // carried in the vertex colour (cave-draw.wgsl: r the floor spot, g the hook, b occlusion).
-    run({ module: './world/stack/mouth-field.js', fn: 'mouthMeshJob' }, { S, seed: R.seed, top: R.depthM, lamps: [flameAt.floor, flameAt.hook], bake: R.bake },
-      { lane: 'interactive' }).then((m) => {
+    buildRock().then((m) => {
       const v = new Float32Array(m.count * 10), lit = m.light.length === m.count * 3;
       for (let i = 0; i < m.count; i++) {
         const a = m.pos[i * 3], y = m.pos[i * 3 + 1], b = m.pos[i * 3 + 2], na = m.nrm[i * 3], nb = m.nrm[i * 3 + 2];
@@ -204,32 +227,71 @@ export function createStackMouth(o) {
     const P = S.pool, u = (/** @type {number} */ i, /** @type {number} */ k) => (hash32(R.seed, 4411, i, k) >>> 8) / 16777216, parts = [];
     for (let i = 0; i < 26; i++) {
       const a = u(i, 1) * Math.PI * 2, r = Math.sqrt(u(i, 2)) * P.radiusM * 1.15, x = P.at[0] + Math.cos(a) * r, z = P.at[1] + Math.sin(a) * r;
-      const size = 0.05 + 0.14 * u(i, 3) ** 2;
-      parts.push(lumpStone(x, shape.floorAt(x, z) - size * 0.25, z, size / 2, (k) => u(i, k + 4), 0.25, R.look.stone, 0.6));
+      const size = 0.05 + 0.14 * u(i, 3) ** 2, r0 = size / 2;
+      // Bedded in the floor (Matt, November 2, 2026: they floated): set on the lowest ground under
+      // it, not its middle's (the flagstones tilt and the basin slopes), and sunk part way in; drawn
+      // as the room's rock, lit and shadowed by the lantern like the rubble.
+      let low = shape.floorAt(x, z);
+      for (let k = 0; k < 6; k++) low = Math.min(low, shape.floorAt(x + Math.cos(k * 1.047) * r0, z + Math.sin(k * 1.047) * r0));
+      const cy = low + r0 * 0.6;
+      const sf = lampSight(shape, x, cy, z, flameAt.floor, R.bake), sh = lampSight(shape, x, cy, z, flameAt.hook, R.bake);
+      parts.push(brokenStone(x, low - r0 * 0.25, z, r0, (k) => u(i, k + 4), sf, sh, 0.7));
     }
     const all = join(parts);
     return { data: Array.from(all.data), idx: Array.from(all.idx) };
   }
+  /**
+   * One fallen stone (decision 0001): broken rather than rounded, a low many-sided lump with each
+   * corner pushed in or out on its own, flat-faced, sitting on its base; drawn as the room's rock
+   * (vertex colour: its sight of the lantern's two spots and its occlusion, alpha 0), so it takes the
+   * lantern's shadow and the rock scan and never the made things' outline.
+   * @param {number} x @param {number} y0 @param {number} z @param {number} r @param {(k: number) => number} u seeded 0..1
+   * @param {number} sightFloor @param {number} sightHook @param {number} occ
+   */
+  function brokenStone(x, y0, z, r, u, sightFloor, sightHook, occ) {
+    const B = T.rubble, LAT = 3, LON = 6, pts = [];
+    for (let a = 0; a <= LAT; a++) for (let b = 0; b < LON; b++) {
+      const th = (a / LAT) * Math.PI, ph = (b / LON) * Math.PI * 2 + u(1) * 6;
+      const k = 1 + B.lump * (u(10 + a * LON + b) - 0.5) * 2;
+      // The bottom flattened where it rests; the long axis turned by the seed.
+      const sx = Math.sin(th) * Math.cos(ph) * k, sy = Math.max(-0.35, Math.cos(th)) * B.flat * k, sz = Math.sin(th) * Math.sin(ph) * k * (0.75 + u(2) * 0.5);
+      const ca = Math.cos(u(3) * 6.28), sa = Math.sin(u(3) * 6.28);
+      // Its middle just over y0, so its base sits a little into what it rests on (never over it).
+      pts.push([x + (sx * ca - sz * sa) * r, y0 + r * B.flat * 0.3 + sy * r, z + (sx * sa + sz * ca) * r]);
+    }
+    /** @type {number[]} */ const data = [], idx = [];
+    const tri = (/** @type {number[]} */ p, /** @type {number[]} */ q, /** @type {number[]} */ s) => {
+      const ux = q[0] - p[0], uy = q[1] - p[1], uz = q[2] - p[2], vx = s[0] - p[0], vy = s[1] - p[1], vz = s[2] - p[2];
+      let nx = uy * vz - uz * vy, ny = uz * vx - ux * vz, nz = ux * vy - uy * vx;
+      const l = Math.hypot(nx, ny, nz) || 1; nx /= l; ny /= l; nz /= l;
+      // Facing out from the stone's middle.
+      const mx = (p[0] + q[0] + s[0]) / 3 - x, my = (p[1] + q[1] + s[1]) / 3 - (y0 + r * B.flat * 0.3), mz = (p[2] + q[2] + s[2]) / 3 - z;
+      if (nx * mx + ny * my + nz * mz < 0) { nx = -nx; ny = -ny; nz = -nz; [q, s] = [s, q]; }
+      const o = (B.occFloor + (1 - B.occFloor) * occ) * (0.7 + 0.3 * Math.max(0, ny));
+      const base = data.length / 10;
+      for (const v of [p, q, s]) data.push(v[0], v[1], v[2], nx, ny, nz, sightFloor, sightHook, o, 0);
+      idx.push(base, base + 1, base + 2);
+    };
+    const at = (/** @type {number} */ a, /** @type {number} */ b) => pts[a * LON + (b % LON)];
+    for (let a = 0; a < LAT; a++) for (let b = 0; b < LON; b++) {
+      if (a > 0) tri(at(a, b), at(a + 1, b), at(a, b + 1));
+      if (a < LAT - 1) tri(at(a, b + 1), at(a + 1, b), at(a + 1, b + 1));
+    }
+    return { data, idx };
+  }
+
   /** The rubble's stones, heaped in its passage past what is dug. @param {number} dug */
   function rubbleMesh(dug) {
     const P = S.rubble, B = T.rubble, front = -0.6 + (P.lengthM + 0.6) * Math.min(1, dug / Math.max(1, o.stretches));
     const u = (/** @type {number} */ i, /** @type {number} */ k) => (hash32(B.seed, i, k) >>> 8) / 16777216;
     const parts = [];
-    // Stacked from the floor up, deepest first: each stone rests on the floor or on the stones under
-    // it, never in the air; the heap slopes down toward the dug face and stays under the roof.
-    const cand = Array.from({ length: B.stones }, (_, i) => ({ i, s: -0.4 + u(i, 1) * (P.lengthM + 0.4), r: (B.sizeM[0] + (B.sizeM[1] - B.sizeM[0]) * u(i, 4) ** 1.5) / 2 }))
-      .filter((c) => c.s >= front).sort((a, b) => b.s - a.s || a.i - b.i);
-    /** @type {{ x: number, z: number, r: number, top: number }[]} */ const laid = [];
-    for (const c of cand) {
-      const t = (u(c.i, 2) - 0.5) * 2 * Math.max(0, P.halfWidthM - c.r * 0.7);
-      const x = P.at[0] + P.dir[0] * c.s - P.dir[1] * t, z = P.at[1] + P.dir[1] * c.s + P.dir[0] * t;
-      let base = shape.floorAt(x, z) - c.r * 0.15;
-      for (const q of laid) if (Math.hypot(q.x - x, q.z - z) < (q.r + c.r) * 0.8) base = Math.max(base, q.top - c.r * 0.45);
-      const roof = P.heightM * Math.sqrt(Math.max(0, 1 - (t / P.halfWidthM) ** 2)) - 0.08;
-      const top = base + c.r * 1.3;
-      if (top > Math.min(roof, 0.4 + (c.s - front) * 1.15)) continue;
-      laid.push({ x, z, r: c.r, top });
-      parts.push(lumpStone(x, base, z, c.r, (k) => u(c.i, k + 5), T.rubble.lump, R.look.stone, T.rubble.flat));
+    // A talus heap filling the passage from the dug face back (mouth-field.js rubbleHeap), each stone
+    // lit from where it lies: its sight of the lantern's spots, darker the deeper under the surface.
+    for (const c of rubbleHeap(P, B, front, shape.floorAt)) {
+      const cy = c.base + c.r * 0.9;
+      const sf = lampSight(shape, c.x, cy, c.z, flameAt.floor, R.bake), sh = lampSight(shape, c.x, cy, c.z, flameAt.hook, R.bake);
+      const occ = 1 - Math.min(1, c.depth / Math.max(0.05, B.shellM));
+      parts.push(brokenStone(c.x, c.base, c.z, c.r, (k) => u(c.i, k + 5), sf, sh, occ));
     }
     const all = join(parts);
     return { data: Array.from(all.data), idx: Array.from(all.idx) };

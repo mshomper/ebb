@@ -32,12 +32,48 @@ struct CaveUniforms {
   lampMix: vec4f,   // x: which baked sight (0 the floor spot, 1 the hook); y: its bounce per cd (lux); z: the air's scatter per meter; w: wet glint strength
   soot: vec4f,      // xyz: the middle of a sooted opening (world; the mouth's arch); w: how far the soot reaches (m), 0 for none
   sootLook: vec4f,  // x: how dark it goes (0..1); yzw: unused
+  // The island's rock scan on the rock (the stack's mouth; strength 0 in the spring's cave), decision 0001:
+  scanA: vec4f,     // x, y: the boulder-top and cliff-face scans' tiles (per meter); z: strength 0..1; w: normal strength
+  scanB: vec4f,     // rgb: the scan's mean albedo (its variation about it is what is drawn); w: how much of the noise bump stays
 };
 
 @group(0) @binding(0) var<uniform> frame: FrameUniforms;
 @group(1) @binding(0) var<uniform> cu: CaveUniforms;
 @group(1) @binding(1) var sceneCopy: texture_2d<f32>;
 @group(1) @binding(2) var sceneDepth: texture_depth_2d;
+// The island's scanned ground maps (src/render/ground-detail.js), the rock only: a albedo, b normal xy, roughness, cavity.
+@group(1) @binding(3) var groundA: texture_2d_array<f32>;
+@group(1) @binding(4) var groundB: texture_2d_array<f32>;
+@group(1) @binding(5) var groundSampler: sampler;
+const SCAN_ROCK: i32 = 2;
+const SCAN_CLIFF: i32 = 5;
+
+struct Scan { albedo: vec3f, grad: vec3f };
+
+/** One planar read of a scan layer: its albedo and its height gradient along u and v (as piece-draw.wgsl's scanRead). */
+fn scanRead(layer: i32, uv: vec2f, u: vec3f, v: vec3f) -> Scan {
+  let a = textureSample(groundA, groundSampler, uv, layer);
+  let b = textureSample(groundB, groundSampler, uv, layer);
+  let t = vec2f(b.r, b.g) * 2.0 - 1.0;
+  let tz = sqrt(max(1.0 - dot(t, t), 1e-4));
+  var s: Scan;
+  s.albedo = a.rgb;
+  s.grad = u * (-t.x / tz) + v * (t.y / tz);
+  return s;
+}
+
+/** The rock scan triplanar at a point: the cliff face on the sides, the boulder top from above (weights from the normal). */
+fn scanAt(q: vec3f, n: vec3f) -> Scan {
+  var w = pow(abs(n), vec3f(4.0));
+  w /= max(w.x + w.y + w.z, 1e-5);
+  let sx = scanRead(SCAN_CLIFF, vec2f(q.z, -q.y) * cu.scanA.y, vec3f(0.0, 0.0, 1.0), vec3f(0.0, -1.0, 0.0));
+  let sy = scanRead(SCAN_ROCK, vec2f(q.x, q.z) * cu.scanA.x, vec3f(1.0, 0.0, 0.0), vec3f(0.0, 0.0, 1.0));
+  let sz = scanRead(SCAN_CLIFF, vec2f(q.x, -q.y) * cu.scanA.y, vec3f(1.0, 0.0, 0.0), vec3f(0.0, -1.0, 0.0));
+  var s: Scan;
+  s.albedo = sx.albedo * w.x + sy.albedo * w.y + sz.albedo * w.z;
+  s.grad = sx.grad * w.x + sy.grad * w.y + sz.grad * w.z;
+  return s;
+}
 
 struct VsIn { @location(0) pos: vec3f, @location(1) nrm: vec3f, @location(2) col: vec4f };
 struct VsOut { @builtin(position) pos: vec4f, @location(0) world: vec3f, @location(1) n: vec3f, @location(2) col: vec4f };
@@ -161,14 +197,21 @@ fn lampHaze(p: vec3f) -> vec3f {
   var n = normalize(i.n);
   if (!front && i.col.a < 0.5) { n = -n; }
   let p = i.world;
-  // The rock's own grain: a bump from two scales of noise, so the light rakes across worn stone.
+  // The island's rock scan (the stack's mouth): read on the mesh's own normal, before the bumps.
+  let scanK = select(0.0, cu.scanA.z, i.col.a < 0.5);
+  // (Read everywhere, then weighed by scanK: a texture read must stay in uniform control flow.)
+  let scan = scanAt(local(p), n);
+  // The rock's own grain: a bump from two scales of noise, so the light rakes across worn stone (less
+  // of it under the scan, whose own relief takes over).
   if (i.col.a < 0.5) {
     let e = 0.012;
     let b = vec3f(
       bump(p + vec3f(e, 0.0, 0.0)) - bump(p - vec3f(e, 0.0, 0.0)),
       bump(p + vec3f(0.0, e, 0.0)) - bump(p - vec3f(0.0, e, 0.0)),
       bump(p + vec3f(0.0, 0.0, e)) - bump(p - vec3f(0.0, 0.0, e))) / (2.0 * e);
-    n = normalize(n - (b - n * dot(b, n)) * 0.06);
+    n = normalize(n - (b - n * dot(b, n)) * 0.06 * mix(1.0, cu.scanB.w, scanK));
+    let g = scan.grad * cu.scanA.w * scanK;
+    n = normalize(n - (g - n * dot(g, n)));
   }
   let v = normalize(frame.cameraPos - p);
   var albedo: vec3f; var rough: f32;
@@ -182,7 +225,10 @@ fn lampHaze(p: vec3f) -> vec3f {
   } else {
     // Rock: wetter near the water and low down, floor gravel where it faces up; a soft mottle.
     let toPool = length(p.xz - cu.pool.xz) - cu.pool.w;
-    let wet = max(1.0 - smoothstep(0.0, cu.rock.w, toPool), 1.0 - smoothstep(cu.pool.y + 0.02, cu.pool.y + 0.25, p.y));
+    // (Low down counts as wet only in the spring's cave, a seep round its pool; the stack's mouth has a
+    // dry stone floor, wet only by its pool: else the whole floor glistened.)
+    let lowWet = select(1.0 - smoothstep(cu.pool.y + 0.02, cu.pool.y + 0.25, p.y), 0.0, cu.soot.w > 0.0);
+    let wet = max(1.0 - smoothstep(0.0, cu.rock.w, toPool), lowWet);
     let up = smoothstep(0.55, 0.85, n.y);
     // Mottled and banded like limestone, darker in the hollows that face away from the light.
     let q = local(p);
@@ -191,6 +237,8 @@ fn lampHaze(p: vec3f) -> vec3f {
     let grain = 0.75 + 0.5 * vnoise(q * select(11.0, 4.0, soft));
     let m = (0.7 + 0.6 * smoothstep(0.3, 0.7, vnoise(q * 2.3))) * band * grain * mix(0.6, 1.0, smoothstep(-0.3, 0.6, n.y));
     albedo = mix(mix(cu.rock.rgb, cu.floorAlb.rgb, up), cu.rockWet.rgb, wet * 0.8) * m;
+    // The scan's variation about its own mean (the palette still sets the colour, at the tonemap).
+    albedo *= mix(vec3f(1.0), scan.albedo / max(cu.scanB.rgb, vec3f(0.01)), scanK);
     // Old soot round the arch's opening, thicker above it where the smoke went up, and the scratched
     // signs in it: pale fine lines where the soot was scored through.
     if (cu.soot.w > 0.0) {

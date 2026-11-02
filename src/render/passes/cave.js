@@ -10,14 +10,20 @@ import { makeBuffer, makeShaderModule } from '../../core/gpu.js';
 
 /** @typedef {import('../frame-graph.js').PassContext} PassContext */
 
-/** 60 for the spring's cave; then a lantern's 12 and the soot's 8 (the stack's mouth), zeros where there is none. */
-const FLOATS = 80;
+/** 60 for the spring's cave; then a lantern's 12 and the soot's 8 (the stack's mouth), zeros where there is none; then the rock scan's 8 (the pass's own). */
+const FLOATS = 88;
+/** The floats the world module sets each frame (setUniforms); the rest are the pass's. */
+const SET_FLOATS = 80;
 /** Floats a vertex: position, normal, colour (rgb albedo, a 1 for a made thing's own). */
 const VERT = 10;
 
 /**
- * @param {{ active: () => boolean, name?: string }} o active: the cave zone is the one drawn now; name: the
- *   pass's name, for a second cave zone drawn the same way (the stack's mouth, src/world/stack/mouth.js)
+ * @param {{ active: () => boolean, name?: string, ground?: import('../ground-detail.js').GroundDetail,
+ *   scan?: { rockTileM: number, cliffTileM: number, strength: number, normal: number, mean: number[], bumpKeep: number } }} o
+ *   active: the cave zone is the one drawn now; name: the pass's name, for a second cave zone drawn the
+ *   same way (the stack's mouth, src/world/stack/mouth.js); ground and scan: the island's scanned rock
+ *   (the cliffs' and boulders' maps, src/render/ground-detail.js) drawn on the cave's rock, triplanar,
+ *   as the pieces pass does (decision 0001); without them the rock keeps its own noise alone
  */
 export function createCavePass(o) {
   /** @type {GPURenderPipeline} */ let rockPipe;
@@ -26,6 +32,10 @@ export function createCavePass(o) {
   /** @type {GPUBindGroupLayout} */ let layout;
   /** The rock's own layout, the uniforms alone (the depth is its attachment there). @type {GPUBindGroupLayout} */ let rockLayout;
   /** @type {GPUBindGroup | null} */ let rockGroup = null;
+  /** The ground detail's version the rock's group was made with (its maps swap in when they load). */
+  let rockGroupVersion = -1;
+  /** A one-layer stand-in for the scan's maps when there is no ground detail (the spring's cave). @type {{ a: GPUTextureView, b: GPUTextureView, sampler: GPUSampler } | null} */
+  let plain = null;
   /** @type {GPUBuffer} */ let ubuf;
   /** @type {GPUTexture | null} */ let copy = null;
   /** @type {GPUBindGroup | null} */ let group = null;
@@ -74,7 +84,7 @@ export function createCavePass(o) {
      * This frame's light and look (src/world/spring/cave-live.js caveUniforms): FLOATS numbers in
      * CaveUniforms' order. @param {ArrayLike<number>} u
      */
-    setUniforms(u) { uniform.set(u); },
+    setUniforms(u) { uniform.set(Array.prototype.slice.call(u, 0, SET_FLOATS)); },
 
     /** @param {PassContext} ctx */
     async setup(ctx) {
@@ -88,7 +98,19 @@ export function createCavePass(o) {
           { binding: 2, visibility: GPUShaderStage.FRAGMENT, texture: { sampleType: 'depth' } },
         ],
       });
-      rockLayout = device.createBindGroupLayout({ label: 'group1-cave-rock', entries: [{ binding: 0, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: {} }] });
+      rockLayout = device.createBindGroupLayout({ label: 'group1-cave-rock', entries: [
+        { binding: 0, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: {} },
+        { binding: 3, visibility: GPUShaderStage.FRAGMENT, texture: { viewDimension: '2d-array' } },
+        { binding: 4, visibility: GPUShaderStage.FRAGMENT, texture: { viewDimension: '2d-array' } },
+        { binding: 5, visibility: GPUShaderStage.FRAGMENT, sampler: {} }] });
+      if (!o.ground) {
+        const tex = (/** @type {GPUTextureFormat} */ format, /** @type {number[]} */ px) => {
+          const t = device.createTexture({ label: 'cave-scan-plain', size: [1, 1, 1], format, usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST });
+          device.queue.writeTexture({ texture: t }, new Uint8Array(px), { bytesPerRow: 4 }, [1, 1, 1]);
+          return t.createView({ dimension: '2d-array' });
+        };
+        plain = { a: tex('rgba8unorm-srgb', [255, 255, 255, 255]), b: tex('rgba8unorm', [128, 128, 128, 255]), sampler: device.createSampler() };
+      }
       const pl = device.createPipelineLayout({ label: 'cave', bindGroupLayouts: [ctx.layouts.frame, layout] });
       const rockPl = device.createPipelineLayout({ label: 'cave-rock', bindGroupLayouts: [ctx.layouts.frame, rockLayout] });
       const vertex = (/** @type {string} */ entryPoint) => ({ module, entryPoint, buffers: [{ arrayStride: VERT * 4, attributes: [
@@ -121,10 +143,20 @@ export function createCavePass(o) {
     /** @param {GPUCommandEncoder} encoder @param {PassContext} ctx */
     record(encoder, ctx) {
       if (!rockPipe || !copy) return;
-      device.queue.writeBuffer(ubuf, 0, uniform);
       if (!group) group = device.createBindGroup({ label: 'cave', layout, entries: [
         { binding: 0, resource: { buffer: ubuf } }, { binding: 1, resource: copy.createView() }, { binding: 2, resource: ctx.targets.depth.createView() }] });
-      if (!rockGroup) rockGroup = device.createBindGroup({ label: 'cave-rock', layout: rockLayout, entries: [{ binding: 0, resource: { buffer: ubuf } }] });
+      // The rock scan's numbers (tiles, strength faded in as the maps load, mean albedo), after the frame's own.
+      const S = o.scan, G = o.ground;
+      uniform.set(S && G ? [1 / S.rockTileM, 1 / S.cliffTileM, S.strength * (G.ready ? G.fade : 0), S.normal, S.mean[0], S.mean[1], S.mean[2], S.bumpKeep]
+        : [1, 1, 0, 0, 1, 1, 1, 1], SET_FLOATS);
+      device.queue.writeBuffer(ubuf, 0, uniform);
+      const version = G ? G.version : 0;
+      if (!rockGroup || version !== rockGroupVersion) {
+        rockGroupVersion = version;
+        const maps = G ? { a: G.views.a, b: G.views.b, sampler: G.sampler } : /** @type {NonNullable<typeof plain>} */ (plain);
+        rockGroup = device.createBindGroup({ label: 'cave-rock', layout: rockLayout, entries: [
+          { binding: 0, resource: { buffer: ubuf } }, { binding: 3, resource: maps.a }, { binding: 4, resource: maps.b }, { binding: 5, resource: maps.sampler }] });
+      }
       // The rock and the made things, clearing the frame (nothing of the island is drawn down here).
       const a = encoder.beginRenderPass({
         label: 'cave-rock',

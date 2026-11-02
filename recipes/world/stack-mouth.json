@@ -18,8 +18,17 @@
     "arch": { "at": [4.6, 4.3], "dir": [0, 1], "lengthM": 4.4, "halfWidthM": 0.8, "heightM": 2.3 },
     "rubble": { "at": [5.6, -4.3], "dir": [0, -1], "lengthM": 5.0, "halfWidthM": 0.85, "heightM": 2.1 },
     "passageRag": { "amount": 0.22, "scale": 1.1, "wear": 2.4 },
-    "cellM": 0.12, "boundsM": [-2.6, -0.9, -10.6, 12.6, 6.0, 9.8]
+    "cellM": 0.12, "boundsM": [-2.6, -0.9, -10.6, 12.6, 6.0, 9.8],
+    "stone": {
+      "nearM": 0.6,
+      "beds": { "stepM": 0.42, "offsetM": 0.09, "sharp": 0.22, "dip": [0.05, 0.02], "wobbleM": 0.06 },
+      "joints": { "sizeM": 1.3, "offsetM": 0.06, "grooveM": 0.06, "widthM": 0.09, "lean": 0.15 },
+      "roof": { "sizeM": 1.6, "stepM": 0.12 },
+      "slabs": { "sizeM": 1.0, "liftM": 0.07, "tiltM": 0.05, "crackM": 0.1, "crackW": 0.16, "sandShare": 0.35, "sandScale": 0.55 },
+      "lumps": { "sizeM": 0.7, "octaves": 2, "gain": 0.5, "bandM": 0.16, "blendM": 0.07 }
+    }
   },
+  "stoneNote": "Stone forms (decision 0001, Matt, November 2, 2026; src/world/spring/cave-field.js), so the rock reads as stone, not smoke. Worked only within nearM of the surface. beds: the walls in bedding layers stepM thick, each set in or out by up to offsetM, stepping to the next over the last sharp share of a bed, the beds dipping dip (rise per metre along x and z) and wobbling wobbleM. joints: vertical joints (leaning by lean) cutting the beds into blocks about sizeM across, each block set in or out by up to offsetM, a groove grooveM deep and widthM wide along each. roof: the ceiling in slabs about sizeM across, each up or down by up to stepM. slabs: the floor in flagstones about sizeM across, each lifted by up to liftM and tilted by up to tiltM, a crack crackM deep and crackW wide between them, sand settled flat over sandShare of the floor in patches (sandScale cycles a metre). lumps: rocky bulges hugging the surface, octaves layers of seeded spheres from sizeM (each layer gain times the last), clipped to bandM round the surface and joined with blendM.",
   "shapeNote": "The spring cave's shape fields (recipes/world/spring-cave.json shapeNote), in the mouth's frame: x into the stack from the cleft's back, z across (to your left as you come in), y up from the floor. arch and rubble: the two passages, each from its root `at` along `dir` (unit [x, z]) for lengthM, halfWidthM either side, under an arched roof heightM high. The arch's ends blind past the light (it stays closed until the Hollow); the rubble's is filled with fallen rock. passageRag: both passages' width and roof wander by up to amount (a share) with seeded noise at scale cycles a meter, and their walls are worn wear times the chamber's, so neither reads as a doorway.",
 
   "poolBelowRimM": 0.04,
@@ -37,6 +46,9 @@
   },
   "lightNote": "As the spring cave's (spring-cave.json lightNote), the hole being the cleft's open top. lantern: the old lantern once lit, a real point light (Matt, November 1, 2026: the cave must look its best with it lit): cd candela at lightK from its flame (a bright hurricane lantern; an oil lamp is near 10), flickering by flicker at about flickerHz, whatever the hour; its sight of the rock baked (bake below), so ledges and the arch's lip throw soft shadows; glassNits: its horn panes' glow; bounce: the share of its light carried round the walls as a warm fill gathered round it; scatter: the cave air's scatter per meter, the glow round the flame; glint: its flame mirrored in wet stone. figure.lampFill: the share of the lantern's light on the walker that comes back to them off the walls close round, as their fill. It is the light the walker wakes to below later (F16).",
 
+  "scan": { "strength": 1.0, "normal": 0.9, "bumpKeep": 0.35 },
+  "scanNote": "The island's rock scan on the mouth's rock (decision 0001; src/render/passes/cave.js, cave-draw.wgsl scanAt): the cliffs' face scan on the walls and the boulders' top scan on what faces up, triplanar, its tiles and mean albedo from recipes/world/terrain.json (detail.layers rock and cliff, materials.albedoRock), as the pieces pass draws stones. strength: how much of its variation shows (0..1); normal: its relief's strength; bumpKeep: the share of the old noise bump kept under it.",
+
   "look": {
     "rock": [0.15, 0.14, 0.125], "rockWet": [0.06, 0.065, 0.06], "floor": [0.11, 0.105, 0.09], "wetNearM": 0.5,
     "roughness": [0.85, 0.3], "lantern": [0.2, 0.17, 0.12], "lanternRim": [0.32, 0.16, 0.07], "glass": [0.55, 0.5, 0.38], "glowTint": [1.0, 0.6, 0.28], "note": [0.62, 0.58, 0.48],
@@ -50,10 +62,10 @@
     "note": { "at": [3.0, -2.15], "sizeM": [0.16, 0.11], "tapM": 0.25 },
     "hook": { "fromArchM": 0.55, "heightM": 1.6, "armM": 0.2, "standM": 0.75 },
     "soot": { "radiusM": 1.7, "darken": 0.96 },
-    "rubble": { "stones": 220, "sizeM": [0.16, 0.5], "seed": 7193, "lump": 0.42, "flat": 0.55 },
+    "rubble": { "seed": 7193, "spacingM": 0.3, "radiusM": [0.16, 0.26], "layerK": 0.75, "slope": 0.8, "toeM": 0.2, "roofGapM": 0.12, "shellM": 0.45, "lump": 0.3, "flat": 0.8, "occFloor": 0.45 },
     "door": { "tapM": 0.9 }
   },
-  "thingsNote": "Where the things lie (mouth frame): the old lantern on its side at `at` (radiusM, heightM; tapM how far past it a tap still finds it), the note beside it, the hook on the wall fromArchM along the wall from the arch's side at heightM, its iron arm armM out from where it meets the rock (found by marching the field to the wall), and you stand standM out from its tip to hang the lantern (Hang it walks you there carrying it); the soot on the stone round the arch's opening, out to radiusM from its middle (thicker above, as smoke rises), darkening the rock by up to darken; the rubble's stones stacked in its passage from the floor up, each resting on the floor or the stones under it (each dug stretch clears its share, front first), and the way out under the cleft (door: within tapM of the arrival spot).",
+  "thingsNote": "Where the things lie (mouth frame): the old lantern on its side at `at` (radiusM, heightM; tapM how far past it a tap still finds it), the note beside it, the hook on the wall fromArchM along the wall from the arch's side at heightM, its iron arm armM out from where it meets the rock (found by marching the field to the wall), and you stand standM out from its tip to hang the lantern (Hang it walks you there carrying it); the soot on the stone round the arch's opening, out to radiusM from its middle (thicker above, as smoke rises), darkening the rock by up to darken; the rubble's stones stacked in its passage from the floor up, each resting on the floor or the stones under it (each dug stretch clears its share, front first), and the way out under the cleft (door: within tapM of the arrival spot). rubble (decision 0001; src/world/stack/mouth-field.js rubbleHeap): a talus heap filling its passage from the dug face back, its surface rising from toeM at the face by slope a metre until roofGapM under the roof, filled in layers (layerK of spacingM apart) on a jittered grid spacingM apart with stones of radiusM, only the shellM under its surface (deeper stones are never seen); each a broken lump (its corners pushed in or out by up to lump, squashed to flat) drawn as the room's rock, its sight of the lantern taken from where it lies, darker the deeper under the surface (occFloor the darkest). The pool's stones are drawn the same way, bedded on the lowest ground under them.",
 
   "bake": { "liftM": 0.04, "lampClearM": 0.12, "penumbra": 7, "minStepM": 0.03, "maxStepM": 0.35, "aoM": [0.12, 0.3, 0.6, 1.0], "aoStrength": 0.55 },
   "bakeNote": "Light baked into the rock once in the worker (src/world/stack/mouth-field.js bakeLight): for each vertex, lifted liftM off the rock, how much it sees of each spot the lantern can be (on the floor, on its hook), marched through the field to within lampClearM of the flame, the shadow's edge softened by penumbra (larger: harder) with steps between minStepM and maxStepM; and its ambient occlusion from the open air at the distances aoM out along its normal (each counting 0.7 of the one before), aoStrength how dark the deepest hollows go.",

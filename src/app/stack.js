@@ -66,9 +66,12 @@ export async function start(ctx) {
   const reveal = createRoadReveal({ stack, R, camera, walk, clock,
     busy: () => otherReveal || !!zones.active() || zones.busy() || terrain.isBusy() || getStore('intro')?.done === false });
   // The mouth room: a second cave pass, drawn while it is the zone (src/app/passes.js).
-  const mouthPass = createCavePass({ active: () => zones.active() === 'stack-mouth', name: 'stack-mouth' });
+  // The room's rock wears the island's rock scan, as the cliff outside does (decision 0001).
+  const mouthRecipe = await loadRecipe('world/stack-mouth'), TL = ctx.terrainRecipe.detail.layers;
+  const mouthPass = createCavePass({ active: () => zones.active() === 'stack-mouth', name: 'stack-mouth', ground: ctx.groundDetail,
+    scan: { rockTileM: TL.rock.tileMeters, cliffTileM: TL.cliff.tileMeters, mean: ctx.terrainRecipe.materials.albedoRock, ...mouthRecipe.scan } });
   const mouthBeam = mouthPass.beamPass();
-  const mouth = createStackMouth({ R: await loadRecipe('world/stack-mouth'), stack, walk, zones, pass: mouthPass,
+  const mouth = createStackMouth({ R: mouthRecipe, stack, walk, zones, pass: mouthPass,
     day: () => clock.dayIndexOf(clock.worldT()), stretches: R.rubble.stretches });
   // Seeing the arch adds the driftwood staff to the workbench's makes (cook.json unlock 'staff').
   const staff = () => {
