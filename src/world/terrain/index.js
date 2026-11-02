@@ -61,10 +61,17 @@ export async function createTerrain(gpu, opts) {
   const bounds = chunks.bounds();
   /** The open land and any new land risen beside it (landBounds), in world meters. */
   const reach = { openMin: bounds.openMin.slice(), openMax: bounds.openMax.slice() };
-  // Where brushes reach: the open land, less the keeper's camp pad (docs/future/13 CP-01), which
-  // follows the store slice `campPad` (null until an older island's pad is stamped).
+  // Where brushes reach: the open land, and new land risen beside it once it stands (reachLand),
+  // less the keeper's camp pad (docs/future/13 CP-01), which follows the store slice `campPad`
+  // (null until an older island's pad is stamped).
   /** @type {import('./brushes.js').Edge} */
-  const edge = { openMin: bounds.openMin, openMax: bounds.openMax, edgeFade: rb.edgeFadeMeters, pad: getStore('campPad') ?? null };
+  const edge = { openMin: bounds.openMin.slice(), openMax: bounds.openMax.slice(), edgeFade: rb.edgeFadeMeters, pad: getStore('campPad') ?? null };
+  /** The cells the brushes reach: the open land's, grown by reachLand. @type {CellRect} */
+  let reachCells = { ...bounds.cells };
+  /** New land the brushes may touch outside the open land (reachLand), 1 per cell. @type {Uint8Array | null} */
+  let allowed = null;
+  /** Inside the brushes' box but neither open land nor allowed new land: the open sea, held as it is. @type {Uint8Array | null} */
+  let seaHeld = null;
   const unPad = subscribeStore('campPad', (/** @type {any} */ pad) => { edge.pad = pad ?? null; });
   const marginCells = Math.ceil(recipe.erosion.marginMeters / CELL) + 1;
 
@@ -128,17 +135,18 @@ export async function createTerrain(gpu, opts) {
     const out = new Uint8Array(r.w * r.h);
     for (let j = 0; j < r.h; j++) for (let i = 0; i < r.w; i++) {
       const k = (r.y + j) * N + r.x + i;
-      out[j * r.w + i] = Math.max(stepsMask ? stepsMask[k] : 0, fixed ? fixed.mask[k] : 0);
+      // r8unorm: 255 reads as 1.0 in the shader (a 1 read as 1/255, under its 0.5, and guarded nothing).
+      out[j * r.w + i] = (stepsMask?.[k] || fixed?.mask[k] || seaHeld?.[k]) ? 255 : 0;
     }
     device.queue.writeTexture({ texture: tex.guard, origin: [r.x, r.y] }, out, { bytesPerRow: r.w, rowsPerImage: r.h }, [r.w, r.h]);
   }
 
   /**
-   * Grow a rect by m cells and clamp it to the open land.
+   * Grow a rect by m cells and clamp it to where the brushes reach.
    * @param {CellRect} r @param {number} m
    */
   function grow(r, m) {
-    const o = bounds.cells;
+    const o = reachCells;
     const x0 = Math.max(o.x, r.x - m);
     const y0 = Math.max(o.y, r.y - m);
     const x1 = Math.min(o.x + o.w, r.x + r.w + m);
@@ -180,7 +188,7 @@ export async function createTerrain(gpu, opts) {
       const t = i / n;
       const x = from[0] + (st.cursor[0] - from[0]) * t;
       const z = from[1] + (st.cursor[1] - from[1]) * t;
-      const rect = circleRect(x, z, r, bounds.cells);
+      const rect = circleRect(x, z, r, reachCells);
       if (rect.w === 0 || rect.h === 0) continue;
       const fresh = tilesOf(grow(rect, marginCells)).filter((id) => !st.tileIds.has(id));
       for (const id of fresh) st.tileIds.add(id);
@@ -227,14 +235,19 @@ export async function createTerrain(gpu, opts) {
     st.resolve({ kind: 'terrain', before: st.before, after, bytes: (st.before.length + after.length) * TILE_BYTES });
   }
 
-  /** @param {CellRect} r */
-  function markEdited(r) {
+  /** @param {CellRect} r @param {boolean} [byPlayer] false for new land rising (raiseCells), which regrows from the seed */
+  function markEdited(r, byPlayer = true) {
     cliffs.refresh(mirror.heightF, r);
     updateStore('chunks', (all) => {
       for (const c of chunks.list()) {
         const x0 = chunkFirstCell(c.cx);
         const z0 = chunkFirstCell(c.cz);
         if (r.x < x0 + CHUNK_CELLS && r.x + r.w > x0 && r.y < z0 + CHUNK_CELLS && r.y + r.h > z0) all[chunkKey(c.cx, c.cz)].edited = true;
+      }
+      // New land brushed (the meadow islet): its chunk is saved from now on, as an open one is.
+      if (byPlayer) for (const c of chunks.raisedList()) {
+        const x0 = chunkFirstCell(c.cx), z0 = chunkFirstCell(c.cz), key = chunkKey(c.cx, c.cz);
+        if (r.x < x0 + CHUNK_CELLS && r.x + r.w > x0 && r.y < z0 + CHUNK_CELLS && r.y + r.h > z0) all[key] = { ...(all[key] ?? { state: 'raised', land: landId, seed }), edited: true };
       }
     });
   }
@@ -318,7 +331,7 @@ export async function createTerrain(gpu, opts) {
     stampStone(point, sizeM) {
       if (terrain.isBusy()) return null;
       const b = makeBoulder(seed, point[0], point[2], sizeM, recipe.stone);
-      const area = circleRect(point[0], point[2], b.reach + CELL, bounds.cells);
+      const area = circleRect(point[0], point[2], b.reach + CELL, reachCells);
       if (area.w === 0 || area.h === 0) return null;
       const ids = tilesOf(area);
       const before = copyTiles(mirror, ids);
@@ -408,6 +421,42 @@ export async function createTerrain(gpu, opts) {
     },
 
     /**
+     * Let the brushes reach new land that has risen beside the open land (the meadow islet, once it
+     * stands): the brushes' box grows to hold `rect`, and the cells of it marked in `mine` may be
+     * shaped and painted. Every other cell the box gains outside the open land is the open sea, held
+     * as it is (in the guard texture), so the channel to new land stays sea.
+     * @param {CellRect} rect @param {Uint8Array} mine rect.w x rect.h, 1 where the brushes may reach
+     */
+    reachLand(rect, mine) {
+      allowed ??= new Uint8Array(N * N);
+      for (let j = 0; j < rect.h; j++) for (let i = 0; i < rect.w; i++) {
+        const ci = rect.x + i, cj = rect.y + j;
+        if (mine[j * rect.w + i] && ci >= 0 && cj >= 0 && ci < N && cj < N) allowed[cj * N + ci] = 1;
+      }
+      const x0 = Math.max(0, Math.min(reachCells.x, rect.x)), y0 = Math.max(0, Math.min(reachCells.y, rect.y));
+      const x1 = Math.min(N, Math.max(reachCells.x + reachCells.w, rect.x + rect.w)), y1 = Math.min(N, Math.max(reachCells.y + reachCells.h, rect.y + rect.h));
+      reachCells = { x: x0, y: y0, w: x1 - x0, h: y1 - y0 };
+      edge.openMin = [WORLD_ORIGIN + x0 * CELL, WORLD_ORIGIN + y0 * CELL];
+      edge.openMax = [WORLD_ORIGIN + x1 * CELL, WORLD_ORIGIN + y1 * CELL];
+      const o = bounds.cells;
+      seaHeld = new Uint8Array(N * N);
+      for (let j = y0; j < y1; j++) for (let i = x0; i < x1; i++) {
+        const inOpen = i >= o.x && i < o.x + o.w && j >= o.y && j < o.y + o.h;
+        if (!inOpen && !allowed[j * N + i]) seaHeld[j * N + i] = 1;
+      }
+      uploadGuard(reachCells);
+    },
+
+    /**
+     * Is (x, z) in a raised chunk that holds the player's own edits (brushed, or put back from a
+     * save)? New land rising writes around those, never over them. @param {number} x @param {number} z
+     */
+    keptAt(x, z) {
+      const cx = Math.floor((x - WORLD_ORIGIN) / CHUNK_SIZE) + CHUNK_MIN, cz = Math.floor((z - WORLD_ORIGIN) / CHUNK_SIZE) + CHUNK_MIN;
+      return chunks.state(cx, cz) === 'raised' && !!getStore('chunks')?.[chunkKey(cx, cz)]?.edited;
+    },
+
+    /**
      * Write new land's heights and paint over a cell rect anywhere in the world (the islet's rise; no
      * undo, and the open chunks it reaches are marked edited so the save keeps them). edit(mirror)
      * writes heightQ, heightF and material inside the rect. Emits `terrain:raised` (not a stroke:
@@ -421,7 +470,7 @@ export async function createTerrain(gpu, opts) {
       if (r.w === 0 || r.h === 0) return true;
       edit(mirror);
       uploadRect(device, tex, mirror, r);
-      markEdited(r);
+      markEdited(r, false);
       emitDeferred('terrain:raised', { rect: worldRect(r) });
       return true;
     },
@@ -443,15 +492,20 @@ export async function createTerrain(gpu, opts) {
 
     /**
      * Put a save's edited chunks back (doc 18): heights and paint exactly as saved, over the regrown
-     * land. Untouched chunks keep the land regrown from the seed.
+     * land. Untouched chunks keep the land regrown from the seed. A brushed chunk of new land (raised)
+     * is drawn again and pasted too; the islet writes around it as it comes up (keptAt).
      * @param {import('../../save/sections.js').SavedChunk[]} saved
      */
     restoreChunks(saved) {
       for (const c of saved) {
-        if (!c.edited || !c.heightQ || !c.material || chunks.state(c.cx, c.cz) !== 'open') continue;
+        if (!c.edited || !c.heightQ || !c.material) continue;
+        if (c.raised && chunks.state(c.cx, c.cz) === 'sea') chunks.raise(c.cx, c.cz);
+        const st = chunks.state(c.cx, c.cz);
+        if (st !== 'open' && st !== 'raised') continue;
         pasteChunk(mirror, c.cx, c.cz, c.heightQ, c.material);
         uploadRect(device, tex, mirror, { x: chunkFirstCell(c.cx), y: chunkFirstCell(c.cz), w: CHUNK_CELLS, h: CHUNK_CELLS });
-        updateStore('chunks', (all) => { all[chunkKey(c.cx, c.cz)].edited = true; });
+        const key = chunkKey(c.cx, c.cz);
+        updateStore('chunks', (all) => { all[key] = { ...(all[key] ?? { state: 'raised', land: c.land, seed }), edited: true }; });
         cliffs.refresh(mirror.heightF, { x: chunkFirstCell(c.cx), y: chunkFirstCell(c.cz), w: CHUNK_CELLS, h: CHUNK_CELLS });
       }
     },

@@ -91,7 +91,8 @@ export function createIslet(o) {
           const t = target[j * rect.w + i];
           if (!(t > -Infinity)) continue;
           const x = WORLD_ORIGIN + (rect.x + i + 0.5) * CELL;
-          if (!landToo && inBox(L.islandBox, x, z)) continue;
+          // Ground the player brushed is theirs: on a load its saved chunk is back already (keptAt).
+          if (!landToo && (inBox(L.islandBox, x, z) || terrain.keptAt?.(x, z))) continue;
           const k = (rect.y + j) * N + rect.x + i, h = t - under;
           if (h <= m.heightF[k] + 1e-4) continue;
           const q = quantize(h);
@@ -145,10 +146,19 @@ export function createIslet(o) {
     if (!get('journal')?.flags?.includes('setpiece:islet:rose')) {
       emitDeferred('islet:rose', { x: L.x, z: L.z, text: R.words?.rose ?? '', away: false });
     }
+    // Risen: Sculpt and Paint reach it and its bar from now on (recipe brushes), never the sea round it.
+    if (under === 0) terrain.reachLand?.(rect, brushable());
     if (phase === 'risen' && under === 0 && !get('journal')?.flags?.includes('setpiece:islet:risen')) {
       flag('setpiece:islet:risen');
       emitDeferred('islet:risen', { x: L.x, z: L.z });
     }
+  }
+
+  /** Its cells the brushes may reach once risen: final ground above the recipe's floor. */
+  function brushable() {
+    const floor = R.brushes?.floorM ?? -1.2, mine = new Uint8Array(target.length);
+    for (let k = 0; k < target.length; k++) mine[k] = target[k] > floor ? 1 : 0;
+    return mine;
   }
 
   /** @param {string} f */

@@ -63,6 +63,7 @@ export const TEST_FILES = {
   'hollow': '',
   'intro': '',
   'islands': '',
+  'islet-brushes': '',
   'islet': '',
   'items': '',
   'journal': '',
