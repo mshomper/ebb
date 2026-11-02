@@ -95,6 +95,7 @@ export const TEST_FILES = {
   'rng': '',
   'sampler': '',
   'save': '',
+  'seals': '',
   'setpieces': '',
   'shaped': '',
   'shore-sand': '',

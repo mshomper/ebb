@@ -16,6 +16,7 @@ import { HABITAT_CELLS, HABITAT_ORIGIN } from '../growth/habitat.js';
 import { SPECIES, keyOf } from '../species.js';
 import { swarmStep, initialSwarm } from './swarms.js';
 import { maxTrust } from './trust.js';
+import { pupStep } from '../seals/pup.js';
 
 /** The recipes that live as flocks on shaped ground. @param {Record<string, any> | undefined} species */
 export const flockSpecies = (species) => SPECIES.map((id) => species?.[id]).filter((r) => r?.ecology?.kind === 'flock');
@@ -68,6 +69,8 @@ export function flockStep(state, hourIndex, env, rec) {
   const r = swarmStep(lent, hourIndex, env, rec);
   const out = { ...r.state, ecology: state.ecology };
   if (state.ecology === undefined) delete out.ecology;
+  // A species with young that come on their own days (the seals' pup: ecology.pup, src/world/seals/pup.js).
+  if (rec.ecology?.pup) { const p = pupStep(out, hourIndex, env, rec, key); return { state: p.state, events: [...r.events, ...p.events] }; }
   return { state: out, events: r.events };
 }
 

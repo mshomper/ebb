@@ -131,6 +131,8 @@
     "music/names": "music/names.json",
     "species/turnstone": "species/turnstone.json",
     "audio/turnstone": "audio/turnstone.json",
-    "species/eel": "species/eel.json"
+    "species/eel": "species/eel.json",
+    "species/seal": "species/seal.json",
+    "audio/seal": "audio/seal.json"
   }
 }

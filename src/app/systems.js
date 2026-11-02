@@ -28,6 +28,7 @@ import * as fishing from './fishing.js';
 import * as shaped from './shaped.js';
 import * as turnstones from './turnstones.js';
 import * as eels from './eels.js';
+import * as seals from './seals.js';
 import * as graph from './graph.js';
 import * as photo from './photo.js';
 import * as quality from './quality.js';
@@ -81,6 +82,7 @@ export const SYSTEMS = [
   shaped.tests,
   turnstones.start,
   eels.start,
+  seals.start,
   testLinks.packs,
   testCamp.camp,
   testCamp.teas,
