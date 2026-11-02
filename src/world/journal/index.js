@@ -343,6 +343,8 @@ export function createJournal(opts) {
     }
     // A shell a winter storm tide left: the journal notes the storm tide, once.
     if (/** @type {any} */ (card).storm) commit(stormShells(journal, { state: world.state, hour: hourIndex(), words }));
+    // A card with no page of its own (a set piece's: the stack, its cave mouth) has no moments to catch.
+    if (!card.ground && !words.species[card.sp]) return;
     const list = card.ground ? words.moments.ground : words.moments[momentKind(words.species[card.sp])];
     const ids = momentsNow(list, now(card.stage), words.moments);
     const name = card.name.charAt(0).toLowerCase() + card.name.slice(1);

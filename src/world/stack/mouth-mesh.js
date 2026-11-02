@@ -1,64 +1,99 @@
 // @ts-check
-// The cave mouth in the stack's foot, on the island (docs/future/19): the island's ground is a
-// heightfield and cannot roof a passage, so the porch is cut through to the apron and the roof is
-// stones: a capstone across the passage's top, an arch of stones framing its opening (two jambs, the
-// arch's ring, the wall above it filled to the capstone), and the dark beyond the arch. Baked in code,
-// seeded, drawn in the pieces pass (the stones with the rock scan, the dark plain). Pure.
-// Frame: meters from the passage's front at the apron's height, +z out toward the island, x across.
-
-import { hash32 } from '../../core/rng.js';
-import { pebbleMesh } from '../pack/pickup-meshes.js';
-import { joinMeshes } from '../setpieces/cairn-rules.js';
+// The cave mouth in the stack's foot, on the island (docs/future/19): Matt's model (November 2, 2026;
+// assets/models/stack/cave-mouth.bin, made by tools/assets/build-cave-mouth.mjs: meters, y up, its
+// opening toward +z, the origin at the opening's foot on its front plane) read into the two forms it
+// is drawn in: the pieces pass's (with the rock scan, so it is the same stone as the cliff) and a
+// cast-only props pass's (so it throws the sun's shadow into its own chamber). And the dark at the
+// chamber's back, where the way on goes into the stack. Pure.
 
 /** @typedef {import('../pack/pickup-meshes.js').Mesh} Mesh */
 
-/** A seeded share 0..1. @param {number} seed @param {...number} k */
-const u01 = (seed, ...k) => (hash32(seed, ...k) >>> 8) / 16777216;
-
 /**
- * The stones: capstone, jambs, the arch's ring and the fill above it.
- * @param {any} S the land recipe's stack block @param {number} seed @param {number[]} col rock albedo (linear)
- * @returns {Mesh}
+ * The model's file: 'EBM2', vertex count, index count, then positions, each vertex's baked ambient
+ * occlusion (its open sky, 0..1) and the indices.
+ * @param {ArrayBuffer} buf @returns {{ pos: Float32Array, idx: Uint32Array, nrm: Float32Array, ao: Float32Array }}
  */
-export function mouthStones(S, seed, col) {
-  const P = S.porch, M = S.mouth, hw = M.halfWidthM, top = P.heightM;
-  /** @type {{ m: Mesh, dx: number, dy: number, dz: number, yaw: number }[]} */ const parts = [];
-  let n = 0;
-  /** @param {number} x @param {number} y @param {number} z @param {number[]} r radii */
-  const stone = (x, y, z, r) => {
-    const i = n++, u = (/** @type {number} */ k) => u01(seed, i, k);
-    const k = 0.85 + 0.3 * u(1);
-    parts.push({ m: pebbleMesh(hash32(seed, 0x6d, i), [r[0] * k, r[1] * (0.85 + 0.3 * u(2)), r[2]], 0.16, col, 0.02), dx: x, dy: y, dz: z, yaw: (u(3) - 0.5) * 0.5 });
-  };
-  // The capstone: one great flat stone across the passage, lying on the porch either side.
-  stone(0, top - 0.2, -(P.outM + M.backM) / 2 + 0.1, [hw + 0.8, 0.26, (P.outM + M.backM) / 2 + 0.2]);
-  // The arch's line: jambs up to the spring, then a half-ellipse to the crown.
-  const curve = (/** @type {number} */ x) => M.springM + (M.archM - M.springM) * Math.sqrt(Math.max(0, 1 - (x / hw) ** 2));
-  for (const side of [-1, 1]) {
-    for (let y = 0.22; y < M.springM; y += 0.42) stone(side * (hw + 0.2), y, -0.12, [0.26, 0.24, 0.32]);
+export function readMouth(buf) {
+  const head = new Uint32Array(buf, 0, 3);
+  if (head[0] !== 0x324d4245) throw new Error('cave-mouth.bin: not an EBM2 file');
+  const n = head[1], pos = new Float32Array(buf, 12, n * 3), ao = new Float32Array(buf, 12 + n * 12, n), idx = new Uint32Array(buf, 12 + n * 16, head[2]);
+  // Smooth normals, area-weighted.
+  const nrm = new Float32Array(pos.length);
+  for (let k = 0; k < idx.length; k += 3) {
+    const a = idx[k] * 3, b = idx[k + 1] * 3, c = idx[k + 2] * 3;
+    const ux = pos[b] - pos[a], uy = pos[b + 1] - pos[a + 1], uz = pos[b + 2] - pos[a + 2];
+    const vx = pos[c] - pos[a], vy = pos[c + 1] - pos[a + 1], vz = pos[c + 2] - pos[a + 2];
+    const nx = uy * vz - uz * vy, ny = uz * vx - ux * vz, nz = ux * vy - uy * vx;
+    for (const v of [a, b, c]) { nrm[v] += nx; nrm[v + 1] += ny; nrm[v + 2] += nz; }
   }
-  for (let k = 0; k <= 8; k++) {
-    const th = (Math.PI * k) / 8, x = -hw * Math.cos(th), y = M.springM + (M.archM - M.springM) * Math.sin(th);
-    stone(x * 1.12, y + 0.12 * Math.sin(th) + 0.04, -0.1, [0.24, 0.2, 0.3]);
-  }
-  // The wall above the ring, filled to the capstone.
-  for (let x = -hw - 0.1; x <= hw + 0.1; x += 0.34) {
-    for (let y = curve(Math.min(hw, Math.abs(x))) + 0.32; y < top - 0.05; y += 0.3) stone(x, y, -0.2, [0.22, 0.18, 0.34]);
-  }
-  return joinMeshes(parts);
+  for (let v = 0; v < nrm.length; v += 3) { const l = Math.hypot(nrm[v], nrm[v + 1], nrm[v + 2]) || 1; nrm[v] /= l; nrm[v + 1] /= l; nrm[v + 2] /= l; }
+  return { pos, idx, nrm, ao };
 }
 
 /**
- * The dark past the arch: the opening's shape a little in, black (lit as anything is, it stays dark).
- * @param {any} S @returns {Mesh}
+ * For the pieces pass: 9 floats a vertex (position, normal, albedo), the albedo darkened by its baked
+ * occlusion (its chamber and hollows go dark in any weather: the island's light does not know the
+ * rock's roof), a little darker facing down and toward its foot (damp, weed-stained).
+ * @param {{ pos: Float32Array, idx: Uint32Array, nrm: Float32Array, ao: Float32Array }} m @param {number[]} col
+ * @param {{ floor: number, power: number }} O how dark no sky makes it, and the curve @returns {Mesh}
  */
-export function mouthDark(S) {
-  const M = S.mouth, hw = M.halfWidthM + 0.05, z = -0.45, c = [0.004, 0.004, 0.005];
-  /** @type {number[][]} */ const ring = [[hw, 0], [hw, M.springM]];
-  for (let k = 1; k < 12; k++) { const th = (Math.PI * k) / 12; ring.push([hw * Math.cos(th), M.springM + (M.archM + 0.05 - M.springM) * Math.sin(th)]); }
-  ring.push([-hw, M.springM], [-hw, 0]);
-  const v = [0, M.springM * 0.6, z, 0, 0, 1, ...c], idx = [];
-  for (const [x, y] of ring) v.push(x, y, z, 0, 0, 1, ...c);
+export function mouthPieceMesh(m, col, O) {
+  const n = m.pos.length / 3, v = new Float32Array(n * 9);
+  for (let i = 0; i < n; i++) {
+    const ny = m.nrm[i * 3 + 1], y = m.pos[i * 3 + 1];
+    const occ = O.floor + (1 - O.floor) * Math.pow(m.ao[i], O.power);
+    const k = occ * (0.85 + 0.15 * Math.max(0, ny)) * (0.75 + 0.25 * Math.min(1, Math.max(0, y / 1.2)));
+    v.set([m.pos[i * 3], y, m.pos[i * 3 + 2], m.nrm[i * 3], ny, m.nrm[i * 3 + 2], col[0] * k, col[1] * k, col[2] * k], i * 9);
+  }
+  return { vertices: v, count: n, indices: m.idx };
+}
+
+/**
+ * The floor under its roof: a thin patch over the footprint's open cells that see less than full sky,
+ * darkened by their baked occlusion (smoothed at the cells' corners), y just over the ground.
+ * @param {any} fp the footprint (rows, floorAO) @param {number[]} col the floor's albedo
+ * @param {{ floor: number, power: number }} O @param {number} y the patch's height (model frame) @returns {Mesh}
+ */
+export function mouthFloor(fp, col, O, y) {
+  const c = fp.cellM, sky = (/** @type {number} */ i, /** @type {number} */ j) => {
+    const r = fp.floorAO[Math.max(0, Math.min(fp.h - 1, j))];
+    return (r.charCodeAt(Math.max(0, Math.min(fp.w - 1, i))) - 48) / 9;
+  };
+  const corner = (/** @type {number} */ i, /** @type {number} */ j) => (sky(i - 1, j - 1) + sky(i, j - 1) + sky(i - 1, j) + sky(i, j)) / 4;
+  const v = [], idx = [];
+  for (let j = 0; j < fp.h; j++) for (let i = 0; i < fp.w; i++) {
+    if (fp.rows[j][i] === '1' || sky(i, j) >= 0.85) continue;
+    const base = v.length / 9;
+    for (const [di, dj] of [[0, 0], [1, 0], [1, 1], [0, 1]]) {
+      const k = O.floor + (1 - O.floor) * Math.pow(corner(i + di, j + dj), O.power);
+      v.push(fp.x0 + (i + di) * c, y, fp.z0 + (j + dj) * c, 0, 1, 0, col[0] * k, col[1] * k, col[2] * k);
+    }
+    idx.push(base, base + 2, base + 1, base, base + 3, base + 2);
+  }
+  return { vertices: new Float32Array(v), count: v.length / 9, indices: new Uint32Array(idx) };
+}
+
+/**
+ * For a props pass (cast only): 8 floats a vertex (position, normal, uv). @param {{ pos: Float32Array, idx: Uint32Array, nrm: Float32Array }} m
+ * @returns {{ data: Float32Array, indices: Uint32Array }}
+ */
+export function mouthPropMesh(m) {
+  const n = m.pos.length / 3, data = new Float32Array(n * 8);
+  for (let i = 0; i < n; i++) data.set([m.pos[i * 3], m.pos[i * 3 + 1], m.pos[i * 3 + 2], m.nrm[i * 3], m.nrm[i * 3 + 1], m.nrm[i * 3 + 2], 0, 0], i * 8);
+  return { data, indices: m.idx };
+}
+
+/**
+ * The dark at the chamber's back: an arch-shaped black panel facing out, where the way on goes into
+ * the stack (lit as anything is, it stays dark). @param {any} D stack.json mouthDark ({ z, x, halfWidthM, springM, archM }) @returns {Mesh}
+ */
+export function mouthDark(D) {
+  const hw = D.halfWidthM, z = D.z, x0 = D.x, c = [0.004, 0.004, 0.005];
+  /** @type {number[][]} */ const ring = [[hw, 0], [hw, D.springM]];
+  for (let k = 1; k < 12; k++) { const th = (Math.PI * k) / 12; ring.push([hw * Math.cos(th), D.springM + (D.archM - D.springM) * Math.sin(th)]); }
+  ring.push([-hw, D.springM], [-hw, 0]);
+  const v = [x0, D.springM * 0.6, z, 0, 0, 1, ...c], idx = [];
+  for (const [x, y] of ring) v.push(x0 + x, y, z, 0, 0, 1, ...c);
   for (let i = 1; i < ring.length; i++) idx.push(0, i, i + 1);
   return { vertices: new Float32Array(v), count: v.length / 9, indices: new Uint32Array(idx) };
 }

@@ -1,8 +1,9 @@
 // @ts-check
 // The stack's layout and shape (docs/future/19, 'The stack'): where the sea stack stands, its ground
 // and paint as it stands (a terraced rock in the Cliff tool's language: a sheer core, ledges stepping
-// up one side, a foot apron above every tide on the landward side, and on it a low rock porch with the
-// cave mouth through it: a passage under a capstone, drawn as stones by mouth-mesh.js), the no-build ring round it, and the causeway's shape. Pure: the seed, the land
+// up one side, and a foot apron above every tide on the landward side where Matt's cave mouth stands,
+// its back against the face; under its walls the ground is raised, hidden inside the rock, so the
+// walker cannot walk through them), the no-build ring round it, and the causeway's shape. Pure: the seed, the land
 // recipe's `stack` block and recipes/setpieces/stack.json in, numbers out, so a tools page, a test and
 // the game all see the same stack. Uses only hash32, det math and + - * /, Math.sqrt, Math.abs,
 // Math.min/max, as the landform does.
@@ -26,8 +27,8 @@ const L_SIDE = 1, L_LOBE = 2, L_DETAIL = 3, L_THRIFT = 4, L_ROAD = 5, L_BOULDER 
  * @property {number} noBuildM                   the no-build ring's radius
  * @property {[number, number]} shore            where the island's own ground first reaches the sea on its line
  * @property {[number, number]} foot             the apron's landward edge, where the causeway ends
- * @property {[number, number]} mouth            the back of the passage through the porch, the cave mouth
- * @property {[number, number]} front            the porch's front, where the passage opens
+ * @property {[number, number]} mouth            the back of the cave mouth's chamber, where the way in is
+ * @property {[number, number]} front            the cave mouth's origin: its opening's foot on its front plane
  * @property {[number, number]} stand            where you stand at the mouth, facing in
  * @property {number} apronM                     the apron's (and the passage floor's) height
  * @property {number} reachM                     how far from its middle the rock reaches above the sea (core, ledges, apron)
@@ -56,7 +57,7 @@ const smooth = (a, b, x) => { const t = clamp01((x - a) / (b - a)); return t * t
 export function stackLayout(S, land, terrainSeed, seed, base, isletDeg) {
   const c = islandCenter(land), m = S.edgeMarginM ?? 2;
   const ledges = S.ledges * S.ledgeM * (1 + (S.ledgeJitter ?? 0)) + S.coreWobbleM * 0.5;
-  const reach = S.coreM + S.coreWobbleM + Math.max(ledges, S.porch.outM + S.apron.outM) + (S.cragM ?? 0), skirt = reach + S.seaFallM;
+  const reach = S.coreM + S.coreWobbleM + Math.max(ledges, S.porch.outM + S.apron.outM + 1) + (S.cragM ?? 0), skirt = reach + S.seaFallM;
   const away = shoreBearings(land, terrainSeed), isle = landBox(land);
   const rockR = S.coreM + S.coreWobbleM + Math.max(S.porch.outM + S.apron.outM, S.ledges * S.ledgeM) + 1;
   /** How far a point lies from the open land's box (m, 0 inside). @param {number} x @param {number} z */
@@ -74,7 +75,9 @@ export function stackLayout(S, land, terrainSeed, seed, base, isletDeg) {
     const x = c.x + ux * (shoreR + out), z = c.z + uz * (shoreR + out);
     if (x - skirt < WORLD_ORIGIN + m || x + skirt > WORLD_END - m || z - skirt < WORLD_ORIGIN + m || z + skirt > WORLD_END - m) return;
     // Away from the islet first; then, of two as far, the one the camp looks less straight out at.
-    const score = (clear ? 1e4 : 0) + (isletDeg === null ? 180 : apart(deg, isletDeg)) * 10 + (away.campDeg === null ? 0 : apart(deg, away.campDeg) / 100);
+    // Clear of the open land and well away from the islet first; then clear; then away; the camp's view last.
+    const gap = isletDeg === null ? 180 : apart(deg, isletDeg);
+    const score = (clear && gap >= 60 ? 2e4 : 0) + (clear ? 1e4 : 0) + gap * 10 + (away.campDeg === null ? 0 : apart(deg, away.campDeg) / 100);
     fits.push({ deg, shoreR, out, score });
   });
   if (!fits.length) return null;
@@ -87,7 +90,7 @@ export function stackLayout(S, land, terrainSeed, seed, base, isletDeg) {
   return {
     x, z, ux, uz, vx, vz, sideDeg: deg, noBuildM: S.noBuildM,
     shore: [c.x + ux * shoreR, c.z + uz * shoreR],
-    foot: back(rFace + P.outM + S.apron.outM - 0.4), front: back(rFace + P.outM), mouth: back(rFace + 0.2), stand: back(rFace + P.outM + 0.9),
+    foot: back(rFace + P.outM + S.apron.outM - 0.4), front: back(rFace + P.outM), mouth: back(rFace + P.chamberBackM), stand: back(rFace + P.outM + 0.9),
     apronM: S.apron.heightM, reachM: reach,
     box: { x0: Math.max(WORLD_ORIGIN, x - skirt), z0: Math.max(WORLD_ORIGIN, z - skirt), x1: Math.min(WORLD_END, x + skirt), z1: Math.min(WORLD_END, z + skirt) },
   };
@@ -104,11 +107,29 @@ function lobeWobble(S, seed, phi) {
 }
 
 /**
+ * The cave mouth's walls: is a world point under its solid rock at knee height (its footprint, from
+ * tools/assets/build-cave-mouth.mjs)? @param {StackLayout} L @param {any} fp the footprint ({ cellM, x0, z0, w, h, rows })
+ * @returns {(x: number, z: number) => boolean}
+ */
+export function mouthSolid(L, fp) {
+  if (!fp) return () => false;
+  // The model's frame: +z out toward the island (-u), x across; as the pieces pass turns it (yaw).
+  const yaw = det.atan2(-L.ux, -L.uz), c = det.cos(yaw), s = det.sin(yaw);
+  return (x, z) => {
+    const dx = x - L.front[0], dz = z - L.front[1], mx = dx * c - dz * s, mz = dx * s + dz * c;
+    const i = Math.floor((mx - fp.x0) / fp.cellM), j = Math.floor((mz - fp.z0) / fp.cellM);
+    return i >= 0 && j >= 0 && i < fp.w && j < fp.h && fp.rows[j][i] === '1';
+  };
+}
+
+/**
  * The stack as it stands: ground height and paint shares at a world point, or -Infinity where it
  * does not reach (the seabed stays as it is).
  * @param {StackLayout} L @param {any} S the land recipe's stack block @param {number} seed subSeed(world, 'stack') @param {number} seabedM
+ * @param {any} [footprint] the cave mouth's (mouthSolid); the ground under its walls is raised
  */
-export function makeStackShape(L, S, seed, seabedM) {
+export function makeStackShape(L, S, seed, seabedM, footprint) {
+  const underWall = mouthSolid(L, footprint);
   const detail = makeFbm(seed, L_DETAIL, { scale: 0.35, octaves: 3, lacunarity: 2, gain: 0.5 });
   const thriftN = makeFbm(seed, L_THRIFT, { scale: 0.5, octaves: 2, lacunarity: 2, gain: 0.5 });
   const cragN = makeFbm(seed, L_CRAG, { scale: S.cragScale, octaves: 3, lacunarity: 2.1, gain: 0.55 });
@@ -119,7 +140,7 @@ export function makeStackShape(L, S, seed, seabedM) {
     lift: (u01(i, 2) - 0.5) * 2 * S.ledgeLiftM, seed: hash32(seed, L_TIER, i, 3),
   }));
   const reachOf = (/** @type {number} */ k) => tiers.slice(0, k).reduce((s, t) => s + t.reach, 0);
-  const N = S.ledges, H = S.heightM, soft = S.faceSoftM, A = S.apron, P = S.porch, M = S.mouth;
+  const N = S.ledges, H = S.heightM, soft = S.faceSoftM, A = S.apron, P = S.porch;
   const phiL = det.PI - S.ledgeTurnDeg * DEG, cosSpread = det.cos(S.ledgeSpreadDeg * DEG);
   const rFace = S.coreM + lobeWobble(S, seed, det.PI);
   const faceStep = (/** @type {number} */ d) => smooth(-soft / 2, soft / 2, d);
@@ -153,12 +174,8 @@ export function makeStackShape(L, S, seed, seabedM) {
         h = h + (hk - h) * faceStep(core + (reachOf(k) + wob) * w - rr);
       }
       h = h + (H + n - h) * faceStep(core - rr);
-      // The porch: a low block of rock at the foot of the landward face, and through it the passage to
-      // the cave mouth, down to the apron (its capstone and arch are stones, mouth-mesh.js).
-      const inPorch = Math.min(P.halfWidthM - Math.abs(b), rFace + P.outM + a, -a - rFace + 1.5);
-      h = h + (A.heightM + P.heightM + n * 0.5 - h) * faceStep(inPorch);
-      const inPassage = Math.min(M.halfWidthM - Math.abs(b), -a - rFace + M.backM, rFace + P.outM + 0.6 + a);
-      h = h + (A.heightM + n * 0.2 - h) * faceStep(inPassage);
+      // Under the cave mouth's walls the ground rises out of sight inside the rock (no walking through them).
+      if (underWall(x, z)) h = Math.max(h, A.heightM + P.wallRaiseM);
       return h;
     },
     /**

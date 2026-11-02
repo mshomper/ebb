@@ -270,7 +270,10 @@ fn waterNormal(p: vec3f) -> vec3f {
   let f = cu.water.w + (1.0 - cu.water.w) * pow(1.0 - max(dot(n, v), 0.0), 5.0);
   // The reflection: the hole's bright disc where the mirrored ray meets it, else the dim rock above.
   let r = reflect(-v, n);
-  var refl = cu.bounce.rgb * select(0.15, 0.04, cu.lamp.w > 0.0);
+  // The dark cave mirrored: little but what is bright (the hole, a lantern), the ripples breaking it up
+  // (the stack's mouth, with soot set: darker still, as still cave water reads).
+  let dimRefl = select(0.15, 0.025, cu.soot.w > 0.0);
+  var refl = cu.bounce.rgb * dimRefl * (0.5 + vnoise(local(p) * 3.0 + n * 6.0));
   if (r.y > 0.01) {
     let q = p + r * ((cu.hole.y - p.y) / r.y);
     let inHole = 1.0 - smoothstep(cu.hole.w * 0.8, cu.hole.w * 1.1, length(q.xz - cu.hole.xz));
@@ -285,16 +288,15 @@ fn waterNormal(p: vec3f) -> vec3f {
   let lampScatter = cu.tint.rgb * (lampIn / PI) * (1.0 - T) * frame.exposure;
   var lampRefl = vec3f(0.0);
   if (cu.lamp.w > 0.0) {
-    // The lit rock over the pool, mirrored: the reflected ray meets the roof about a metre and a half
-    // up, lit by the lantern as the rock is (dim, warm, moving with the ripples).
-    let q = p + r * 1.6; let tq = cu.lamp.xyz - q;
-    let grain = 0.25 + 1.1 * smoothstep(0.2, 0.8, vnoise(local(q) * 2.6)) * (0.6 + 0.4 * vnoise(local(q) * 9.0));
-    lampRefl = cu.rock.rgb * 0.45 * grain * cu.lampE.rgb / max(dot(tq, tq), 0.15) / PI;
     // The flame itself, a bright smear broken by the ripples.
     let toL = cu.lamp.xyz - p; let lr = max(dot(r, normalize(toL)), 0.0);
-    lampRefl += vec3f(1.0, 0.6, 0.28) * cu.lamp.w * (pow(lr, 2000.0) + pow(lr, 160.0) * 0.04);
+    lampRefl = vec3f(1.0, 0.6, 0.28) * cu.lamp.w * (pow(lr, 4000.0) + pow(lr, 600.0) * 0.0015);
   }
-  let color = mix(under * T + scatter + lampScatter, (refl + lampRefl) * frame.exposure, f) + own + lampHaze(p) * frame.exposure;
+  // The air's glow round a lantern: what shows through the water already carries it (the copy), so it
+  // comes off before the water dims what is under it, and goes on once, in front.
+  let hz = lampHaze(p) * frame.exposure;
+  let below = max(under - hz, vec3f(0.0));
+  let color = mix(below * T + scatter + lampScatter, (refl + lampRefl) * frame.exposure, f) + own + hz;
   return FsOut(vec4f(color, 1.0), vec4f(octEncode(n), 1.0, 0.0));
 }
 

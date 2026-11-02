@@ -22,8 +22,14 @@
   "rubble": { "stretches": 8 },
   "rubbleNote": "The rubble in the mouth (F16): dug a stretch a game day with the shovel, `stretches` in all. At its end the grate and the box (a later branch); until then the card says the rock beyond is packed hard.",
 
-  "mouthLook": { "stone": [0.3, 0.29, 0.27] },
-  "mouthLookNote": "The cave mouth's stones on the island (src/world/stack/mouth-mesh.js): their albedo under the rock scan (linear; the palette paints it).",
+  "mouthModel": { "source": "C:/Users/mshom/Documents/Ebb/_assets/Ebb_Cave+Mouth.obj", "openingM": 2.3, "openingUnits": 370, "openingCenterX": 150, "openingFloorUnits": 40,
+    "triangles": 14000, "error": 0.004, "footprint": { "kneeM": 0.45, "cellM": 0.25, "insetCells": 2 },
+    "ao": { "voxelM": 0.08, "rays": 96, "startM": 0.12, "reachM": 7, "groundShare": 0.35 }, "sinkM": 0.04, "backIntoRockM": 0.6 },
+  "mouthModelNote": "Matt's cave mouth (November 2, 2026; tools/assets/build-cave-mouth.mjs makes assets/models/stack/cave-mouth.bin and its footprint from `source`, his original left untouched): scaled so its opening stands openingM tall (openingUnits in the model's own units, measured, its middle at openingCenterX and its floor openingFloorUnits above the model's base), thinned to about `triangles` (error, Matt: decimating is fine), its solid footprint taken at kneeM on cellM cells and shrunk insetCells so the raised ground stays hidden inside the rock; ao: its ambient occlusion baked per vertex and over its floor (rays through a voxelM grid of the rock, `rays` over the sphere from startM out to reachM, rays into the ground counting groundShare open), so its chamber is dark under its roof in any weather. In the game it stands on the apron at the stack's foot, its opening toward the island, sunk sinkM, its back backIntoRockM into the stack's face.",
+  "mouthDark": { "z": -6.2, "x": 0.1, "halfWidthM": 1.5, "springM": 1.5, "archM": 2.5 },
+  "mouthDarkNote": "The dark at the cave mouth's chamber back (mouth-mesh.js mouthDark), in its frame: z out toward the island (negative: in), x across, an arch halfWidthM either side, springing at springM, up to archM. A tap inside the chamber or its opening opens the cave mouth's card.",
+  "mouthLook": { "stone": [0.3, 0.29, 0.27], "floor": [0.25, 0.235, 0.215], "occlusion": { "floor": 0.06, "power": 1.6 } },
+  "mouthLookNote": "The cave mouth's stones on the island (src/world/stack/mouth-mesh.js): stone: their albedo under the rock scan (linear; the palette paints it); floor: the chamber floor's under its roof; occlusion: how dark no open sky makes them (floor, the share left) along a curve (power), from the baked occlusion (mouthModel.ao), so the chamber is dark in any weather.",
 
   "words": {
     "seen": "Someone kept a light out there once.",

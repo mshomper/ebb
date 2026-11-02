@@ -43,6 +43,8 @@ export const passes = (c) => [
   c.camp.props,
   // The shovel in the walker's hands while it digs (src/world/dig).
   c.dig.props,
+  // The stack's cave mouth, cast into the sun's shadow only (it is drawn with the pieces).
+  c.stackShade,
   // The fishing rod in hand and the float on the water, and the fish on the line (src/world/fishing).
   c.fishing.props,
   c.fishing.pass,

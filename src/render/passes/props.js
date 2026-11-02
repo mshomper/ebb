@@ -122,10 +122,11 @@ export function packModel(buffer) {
 
 /**
  * @param {{ name?: string, recipe: { ember: number[], emberNits: number, emberHz: number, charAlbedo: number[], dryTint?: number[], dryMix?: number, rawAlbedo?: number[], rawKeep?: number },
- *   bias?: { depthBias: number, depthBiasSlopeScale: number }, canvas?: { C: any, P: any } }} opts
+ *   bias?: { depthBias: number, depthBiasSlopeScale: number }, canvas?: { C: any, P: any }, castOnly?: boolean }} opts
  *   recipe: recipes/world/camp.json props (the embers' glow and the charcoal's albedo); bias: the
  *   shadow pass's, so the props' shadows match the terrain's; canvas: camp.json canvas and poles (the
- *   tent's weathering look, C-35)
+ *   tent's weathering look, C-35); castOnly: its props only cast into the sun's shadow map and are never
+ *   drawn (a model drawn by another pass that should still throw shade: the stack's cave mouth)
  */
 export function createPropsPass(opts) {
   const R = opts.recipe;
@@ -228,7 +229,7 @@ export function createPropsPass(opts) {
     name: opts.name ?? 'props',
     reads: ['hdr', 'depth'],
     writes: ['hdr', 'depth', 'normalId'],
-    enabled: () => count > 0,
+    enabled: () => count > 0 && !opts.castOnly,
     caster,
 
     /**

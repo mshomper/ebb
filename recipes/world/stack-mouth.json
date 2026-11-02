@@ -21,6 +21,9 @@
   },
   "shapeNote": "The spring cave's shape fields (recipes/world/spring-cave.json shapeNote), in the mouth's frame: x into the stack from the cleft's back, z across (to your left as you come in), y up from the floor. arch and rubble: the two passages, each from its root `at` along `dir` (unit [x, z]) for lengthM, halfWidthM either side, under an arched roof heightM high. The arch's ends blind past the light (it stays closed until the Hollow); the rubble's is filled with fallen rock.",
 
+  "poolBelowRimM": 0.04,
+  "poolNote": "The rock pool's water stands poolBelowRimM under the lowest point of its basin's rim (worked out in src/world/stack/mouth.js), so it lies in the rock.",
+
   "view": { "fadeM": 0.7, "throughM": 0.45, "arriveM": 1.4, "arriveTurnDeg": 15, "camera": { "distanceM": [1.4, 4.0], "startM": 3.2, "pitchDeg": [-4, 38], "startPitchDeg": 14, "lookHeightM": 1.0, "minEyeHeightM": 0.35, "orbitDegPerPx": 0.1, "turnHalfLifeS": 0.16 } },
   "viewNote": "As the spring cave's (spring-cave.json viewNote): you come in under the cleft and stand arriveM in, the view turned arriveTurnDeg off straight behind you.",
   "walk": { "cellM": 0.2, "wallM": 0.35, "wadeM": 0.12 },
@@ -37,19 +40,19 @@
     "rock": [0.15, 0.14, 0.125], "rockWet": [0.06, 0.065, 0.06], "floor": [0.11, 0.105, 0.09], "wetNearM": 0.5,
     "roughness": [0.85, 0.3], "lantern": [0.2, 0.17, 0.12], "lanternRim": [0.32, 0.16, 0.07], "glass": [0.55, 0.5, 0.38], "glowTint": [1.0, 0.6, 0.28], "note": [0.62, 0.58, 0.48],
     "soot": [0.025, 0.022, 0.02], "iron": [0.18, 0.1, 0.06], "stone": [0.13, 0.125, 0.11],
-    "water": { "absorption": [0.42, 0.12, 0.09], "f0": 0.02, "ripple": 0.03, "drips": 2, "dripS": 6, "tint": [0.02, 0.035, 0.04], "glow": [0.35, 0.75, 0.8], "glowNits": 0.0 }
+    "water": { "absorption": [1.8, 1.0, 0.9], "f0": 0.02, "ripple": 0.03, "drips": 2, "dripS": 6, "tint": [0.01, 0.018, 0.016], "glow": [0.35, 0.75, 0.8], "glowNits": 0.0 }
   },
   "lookNote": "Linear albedos (the palette paints them at the tonemap): the rock and floor as the spring cave's; lantern, lanternRim: the old lantern's iron body and its rust; glass: its horn panes; note: the lamplighter's paper; soot: the ring round the arch; iron: the hook; stone: the rubble. water: the rock pool, with no glow of its own.",
 
   "things": {
     "lantern": { "at": [2.6, -1.7], "radiusM": 0.07, "heightM": 0.26, "tapM": 0.3 },
     "note": { "at": [3.0, -2.15], "sizeM": [0.16, 0.11], "tapM": 0.25 },
-    "hook": { "fromArchM": 0.55, "heightM": 1.6, "armM": 0.2 },
+    "hook": { "fromArchM": 0.55, "heightM": 1.6, "armM": 0.2, "standM": 0.75 },
     "soot": { "radiusM": 1.25, "darken": 0.85 },
     "rubble": { "stones": 220, "sizeM": [0.16, 0.5], "seed": 7193 },
     "door": { "tapM": 0.9 }
   },
-  "thingsNote": "Where the things lie (mouth frame): the old lantern on its side at `at` (radiusM, heightM; tapM how far past it a tap still finds it), the note beside it, the hook on the wall fromArchM along the wall from the arch's side at heightM, its iron arm armM out from where it meets the rock (found by marching the field to the wall); the soot on the stone round the arch's opening, out to radiusM from its middle (thicker above, as smoke rises), darkening the rock by up to darken; the rubble's stones stacked in its passage from the floor up, each resting on the floor or the stones under it (each dug stretch clears its share, front first), and the way out under the cleft (door: within tapM of the arrival spot).",
+  "thingsNote": "Where the things lie (mouth frame): the old lantern on its side at `at` (radiusM, heightM; tapM how far past it a tap still finds it), the note beside it, the hook on the wall fromArchM along the wall from the arch's side at heightM, its iron arm armM out from where it meets the rock (found by marching the field to the wall), and you stand standM out from its tip to hang the lantern (Hang it walks you there carrying it); the soot on the stone round the arch's opening, out to radiusM from its middle (thicker above, as smoke rises), darkening the rock by up to darken; the rubble's stones stacked in its passage from the floor up, each resting on the floor or the stones under it (each dug stretch clears its share, front first), and the way out under the cleft (door: within tapM of the arrival spot).",
 
   "bake": { "liftM": 0.04, "lampClearM": 0.12, "penumbra": 7, "minStepM": 0.03, "maxStepM": 0.35, "aoM": [0.12, 0.3, 0.6, 1.0], "aoStrength": 0.55 },
   "bakeNote": "Light baked into the rock once in the worker (src/world/stack/mouth-field.js bakeLight): for each vertex, lifted liftM off the rock, how much it sees of each spot the lantern can be (on the floor, on its hook), marched through the field to within lampClearM of the flame, the shadow's edge softened by penumbra (larger: harder) with steps between minStepM and maxStepM; and its ambient occlusion from the open air at the distances aoM out along its normal (each counting 0.7 of the one before), aoStrength how dark the deepest hollows go.",
