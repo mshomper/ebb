@@ -166,13 +166,16 @@ export function createStack(o) {
   function writeRoad(p) {
     if (!road) return false;
     const R2 = road, win = 0.18;
-    return writeRect(rectOf(R2.box), (x, z) => {
+    // The sea runs off the stones as they come up (no water left standing on them to spill as falls).
+    const ok = writeRect(rectOf(R2.box), (x, z) => {
       const t = R2.heightAt(x, z);
       if (!(t > -Infinity)) return -Infinity;
       const e = Math.max(0, Math.min(1, (p * (1 + win) - R2.along(x, z)) / win));
       const s = e * e * e * (e * (e * 6 - 15) + 10);
       return seabed + (t - seabed) * s;
     }, (x, z, h) => R2.paintAt(x, z, h));
+    if (ok) water?.reseedBox?.(R2.box);
+    return ok;
   }
   /** Lay the causeway's line from the land nearest it now, and grow the drawn world to hold it. */
   function startRoad() {
@@ -201,6 +204,7 @@ export function createStack(o) {
   // ---- Go down, and the walker's first look ----
 
   /** @type {(() => { x: number, z: number, yaw: number } | null)} */ let walker = () => null;
+  /** The water, once it exists (attach): the sea is cleared off the causeway as it rises. @type {any} */ let water = null;
   /** A test link's state. */
   let test = o.test ?? null;
 
@@ -236,10 +240,10 @@ export function createStack(o) {
     /** The ring's dashed edge for the brush marks (the camp pad's style). */
     ring: { x: L.x, z: L.z, r: L.noBuildM },
     /**
-     * The systems made after it (src/app/stack.js). @param {{ camera: any, dayLengthH: () => number, walker: () => { x: number, z: number, yaw: number } | null }} a
+     * The systems made after it (src/app/stack.js). @param {{ camera: any, water?: any, dayLengthH: () => number, walker: () => { x: number, z: number, yaw: number } | null }} a
      */
     attach(a) {
-      dayLengthH = a.dayLengthH; walker = a.walker;
+      dayLengthH = a.dayLengthH; walker = a.walker; water = a.water ?? null;
       a.camera?.addReach({ ax: center.x, az: center.z, bx: L.x, bz: L.z, r: L.reachM + S.cameraMarginM });
       const live = get('terrainLive');
       if (live?.mirror) guardNow(live.mirror);

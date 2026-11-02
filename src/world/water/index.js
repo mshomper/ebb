@@ -278,6 +278,19 @@ export async function createWater(gpu, opts) {
       return true;
     },
 
+    /**
+     * Start one box of the water over as the sea at the tide now, the rest kept (land risen out of the
+     * sea at once, the stack's causeway: no sea is left standing on it). @param {{ x0: number, z0: number, x1: number, z1: number }} b world meters
+     */
+    reseedBox(b) {
+      const n = rectForBounds({ openMin: [b.x0, b.z0], openMax: [b.x1, b.z1] });
+      const x0 = Math.max(n.x, rect.x), y0 = Math.max(n.y, rect.y), x1 = Math.min(n.x + n.w, rect.x + rect.w), y1 = Math.min(n.y + n.h, rect.y + rect.h);
+      if (x1 <= x0 || y1 <= y0) return;
+      const s = { x: x0, y: y0, w: x1 - x0, h: y1 - y0 };
+      sim.seed(s, initialDepths(bedHeights((x, z) => terrain.sampleHeight(x, z), s), s, { tide, minDepth: Infinity, minArea: Infinity }));
+      requestSummary();
+    },
+
     /** Sea level now (m), at display time. */
     get tide() { return tide; },
     /** The simulated rect in water cells. */

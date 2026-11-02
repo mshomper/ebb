@@ -159,12 +159,16 @@ export function makeStackShape(L, S, seed, seabedM) {
     },
     /**
      * Paint shares [grass, sand, rock, soil] for ground standing at height h there: bare rock, with
-     * thrift and campion (a thin grass) on the ledges' tops, sand in the deep skirt.
+     * thrift and campion (a thin grass) on the ledges' tops, the soot band near the top, sand in the deep skirt.
      * @param {number} x @param {number} z @param {number} h
      */
     paintAt(x, z, h) {
       if (h < seabedM + 1) return [0, 0.6, 0.4, 0];
       if (h < 1.5) return [0, 0.05, 0.95, 0];
+      // The band of old soot on the core's face just under its top (only the face stands there: the
+      // top ledge is lower), where the light was kept: the dark earth layer, patchy.
+      const B = S.soot, band = B ? smooth(H - B.fromM, H - B.fromM + 0.3, h) * (1 - smooth(H - B.toM - 0.2, H - B.toM, h)) : 0;
+      if (band > 0) { const k = band * B.share * (0.75 + 0.25 * fbm(thriftN, x * 2, z * 2)); return [0, 0, 1 - k, k]; }
       const t = S.thrift * smooth(-0.1, 0.4, fbm(thriftN, x, z));
       return [t, 0, 1 - t, 0];
     },
