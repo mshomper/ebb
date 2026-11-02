@@ -1,0 +1,65 @@
+{
+  "type": "flora",
+  "id": "rye",
+  "name": "Rye",
+  "schema": 1,
+  "version": 1,
+  "seed": 9203,
+  "tags": ["tier2", "machair", "crop"],
+  "generator": "blades",
+  "layer": "individual",
+  "draw": "thrift",
+  "plantTool": false,
+  "note": "Rye, Secale cereale (F20, Matt's calls of November 1, 2026): the meadow islet's crop, machair's own. Tall blue-green stalks with long whiskered heads that turn gold by late summer. It comes to the island only as a few stalks gone wild beside the marker stone when the islet rises (src/world/meadow/rye.js keeps them: they come back every year), and from their seed, sown by the walker: one handful of rye seed sows a strip (recipes/world/sowing.json strips.rye). growth.sproutWindow: a sown seed waits in the ground until autumn, then comes up green in late autumn (src/world/growth/coarse.js); seasonRate rests it through winter, and it stands tall through spring and summer, its heads showing from late summer (flowering, drawn as the thrift's heads) when it is cut with the sickle into stooks (src/world/meadow/rye.js). spread: none of its own; a strip never seeds itself. Not in the volunteers' order and not offered by the Plant tool. Drawn with the thrift shader (draw: thrift; flora-thrift.wgsl): a tall narrow cushion of fine blades for the leafy stalks, its heads riding above them. drawScale: drawn this many times real size (the shape numbers already include it). habitat as flax's: the islet's grassy patches, above the tide. season: the stalks' albedo per season (linear): green through winter and spring, gold in summer, straw going green again as the new shoots come in autumn.",
+  "index": 20,
+  "drawScale": 1.0,
+  "shape": {
+    "bladesPerCushion": [16, 34],
+    "cushionRadius": 0.06,
+    "cushionHeight": 0.75,
+    "bladeWidth": 0.004,
+    "flowersPerCushion": [4, 9],
+    "stalkHeight": 1.1,
+    "stalkWidth": 0.0025,
+    "headRadius": 0.028,
+    "head": { "form": "ball", "dome": 0, "heartShare": 0, "petals": 0 }
+  },
+  "habitat": {
+    "sand": [0.08, 0.7, 0.2],
+    "moisture": [0.05, 0.6, 0.15],
+    "salt": [0, 0.4, 0.15],
+    "shoreM": [0.85, 8, 0.3],
+    "waterDepthM": [0, 0, 0.02],
+    "slopeDeg": [0, 25, 10]
+  },
+  "growth": {
+    "ratePerH": 0.006,
+    "seasonRate": [1, 1, 0.5, 0],
+    "floor": 0.5,
+    "stages": { "sproutH": 4, "youngSize": 0.25, "matureSize": 0.7 },
+    "sproutWindow": [2.3, 3.0],
+    "lowSuit": 0.15,
+    "lowHours": 96,
+    "shrinkPerH": 0.002,
+    "seedDieHours": 48,
+    "drownDepthM": 0.03,
+    "drownHours": 48
+  },
+  "flowering": [1.6, 2.95],
+  "phenology": { "jitterDays": 1, "note": "each plant keeps its own calendar, offset from the species by up to jitterDays game days either way (hash of the plant id; src/world/growth/phenology.js)" },
+  "spread": { "kind": "none", "minSpacingM": 0.3, "maxCount": 400 },
+  "season": {
+    "albedo": {
+      "spring": [0.06, 0.12, 0.06],
+      "summer": [0.22, 0.17, 0.06],
+      "autumn": [0.13, 0.13, 0.06],
+      "winter": [0.06, 0.1, 0.05]
+    },
+    "flower": [0.36, 0.27, 0.09],
+    "heart": [0.3, 0.24, 0.1],
+    "stalk": [0.2, 0.17, 0.07]
+  },
+  "outputs": { "cover": { "rye": 1 } },
+  "wind": { "sway": 0.9 },
+  "look": { "sproutM": 0.05, "seedBlades": 4, "heightVar": 0.15, "radiusMin": 0.5, "gustM": 5, "gustSpeed": 3, "rootShade": 0.45, "wetDarken": 0.8, "pixelWidth": 1.0 }
+}

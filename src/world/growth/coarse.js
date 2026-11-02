@@ -84,7 +84,8 @@ export function coarseStep(state, hourIndex, env) {
       // A seed waits for good ground; in poor ground it gives up after a while.
       p.low = suit < 0.3 ? p.low + 1 : 0;
       if (p.low > G.seedDieHours) { lose(p.sp, 'seed'); continue; }
-      if (p.age >= G.stages.sproutH && suit >= 0.3) p.size = Math.max(p.size, 0.05);
+      // A seed with a sowing window (rye, F20: sown before the frost) waits in the ground until it opens.
+      if (p.age >= G.stages.sproutH && suit >= 0.3 && (!G.sproutWindow || inWindow(pos, G.sproutWindow))) p.size = Math.max(p.size, 0.05);
     } else {
       const ready = picked?.get(p.sp);
       const k = ready === undefined ? 1

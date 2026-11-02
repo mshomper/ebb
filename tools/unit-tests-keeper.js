@@ -139,7 +139,7 @@ export function addKeeperTests(test, assert, eq) {
       }
       for (const e of th.end ?? []) assert(Array.isArray(T.tests[e]), `${th.id}: end test ${e} is in tests`);
     }
-    eq([...ids].join(), 'stone,cairns,boat,keeper,angler,islet', 'the first four threads, then the angler chart (F17) and the meadow islet (B3a)');
+    eq([...ids].join(), 'stone,cairns,boat,keeper,angler,islet,rye,marker-stone', 'the first four threads, then the angler chart (F17), the meadow islet (B3a), and the rye and the marker stone (F20)');
     assert(ICON_NAMES.includes('keeper') && ICON_NAMES.includes('threads'), 'the book and its Threads tab have drawn icons');
   });
 

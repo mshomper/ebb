@@ -2,7 +2,7 @@
 
 > The meadow islet's three creatures each arrive with a short story. Every story has the same shape: a **first sign**, a **visit**, a **home the player makes**, and **the gift**. The bees are honeybees that need a skep the player weaves and daubs with clay, and they give honey, which the walker brews with herbs into honeyed teas to carry into the Hollow. The butterflies come as eggs on the nettles and open their wings for the first time on the islet. The robin turns up beside the shovel, as robins do for anyone who digs, and stays once there's a hedge to nest in and a wall to sing from. Three more stories aren't about creatures: a strip of **rye** sown from a few wild stalks by an old stone and cut at summer's end, the **marker stone** itself, whose midsummer light points to the sickle buried for it, and a **kite** that washes up after a gale and flies from the islet's top. Drafted from Matt's session on November 1, 2026.
 
-**Status:** Decided (direction, November 1, 2026). Nothing built. The honeyed teas' effects are Leaning: proposals to react to. The three stories without creatures (rye, the marker stone, the kite) were added the same day.
+**Status:** Decided (direction, November 1, 2026). Nothing built. The honeyed teas' effects are Leaning: proposals to react to. The three stories without creatures (rye, the marker stone, the kite) were added the same day. The marker stone and the rye are built (m2-stone-rye, November 2, 2026: src/world/meadow, recipes/flora/rye.json); the rested patch's thicker flowers, the straw's uses and bread wait.
 
 ## Decided so far
 
@@ -21,6 +21,9 @@ Matt, November 1, 2026:
 - **Rye is the islet's crop.** Hay isn't planned for the islet, and amaranth doesn't belong on a machair; rye is machair's traditional crop and its straw is the classic skep material. Flax stays planned for cloth.
 - ~~The first rye seed comes in a parcel from the passing boat (F14).~~ Changed the same day (Matt): the boat only answers parcels the player leaves, so the first seed comes from **a few rye stalks gone wild beside the marker stone** when the islet rises, and the **sickle blade lies in the pot under the stone's midsummer spot**.
 - **The marker stone's mystery waits** (Matt, November 1, 2026). The islet rises in autumn and the player doesn't need the stone's secret right away: the light through the notch is first found at midsummer of the next year.
+- **The midsummer spot lies about a meter north of the stone** (Matt, November 1, 2026): it comes from the game's real noon sun through the notch, and the high midsummer sun keeps it close.
+- **A strip takes a few swings of the sickle,** not one (Matt, November 1, 2026): each cut takes the ripe rye within reach.
+- **Bread is on the roadmap** (Matt, November 1, 2026), though it may need other ingredients or tools not built yet (a quern, an oven). Until then the stooks give straw and seed.
 - **Bowls stay as they are** (Matt, November 1, 2026). Fired bowls nest in a pouch, one bowl a handful, and spare bowls stand in a heap at camp; nothing limits how many a keeper owns.
 
 ## The shape every meadow story follows
@@ -251,7 +254,7 @@ No reward beyond the view and the sketch: it's a small joy, and the first time t
 ## Open questions
 
 - Can the kite be flown from the main island too, or only from the islet?
-- Should rye grain be used for anything (bread at the fire, feed for the hen), or is rye only straw and seed?
+- What bread needs besides rye (a quern to grind it, an oven or a griddle stone, salt, perhaps yeast from somewhere), and whether rye also feeds the hen.
 
 - What does each honeyed tea do, and how strong is it? The table is a first proposal.
 - Is beeswax worth having too, for example for better rushlights in the Hollow (F16)?

@@ -2,9 +2,9 @@
   "type": "journal",
   "version": 1,
   "note": "The field journal (docs 13, 15): the words it writes and the numbers that shape them. order: the living things with pages, in page order. Each species: name and icon (src/ui/icons), riddle (shown before it has been seen), amount ([at least this many plants, words] steps; a cover plant (kind cover: grass, rushes) uses its share of the dry ground instead, or with amountBy area the square meters it covers), place and compass (where words: compass false skips the side of the island), none (after it has gone), clause words (flowering, dormant, spreading, receding), stages (what tapping one says, by growth stage: seed, sprout, young, mature, flowering, dormant), seasons (what each season box says: grow per season, flower, dormant), likes (lines learned when one of the learn triggers happens: seen, spread, flower, lost:drown, lost:seed, refused:<need>, grass:flooded), gives (a pencil line until the when trigger, then the ink line), notes (the lines the journal writes). trend: a species is spreading when it has gained at least max(upMin, upShare x then) plants over trend hours, receding when it has lost at least max(downMin, downShare x then). where: spreadOut is the mean distance from the plants' middle, as a share of the island's radius, past which they are all around the island; centerShare is how close to the island's middle counts as the middle. notesKept: notes the journal keeps; pageNotes: notes on a species page. islandNote: how long a note stays on the island (showS), the gap between two (gapS) and how many may wait (queue). identify: how near a tap must be to a plant (radiusM), how long the card stays (showS; it closes by itself only after closeS at the least, never while the pointer is over it or after one of its actions was pressed, and for closingGraceS after closing it still takes a late press so it never falls through as a walk), and the size of the breathing ring around what was tapped (ringM for a full-grown plant, smaller for young ones; grassRingM on grass; its timing is in recipes/world/growth.json marks); a species may set its own tapM (how near a tap must be) and ringM, as grey willow does for its wide crown. arrivedHours: plants seen within this many hours of the journal starting were here when you arrived. J1.5: each species also has plural (for the story lines), field (field notes: natural history lines learned like likes, by triggers that include dormant, woke and moment:<id>) and fieldHint (the pencil line while some are still to learn). story: the lines of 'your island's story' ({Plural}, {plural} and {date} are filled in; peak shows when the count has fallen under peakShare of its best). moments: four frames per page by kind (plant, cover for grass and rushes, ground in journal-island.json), each filled the first time you tap that thing at that moment: flower (in flower), summer, winter, rain (rain at least rainAt), mist (at least mistAt), dawn and dusk (hours of the day, inclusive start, exclusive end), frost (a winter dawn); note is the line written. showMe: how long (showS) the ring and card stay after a page's Show me rings the example nearest the middle of your view (the camera does not move). S6a, animals: a creature (kind creature: frogs) is known only once you find one yourself (tap it, or watch it from close by; recipes/species/frog.json find), never just because it is on the island; until then its page shows the riddle, or the latest of its hints whose journal flag is set (frogs:right when the pond is right for them, frogs:sign after the first sign). Its notes come in two voices: the unseen ones speak of something (a sign, rings on the water), never naming it; the others once it is known. A swarm (kind swarm: midges) is known by itself, like a plant, at the first dusk (seenAt.hours) that at least seenAt.m2 square meters hold seenAt.share of a full cloud; its amount is in those square meters. seenAt.drawn: whether the island draws the swarm yet; until it does (S6b), midges stay a pencil ? and nothing names them, because the journal only tells what you could see. card: what a tap on one says. foundLine: its story's first line. The animals' moments are moments.creature. buried (src/world/journal/buried.js, docs/future/13 PR-21, PR-29): line, the kind journal line for a patch still gone an hour after the stroke ({where}: the side of the island and the page's place); stroke, the island's notice when one stroke covers growth.json bury.strokeNotice gather plants ({others}: otherOne or others with numbers, {back}: it or them); session, the notice once a session (load or rest to the next rest) at bury.sessionNotice; showS, how long a notice shows.",
-  "order": ["grass", "rushes", "reeds", "lilies", "iris", "marigold", "willow", "thrift", "campion", "gorse", "pondweed", "watermint", "meadowsweet", "nettle", "chamomile", "marram", "harebell", "trefoil", "thyme", "clover", "bedstraw", "flax", "frogs", "midges", "minnows", "dragonflies", "damselflies", "turtles", "hens", "turnstones", "eels"],
+  "order": ["grass", "rushes", "reeds", "lilies", "iris", "marigold", "willow", "thrift", "campion", "gorse", "pondweed", "watermint", "meadowsweet", "nettle", "chamomile", "marram", "harebell", "trefoil", "thyme", "clover", "bedstraw", "flax", "rye", "frogs", "midges", "minnows", "dragonflies", "damselflies", "turtles", "hens", "turnstones", "eels"],
   "findsNote": "Finds (docs/future/11): small shore lives (kind find) found by tapping them, kept apart from order in findOrder. They show under Small lives at the end of Living things, once found and never before (the journal never lists what is missing), with smallLives.marks: one drawn mark for each you have found. card is what a tap names it, cardLine the line under it; place is its page's status once found.",
-  "findOrder": ["anemone", "periwinkle", "lugworm", "hermitcrab", "ediblecrab", "shells", "barnacles", "pondskaters", "mussels", "sanddollars", "moonjelly", "fungi", "webs", "sandeel", "goby", "pipefish", "plaice", "wrasse", "shrimp", "shorecrab", "frogspawn", "toads", "slowworms", "lizards", "woodlice", "groundbeetle", "wellshrimp"],
+  "findOrder": ["anemone", "periwinkle", "lugworm", "hermitcrab", "ediblecrab", "shells", "barnacles", "pondskaters", "mussels", "sanddollars", "moonjelly", "fungi", "webs", "sandeel", "goby", "pipefish", "plaice", "wrasse", "shrimp", "shorecrab", "frogspawn", "toads", "slowworms", "lizards", "woodlice", "groundbeetle", "wellshrimp", "markerstone"],
   "smallLives": { "title": "Small lives", "none": "Look closely along the shore, at low tide, in the rock pools and on the wet sand.", "marks": "Found so far" },
   "notesKept": 60,
   "pageNotes": 5,
@@ -3174,6 +3174,237 @@
         "food": "The eels seem restless: there is too little to hunt in their pond. They may move on in a few days.",
         "shelter": "The eels seem restless: there is too little weed in their pond to hide under. They may move on in a few days.",
         "habitat": "The eels seem restless. They may move on in a few days."
+      }
+    },
+    "rye": {
+      "name": "Rye",
+      "icon": "rye",
+      "plural": "rye stalks",
+      "plantable": false,
+      "field": [
+        {
+          "text": "Tall stalks with long whiskered heads, blue-green in spring and gold by the end of summer.",
+          "learn": [
+            "seen"
+          ]
+        },
+        {
+          "text": "Rye takes poor sandy ground that other grain will not, which is why it was grown on machair.",
+          "learn": [
+            "flower"
+          ]
+        },
+        {
+          "text": "Cut with a sickle and stood up in stooks, the sheaves dry in the wind for a few days before they are taken in.",
+          "learn": [
+            "cut"
+          ]
+        },
+        {
+          "text": "Its straw is long and strong. Coiled and bound, it makes skeps, and it thatches a roof.",
+          "learn": [
+            "straw"
+          ]
+        }
+      ],
+      "fieldHint": "Watch the rye by the old stone through a year to learn more.",
+      "sketch": {
+        "scale": "about 1.4 m",
+        "labels": {
+          "head": {
+            "text": [
+              "whiskered",
+              "head"
+            ],
+            "learn": [
+              "seen"
+            ]
+          },
+          "stalk": {
+            "text": [
+              "long hollow",
+              "stalk"
+            ],
+            "learn": [
+              "straw"
+            ]
+          }
+        }
+      },
+      "riddle": "Something might stand tall by an old stone on the islet, gold at the end of summer, left there by someone long ago.",
+      "amount": [
+        [
+          1,
+          "A single rye stalk"
+        ],
+        [
+          4,
+          "A few rye stalks"
+        ],
+        [
+          12,
+          "A patch of rye"
+        ],
+        [
+          40,
+          "A strip of rye"
+        ],
+        [
+          100,
+          "Rye in strips across the islet"
+        ]
+      ],
+      "place": "on the islet's grassy patches",
+      "compass": true,
+      "none": "No rye grows on the island now.",
+      "flowering": "in ear",
+      "dormant": "resting for winter",
+      "spreading": "coming up in its strip",
+      "receding": "thinning out",
+      "stages": [
+        "Rye seed, waiting in the ground for autumn",
+        "New rye shoots, green above the turf",
+        "Young rye, green and growing",
+        "Rye, tall and blue-green",
+        "Rye in ear. Sow it before the frost, cut it when it's gold.",
+        "Rye, resting for winter"
+      ],
+      "seasons": {
+        "grow": [
+          "tall and green",
+          "gold heads",
+          "new green shoots",
+          "resting"
+        ],
+        "flower": "gold heads",
+        "dormant": "resting"
+      },
+      "likes": [
+        {
+          "text": "The islet's grassy patches, where turf has closed over the sand",
+          "learn": [
+            "seen"
+          ]
+        },
+        {
+          "text": "Dry ground, out of the tide's reach",
+          "learn": [
+            "refused:low",
+            "refused:wet",
+            "lost:drown"
+          ]
+        },
+        {
+          "text": "Some soil in the sand",
+          "learn": [
+            "refused:ground"
+          ]
+        },
+        {
+          "text": "Sowing before the frost, in autumn",
+          "learn": [
+            "flower"
+          ]
+        }
+      ],
+      "gives": [
+        {
+          "pencil": "Somebody grew this here once. The seed might be worth saving.",
+          "ink": "Cut with a sickle, it gives straw and seed for next autumn.",
+          "when": "rye:straw"
+        }
+      ],
+      "notes": {
+        "arrived": "A few rye stalks stood gone wild beside the old stone when the islet rose.",
+        "seen": "Rye is coming up on the islet.",
+        "spread": "More rye has come up in its strip.",
+        "flower": "The rye is in ear, its heads turning gold.",
+        "dormant": "The rye is resting for winter.",
+        "woke": "The rye is growing again.",
+        "drown": "Some rye drowned where the tide reached it.",
+        "seed": "A rye seed found no turf to take in.",
+        "gone": "The last of the rye is gone."
+      }
+    },
+    "markerstone": {
+      "_find": "The marker stone's page (F20, docs/future/20-meadow-stories.md, 'The marker stone'): found by tapping the old standing stone on the meadow islet (src/world/meadow). Its pot lines are learned when the pot is dug up under the midsummer spot.",
+      "name": "Marker stone",
+      "icon": "marker-stone",
+      "kind": "find",
+      "plural": "marker stones",
+      "card": "Old standing stone",
+      "ringM": 0.6,
+      "cardLine": "An old stone, set up by hand. There's a notch in its top.",
+      "place": "On the islet's dome, where it came up with the islet.",
+      "riddle": "Something old might come up with new land, set there by hand long ago.",
+      "foundLine": "You first stood by the old stone on {date}.",
+      "field": [
+        {
+          "text": "Tall and leaning a little, crusted with grey-green and yellow lichen that takes a lifetime to grow.",
+          "learn": [
+            "seen"
+          ]
+        },
+        {
+          "text": "The notch in its top is cut, not broken. It lines up with something.",
+          "learn": [
+            "moment:dusk"
+          ]
+        },
+        {
+          "text": "At noon on midsummer, the light through the notch falls on one spot. An old pot lay under it, with a sickle blade inside.",
+          "learn": [
+            "pot"
+          ]
+        },
+        {
+          "text": "Its noon shadow is shortest at midsummer and longest at midwinter, so it keeps the year.",
+          "learn": [
+            "pot"
+          ]
+        }
+      ],
+      "fieldHint": "Come back to the stone at other times of the year to learn more.",
+      "sketch": {
+        "scale": "about 2.6 m",
+        "labels": {
+          "notch": {
+            "text": [
+              "a notch",
+              "cut in its top"
+            ],
+            "learn": [
+              "seen"
+            ]
+          },
+          "lichen": {
+            "text": [
+              "lichen",
+              "crusts"
+            ],
+            "learn": [
+              "seen"
+            ]
+          }
+        }
+      },
+      "likes": [
+        {
+          "text": "Standing where it was set, on the islet's dome",
+          "learn": [
+            "seen"
+          ]
+        }
+      ],
+      "gives": [
+        {
+          "pencil": "The notch must be for something.",
+          "ink": "It marks midsummer, and keeps the year by its shadow.",
+          "when": "markerstone:pot"
+        }
+      ],
+      "notes": {
+        "found": "An old standing stone came up with the islet. There is a notch cut in its top."
       }
     }
   }

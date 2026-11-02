@@ -73,6 +73,7 @@ export const TEST_FILES = {
   'keepsakes': '',
   'kit': '',
   'lantern': '',
+  'meadow': '',
   'melody': '',
   'music-render': '',
   'music': '',

@@ -22,7 +22,9 @@
     { "id": "islet", "text": "Where the sea was, a little islet stands offshore now. Its sandbar dries around low tide: walk across then, and back before the tide comes in.", "done": "isletWalked", "when": "isletRose" },
     { "id": "turnstone-visit", "visit": "turnstones", "text": "Small birds ran the strandline yesterday, turning the weed over with their bills. Wrack left lying on the strand, not gathered, might keep them." },
     { "id": "eel-visit", "visit": "eels", "done": "eelsCame", "text": "Something long and dark came up out of the sea in the night and nosed along the shore, then slipped back. An old pond near the sea, with wet grass between, might keep it." },
-    { "id": "flax", "text": "Flax won't give up its fibre dry. Lay the stems in the shallows of a still pond, and lift them out in three days.", "done": "flaxRetted", "when": "flaxPulled" }
+    { "id": "flax", "text": "Flax won't give up its fibre dry. Lay the stems in the shallows of a still pond, and lift them out in three days.", "done": "flaxRetted", "when": "flaxPulled" },
+    { "id": "rye-sow", "text": "That rye by the old stone wants sowing on the islet's grass before the frost. A handful sows a whole strip.", "done": "ryeSown", "when": "ryeGathered" },
+    { "id": "stone-notch", "text": "The notch in the stone lines up with something. Maybe the sun?", "done": "stonePot", "when": "stoneSpring" }
   ],
   "tests": {
     "gathered": [{ "flag": "did:gathered" }, { "prefix": "picked:" }, { "flag": "intro:gather", "unless": "intro:skipped" }],
@@ -47,7 +49,11 @@
     "isletWalked": [{ "flag": "setpiece:islet:walked" }],
     "eelsCame": [{ "flag": "eels:home" }, { "flag": "eels:sign" }],
     "flaxPulled": [{ "learned": "pulled" }],
-    "flaxRetted": [{ "learned": "retted" }]
+    "flaxRetted": [{ "learned": "retted" }],
+    "stoneSpring": [{ "flag": "setpiece:stone:spring" }],
+    "stonePot": [{ "flag": "setpiece:stone:pot" }],
+    "ryeGathered": [{ "flag": "setpiece:rye:gathered" }],
+    "ryeSown": [{ "flag": "setpiece:rye:sown" }]
   },
   "record": {
     "gather:done": "did:gathered",

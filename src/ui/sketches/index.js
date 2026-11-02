@@ -7,6 +7,7 @@ import { makePen } from './pen.js';
 import { grass, rushes, reeds, lilies, iris, thrift, marigold, campion, willow, gorse, pondweed } from './living.js';
 import { watermint, meadowsweet, nettle, chamomile, marram } from './herbs.js';
 import { harebell, trefoil, thyme, clover, bedstraw, flax } from './machair.js';
+import { rye, markerstone } from './rye.js';
 import { anemone, periwinkle, lugworm, hermitcrab, ediblecrab, shells, barnacles, pondskaters, mussels, sanddollars, moonjelly, wellshrimp } from './finds.js';
 import { soil, sand, rock, moss, fresh, shore } from './ground.js';
 import { damselfly, frogspawn, toad, turtle, slowworm, lizard, frog, minnows, dragonfly, midges, hen } from './animals.js';
@@ -14,7 +15,7 @@ import { fungi, webs } from './autumn.js';
 import { driftwood, driftwoodForm, DRIFTWOOD_FORMS } from './driftwood.js';
 
 /** @type {Record<string, (p: import('./pen.js').Pen, scale?: string) => string>} */
-const DRAW = { grass, rushes, reeds, lilies, iris, thrift, marigold, campion, willow, gorse, pondweed, watermint, meadowsweet, nettle, chamomile, marram, harebell, trefoil, thyme, clover, bedstraw, flax, anemone, periwinkle, lugworm, hermitcrab, ediblecrab, shells, barnacles, pondskaters, mussels, sanddollars, moonjelly, soil, sand, rock, moss, fresh, shore,
+const DRAW = { grass, rushes, reeds, lilies, iris, thrift, marigold, campion, willow, gorse, pondweed, watermint, meadowsweet, nettle, chamomile, marram, harebell, trefoil, thyme, clover, bedstraw, flax, rye, markerstone, anemone, periwinkle, lugworm, hermitcrab, ediblecrab, shells, barnacles, pondskaters, mussels, sanddollars, moonjelly, soil, sand, rock, moss, fresh, shore,
   damselflies: damselfly, fungi, webs, frogspawn, toads: toad, turtles: turtle, slowworms: slowworm, lizards: lizard,
   frogs: frog, minnows, dragonflies: dragonfly, midges, hens: hen, driftwood, wellshrimp };
 // Each driftwood form's small drawing for its row on the page (driftwood:<form>).

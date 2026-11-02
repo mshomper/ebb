@@ -19,6 +19,8 @@
   "cutting": { "species": "willow", "kind": "willow.withies", "size": 0.2 },
   "lift": { "species": ["watermint", "meadowsweet", "nettle", "chamomile", "marram", "iris", "marigold", "campion", "thrift", "reeds", "gorse", "willow"], "maxSize": { "gorse": 0.5, "willow": 0.35 }, "reachM": 0.8 },
   "goodStart": { "kinds": ["kelp", "wrack", "ash"], "bonus": 0.12 },
+  "stripsNote": "F20 (docs/future/20-meadow-stories.md, the rye): a handful of saved seed of a species listed here sows a strip, not one seed: rows rows across widthM and perRow seeds along lengthM, laid along the line from the walker to where it lands and centred there, each nudged up to jitterM by the seed (src/world/meadow/rye.js stripSpots). The ring reads the middle; the handful goes in if any seed of the strip takes (each under its species' own ground rule and spacing). Rye seed sown outside autumn waits in the ground until autumn (recipes/flora/rye.json growth.sproutWindow).",
+  "strips": { "rye": { "lengthM": 6, "widthM": 2, "rows": 4, "perRow": 14, "jitterM": 0.12 } },
   "words": {
     "tin": "Seed tin",
     "gifts": "Gift spot",
