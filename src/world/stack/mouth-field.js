@@ -42,7 +42,8 @@ export function mouthShape(S, seed) {
   };
   /** @param {number} x @param {number} y @param {number} z */
   function air(x, y, z) {
-    let a = base.air(x, y, z, 0);
+    // No chimney top: the spring cave's air() drops that input (claude/typecheck-18); the cast reads either form.
+    let a = /** @type {any} */ (base).air(x, y, z);
     for (const P of [S.arch, S.rubble]) { const q = passage(P, x, y, z); if (q > -0.8) a = smax(a, q + wear(x, y, z) * 1.4, 0.25); }
     return a;
   }
