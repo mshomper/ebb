@@ -53,7 +53,8 @@
     "mica-lantern": { "tier": "T3", "at": "workbench", "parts": ["lantern-pot", "mica", "rush-cord"], "out": "pouch", "gives": "mica-lantern", "count": 1, "unlock": "lantern", "src": ["pan finds"] },
     "keepsake-shelf": { "tier": "T3", "at": "workbench", "parts": ["sticks", "woven-twigs", "rush-cord"], "out": "slot", "slot": "shelf", "max": 1, "src": ["B2, Matt, October 30, 2026"] },
     "line": { "tier": "T3", "at": "workbench", "parts": ["willow.withies", "rush-cord", "gorse.thorns"], "out": "tool", "max": 1, "src": ["F17", "October 31, 2026"] },
-    "cloth": { "tier": "T3", "at": "workbench", "act": "weave", "parts": ["flax-fibre", "flax-fibre"], "out": "pouch", "gives": "cloth", "count": 1, "src": ["F1, Matt, October 30, 2026"] }
+    "cloth": { "tier": "T3", "at": "workbench", "act": "weave", "parts": ["flax-fibre", "flax-fibre"], "out": "pouch", "gives": "cloth", "count": 1, "src": ["F1, Matt, October 30, 2026"] },
+    "kite": { "tier": "T3", "at": "workbench", "parts": ["torn-kite", "rush-cord", "sticks"], "out": "tool", "max": 1, "src": ["docs/future/20, the kite", "Matt, November 1, 2026"] }
   },
   "clothNote": "F1 (Matt, October 30, 2026: cloth from flax on the meadow islet, not nettles). Flax stems pulled on the islet are steeped in a pond for about three game days (src/world/gather/retting.js; gather.json retting) and lifted out as flax fibre; two handfuls of fibre are woven at the workbench into one handful of linen cloth (act weave). Kept for the teal hat (wave 3: the teal's wing feather, cloth and rush cord). Its parts are unique: no other make takes flax fibre.",
   "panFindsNote": "The pan's useful earths (Matt, October 31, 2026). Ochre slip: a handful of ochre and one of clay, stirred at the workbench into a pouch of slip. Laid at the fire with a pale cooking pot, tea pot or cup (slip-fire-<kind>), the slip goes on as it fires and the piece comes out a warm ochre red (slip: true; camp.json hearth.slip), the island's first colour on a pot. The mica lantern: a fired lantern pot, mica set in its holes and a rush cord to hang it, set down like the lantern; its light is warmer and steadier (pieces.json lantern.mica). Every set of parts is its own (the cooking pot is clay and sand, seed balls clay and a seed; the lantern on a post is the pot, a stick and rushes).",
@@ -133,7 +134,7 @@
     "setDownHere": "Click a pouch to set it down. It goes to its own place first, then the hamper.",
     "emptySlot": "An empty slot",
     "laid": "Click a pouch to lay a handful. Click a laid part to take it back.",
-    "made": { "shovel": "A shovel, bound tight. It hangs on your pack.", "line": "A fishing line: a withy, a cord and a thorn for a hook. It hangs on your belt. Worms for bait.", "cloth": "Fibre over and under, beaten close. A handful of linen cloth.", "rush-cord": "Twisted two ways, it holds. A handful of cord.",
+    "made": { "kite": "The tear laced shut with cord, a new stick for the spar. It will fly. It hangs on the tent's back pole.", "shovel": "A shovel, bound tight. It hangs on your pack.", "line": "A fishing line: a withy, a cord and a thorn for a hook. It hangs on your belt. Worms for bait.", "cloth": "Fibre over and under, beaten close. A handful of linen cloth.", "rush-cord": "Twisted two ways, it holds. A handful of cord.",
       "woven-twigs": "Drift twigs woven over and under into one springy length. Stiff enough for a shovel's haft.",
       "rack": "A drying rack, lashed tight. It stands beside the bench.", "mortar": "A hollow worn in the stone. A mortar, with a pebble to grind.",
       "hamper": "A lidded hamper of coiled rushes. It goes among the stores.", "hamper2": "A second hamper, a willow lid on top. Twice the room.",
@@ -242,7 +243,8 @@
       "gift-stone": "Gift stone", "nest-box": "Nest box", "eggshell-grit": "Eggshell grit", "meal": "An egg, cooked on the hearth",
       "lantern-pot": "Lantern pot, shaped", "fire-lantern-pot": "Lantern pot, fired", "post-lantern": "A lantern on a post",
       "furnace": "Clay furnace", "twisted-sticks": "Twisted sticks", "planks": "A plank", "smelt-iron": "First iron, smelted", "smelt-copper": "First copper, smelted", "nails": "Nails",
-      "ochre-slip": "Ochre slip", "slip-fire-cooking-pot": "A red cooking pot", "slip-fire-tea-pot": "A red tea pot", "slip-fire-cup": "A red cup", "mica-lantern": "A mica lantern", "keepsake-shelf": "Keepsake shelf" },
+      "ochre-slip": "Ochre slip", "slip-fire-cooking-pot": "A red cooking pot", "slip-fire-tea-pot": "A red tea pot", "slip-fire-cup": "A red cup", "mica-lantern": "A mica lantern", "keepsake-shelf": "Keepsake shelf",
+      "kite": "The kite, mended" },
     "pageParts": { "ring": "Sticks and stones", "workbench": "Two flat stones", "shovel": "Woven twigs or a stick, a flat stone, cord", "woven-twigs": "Two handfuls of drift twigs, woven", "rush-cord": "Rushes, reed leaves or marram, twisted",
       "apothecary": "Sticks lashed with cord", "rack": "Withies or sticks, cord", "mortar": "A flat stone and a pebble", "hamper": "Rushes coiled, stitched with cord",
       "hamper2": "Rushes, cord, a willow lid", "dry": "A handful of herbs, hung", "grind": "Broken shells, ground", "willow-charcoal": "Withies, a night in the fire",
@@ -252,7 +254,8 @@
       "gift-stone": "A flat stone, two handfuls of shells", "nest-box": "Sticks, two handfuls of rushes", "eggshell-grit": "The eggshells from a breakfast", "meal": "An egg from the hen",
       "lantern-pot": "Clay, pierced with a pebble; it wants a night in the fire", "fire-lantern-pot": "A night in the fire", "post-lantern": "The fired pot, a stick post, a rush wick",
       "furnace": "Deep clay, sand and marram, built up in courses", "twisted-sticks": "Two handfuls of sticks, wound together", "planks": "Twisted sticks and nails", "smelt-iron": "Black sand and willow charcoal, a night in the furnace", "smelt-copper": "Copper ore and willow charcoal, a night in the furnace", "nails": "One iron or one copper, drawn out at the furnace",
-      "ochre-slip": "Ochre and clay, stirred thin", "slip-fire-cooking-pot": "Ochre slip, a night in the fire", "slip-fire-tea-pot": "Ochre slip, a night in the fire", "slip-fire-cup": "Ochre slip, a night in the fire", "mica-lantern": "The fired pot, mica, rush cord", "keepsake-shelf": "A stick, woven twigs, rush cord" }
+      "ochre-slip": "Ochre and clay, stirred thin", "slip-fire-cooking-pot": "Ochre slip, a night in the fire", "slip-fire-tea-pot": "Ochre slip, a night in the fire", "slip-fire-cup": "Ochre slip, a night in the fire", "mica-lantern": "The fired pot, mica, rush cord", "keepsake-shelf": "A stick, woven twigs, rush cord",
+      "kite": "The torn kite, rush cord, a stick" }
   },
   "wordsNote": "Every line the stations and the camp page say. <slot>Slot: a bench's ground card (name, line, needs, and its Build label); builtLines: the line after a build other than the workbench's (built). acts: the apothecary's actions. hamper: the stations' row of what the hamper holds; takeUp, setDownHere, emptySlot: the hamper's and the rack's cards. made: the line after a first make, by make id. workFull, workTake, workWaiting, workDone: the overnight work at the fire (the ring's card). pageNames, pageParts: the camp page's first-made lines, in the walker's hand: name, what it was made of, and the date."
 }

@@ -18,6 +18,7 @@ import { DYES } from './items-made.js';
 import { CAMP_ROWS } from './items-camp.js';
 import { METAL_POUCH_ROWS, METAL_MAKE_ROWS } from './items-metal.js';
 import { FLAX_POUCH_ROWS, FLAX_PART_ROWS } from './items-flax.js';
+import { KITE_POUCH_ROWS, KITE_MAKE_ROWS } from './items-kite.js';
 
 /**
  * @typedef {{ id: string, icon: string, name: string, tier: string, phase: number }} ItemRow
@@ -53,6 +54,8 @@ export const POUCH_KINDS = /** @type {[string, string, string, string, number][]
   ...METAL_POUCH_ROWS,
   // Flax and linen (F1): the fibre from steeped flax, and the cloth woven from it.
   ...FLAX_POUCH_ROWS,
+  // The kite (docs/future/20): the torn kite washed in, carried to the workbench.
+  ...KITE_POUCH_ROWS,
 ]).map(row);
 
 /** Plant parts, '<species>.<part>' (docs/future/13 sections 4.1 and 5.3). @type {ItemRow[]} */
@@ -111,6 +114,8 @@ export const MAKES = /** @type {[string, string, string, string, number][]} */ (
   ['line', 'fishing-line', 'Fishing line', 'T3', 3],
   ...CAMP_ROWS,
   ...METAL_MAKE_ROWS,
+  // The kite (docs/future/20): mended at the workbench.
+  ...KITE_MAKE_ROWS,
 ]).map(row);
 
 /** Treats and offerings (docs/future/13 section 8). @type {ItemRow[]} */

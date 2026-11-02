@@ -72,6 +72,7 @@ export const TEST_FILES = {
   'keepsake-sound': 'web-audio',
   'keepsakes': '',
   'kit': '',
+  'kite': '',
   'lantern': '',
   'melody': '',
   'music-render': '',

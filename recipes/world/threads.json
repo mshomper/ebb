@@ -89,7 +89,12 @@
       { "id": "rose", "test": "isletRose", "text": "At the big low tide a pale shoal showed offshore, where there was only sea before." },
       { "id": "risen", "test": "isletRisen", "text": "By the next low water it stood above the high tide: a little meadow islet, with a sandbar to our shore." },
       { "id": "walked", "test": "isletWalked", "text": "I walked out over the bar at low tide and stood on the islet. The ground there is dry and sunny, meadow, not pond." }
-    ], "pencil": "The bar is dry only around low tide. I watch the tide when I go.", "end": ["isletWalked"] }
+    ], "pencil": "The bar is dry only around low tide. I watch the tide when I go.", "end": ["isletWalked"] },
+    { "id": "kite", "title": "The kite", "icon": "kite", "lines": [
+      { "id": "found", "test": "kiteFound", "text": "A kite washed up on the bar after the gale, torn but whole." },
+      { "id": "mended", "test": "kiteMended", "text": "I laced the tear shut with rush cord and lashed in a new stick for the spar." },
+      { "id": "flown", "test": "kiteFlown", "text": "I flew the kite from the top of the islet. I could see everything." }
+    ], "pencil": "It only flies from the islet's top, and only when the wind is up.", "end": ["kiteFlown"] }
   ],
   "tests": { "lineMade": [{"made": ["line"]}], "fishFirst": [{"flag": "fishing:sketch"}], "fishRiddle": [{"flag": "fishing:riddle:1"}], "fishWater": [{"prefix": "fishing:water:"}], "fishRare": [{"flag": "fishing:rare"}], "chartFull": [{"flag": "fishing:chart:full"}],
     "stoneShown": [{ "flag": "dig:marked-stone" }],
@@ -117,6 +122,9 @@
     "keeperTend": [{ "flag": "keeper:tend" }],
     "isletRose": [{ "flag": "setpiece:islet:rose" }],
     "isletRisen": [{ "flag": "setpiece:islet:risen" }],
-    "isletWalked": [{ "flag": "setpiece:islet:walked" }]
+    "isletWalked": [{ "flag": "setpiece:islet:walked" }],
+    "kiteFound": [{ "flag": "setpiece:kite:found" }],
+    "kiteMended": [{ "flag": "setpiece:kite:mended" }],
+    "kiteFlown": [{ "flag": "setpiece:kite:flown" }]
   }
 }
