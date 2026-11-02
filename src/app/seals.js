@@ -14,6 +14,7 @@ import { homeOf } from '../world/ecology/shaped.js';
 import { recordHome, bringFlock } from '../world/creatures/flock.js';
 import { createSeals } from '../world/seals/index.js';
 import { bringPup } from '../world/seals/pup.js';
+import { HABITAT_ORIGIN } from '../world/growth/habitat.js';
 
 /** @param {import('./context.js').AppContext} ctx */
 export async function start(ctx) {
@@ -26,7 +27,7 @@ export async function start(ctx) {
 
   const seals = createSeals({ recipe: R, seed, world, camera, presence, ground: (x, z) => terrain.sampleHeight(x, z), tide: () => water.tide,
     hours: () => clock.display() / clock.SECONDS_PER_HOUR, you: () => ctx.walk?.below ? ctx.walk.you() : null,
-    record: () => updateStore('world', () => world.state), sounds });
+    record: () => updateStore('world', () => world.state), sounds, sea: (x, z) => seaAt(x, z) });
   updateStore('creatureSound', (c) => ({ ...(c ?? {}), seals: () => seals.voiced() }));
   sim.addSystem(seals);
   // With the schools, so the journal's taps and Show me, the reveal and the frame graph find it.
@@ -71,16 +72,34 @@ export async function start(ctx) {
   }
 
   /**
-   * A shore spot near (x, z) for a test: dry sand a little above the water with room around it,
-   * the nearest found in rings. @param {number} x @param {number} z
+   * A shore spot near (x, z) for a test: dry sand a little above the water with room around it and
+   * the sea within testSeaM (never the low ground by an inland pond), the nearest found in rings.
+   * @param {number} x @param {number} z
    */
   function shoreNear(x, z) {
     for (let r = 2; r < 80; r += 2) for (let i = 0; i < 24; i++) {
       const a = (i / 24) * Math.PI * 2, px = x + Math.sin(a) * r, pz = z + Math.cos(a) * r;
       const g = terrain.sampleHeight(px, pz) - water.tide;
-      if (g > 0.15 && g < 0.9 && terrain.sampleHeight(px + 2, pz) - water.tide > 0.08 && terrain.sampleHeight(px - 2, pz) - water.tide > 0.08) return { x: px, z: pz };
+      if (g > 0.15 && g < 0.9 && terrain.sampleHeight(px + 2, pz) - water.tide > 0.08 && terrain.sampleHeight(px - 2, pz) - water.tide > 0.08
+        && seaWithin(px, pz, R.life.testSeaM)) return { x: px, z: pz };
     }
     return null;
+  }
+
+  /** Is (x, z) the sea (the habitat's sea squares; a pond dug below sea level is not)? @param {number} x @param {number} z */
+  function seaAt(x, z) {
+    const hab = world.env.habitat?.();
+    if (!hab?.sea) return true;
+    const i = Math.floor(x - HABITAT_ORIGIN), j = Math.floor(z - HABITAT_ORIGIN);
+    return i >= 0 && j >= 0 && i < hab.n && j < hab.n ? hab.sea[j * hab.n + i] === 1 : true;
+  }
+  /** The sea within r metres of (x, z). @param {number} x @param {number} z @param {number} r */
+  function seaWithin(x, z, r) {
+    for (let d = 1; d <= r; d += 1) for (let i = 0; i < 12; i++) {
+      const a = (i / 12) * Math.PI * 2;
+      if (seaAt(x + Math.sin(a) * d, z + Math.cos(a) * d)) return true;
+    }
+    return false;
   }
 
   Object.assign(ctx, { seals });

@@ -177,6 +177,45 @@ export function addSealsTests(test, assert, eq) {
     assert(!s3.includes('flushed'), 'only heads up past Wary');
   });
 
+  test(G, 'in the sea they swim about and only bottle a while, never in step, and never off into a pond (Matt, November 2, 2026)', async () => {
+    const { R } = await load();
+    // A bar rising to 0.6 m at its middle, sea beyond 6 m out; a pond dug below sea level at x 12..18 on land past a ridge.
+    const ground = (/** @type {number} */ x, /** @type {number} */ z) => (x > 10 && x < 20 && Math.abs(z) < 4 ? -1 : 0.6 - Math.hypot(x, z) * 0.12);
+    const sea = (/** @type {number} */ x, /** @type {number} */ z) => !(x > 10 && x < 20 && Math.abs(z) < 4);
+    let tide = 0.8;
+    const life = createSealLife({ L: R.life, P: R.presence, M: R.motion, seed: 9, pupK: 0.5, ground, tide: () => tide, sea });
+    const base = { count: 4, pup: null, home: { x: 0, z: 0 }, walker: null, band: 0, trust: 0, visit: null, around: null };
+    // The tide covers the bar: in the water for a minute. Count how they spend it.
+    let moving = 0, up = 0, inPond = 0;
+    /** @type {Map<number, Set<number>>} */ const spotsOf = new Map();
+    for (let i = 0; i < 30 * 60; i++) {
+      life.step(1 / 30, base);
+      for (const s of life.seals()) {
+        if (s.mode === 'move') moving++; else if (s.mode === 'bottle') up++;
+        if (!sea(s.x, s.z)) inPond++;
+        const set = spotsOf.get(s.id) ?? new Set(); set.add(Math.round(s.x) * 1000 + Math.round(s.z)); spotsOf.set(s.id, set);
+      }
+    }
+    assert(moving > up, `mostly swimming (${moving} moving to ${up} bottling)`);
+    assert(up > 0, 'but they do come up to bottle');
+    assert([...spotsOf.values()].every((v) => v.size > 6), 'each swims about, never parked in one place');
+    eq(inPond, 0, 'never in the pond dug below sea level');
+    // Never in step: their clocks, paces and set-off moments are their own.
+    const S = life.seals();
+    const clocks = new Set(S.map((s) => Math.round(s.tOff * 10))), paces = new Set(S.map((s) => Math.round(s.pace * 100)));
+    eq(clocks.size, S.length, 'each its own clock');
+    eq(paces.size, S.length, 'each its own pace');
+    // A flush on dry ground: they set off at different moments and different points in the hump.
+    tide = 0;
+    const life2 = createSealLife({ L: R.life, P: R.presence, M: R.motion, seed: 9, pupK: 0.5, ground, tide: () => tide, sea });
+    for (let i = 0; i < 30 * 10; i++) life2.step(1 / 30, { ...base, count: 3 });
+    /** @type {any} */ const walker = { kind: 'walker', body: true, pos: [2, 1, 0], speed: 1, posture: 'stand', gaze: null, stillS: 0, editing: false, edits: [] };
+    life2.step(1 / 30, { ...base, count: 3, walker });
+    const phases = life2.seals().map((s) => s.phase), holds = life2.seals().map((s) => s.hold);
+    assert(new Set(phases.map((v) => Math.round(v * 100))).size === phases.length, 'each at its own point in the hump');
+    assert(new Set(holds.map((v) => Math.round(v * 100))).size === holds.length, 'each sets off at its own moment');
+  });
+
   test(G, 'every card of theirs has a home: page, notes, list, web, sketchbook, icon, hints, seasons, voice', async () => {
     const { R, J, JL, JW, SB, MH, SE, AU } = await load();
     const p = J.species.seals;

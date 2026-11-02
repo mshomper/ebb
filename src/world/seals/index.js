@@ -53,10 +53,10 @@ export const coatOf = (id, white, dry) => (hash32(id, 0x5ea) % 16) * 1000 + Math
 /**
  * @param {{ recipe: any, seed: number, world: { state: any, env: any }, camera: { target: ArrayLike<number>, eye: ArrayLike<number>, distance: number },
  *   presence: import('../creatures/presence.js').Presence, ground: (x: number, z: number) => number, tide: () => number,
- *   hours: () => number, you: () => number[] | null, record: () => void, sounds?: any }} o
+ *   hours: () => number, you: () => number[] | null, record: () => void, sounds?: any, sea?: (x: number, z: number) => boolean }} o
  *   recipe: recipes/species/seal.json; hours: display time in game hours; you: where you stand on foot,
  *   or null above; record: after a trust event is written (the store's world slice follows); sounds:
- *   recipes/audio/seal.json (when they call)
+ *   recipes/audio/seal.json (when they call); sea: whether (x, z) is the sea (they never swim off into a pond)
  */
 export function createSeals(o) {
   const R = o.recipe, L = R.life, P = R.presence, find = R.find, key = R.key, C = R.body.coat;
@@ -64,7 +64,7 @@ export function createSeals(o) {
   const pass = createCreaturePass({ recipe: R, name: key, shader: 'seal-draw', maxBones: SEAL_BONES.length, extraFloats: 24 });
   pass.setExtra([...C.grey, C.mottle.sizeM, ...C.back, C.mottle.cut, ...C.belly, C.mottle.strength,
     ...C.mottle.dark, C.wetDarken, ...R.body.pup.white, R.body.dryRoughness, ...C.eye, R.body.dryStrength]);
-  const life = createSealLife({ L, P, M: R.motion, seed: subSeed(o.seed, key), pupK, ground: o.ground, tide: o.tide });
+  const life = createSealLife({ L, P, M: R.motion, seed: subSeed(o.seed, key), pupK, ground: o.ground, tide: o.tide, sea: o.sea });
   const watching = createWatching(P.watch);
   const comeBack = createReturn(R.reveal?.growS ?? 0.6);
   /** @type {{ skeleton: { name: string, parent: number, pivot: number[] }[] } | null} */ let model = null;

@@ -10,9 +10,14 @@
 //            yawns or shifts how it lies
 //   move     to a target: humping on land and in the shallows, swimming where the water is deeper
 //            than swimDepthM (y follows the ground on land, sits under the surface in the water)
-//   bottle   upright in the water with the head out, bobbing, looking about: when the tide covers
-//            every spot near home, after a flush, on a visit, and in the group moment
+//   bottle   in the water: mostly swimming about near where it is (cruise), coming up now and then
+//            to hang upright with the head out, bobbing and looking about, for bottleS (Matt,
+//            November 2, 2026: never a seal parked bottling); when the tide covers every spot near
+//            home, after a flush, on a visit, and in the group moment (that one stays up, watching)
 //   gone     a seal leaving swims out to sea and is gone
+// Each seal keeps its own time (tOff), breath and bob (rate) and pace, and waits a moment of its
+// own (hold) before it sets off, so a group never humps, breathes or bobs in step (Matt, November 2, 2026).
+// They swim only in the sea (sea), never off into a pond dug below sea level.
 // The walker inside the wary ring at Wary sends them humping into the water; they swim out flushM
 // and bottle there, watching, and come back once you are beyond twice the ring for settleS. Past
 // Wary they only lift their heads. A mother with her pup stays by it. The pup lies beside its
@@ -43,12 +48,18 @@ const turnTo = (a, b) => { let d = b - a; d -= Math.round(d / (Math.PI * 2)) * M
  *   tx: number, tz: number, then: 'lie'|'bottle'|'gone', phase: number, t: number, think: number, r: () => number,
  *   banana: number, side: number, act: string, actT: number, actDur: number, look: { yaw: number, lift: number },
  *   lookTo: { yaw: number, lift: number }, wetT: number, fled: boolean, face: { x: number, z: number } | null,
- *   swim: boolean, gone: boolean, pose: any }} Seal
+ *   swim: boolean, gone: boolean, pose: any, tOff: number, rate: number, pace: number, hold: number,
+ *   ax: number, az: number, upFor: number }} Seal
+ *   tOff: its own clock's offset (s); rate: how fast its clock runs (its breath and bob); pace: its
+ *   speed against the recipe's; hold: seconds it waits before it sets off on a move; ax, az: where
+ *   it was sent to in the water (it swims about there); upFor: how long this bottle lasts (s)
  */
 
 /**
- * @param {{ L: any, P: any, M: any, seed: number, pupK: number, ground: (x: number, z: number) => number, tide: () => number }} o
- *   L: the species recipe's life; P: its presence; M: its motion; pupK: the pup's size against an adult's
+ * @param {{ L: any, P: any, M: any, seed: number, pupK: number, ground: (x: number, z: number) => number, tide: () => number,
+ *   sea?: (x: number, z: number) => boolean }} o
+ *   L: the species recipe's life; P: its presence; M: its motion; pupK: the pup's size against an adult's;
+ *   sea: whether (x, z) is the sea (never a pond dug below sea level); every water if not given
  */
 export function createSealLife(o) {
   const { L, P, M } = o;
@@ -60,6 +71,8 @@ export function createSealLife(o) {
   const depth = (x, z) => o.tide() - o.ground(x, z);
   /** Dry enough to lie on. @param {number} x @param {number} z */
   const dry = (x, z) => -depth(x, z) > L.dryAboveM;
+  /** Deep enough to swim to, and the sea. @param {number} x @param {number} z */
+  const swimmable = (x, z) => depth(x, z) >= L.swimDepthM + 0.15 && (!o.sea || o.sea(x, z));
 
   /**
    * Water deep enough to swim near (x, z): searched in rings out to 40 m, preferring the side away
@@ -73,7 +86,7 @@ export function createSealLife(o) {
       for (let i = 0; i < 24; i++) {
         const a = (i / 24) * Math.PI * 2;
         const px = x + Math.sin(a) * r, pz = z + Math.cos(a) * r;
-        if (depth(px, pz) < L.swimDepthM + 0.15) continue;
+        if (!swimmable(px, pz)) continue;
         const k = from ? Math.abs(turnTo(away, a)) : i;
         if (k < bestK) { bestK = k; best = { x: px, z: pz, a }; }
       }
@@ -81,7 +94,7 @@ export function createSealLife(o) {
         let px = best.x, pz = best.z;
         for (let s = 1; s <= out; s += 1) {
           const qx = best.x + Math.sin(best.a) * s, qz = best.z + Math.cos(best.a) * s;
-          if (depth(qx, qz) < L.swimDepthM + 0.15) break;
+          if (!swimmable(qx, qz)) break;
           px = qx; pz = qz;
         }
         return { x: px, z: pz };
@@ -110,7 +123,8 @@ export function createSealLife(o) {
     const id = nextId++, r = streamOf(hash32(o.seed, id));
     /** @type {Seal} */ const s = { id, pup, x, z, y: 0, yaw: r() * Math.PI * 2, mode, tx: x, tz: z, then: mode, phase: 0, t: 0, think: r() * THINK_S, r,
       banana: 0.35 + 0.6 * r(), side: r() < 0.5 ? -1 : 1, act: 'rest', actT: 0, actDur: between(r, L.lieS), look: { yaw: 0, lift: 0 },
-      lookTo: { yaw: 0, lift: 0 }, wetT: mode === 'bottle' ? 0 : 1e6, fled: false, face: null, swim: false, gone: false, pose: null };
+      lookTo: { yaw: 0, lift: 0 }, wetT: mode === 'bottle' ? 0 : 1e6, fled: false, face: null, swim: false, gone: false, pose: null,
+      tOff: r() * 60, rate: between(r, L.rateK), pace: between(r, L.paceK), hold: 0, ax: x, az: z, upFor: between(r, L.bottleS) };
     seals.push(s);
     return s;
   }
@@ -118,8 +132,27 @@ export function createSealLife(o) {
   /** Send a seal to (x, z), to do `then` there. @param {Seal} s @param {number} x @param {number} z @param {'lie'|'bottle'|'gone'} then */
   function go(s, x, z, then) {
     s.tx = x; s.tz = z; s.then = then;
-    if (Math.hypot(x - s.x, z - s.z) > 0.15) { if (s.mode !== 'move') s.phase = 0; s.mode = 'move'; }
+    if (then === 'bottle') { s.ax = x; s.az = z; }
+    // Setting off: at its own point in the stride, after a moment of its own.
+    if (Math.hypot(x - s.x, z - s.z) > 0.15) { if (s.mode !== 'move') { s.phase = s.r(); s.hold = s.r() * L.startJitterS; } s.mode = 'move'; }
     else s.mode = then === 'gone' ? 'gone' : then;
+  }
+
+  /**
+   * Swim on to a spot of open sea within cruiseM of where it was sent (its anchor stays put), to
+   * bottle there in its turn. @param {Seal} s
+   */
+  function cruise(s) {
+    for (let i = 0; i < 8; i++) {
+      const a = s.r() * Math.PI * 2, d = between(s.r, [L.cruiseM * 0.4, L.cruiseM]);
+      const x = s.ax + Math.sin(a) * d, z = s.az + Math.cos(a) * d;
+      if (!swimmable(x, z) || Math.hypot(x - s.x, z - s.z) < 1.5) continue;
+      const ax = s.ax, az = s.az;
+      go(s, x, z, 'bottle');
+      s.ax = ax; s.az = az; s.hold = 0;
+      return;
+    }
+    s.t = 0;
   }
 
   /** Step a moving seal toward its target. @param {Seal} s @param {number} dt */
@@ -127,22 +160,25 @@ export function createSealLife(o) {
     const dx = s.tx - s.x, dz = s.tz - s.z, d = Math.hypot(dx, dz);
     const deep = depth(s.x, s.z) > L.swimDepthM;
     s.swim = deep;
-    const v = Math.min(d, (deep ? L.swimMps : s.pup ? L.pupHumpMps : L.humpMps) * dt);
+    const v = Math.min(d, (deep ? L.swimMps : s.pup ? L.pupHumpMps : L.humpMps) * s.pace * dt);
     if (d > 1e-3) s.yaw += turnTo(s.yaw, Math.atan2(dx, dz)) * Math.min(1, dt * (deep ? 1.5 : 2.5));
     // On land a seal moves only in the forward half of each hump, as the chest reaches.
     const push = deep ? 1 : Math.max(0, Math.sin(Math.PI * 2 * s.phase)) * 2;
     s.x += Math.sin(s.yaw) * v * push; s.z += Math.cos(s.yaw) * v * push;
-    s.phase += deep ? dt * M.swim.hz : (v / (M.hump.strideM * (s.pup ? 0.6 : 1)));
+    s.phase += deep ? dt * M.swim.hz * s.pace : (v / (M.hump.strideM * (s.pup ? 0.6 : 1)));
     if (Math.hypot(s.tx - s.x, s.tz - s.z) < 0.2) {
       if (s.then === 'gone') { s.gone = true; return; }
-      s.mode = s.then; s.t = 0; s.actT = 0; s.act = 'rest';
+      s.mode = s.then; s.t = 0; s.actT = 0; s.act = 'rest'; s.upFor = between(s.r, L.bottleS);
     }
   }
+
+  /** A seal's own clock now (its breath, its bob, its looks). @param {Seal} s */
+  const own = (s) => clock * s.rate + s.tOff;
 
   /** The height a seal's origin sits at now. @param {Seal} s @param {number} k its size */
   function heightOf(s, k) {
     const g = o.ground(s.x, s.z), sea = o.tide();
-    if (s.mode === 'bottle') return Math.max(g, sea - L.bottleBelowM * k + bottleBob(M, clock + s.id));
+    if (s.mode === 'bottle') return Math.max(g, sea - L.bottleBelowM * k + bottleBob(M, own(s)));
     if (s.mode === 'move' && s.swim) return Math.max(g, sea - L.swimBelowM * k);
     return g;
   }
@@ -257,16 +293,25 @@ export function createSealLife(o) {
       }
       // What it does.
       if (s.mode === 'move') {
+        // A moment of its own before it sets off, still in the pose it had.
+        if (s.hold > 0) { s.hold -= dt; if (s.pose) continue; }
+        // Cruising in the water: on to the next spot round where it was sent, the way seals swim
+        // about, until its next turn to bottle.
+        const cruising = s.then === 'bottle' && s.swim && s !== comer;
         move(s, dt);
-        s.pose = s.swim ? swimMoves(M, s.phase) : humpMoves(M, s.phase, clock + s.id);
+        // (move() may have brought it there: its mode is read afresh.)
+        if (cruising && /** @type {Seal['mode']} */ (s.mode) === 'bottle' && s.r() > L.upShare) cruise(s);
+        s.pose = s.swim ? swimMoves(M, s.phase) : humpMoves(M, s.phase, own(s));
         continue;
       }
       if (s.mode === 'bottle') {
         // Look at what it watches (you, after a flush), else about.
         let yaw = 0;
         if (s.face) { yaw = turnTo(s.yaw, Math.atan2(s.face.x - s.x, s.face.z - s.z)); s.yaw += Math.sign(yaw) * Math.min(Math.abs(yaw), dt * 0.4); yaw = Math.max(-1, Math.min(1, yaw)); }
-        else yaw = Math.sin(clock * 0.23 + s.id) * 0.8;
-        s.pose = bottleMoves(M, clock + s.id * 1.7, yaw);
+        else yaw = Math.sin(own(s) * 0.23) * 0.8;
+        s.pose = bottleMoves(M, own(s), yaw);
+        // Up for a while, then down and swimming about again (the one come in to you stays up).
+        if (s.t >= s.upFor && s !== comer && s.then !== 'gone') cruise(s);
         continue;
       }
       // Lying: its acts one after another.
@@ -294,7 +339,7 @@ export function createSealLife(o) {
       // A nursing pup turns to lie head to its mother's belly.
       if (s.pup && s.act === 'nurse' && mother) s.yaw += turnTo(s.yaw, mother.yaw + Math.PI * 0.5 * mother.side) * Math.min(1, dt);
       const f = s.actDur > 0 ? s.actT / s.actDur : 0;
-      s.pose = lieMoves(M, clock + s.id * 2.3, { banana: s.pup && s.act === 'nurse' ? 0.2 : s.banana, side: s.side, look: s.look,
+      s.pose = lieMoves(M, own(s), { banana: s.pup && s.act === 'nurse' ? 0.2 : s.banana, side: s.side, look: s.look,
         scratch: s.act === 'scratch' ? f : -1, yawn: s.act === 'yawn' ? Math.sin(Math.PI * f) : 0, pup: s.pup,
         wave: s.act === 'wave' ? f : -1, rollOver: s.act === 'roll' ? Math.sin(Math.PI * f) : 0 });
     }
