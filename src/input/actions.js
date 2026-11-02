@@ -6,7 +6,7 @@
 import { emit } from '../core/events.js';
 
 /**
- * @typedef {'mouse'|'pen'|'touch'|'key'} Source
+ * @typedef {'mouse'|'pen'|'touch'|'key'|'button'} Source
  * @typedef {'sculpt'|'smooth'|'paint'|'water'|'plant'|'feed'} ToolId
  * @typedef {'reeds'|'lilies'|'iris'|'marigold'|'rushes'|'thrift'|'campion'|'willow'|'gorse'|'pondweed'} PlantSpecies
  */
@@ -63,6 +63,20 @@ import { emit } from '../core/events.js';
  *   | { type: 'photo.set', patch: Record<string, any> }
  *   | { type: 'photo.shot', source?: Source }
  *   | { type: 'ui.identify' }
+ *   | { type: 'walk.down', source?: Source }
+ *   | { type: 'walk.up', source?: Source }
+ *   | { type: 'walk.stuck', source?: Source }
+ *   | { type: 'walk.posture', posture: 'kneel'|'sit', source?: Source }
+ *   | { type: 'walk.feed', source?: Source }
+ *   | { type: 'pack.open', i: number, x: number, y: number, source?: Source }
+ *   | { type: 'pack.setDown', i: number }
+ *   | { type: 'pack.setDownKind', kind: string }
+ *   | { type: 'pack.empty', i: number }
+ *   | { type: 'gather.take', n: number }
+ *   | { type: 'gather.heapHere' } | { type: 'gather.leaveBe' } | { type: 'gather.spreadAsh' } | { type: 'gather.steep' }
+ *   | { type: 'treats.setOut', kind: string }
+ *   | { type: 'pile.takeUp', id: string }
+ *   | { type: 'hen.egg' } | { type: 'hen.feather' }
  *   | { type: 'creature.name', id: number, name: string, sp?: string }
  *   | { type: 'ui.hideHud', hidden?: boolean, source?: Source }
  *   | { type: 'ui.journal', open?: boolean, toggle?: boolean, view?: 'trails'|'living'|'ground'|'web'|'almanac'|'notes'|'shelf', page?: string|null, size?: 'half'|'full', trail?: 'naturalist'|'beach'|'shape' }
