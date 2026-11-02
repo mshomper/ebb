@@ -8,6 +8,7 @@
 // Numbers: recipes/world/stack-mouth.json shape.
 
 import { caveShape } from '../spring/cave-field.js';
+import { hash32 } from '../../core/rng.js';
 import { noise3 } from '../hollow/field.js';
 import { surfaceNets, gridNormals } from '../mesh/surface-nets.js';
 
@@ -96,6 +97,44 @@ export function mouthNets(S, top, field) {
  */
 export function mouthMesh(S, seed, top) {
   return mouthNets(S, top, mouthFieldRows(S, seed, top, 0, mouthGrid(S, top)[2]));
+}
+
+/**
+ * The rubble choking its passage (decision 0001; Matt, November 2, 2026: a pile, never towers with
+ * gaps between): a talus heap filling the passage from the dug face back, its surface rising from
+ * toeM at the face at `slope` (rise per metre) until it meets the roof, filled in layers on a
+ * jittered grid spacingM apart with stones big enough to touch their neighbours, the surface's shell
+ * only (stones deeper than shellM under it are never seen). Pure: the same passage, front and seed
+ * give the same stones.
+ * @param {any} P the passage (stack-mouth.json shape.rubble) @param {any} B things.rubble @param {number} front
+ *   where the heap starts (m along the passage) @param {(x: number, z: number) => number} floorAt
+ * @returns {{ x: number, z: number, base: number, r: number, i: number, depth: number }[]} each stone's
+ *   place, base height, radius, seed index, and how far under the heap's surface it lies (m)
+ */
+export function rubbleHeap(P, B, front, floorAt) {
+  const u = (/** @type {number} */ i, /** @type {number} */ k) => (hash32(B.seed, i, k) >>> 8) / 16777216;
+  const g = B.spacingM, hw = P.halfWidthM;
+  /** The heap's surface height over the floor at s along, t across. @param {number} s @param {number} t */
+  const surface = (s, t) => Math.min(P.heightM * Math.sqrt(Math.max(0, 1 - (t / hw) ** 2)) - B.roofGapM, B.toeM + (s - front) * B.slope);
+  /** @type {{ x: number, z: number, base: number, r: number, i: number, depth: number }[]} */ const out = [];
+  const ns = Math.ceil((P.lengthM - front) / g) + 1, nt = Math.ceil((2 * hw) / g) + 1;
+  for (let L = 0; L * g * B.layerK < P.heightM; L++) {
+    const y = L * g * B.layerK;
+    for (let a = 0; a < ns; a++) for (let b = 0; b < nt; b++) {
+      const i = (L * 1000 + a) * 100 + b;
+      // Each layer's grid shifted half a step from the last, so stones sit in the hollows below.
+      const s = front + (a + (L % 2) * 0.5 + (u(i, 1) - 0.5) * 0.5) * g;
+      const t = -hw + (b + (L % 2) * 0.5 + (u(i, 2) - 0.5) * 0.5) * g;
+      if (s < front - g * 0.3 || s > P.lengthM || Math.abs(t) > hw) continue;
+      const r = B.radiusM[0] + (B.radiusM[1] - B.radiusM[0]) * u(i, 3);
+      const top = surface(s, t), depth = top - (y + r * B.flat);
+      if (depth < -r * 0.3) continue;             // above the heap's surface
+      if (depth > B.shellM && s > front + B.shellM / B.slope) continue;   // deep inside it, unseen
+      const x = P.at[0] + P.dir[0] * s - P.dir[1] * t, z = P.at[1] + P.dir[1] * s + P.dir[0] * t;
+      out.push({ x, z, base: floorAt(x, z) + y - r * 0.25, r, i, depth: Math.max(0, depth) });
+    }
+  }
+  return out;
 }
 
 /**

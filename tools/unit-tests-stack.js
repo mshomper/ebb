@@ -13,7 +13,7 @@ import { isletLayout } from '../src/world/islet/layout.js';
 import { stackLayout, makeStackShape, makeCauseway, causewayFrom, mouthSolid } from '../src/world/stack/layout.js';
 import { startDayOf, lightDays, lightAt, roadH, duskOf } from '../src/world/stack/schedule.js';
 import { cleanStack, emptyStack } from '../src/world/stack/model.js';
-import { mouthShape } from '../src/world/stack/mouth-field.js';
+import { mouthShape, rubbleHeap } from '../src/world/stack/mouth-field.js';
 import { SECTIONS9, clean9 } from '../src/save/migrate-format9.js';
 import { tideParams } from '../src/world/tide.js';
 
@@ -157,6 +157,34 @@ export function addStackTests(test, assert, eq) {
       assert(s.inside(end[0], end[1]) > 0.2 && s.ceilAt(0, 0) > 2, 'each passage runs on into the rock');
     }
     assert(s.air(0, 1, 0) > 0 && s.air(0, 1, 20) < 0, 'air in the room, rock beyond');
+  });
+
+  test(G, 'the rubble is a pile: its top rises steadily from the face to the roof, with no gaps across it (Matt, November 2, 2026)', async () => {
+    const R = await load('world/stack-mouth');
+    const P = R.shape.rubble, B = R.things.rubble, sh = mouthShape(R.shape, R.seed);
+    for (const front of [-0.6, 2]) {
+      const st = rubbleHeap(P, B, front, sh.floorAt);
+      /** The highest stone top over (s, t), above the floor. @param {number} s @param {number} t */
+      const topAt = (s, t) => {
+        const x = P.at[0] + P.dir[0] * s - P.dir[1] * t, z = P.at[1] + P.dir[1] * s + P.dir[0] * t;
+        let top = -1;
+        for (const c of st) if (Math.hypot(c.x - x, c.z - z) < c.r * 0.9) top = Math.max(top, c.base + c.r * B.flat * 1.3 - sh.floorAt(x, z));
+        return top;
+      };
+      let probes = 0, low = 0, last = 0, drops = 0;
+      for (let s = front; s <= P.lengthM; s += 0.2) {
+        for (let t = -0.6; t <= 0.61; t += 0.2) {
+          probes++;
+          const want = Math.min(P.heightM * Math.sqrt(Math.max(0, 1 - (t / P.halfWidthM) ** 2)) - B.roofGapM, B.toeM + (s - front) * B.slope);
+          if (topAt(s, t) < want - 0.3) low++;
+        }
+        const mid = topAt(s, 0);
+        if (mid < last - 0.3) drops++;
+        last = Math.max(last, mid);
+      }
+      assert(low / probes < 0.1, `covered: ${low} of ${probes} spots low (front ${front})`);
+      eq(drops, 0, `no gap along the middle (front ${front})`);
+    }
   });
 
   test(G, "the cave pass's light: the shader's struct, the buffer and the mouth's values all the same size", async () => {

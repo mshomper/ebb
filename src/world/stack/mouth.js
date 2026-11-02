@@ -18,7 +18,7 @@ import { registerCardAction } from '../../ui/card-actions.js';
 import { cleanCook } from '../camp/making.js';
 import { kelvinRgb, flicker } from '../camp/light.js';
 import { lathe, tube, lumpStone, join } from '../spring/cave-live.js';
-import { mouthShape, mouthGrid, lampSight } from './mouth-field.js';
+import { mouthShape, mouthGrid, lampSight, rubbleHeap } from './mouth-field.js';
 import { cleanStack } from './model.js';
 
 const ID = 'stack-mouth';
@@ -285,29 +285,13 @@ export function createStackMouth(o) {
     const P = S.rubble, B = T.rubble, front = -0.6 + (P.lengthM + 0.6) * Math.min(1, dug / Math.max(1, o.stretches));
     const u = (/** @type {number} */ i, /** @type {number} */ k) => (hash32(B.seed, i, k) >>> 8) / 16777216;
     const parts = [];
-    // Stacked from the floor up, deepest first: each stone rests on the floor or on the stones under
-    // it, never in the air; the heap slopes down toward the dug face and stays under the roof.
-    const cand = Array.from({ length: B.stones }, (_, i) => ({ i, s: -0.4 + u(i, 1) * (P.lengthM + 0.4), r: (B.sizeM[0] + (B.sizeM[1] - B.sizeM[0]) * u(i, 4) ** 1.5) / 2 }))
-      .filter((c) => c.s >= front).sort((a, b) => b.s - a.s || a.i - b.i);
-    /** @type {{ x: number, z: number, r: number, top: number }[]} */ const laid = [];
-    for (const c of cand) {
-      const t = (u(c.i, 2) - 0.5) * 2 * Math.max(0, P.halfWidthM - c.r * 0.7);
-      const x = P.at[0] + P.dir[0] * c.s - P.dir[1] * t, z = P.at[1] + P.dir[1] * c.s + P.dir[0] * t;
-      // Resting on the lowest floor under it, or bedded into the top of a stone it overlaps (heights
-      // as brokenStone makes them: its middle flat * 0.3 r over its base, flat r high above that).
-      let base = shape.floorAt(x, z);
-      for (let k = 0; k < 6; k++) base = Math.min(base, shape.floorAt(x + Math.cos(k * 1.047) * c.r, z + Math.sin(k * 1.047) * c.r));
-      for (const q of laid) if (Math.hypot(q.x - x, q.z - z) < (q.r + c.r) * 0.85) base = Math.max(base, q.top - c.r * T.rubble.flat * 0.5);
-      const roof = P.heightM * Math.sqrt(Math.max(0, 1 - (t / P.halfWidthM) ** 2)) - 0.08;
-      const top = base + c.r * T.rubble.flat * 1.2;
-      if (top > Math.min(roof, 0.4 + (c.s - front) * 1.15)) continue;
-      laid.push({ x, z, r: c.r, top });
-      // Its light from where it lies: its sight of the lantern's spots from just above it, and how
-      // deep in the heap it sits (deeper is darker).
-      const cy = base + c.r * 0.9, fl = shape.floorAt(x, z);
-      const sf = lampSight(shape, x, cy, z, flameAt.floor, R.bake), sh = lampSight(shape, x, cy, z, flameAt.hook, R.bake);
-      const occ = Math.min(1, Math.max(0, (base - fl) / Math.max(0.3, T.rubble.heapM)));
-      parts.push(brokenStone(x, base, z, c.r, (k) => u(c.i, k + 5), sf, sh, occ));
+    // A talus heap filling the passage from the dug face back (mouth-field.js rubbleHeap), each stone
+    // lit from where it lies: its sight of the lantern's spots, darker the deeper under the surface.
+    for (const c of rubbleHeap(P, B, front, shape.floorAt)) {
+      const cy = c.base + c.r * 0.9;
+      const sf = lampSight(shape, c.x, cy, c.z, flameAt.floor, R.bake), sh = lampSight(shape, c.x, cy, c.z, flameAt.hook, R.bake);
+      const occ = 1 - Math.min(1, c.depth / Math.max(0.05, B.shellM));
+      parts.push(brokenStone(c.x, c.base, c.z, c.r, (k) => u(c.i, k + 5), sf, sh, occ));
     }
     const all = join(parts);
     return { data: Array.from(all.data), idx: Array.from(all.idx) };
