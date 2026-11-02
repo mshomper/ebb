@@ -62,8 +62,11 @@ fn vnoise(p: vec3f) -> f32 {
 
 /** The rock's bump height: a coarse and a fine layer of noise (m, small). */
 fn bump(w: vec3f) -> f32 {
-  let p = local(w);
-  return vnoise(p * 7.0) * 0.6 + vnoise(p * 23.0) * 0.3 + smoothstep(0.35, 0.65, vnoise(vec3f(p.x * 1.6, p.y * 11.0, p.z * 1.6))) * 0.3;
+  // The stack's mouth (lit raking by its lantern) takes a broader, softer grain: the finest layer read
+  // as blocks there. The spring's cave keeps its own.
+  let soft = cu.soot.w > 0.0;
+  let p = local(w) * select(1.0, 0.55, soft);
+  return vnoise(p * 7.0) * 0.6 + vnoise(p * 23.0) * select(0.3, 0.08, soft) + smoothstep(0.35, 0.65, vnoise(vec3f(p.x * 1.6, p.y * 11.0, p.z * 1.6))) * select(0.3, 0.12, soft);
 }
 
 /** A point in the cave's own frame (the noise stays precise near the world's far corners). */
@@ -183,8 +186,9 @@ fn lampHaze(p: vec3f) -> vec3f {
     let up = smoothstep(0.55, 0.85, n.y);
     // Mottled and banded like limestone, darker in the hollows that face away from the light.
     let q = local(p);
-    let band = 0.8 + 0.4 * smoothstep(0.35, 0.65, vnoise(vec3f(q.x * 0.8, q.y * 9.0, q.z * 0.8)));
-    let grain = 0.75 + 0.5 * vnoise(q * 11.0);
+    let soft = cu.soot.w > 0.0;
+    let band = 0.8 + 0.4 * smoothstep(select(0.35, 0.2, soft), select(0.65, 0.8, soft), vnoise(vec3f(q.x * 0.8, q.y * select(9.0, 3.2, soft), q.z * 0.8)));
+    let grain = 0.75 + 0.5 * vnoise(q * select(11.0, 4.0, soft));
     let m = (0.7 + 0.6 * smoothstep(0.3, 0.7, vnoise(q * 2.3))) * band * grain * mix(0.6, 1.0, smoothstep(-0.3, 0.6, n.y));
     albedo = mix(mix(cu.rock.rgb, cu.floorAlb.rgb, up), cu.rockWet.rgb, wet * 0.8) * m;
     // Old soot round the arch's opening, thicker above it where the smoke went up, and the scratched
@@ -192,7 +196,9 @@ fn lampHaze(p: vec3f) -> vec3f {
     if (cu.soot.w > 0.0) {
       let sd = (p - cu.soot.xyz) / vec3f(cu.soot.w, cu.soot.w * 1.35, cu.soot.w);
       let up = smoothstep(-0.6, 0.7, (p.y - cu.soot.y) / cu.soot.w);
-      let sootK = (1.0 - smoothstep(0.45, 1.0, length(sd))) * (0.45 + 0.55 * up) * (0.75 + 0.25 * vnoise(q * 4.0));
+      // A band hugging the opening's rim (the opening itself is air), heaviest above it.
+      let dn = length(sd);
+      let sootK = smoothstep(0.28, 0.42, dn) * (1.0 - smoothstep(0.7, 1.0, dn)) * (0.4 + 0.6 * up) * (0.7 + 0.3 * vnoise(q * 4.0));
       let scratch = smoothstep(0.9, 0.96, vnoise(vec3f(q.x * 26.0, q.y * 2.2, q.z * 26.0))) * smoothstep(0.25, 0.6, sootK) * (1.0 - smoothstep(0.75, 0.95, sootK));
       albedo *= (1.0 - cu.sootLook.x * sootK) + scratch * 1.4;
     }

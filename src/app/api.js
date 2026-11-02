@@ -95,6 +95,10 @@ export function result(ctx, stop) {
      * pieces, so use them on a test link (such as `?debug&autumn`, unsaved) to leave your own island alone.
      */
     debug: {
+      /** Run n frames now, dtMs apart (a hidden tab gets no animation frames; tools step it to see it). @param {number} n @param {number} [dtMs] */
+      stepFrames: (n, dtMs) => ctx.stepFrames?.(n, dtMs),
+      /** Draw at this size whatever the page's (a hidden tab is never measured; tools set it to see it). @param {number} w @param {number} h CSS and device pixels */
+      setViewSize: (w, h) => Object.assign(ctx.size, { cssW: w, cssH: h, devW: w, devH: h }),
       /**
        * Jump to the next misty autumn morning on which fungi have grown in (autumn.js
        * mistyAutumnMorning), at the webs' test hour, and run that hour so its weather is the day's.

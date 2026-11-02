@@ -75,8 +75,12 @@ export function createStackMouth(o) {
     hook: [hookAt.x, T.hook.heightM - 0.06 - T.lantern.heightM * 0.55, hookAt.z],
   };
 
-  /** The floor (world height). @param {number} x @param {number} z */
-  const floor = (x, z) => { const [a, b] = local(x, z); return O.y + shape.floorAt(a, b); };
+  /**
+   * The floor (world height), for the view to keep above: the room's own, never the climb it makes
+   * into the walls and beyond them (a view behind you near a wall was pushed straight up).
+   * @param {number} x @param {number} z
+   */
+  const floor = (x, z) => { const [a, b] = local(x, z); return O.y + Math.min(shape.floorAt(a, b), R.view.floorCapM); };
   /** Where you may walk: the floor, raised where the walls close in. @param {number} x @param {number} z */
   function ground(x, z) {
     const [a, b] = local(x, z), f = O.y + shape.floorAt(a, b);
@@ -225,7 +229,7 @@ export function createStackMouth(o) {
       const top = base + c.r * 1.3;
       if (top > Math.min(roof, 0.4 + (c.s - front) * 1.15)) continue;
       laid.push({ x, z, r: c.r, top });
-      parts.push(lumpStone(x, base, z, c.r, (k) => u(c.i, k + 5), 0.25, R.look.stone, 0.75));
+      parts.push(lumpStone(x, base, z, c.r, (k) => u(c.i, k + 5), T.rubble.lump, R.look.stone, T.rubble.flat));
     }
     const all = join(parts);
     return { data: Array.from(all.data), idx: Array.from(all.idx) };
@@ -234,7 +238,8 @@ export function createStackMouth(o) {
   const enter = () => {
     build();
     things();
-    const [ax, az] = world(R.view.arriveM, 0), yaw = Math.atan2(ux, uz);
+    // You come in facing the arch and the lantern's hook (the room's story), the view low behind you.
+    const [ax, az] = world(R.view.arriveM, 0), [lx, lz] = world(R.view.lookAt[0], R.view.lookAt[1]), yaw = Math.atan2(lx - ax, lz - az);
     const xs = [S.boundsM[0], S.boundsM[3]], zs = [S.boundsM[2], S.boundsM[5]], pts = xs.flatMap((a) => zs.map((b) => world(a, b)));
     const bounds = [Math.min(...pts.map((p) => p[0])), Math.min(...pts.map((p) => p[1])), Math.max(...pts.map((p) => p[0])), Math.max(...pts.map((p) => p[1]))];
     const ok = o.walk.enterZone({ id: ID, ground, water, bounds, cellM: R.walk.cellM,
