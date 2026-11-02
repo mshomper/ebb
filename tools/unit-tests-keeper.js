@@ -139,7 +139,7 @@ export function addKeeperTests(test, assert, eq) {
       }
       for (const e of th.end ?? []) assert(Array.isArray(T.tests[e]), `${th.id}: end test ${e} is in tests`);
     }
-    eq([...ids].join(), 'stone,cairns,boat,keeper,angler,islet,rye,marker-stone,kite', 'the first four threads, then the angler chart (F17), the meadow islet (B3a), and the rye and the marker stone (F20), then the kite (F20)');
+    eq([...ids].join(), 'stone,cairns,boat,keeper,angler,islet,rye,marker-stone,kite,stack,stack-passage', 'the first four threads, then the angler chart (F17), the meadow islet (B3a), and the rye and the marker stone (F20), then the kite (F20) and the two stack threads (F19)');
     assert(ICON_NAMES.includes('keeper') && ICON_NAMES.includes('threads'), 'the book and its Threads tab have drawn icons');
   });
 
@@ -147,7 +147,7 @@ export function addKeeperTests(test, assert, eq) {
     const T = await threadsP, words = await wordsP;
     const st = writeLines(T, S(TEST_FLAGS), emptyThreads(), 200);
     const ths = threadsOf(T, S(TEST_FLAGS), st);
-    eq(js(ths.map((t) => t.id).sort()), js(['boat', 'cairns', 'keeper', 'stone']), 'all four begun');
+    eq(js(ths.map((t) => t.id).sort()), js(['boat', 'cairns', 'keeper', 'stack', 'stone']), 'all four begun, and the stack (F19)');
     for (const t of ths) {
       const all = T.threads.find((/** @type {any} */ x) => x.id === t.id).lines.length;
       assert(t.lines.length > 0 && t.lines.length < all, `${t.id}: part-way (${t.lines.length} of ${all})`);

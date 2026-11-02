@@ -10,12 +10,14 @@ import { makeBuffer, makeShaderModule } from '../../core/gpu.js';
 
 /** @typedef {import('../frame-graph.js').PassContext} PassContext */
 
-const FLOATS = 60;
+/** 60 for the spring's cave; the last 12 are a lantern's (the stack's mouth), zeros where there is none. */
+const FLOATS = 72;
 /** Floats a vertex: position, normal, colour (rgb albedo, a 1 for a made thing's own). */
 const VERT = 10;
 
 /**
- * @param {{ active: () => boolean }} o active: the cave zone is the one drawn now
+ * @param {{ active: () => boolean, name?: string }} o active: the cave zone is the one drawn now; name: the
+ *   pass's name, for a second cave zone drawn the same way (the stack's mouth, src/world/stack/mouth.js)
  */
 export function createCavePass(o) {
   /** @type {GPURenderPipeline} */ let rockPipe;
@@ -53,7 +55,7 @@ export function createCavePass(o) {
   };
 
   return {
-    name: 'cave',
+    name: o.name ?? 'cave',
     reads: [],
     writes: ['hdr', 'depth', 'normalId'],
     enabled: () => o.active(),
@@ -160,7 +162,7 @@ export function createCavePass(o) {
      */
     beamPass() {
       return {
-        name: 'cave-beam', reads: ['depth'], writes: ['hdr'], enabled: () => o.active(),
+        name: `${o.name ?? 'cave'}-beam`, reads: ['depth'], writes: ['hdr'], enabled: () => o.active(),
         async setup() {}, resize() {},
         record(encoder, ctx) {
           if (!beamPipe || !group || !meshes.beam) return;

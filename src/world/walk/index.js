@@ -116,6 +116,8 @@ export function createWalk(o) {
   // and creatures arriving (their events), each looked at a little over the ground.
   const LK = o.figure.look.kinds;
   /** @type {() => { x: number, z: number, kind: string }[]} */ let interests = () => [];
+  /** Where Go down may set you instead of a point (the stack, src/world/stack: never on it); null: as it is. @type {(x: number, z: number) => [number, number] | null} */
+  let landing = () => null;
   const lift = (/** @type {number} */ x, /** @type {number} */ z, /** @type {string} */ kind) => ground(x, z) + (LK[kind]?.liftM ?? 0);
   /** Look at a spot for a while (a thing clicked, an action's target). @param {number} x @param {number} z */
   const lookAt = (x, z) => figure?.motion.lookAt(x, lift(x, z, 'focus'), z);
@@ -226,8 +228,9 @@ export function createWalk(o) {
     down() {
       if (below) return true;
       const t = camera.target, e = camera.eye;
-      // You land facing the way you were looking.
-      if (!figureOnScreen() && !walker.place(t[0], t[2], Math.atan2(t[0] - e[0], t[2] - e[2]), R.grid.snapM * 3)) {
+      // You land facing the way you were looking (the stack moves the spot to the shore: setLanding).
+      const p = figureOnScreen() ? null : landing(t[0], t[2]) ?? [t[0], t[2]];
+      if (p && !walker.place(p[0], p[1], Math.atan2(t[0] - e[0], t[2] - e[2]), R.grid.snapM * 3)) {
         say(R.words.noGround);
         return false;
       }
@@ -294,6 +297,11 @@ export function createWalk(o) {
      * @param {() => { x: number, z: number, kind: string }[]} fn
      */
     setInterests(fn) { interests = fn; },
+    /**
+     * Where Go down may set you down instead of where you look (the stack and its ring: the nearest
+     * island ground). @param {(x: number, z: number) => [number, number] | null} fn
+     */
+    setLanding(fn) { landing = fn; },
 
     /** The act playing, or null. */
     get acting() { return acting ? acting.name : null; },

@@ -50,11 +50,11 @@ export function start(ctx) {
     walk.update(realDt);
     zones.tick(realDt);
     const zoneNow = zones.zone();
-    ctx.zoneGround = zoneNow ? (x, z) => springCave.floor(x, z) : null;
+    ctx.zoneGround = zoneNow ? (x, z) => (zoneNow.floor ?? springCave.floor)(x, z) : null;
     camera.setFloor(zoneNow ? -Infinity : 0);
     camera.setRoom(zoneNow?.viewRoom ? zoneNow.viewRoom(camera.target, camera.eye) : Infinity);
     // The eye adapts to a zone's dark, but not all the way (spring-cave.json light.exposureBiasEV).
-    exposure.setBias(zoneNow ? -(caveRecipe.light.exposureBiasEV ?? 0) : 0);
+    exposure.setBias(zoneNow ? -(zoneNow.exposureBiasEV ?? caveRecipe.light.exposureBiasEV ?? 0) : 0);
     if (ctx.zoneCardOnArrival && !walk.busy()) {
       const c = ctx.zoneCardOnArrival;
       ctx.zoneCardOnArrival = null;
@@ -72,6 +72,8 @@ export function start(ctx) {
     const pad = getStore('campPad') ?? null;
     padEdge = pad ? stepEdge(padEdge, edgeTarget(pad, terrain.ring, tools()), realDt, pad.dash?.opacity ?? 1, pad.dash?.fadeS) : 0;
     const padMark = edgeMark(pad, padEdge);
+    // The stack's no-build ring, the same dashed edge (docs/future/19; src/app/stack.js).
+    const stackMark = ctx.stackMark?.(realDt, terrain.ring, tools()) ?? null;
     // A chosen thing is lifted in its own shader, not ringed (F5); only Show me (a pinned card, far
     // off) keeps its ring on the ground. The first evening's slot glows are rings of their own.
     const chosen = getStore('identify');
@@ -86,7 +88,7 @@ export function start(ctx) {
     sowing.update(now);
     sowOverlay.draw(sowing.visuals(), getStore('view').project3, now);
     fishingOverlay.draw(fishing.visuals(), getStore('view').project3);
-    terrainPass.setMarks(plantTool.marks(now, !!getStore('hand') && getStore('hand').kind !== 'net' && getStore('hand').kind !== 'line', chosen?.pinned ? chosen : null, [...(padMark ? [padMark] : []), ...bury,...(getStore('reveal')?.rings?.(now) ?? []), ...creatures.foodRings(), ...intro.rings(now), ...camp.rings(now / 1000), ...stores.rings(now / 1000)]));
+    terrainPass.setMarks(plantTool.marks(now, !!getStore('hand') && getStore('hand').kind !== 'net' && getStore('hand').kind !== 'line', chosen?.pinned ? chosen : null, [...(padMark ? [padMark] : []), ...(stackMark ? [stackMark] : []), ...bury,...(getStore('reveal')?.rings?.(now) ?? []), ...creatures.foodRings(), ...intro.rings(now), ...camp.rings(now / 1000), ...stores.rings(now / 1000)]));
     // Lugworm casts are drawn into the sand by the terrain pass.
     terrainPass.setCasts(finds.casts());
     // So are the holes you dug (src/world/dig): their mouths and the fresh soil round them; and the
@@ -125,8 +127,8 @@ export function start(ctx) {
     // the walker lit from the hole as the frame's sun (no moon, no shadows down here).
     const zl = zoneNow?.light ? zoneNow.light({ sunDir: day.sm.sunDir, sunIlluminance: day.sunIlluminance, cloud: day.weather.cloud, time: t.animT }) : null;
     if (zl) {
-      cavePass.setUniforms(zl.uniforms);
-      const b = zl.uniforms.slice(20, 23);
+      (zoneNow?.pass ?? cavePass).setUniforms(zl.uniforms);
+      const b = zl.ambient ?? zl.uniforms.slice(20, 23);
       caveSHData.fill(0);
       for (let c = 0; c < 3; c++) { caveSHData[c] = (b[c] * 0.7) / 0.282095; caveSHData[4 + c] = (b[c] * 0.3) / 0.488603; }
       gpu.device.queue.writeBuffer(caveSH, 0, caveSHData);

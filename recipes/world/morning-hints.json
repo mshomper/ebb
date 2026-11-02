@@ -29,7 +29,8 @@
     { "id": "seal-pup", "text": "There is a white pup on the seals' sandbar. Watch from the shore and keep off the bar: its mother will not leave it.", "done": "sawPup", "when": "sealPup", "showMe": ["seals"] },
     { "id": "rye-sow", "text": "That rye by the old stone wants sowing on the islet's grass before the frost. A handful sows a whole strip.", "done": "ryeSown", "when": "ryeGathered" },
     { "id": "stone-notch", "text": "The notch in the stone lines up with something. Maybe the sun?", "done": "stonePot", "when": "stoneSpring" },
-    { "id": "kite", "text": "There was a gale yesterday, and something came in with it on the islet's strand: sticks and torn cloth, tangled in a line.", "done": "kiteFound", "when": "kiteWashed" }
+    { "id": "kite", "text": "There was a gale yesterday, and something came in with it on the islet's strand: sticks and torn cloth, tangled in a line.", "done": "kiteFound", "when": "kiteWashed" },
+    { "id": "stack-road", "text": "The road to the stack is still there.", "done": "stackCrossed", "when": "stackRoad" }
   ],
   "tests": {
     "gathered": [{ "flag": "did:gathered" }, { "prefix": "picked:" }, { "flag": "intro:gather", "unless": "intro:skipped" }],
@@ -62,7 +63,9 @@
     "ryeGathered": [{ "flag": "setpiece:rye:gathered" }],
     "ryeSown": [{ "flag": "setpiece:rye:sown" }],
     "kiteWashed": [{ "flag": "setpiece:kite:washed" }],
-    "kiteFound": [{ "flag": "setpiece:kite:found" }]
+    "kiteFound": [{ "flag": "setpiece:kite:found" }],
+    "stackRoad": [{ "flag": "setpiece:stack:road" }],
+    "stackCrossed": [{ "flag": "setpiece:stack:crossed" }]
   },
   "record": {
     "gather:done": "did:gathered",

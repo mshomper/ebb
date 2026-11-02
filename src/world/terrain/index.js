@@ -111,6 +111,26 @@ export async function createTerrain(gpu, opts) {
    * @type {((m: import('./heightfield.js').Mirror, r: CellRect) => boolean) | null}
    */
   let guard = null;
+  /**
+   * A second, fixed guard under the Steps' own (the stack's no-build ring, src/world/stack): its mask
+   * is ORed into the brushes' guard texture, and its apply runs before the Steps' after each edit.
+   * @type {{ mask: Uint8Array, apply: (m: import('./heightfield.js').Mirror, r: CellRect) => boolean } | null}
+   */
+  let fixed = null;
+  /** The Steps' mask as last given (setGuard), to OR with the fixed one. @type {Uint8Array | null} */
+  let stepsMask = null;
+  /** Both guards' put-back after an edit. @param {import('./heightfield.js').Mirror} m @param {CellRect} r */
+  const guardAll = (m, r) => { const a = fixed ? fixed.apply(m, r) : false; const b = guard ? guard(m, r) : false; return a || b; };
+  /** Upload the guard texture over a rect: the Steps' mask ORed with the fixed one. @param {CellRect} r */
+  function uploadGuard(r) {
+    if (r.w <= 0 || r.h <= 0) return;
+    const out = new Uint8Array(r.w * r.h);
+    for (let j = 0; j < r.h; j++) for (let i = 0; i < r.w; i++) {
+      const k = (r.y + j) * N + r.x + i;
+      out[j * r.w + i] = Math.max(stepsMask ? stepsMask[k] : 0, fixed ? fixed.mask[k] : 0);
+    }
+    device.queue.writeTexture({ texture: tex.guard, origin: [r.x, r.y] }, out, { bytesPerRow: r.w, rowsPerImage: r.h }, [r.w, r.h]);
+  }
 
   /**
    * Grow a rect by m cells and clamp it to the open land.
@@ -194,7 +214,7 @@ export async function createTerrain(gpu, opts) {
         mirror.material[k * 4 + 3] = res.materials[s + 3];
       }
     }
-    guard?.(mirror, r);
+    guardAll(mirror, r);
     uploadRect(device, tex, mirror, r);
     const after = copyTiles(mirror, [...st.tileIds]);
     markEdited(r);
@@ -306,7 +326,7 @@ export async function createTerrain(gpu, opts) {
       };
       const r = applyBoulder(mirror, b, point[0], point[2], area, fadeAt);
       if (r.w === 0 || r.h === 0) return null;
-      guard?.(mirror, r);
+      guardAll(mirror, r);
       uploadRect(device, tex, mirror, r);
       markEdited(r);
       emitDeferred('terrain:stroke-ended', { rect: worldRect(r) });
@@ -341,10 +361,19 @@ export async function createTerrain(gpu, opts) {
      */
     setGuard(mask, rect, apply) {
       guard = apply;
-      const r = grow(rect, 0);
-      if (r.w <= 0 || r.h <= 0) return;
-      device.queue.writeTexture({ texture: tex.guard, origin: [r.x, r.y] }, mask.buffer,
-        { offset: mask.byteOffset + r.y * N + r.x, bytesPerRow: N, rowsPerImage: r.h }, [r.w, r.h]);
+      stepsMask = mask;
+      uploadGuard(grow(rect, 0));
+    },
+
+    /**
+     * The fixed guard (the stack's no-build ring): cells no brush moves for good, and what puts them
+     * back after an edit (erosion or a boulder spilling in). Given again when the cells change (the
+     * causeway joins it once risen). @param {Uint8Array} mask N x N, 1 guarded @param {CellRect} rect what changed in it
+     * @param {(m: import('./heightfield.js').Mirror, r: CellRect) => boolean} apply
+     */
+    setFixedGuard(mask, rect, apply) {
+      fixed = { mask, apply };
+      uploadGuard(grow(rect, 0));
     },
 
     /** World meters to a cell rect over the open land. @param {number} x0 @param {number} z0 @param {number} x1 @param {number} z1 */

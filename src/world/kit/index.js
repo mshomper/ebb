@@ -52,6 +52,8 @@ export function createKit(o) {
       pan: (get('cook')?.tools ?? []).includes('keepers-pan'),
       // The kite, mended at the workbench (src/world/kite).
       kite: (get('cook')?.tools ?? []).includes('kite'),
+      // The driftwood staff, made once the arch in the stack's mouth is seen (docs/future/19).
+      'driftwood-staff': (get('cook')?.tools ?? []).includes('driftwood-staff'),
     };
     // A tool's line for now, from its own module (the kite: where and when it can fly).
     const notes = get('beltNotes') ?? {};

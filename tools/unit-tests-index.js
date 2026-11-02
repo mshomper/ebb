@@ -109,6 +109,7 @@ export const TEST_FILES = {
   'sound-game': '',
   'sowing': '',
   'spring': '',
+  'stack': '',
   'steer': '',
   'stone': '',
   'store': '',

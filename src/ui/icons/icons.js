@@ -1651,6 +1651,40 @@ const ICONS = {
     <path d="M16.6 8.9L19.1 11.4"/>`,
   // The meadow islet's rye, its stooks, the marker stone and the sickle (F20, icons-meadow.js).
   ...MEADOW_ICONS,
+  // The stack (docs/future/19): a tall rock stepped in ledges down one side, standing in the sea, a
+  // small flame on its top.
+  stack: `
+    <path ${ACCENT} d="M8 20V7.6H12.4V11.2H14.6V14.4H16.8V20Z"/>
+    <path d="M8 20V7.6H12.4V11.2H14.6V14.4H16.8V20"/>
+    <path d="M10.2 5.6C9.4 4.8 9.6 3.6 10.2 2.6C10.8 3.6 11 4.8 10.2 5.6Z"/>
+    <path d="M2.5 20H21.5"/>
+    <path d="M3 22C4.5 21.2 6 21.2 7.5 22M16.5 22C18 21.2 19.5 21.2 21 22"/>`,
+  // An iron grate across a passage: an arched frame with bars and a padlock hanging from it.
+  grate: `
+    <path ${ACCENT} d="M5 20.5V10A7 7 0 0 1 19 10V20.5Z"/>
+    <path d="M5 20.5V10A7 7 0 0 1 19 10V20.5"/>
+    <path d="M9.5 4.2V20.5M14.5 4.2V20.5M5 13.5H19"/>
+    <path d="M11 15.6H13M10.8 17.4H13.2V20H10.8Z"/>`,
+  // The old lantern: a round iron lantern with a ring on top and a flame behind its panes.
+  lamp: `
+    <path d="M12 2.8A1.4 1.4 0 1 1 12 5.6A1.4 1.4 0 1 1 12 2.8"/>
+    <path d="M8.6 8.2L12 5.6L15.4 8.2Z"/>
+    <path ${ACCENT} d="M8.4 8.2H15.6V18H8.4Z"/>
+    <path d="M8.4 8.2H15.6V18H8.4ZM7.6 18H16.4V20.2H7.6Z"/>
+    <path d="M12 15.6C10.8 14.8 10.9 13.2 12 11.6C13.1 13.2 13.2 14.8 12 15.6Z"/>`,
+  // Hang it: an iron hook out of a wall, a lantern's ring hanging on it.
+  hook: `
+    <path d="M3.5 3V21"/>
+    <path d="M3.5 7.4H13.4C15 7.4 15.8 8.2 15.8 9.6V10.6"/>
+    <path ${ACCENT} d="M15.8 12.6A2.4 2.4 0 1 1 15.8 17.4A2.4 2.4 0 1 1 15.8 12.6"/>
+    <path d="M15.8 12.6A2.4 2.4 0 1 1 15.8 17.4A2.4 2.4 0 1 1 15.8 12.6"/>
+    <path d="M15.8 10.6V12.6"/>`,
+  // The cave mouth: a dark cleft in a rock face, a ground line running into it.
+  cavemouth: `
+    <path d="M2.5 20.5L5.5 7.5L10 3.5L15.5 5L19.5 10.5L21.5 20.5"/>
+    <path ${ACCENT} d="M9.4 20.5C9.4 15.4 10.4 11.2 12 9.4C13.6 11.2 14.6 15.4 14.6 20.5Z"/>
+    <path d="M9.4 20.5C9.4 15.4 10.4 11.2 12 9.4C13.6 11.2 14.6 15.4 14.6 20.5"/>
+    <path d="M2.5 20.5H21.5"/>`,
 };
 
 /** Names of every icon in the sprite. */

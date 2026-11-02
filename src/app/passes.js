@@ -12,6 +12,8 @@ import { createSkyPass } from '../render/passes/sky.js';
 export const passes = (c) => [
   // The spring's cave (drawn only while you are down in it; it clears the frame).
   c.cavePass,
+  // The stack's mouth room (docs/future/19; drawn only while you are in it; it clears the frame).
+  c.mouthPass,
   c.shadowPass,
   c.terrainPass,
   c.grassPass,
@@ -23,6 +25,7 @@ export const passes = (c) => [
   c.walk.pass,
   // The beam of light down the cave's shaft, over the walker.
   c.caveBeam,
+  c.mouthBeam,
   c.hen.pass,
   // The gathering knife on the walker's belt (the forager's trail).
   c.belt.pass,
@@ -70,10 +73,10 @@ export const passes = (c) => [
   c.exposure,
   c.bloom,
   c.tonemap,
-];
+].filter(Boolean);
 
 /**
  * The passes that run down in a zone (src/world/zones), beside the walker and the post passes; every
  * other pass is off while you are in one. @param {import('./context.js').AppContext} c @returns {Pass[]}
  */
-export const zonePasses = (c) => [c.walk.pass, c.exposure, c.bloom, c.tonemap, c.dof, c.cavePass, c.caveBeam];
+export const zonePasses = (c) => [c.walk.pass, c.exposure, c.bloom, c.tonemap, c.dof, c.cavePass, c.caveBeam, c.mouthPass, c.mouthBeam].filter(Boolean);

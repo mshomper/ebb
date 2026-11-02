@@ -12,7 +12,9 @@ import { writeLines, emptyThreads, markThreadsSeen } from './model.js';
 export const TEST_FLAGS = ['dig:marked-stone', 'setpiece:cairns:1', 'setpiece:cairns:2', 'setpiece:cairns:added',
   'setpiece:boat:seen', 'keeper:boat', 'keeper:first', 'keeper:tend',
   // Three morning hints already given (one of them done), for Things to try.
-  'hint:gather@0', 'did:gathered', 'hint:finds@1', 'hint:cord@2'];
+  'hint:gather@0', 'did:gathered', 'hint:finds@1', 'hint:cord@2',
+  // The light on the stack part-way (F19): seen, a light at dusk, the road.
+  'setpiece:stack:seen', 'setpiece:stack:lights', 'setpiece:stack:road'];
 
 /**
  * @param {{ T: any, hour: () => number, journalWords?: any, test?: boolean }} o

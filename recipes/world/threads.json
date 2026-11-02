@@ -118,7 +118,20 @@
       { "id": "found", "test": "kiteFound", "text": "A kite washed up on the bar after the gale, torn but whole." },
       { "id": "mended", "test": "kiteMended", "text": "I laced the tear shut with rush cord and lashed in a new stick for the spar." },
       { "id": "flown", "test": "kiteFlown", "text": "I flew the kite from the top of the islet. I could see everything." }
-    ], "pencil": "It only flies from the islet's top, and only when the wind is up.", "end": ["kiteFlown"] }
+    ], "pencil": "It only flies from the islet's top, and only when the wind is up.", "end": ["kiteFlown"] },
+    { "id": "stack", "title": "The light on the stack", "icon": "stack", "pages": true, "lines": [
+      { "id": "seen", "test": "stackSeen", "text": "There's a rock offshore, stepped like a stair. A dark band near its top, and something iron. Someone kept a light out there once." },
+      { "id": "lights", "test": "stackLights", "text": "A light at the foot of the stack tonight, low on the water. The moths went out to it. When I looked again it was gone." },
+      { "id": "road", "test": "stackRoad", "text": "The sea drew back further than I've ever seen it and left a road of stones to the stack. It hasn't gone back under." },
+      { "id": "lamp", "test": "stackLamp", "text": "A cave in the stack's foot, and an old lantern on the floor. I lit it and hung it by the door. There was a note beside it." },
+      { "id": "arch", "test": "stackArch", "text": "An arch at the back of the cave, ringed with soot. Something moves past the light. Not with empty hands." },
+      { "id": "through", "test": "stackThrough", "text": "I made a staff from driftwood and cord, and I went through the arch." }
+    ], "pencil": "The road to the stack is dry at any tide.", "end": ["stackThrough"] },
+    { "id": "stack-passage", "title": "The sleeper's passage", "icon": "grate", "lines": [
+      { "id": "rubble", "test": "stackRubble", "text": "A passage off the cave, choked with fallen rock. I dug some of it out today." },
+      { "id": "grate", "test": "stackGrate", "text": "Through the rubble at last. An iron grate, locked, and a small box wedged in the rock beside it, locked too." },
+      { "id": "key", "test": "stackKey", "text": "The little key from the spring fits the grate. The old keeper locked it. I think I know why now." }
+    ], "pencil": "Whatever is past the grate, the old keeper wanted it left in peace." }
   ],
   "tests": { "lineMade": [{"made": ["line"]}], "fishFirst": [{"flag": "fishing:sketch"}], "fishRiddle": [{"flag": "fishing:riddle:1"}], "fishWater": [{"prefix": "fishing:water:"}], "fishRare": [{"flag": "fishing:rare"}], "chartFull": [{"flag": "fishing:chart:full"}],
     "stoneShown": [{ "flag": "dig:marked-stone" }],
@@ -155,6 +168,7 @@
     "stoneCalendar": [{ "flag": "setpiece:stone:calendar" }],
     "kiteFound": [{ "flag": "setpiece:kite:found" }],
     "kiteMended": [{ "flag": "setpiece:kite:mended" }],
-    "kiteFlown": [{ "flag": "setpiece:kite:flown" }]
+    "kiteFlown": [{ "flag": "setpiece:kite:flown" }],
+    "isletWalked": [{ "flag": "setpiece:islet:walked" }], "stackSeen": [{"flag": "setpiece:stack:seen"}], "stackLights": [{"flag": "setpiece:stack:lights"}], "stackRoad": [{"flag": "setpiece:stack:road"}], "stackCrossed": [{"flag": "setpiece:stack:crossed"}], "stackLamp": [{"flag": "setpiece:stack:lamp"}], "stackArch": [{"flag": "setpiece:stack:arch"}], "stackThrough": [{"flag": "setpiece:stack:through"}], "stackRubble": [{"flag": "setpiece:stack:rubble"}], "stackGrate": [{"flag": "setpiece:stack:grate"}], "stackKey": [{"flag": "setpiece:stack:key"}]
   }
 }

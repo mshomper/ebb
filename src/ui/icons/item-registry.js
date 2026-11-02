@@ -117,6 +117,8 @@ export const MAKES = /** @type {[string, string, string, string, number][]} */ (
   ['sinker-stones', 'sinker-stones', 'Grooved sinker stones', 'T6', 5],
   // The fishing line (F17, October 31, 2026): a withy rod, rush cord and a gorse thorn hook.
   ['line', 'fishing-line', 'Fishing line', 'T3', 3],
+  // The driftwood staff (F19): a stick and rush cord, once the arch in the stack's mouth is seen.
+  ['driftwood-staff', 'driftwood-staff', 'Driftwood staff', 'T2', 2],
   ...CAMP_ROWS,
   ...METAL_MAKE_ROWS,
   ...RYE_MAKE_ROWS,
