@@ -69,8 +69,8 @@ export async function start(ctx) {
       if (wait < 0 || !world.env.habitat?.() || !water.sim.live || getStore('testGrow')?.done === false) return;
       wait += f.realDt;
       if (!getStore('journal') && wait < 3) return;
-      // With `?shape=wall`, wait (up to 20 s) for the wall to be built and looked at.
-      if (wantWall && !cells.length && wait < 20) return;
+      // With `?shape=wall`, wait (up to 90 s) for the wall to be built, settled and looked at.
+      if (wantWall && !cells.length && wait < 90) return;
       const s = spots();
       const at = s.length ? s[Math.floor(s.length / 2)] : shoreNear(camera.target[0], camera.target[2]);
       if (!at) return;

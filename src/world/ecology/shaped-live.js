@@ -120,7 +120,9 @@ export function createShapedWatch(o) {
   const { R } = o;
   const mem = () => /** @type {ShapedMemory} */ (get('shaped') ?? emptyShaped());
   let lookS = 3, stepS = 0, lastHour = -1;
-  const offs = ['water:summary-updated', 'world:ticked', 'terrain:stroke-ended'].map((ev) => on(ev, () => { lookS = Math.min(lookS, 1); }));
+  /** Look within s seconds (sooner if one is already due sooner; after a look, the countdown is spent). @param {number} s */
+  const soon = (s) => { lookS = lookS > 0 ? Math.min(lookS, s) : s; };
+  const offs = ['water:summary-updated', 'world:ticked', 'terrain:stroke-ended'].map((ev) => on(ev, () => soon(1)));
 
   /** Look at the ground now and publish the report. */
   function look() {
@@ -166,7 +168,7 @@ export function createShapedWatch(o) {
         }
       }
       const hour = Math.floor(o.nowH());
-      if (hour !== lastHour && lastHour >= 0) lookS = Math.min(lookS, 0.2);
+      if (hour !== lastHour && lastHour >= 0) soon(0.2);
       lastHour = hour;
       if (lookS > 0 && (lookS -= f.realDt) <= 0) look();
     },

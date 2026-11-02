@@ -70,6 +70,10 @@ export function createStack(o) {
    * @param {boolean} [exact]
    */
   function writeRect(rect, heightAt, paintAt, exact = false) {
+    // The stack and its causeway are found, not shaped: the island as generated (the habitat's
+    // shapedCm, src/world/growth/habitat.js) takes their ground too, so the S0 checks never count
+    // the stack as a sea wall or the causeway as a raised bar the player made.
+    /** @type {Uint16Array | null} */ const base = get('terrainLive')?.baseQ ?? null;
     return terrain.raiseCells(rect, (m) => {
       for (let j = 0; j < rect.h; j++) {
         const z = cx(rect.y + j);
@@ -81,6 +85,7 @@ export function createStack(o) {
           const q = quantize(t);
           m.heightQ[k] = q;
           m.heightF[k] = dequantize(q);
+          if (base) base[k] = q;
           writeWeights(m.material, k * 4, paintAt(x, z, m.heightF[k]));
         }
       }

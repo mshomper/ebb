@@ -31,6 +31,7 @@ import { makeBoulder, applyBoulder } from './boulder.js';
  * @property {number} pressure
  * @property {number[] | null} cursor
  * @property {number[] | null} last
+ * @property {number[]} start      where the stroke began (its first frame stamps from here)
  * @property {CellRect | null} rect   union of stamp rects so far
  * @property {Set<number>} tileIds
  * @property {import('./undo.js').Tile[]} before
@@ -167,14 +168,16 @@ export async function createTerrain(gpu, opts) {
     if (!st.cursor) return [];
     const r = st.brush.radius;
     const spacing = Math.max(rb.spacing * r, CELL);
-    const from = st.last ?? st.cursor;
+    // The first frame runs from where the stroke began, so a cursor already moved on before the
+    // first frame (a scripted stroke, a fast flick) never skips the start of the stroke.
+    const from = st.last ?? st.start;
     const d = Math.hypot(st.cursor[0] - from[0], st.cursor[1] - from[1]);
     const n = Math.min(rb.maxStampsPerFrame, Math.max(1, Math.ceil(d / spacing)));
     // A Cliff stamp sets rather than adds, so its amount is not split across the frame's stamps.
     const amount = frameAmount(st.brush, st.pressure, dt, rb) / (st.mode === CLIFF_MODE ? 1 : n);
     const stamps = [];
     for (let i = 1; i <= n; i++) {
-      const t = st.last ? i / n : 1;
+      const t = i / n;
       const x = from[0] + (st.cursor[0] - from[0]) * t;
       const z = from[1] + (st.cursor[1] - from[1]) * t;
       const rect = circleRect(x, z, r, bounds.cells);
@@ -277,6 +280,7 @@ export async function createTerrain(gpu, opts) {
         pressure,
         cursor: [point[0], point[2]],
         last: null,
+        start: [point[0], point[2]],
         rect: null,
         tileIds: new Set(),
         before: [],
