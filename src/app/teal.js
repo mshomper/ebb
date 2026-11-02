@@ -98,8 +98,10 @@ export async function start(ctx) {
   }
 
   // `?tealhat` (testing, unsaved): the feather, a handful of linen cloth and rush cord in the pack,
-  // to make the hat at the workbench (with `?camp=bench`, standing at it).
-  if (params.has('tealhat')) { pack.add(FEATHER, 1); pack.add('cloth', 1); pack.add('rush-cord', 1); }
+  // to make the hat at the workbench (with `?camp=bench`, standing at it). `?tealhat=worn`: the hat
+  // owned and on instead, to wade in it (with `?teals`, by the flock).
+  if (params.get('tealhat') === 'worn') kit.gain('hat', TEAL_HAT, true);
+  else if (params.has('tealhat')) { pack.add(FEATHER, 1); pack.add('cloth', 1); pack.add('rush-cord', 1); }
 
   // `?tealflush` (testing, with `?teals`): the flock is flushed every 20 seconds by a pretend walker
   // beside it, so the rise, the lap round the pond and the landing can be watched from above.

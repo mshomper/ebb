@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ebb B3 check</title>
+<style>
+  @font-face { font-family: Nunito; src: url(../src/vendor/fonts/nunito-latin-600-normal.woff2) format('woff2'); font-weight: 600; }
+  @font-face { font-family: Nunito; src: url(../src/vendor/fonts/nunito-latin-800-normal.woff2) format('woff2'); font-weight: 800; }
+  @font-face { font-family: Fraunces; src: url(../src/vendor/fonts/fraunces-latin-full-italic.woff2) format('woff2'); font-style: italic; }
+  :root { --paper: #F4EEE4; --card: #FBF7F0; --ink: #2F3A35; --muted: #5E6660; --line: #DCD2C0; --moss: #5F7F5B; --clay: #A8613F; }
+  * { box-sizing: border-box; }
+  body { margin: 0; font: 600 17px/1.55 Nunito, system-ui, sans-serif; background: var(--paper); color: var(--ink);
+    padding: 24px 16px 48px; overflow-wrap: anywhere; }
+  main { max-width: 760px; margin: 0 auto; display: grid; gap: 16px; }
+  h1 { font-size: 28px; font-weight: 800; margin: 0; }
+  .lede { font: italic 19px/1.5 Fraunces, Georgia, serif; color: var(--muted); margin: 4px 0 0; }
+  .how { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 14px 18px; display: grid; gap: 8px; }
+  .check { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; display: grid; gap: 10px; min-width: 0; }
+  .check.is-pass { border-color: var(--moss); }
+  .check.is-not { border-color: var(--clay); }
+  .check h2 { font-size: 20px; font-weight: 800; margin: 0; display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; }
+  .num { color: var(--muted); font-size: 16px; }
+  ol, ul { margin: 0; padding-left: 22px; display: grid; gap: 4px; }
+  .see { border-left: 3px solid var(--moss); padding-left: 12px; margin: 0; }
+  .see b { display: block; font-size: 15px; letter-spacing: .04em; text-transform: uppercase; color: var(--moss); }
+  .note { border-left: 3px solid var(--clay); padding-left: 12px; margin: 0; }
+  .note b { display: block; font-size: 15px; letter-spacing: .04em; text-transform: uppercase; color: var(--clay); }
+  .links { display: grid; gap: 8px; justify-items: start; }
+  a.btn, button { font: 700 16px Nunito, system-ui, sans-serif; color: var(--ink); background: var(--paper); border: 1px solid var(--line);
+    border-radius: 8px; padding: 9px 14px; text-decoration: none; cursor: pointer; min-height: 44px; display: inline-flex; align-items: center; }
+  a.btn:hover, button:hover { border-color: var(--ink); }
+  a.btn.is-setup { background: var(--moss); border-color: var(--moss); color: #fff; }
+  a.btn.is-setup:hover { border-color: var(--ink); }
+  .verdict { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .verdict button[aria-pressed="true"].pass { background: var(--moss); color: #fff; border-color: var(--moss); }
+  .verdict button[aria-pressed="true"].not { background: var(--clay); color: #fff; border-color: var(--clay); }
+  textarea { width: 100%; min-height: 64px; font: 600 16px/1.4 Nunito, system-ui, sans-serif; color: var(--ink); background: #fff;
+    border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; resize: vertical; }
+  .summary { position: sticky; bottom: 0; background: var(--paper); padding: 12px 0; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; border-top: 1px solid var(--line); }
+  .summary output { font-size: 17px; }
+  code { font: 15px ui-monospace, Consolas, monospace; background: #EDE5D7; padding: 1px 5px; border-radius: 4px; overflow-wrap: anywhere; }
+  :focus-visible { outline: 3px solid var(--moss); outline-offset: 2px; }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>The B3 check</h1>
+    <p class="lede">The last step of M2 (doc 20, stage B3): the meadow islet, the autumn and winter visitors, the light on the stack and the islet's stories. Walk each check, mark it, and copy the results to Claude. Passing them all closes M2.</p>
+  </header>
+  <section class="how">
+    <p><b>Test islands.</b> Every link here opens a throwaway island that is never saved, so your own island is safe. Each check's green <b>Set up</b> link has it ready to play in under a minute; the plain links beside it show its other parts.</p>
+    <p>A season is 14 game days: autumn starts on day 28 and winter on day 42. <code>&amp;day=N</code> plays the island from day 0 to day N while <i>The island grows</i> shows, a few seconds. A game hour is a minute at 1x, 15 seconds at 4x.</p>
+    <p><b>Visit, hint, home, flock.</b> Each visitor comes once before its home exists. On a test island, Settings, Tests has <b>Next morning</b> and <b>Skip a day</b>: use Next morning to read the hint the visit leaves. Then the home link shapes that home for you (as <i>Shaped, not found</i> in doc 13 says, only ground you made counts) and the flock comes once the home has been right for 6 game hours, at its own morning hour (9:00 to 11:00). Those links open at 2:00 at night so the flock comes the same morning at 4x, about two minutes of watching.</p>
+  </section>
+  <div id="checks"></div>
+  <div class="summary">
+    <output id="count">0 of 12 passed</output>
+    <button type="button" id="copy">Copy results</button>
+    <span id="copied" aria-live="polite"></span>
+  </div>
+</main>
+<script type="module">
+import { CHECKS } from './b3-review-checks.js';
+
+const KEY = 'ebb-b3-review';
+let state = {};
+try { state = JSON.parse(localStorage.getItem(KEY) ?? '{}'); } catch { state = {}; }
+const save = () => { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch { /* not kept */ } };
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+
+const root = document.getElementById('checks');
+root.style.display = 'grid'; root.style.gap = '16px';
+CHECKS.forEach((c, i) => {
+  const s = state[c.id] ?? {};
+  const el = document.createElement('section');
+  el.className = 'check';
+  el.innerHTML = `<h2><span class="num">${i + 1}</span>${esc(c.title)}</h2>
+    <ol>${c.steps.map((t) => `<li>${esc(t)}</li>`).join('')}</ol>
+    <p class="see"><b>You should see</b>${esc(c.see)}</p>
+    ${c.note ? `<p class="note"><b>Note</b>${esc(c.note)}</p>` : ''}
+    <div class="links">${[['is-setup', ...c.setup], ...c.links.map((l) => ['', ...l])].map(([k, t, u]) => `<a class="btn ${k}" href="${esc(u)}" target="_blank" rel="noopener">${k ? 'Set up: ' : ''}${esc(t)}</a>`).join('')}</div>
+    <div class="verdict">
+      <button type="button" class="pass" aria-pressed="false">Pass</button>
+      <button type="button" class="not" aria-pressed="false">Not yet</button>
+    </div>
+    <label for="note-${c.id}" class="num">Notes</label>
+    <textarea id="note-${c.id}" placeholder="What you saw, if anything was off"></textarea>`;
+  const [pass, not] = el.querySelectorAll('.verdict button');
+  const note = el.querySelector('textarea');
+  note.value = s.note ?? '';
+  const paint = () => {
+    const v = state[c.id]?.v;
+    pass.setAttribute('aria-pressed', String(v === 'pass'));
+    not.setAttribute('aria-pressed', String(v === 'not'));
+    el.classList.toggle('is-pass', v === 'pass');
+    el.classList.toggle('is-not', v === 'not');
+    count();
+  };
+  const set = (v) => { state[c.id] = { ...(state[c.id] ?? {}), v: state[c.id]?.v === v ? null : v }; save(); paint(); };
+  pass.addEventListener('click', () => set('pass'));
+  not.addEventListener('click', () => set('not'));
+  note.addEventListener('input', () => { state[c.id] = { ...(state[c.id] ?? {}), note: note.value }; save(); });
+  root.append(el);
+  paint();
+});
+
+function count() {
+  const n = CHECKS.filter((c) => state[c.id]?.v === 'pass').length;
+  document.getElementById('count').textContent = `${n} of ${CHECKS.length} passed`;
+}
+
+document.getElementById('copy').addEventListener('click', async () => {
+  const lines = CHECKS.map((c, i) => {
+    const s = state[c.id] ?? {};
+    const v = s.v === 'pass' ? 'PASS' : s.v === 'not' ? 'NOT YET' : 'not checked';
+    return `${i + 1}. ${c.title}: ${v}${s.note ? ` (${s.note.trim()})` : ''}`;
+  });
+  const text = `B3 check (M2 close)\n${lines.join('\n')}`;
+  const said = document.getElementById('copied');
+  try { await navigator.clipboard.writeText(text); said.textContent = 'Copied. Paste it to Claude.'; }
+  catch { said.textContent = 'Copy failed: select the text below and copy it.'; const pre = document.createElement('pre'); pre.textContent = text; pre.style.whiteSpace = 'pre-wrap'; document.querySelector('main').append(pre); }
+});
+</script>
+</body>
+</html>
