@@ -40,8 +40,8 @@ export function addDigTests(test, assert, eq) {
 
   test(G, 'the ground class, cell by cell: soil, damp bank, sand; never rock, water, the camp, the tide band or a piece', async () => {
     const R = await RP, h = habitat();
-    const set = (/** @type {number} */ i, /** @type {number} */ j, /** @type {Record<string, number>} */ v) => { const [x, z] = at(i, j), k = cellOf(x, z); for (const [f, n] of Object.entries(v)) h[f][k] = n; return [x, z]; };
-    const cls = (/** @type {number[]} */ p, /** @type {any} */ g = {}) => { const c = groundClass(p[0], p[1], { hab: h, ...g }, R); return c.cls ?? c.why; };
+    const set = (/** @type {number} */ i, /** @type {number} */ j, /** @type {Record<string, number>} */ v) => { const [x, z] = at(i, j), k = cellOf(x, z); for (const [f, n] of Object.entries(v)) h[f][k] = n; return /** @type {[number, number]} */ ([x, z]); };
+    const cls = (/** @type {number[]} */ p, /** @type {any} */ g = {}) => { const c = groundClass(p[0], p[1], { hab: h, ...g }, R); return c.cls ?? /** @type {any} */ (c).why; };
     eq(cls(set(0, 0, {})), 'soil', 'plain grass ground');
     eq(cls(set(1, 0, { moisture: 150 })), 'bank', 'wet grass by fresh water');
     eq(cls(set(2, 0, { moisture: 150, salt: 120 })), 'soil', 'wet but salty is not a bank');

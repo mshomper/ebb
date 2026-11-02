@@ -470,7 +470,7 @@ export function addPiecesTests(test, assert, eq) {
     }
     const s = /** @type {any} */ (addPiece(back, makeStone(5, 9, 0, 0, 1, { sizeM: [0.3, 0.3] }), 10));
     eq(countKind(s.list, 'pile'), 1, 'counted apart from stones');
-    eq(pieceAt(s.list, 12.3, -14, 0.05)?.id, 'p3', 'a tap within its footprint finds it');
+    eq(/** @type {any} */ (pieceAt(s.list, 12.3, -14, 0.05))?.id, 'p3', 'a tap within its footprint finds it');
     eq(pieceAt(s.list, 13, -14, 0.05), null, 'a tap beyond it does not');
   });
 

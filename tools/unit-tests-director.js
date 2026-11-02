@@ -26,6 +26,7 @@ export function addDirectorTests(test, assert, eq) {
     // The browser fetches the recipe; Node (tools/run-tests.mjs) reads it from disk.
     const j = async (/** @type {string} */ p) => {
       const url = new URL(`../${p}`, import.meta.url);
+      // @ts-ignore Node only
       if (url.protocol === 'file:') { const fs = await import('node:fs/promises'); return JSON.parse(await fs.readFile(url, 'utf8')); }
       return (await fetch(url)).json();
     };
@@ -207,6 +208,7 @@ export function addDirectorTests(test, assert, eq) {
     const { piece, recipes } = await load();
     const j = async (/** @type {string} */ p) => {
       const url = new URL(`../${p}`, import.meta.url);
+      // @ts-ignore Node only
       if (url.protocol === 'file:') { const fs = await import('node:fs/promises'); return JSON.parse(await fs.readFile(url, 'utf8')); }
       return (await fetch(url)).json();
     };
@@ -270,6 +272,7 @@ export function addDirectorTests(test, assert, eq) {
     const { recipes } = await load();
     const j = async (/** @type {string} */ p) => {
       const url = new URL(`../${p}`, import.meta.url);
+      // @ts-ignore Node only
       if (url.protocol === 'file:') { const fs = await import('node:fs/promises'); return JSON.parse(await fs.readFile(url, 'utf8')); }
       return (await fetch(url)).json();
     };
@@ -300,6 +303,7 @@ export function addDirectorTests(test, assert, eq) {
   test('music: names', 'the same seed, season and slot always give the same name, and names vary', async () => {
     const j = async (/** @type {string} */ p) => {
       const url = new URL(`../${p}`, import.meta.url);
+      // @ts-ignore Node only
       if (url.protocol === 'file:') { const fs = await import('node:fs/promises'); return JSON.parse(await fs.readFile(url, 'utf8')); }
       return (await fetch(url)).json();
     };

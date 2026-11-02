@@ -340,8 +340,10 @@ export function addMusicTests(test, assert, eq) {
 
   // ---------------- chord symbols ----------------
 
+  /** These symbols are never N.C.; the N.C. case is tested apart. @param {string} s */
+  const chord = (s) => /** @type {import('../src/audio/music/chords.js').Chord} */ (parseChord(s));
   /** @param {string} sym */
-  const iv = (sym) => { const c = parseChord(sym); return c ? js([c.root, c.intervals, c.bass]) : 'null'; };
+  const iv = (sym) => { const c = chord(sym); return c ? js([c.root, c.intervals, c.bass]) : 'null'; };
 
   test(CH, 'triads and power chord', () => {
     eq(iv('C'), js([0, [0, 4, 7], null]));
@@ -395,12 +397,12 @@ export function addMusicTests(test, assert, eq) {
   });
 
   test(CH, 'roots with sharps and flats', () => {
-    eq(parseChord('Bb')?.root, 10);
-    eq(parseChord('Eb')?.root, 3);
-    eq(parseChord('F#m')?.root, 6);
-    eq(parseChord('C#m7')?.root, 1);
-    eq(parseChord('Ab')?.root, 8);
-    eq(parseChord('Gb')?.root, 6);
+    eq(chord('Bb')?.root, 10);
+    eq(chord('Eb')?.root, 3);
+    eq(chord('F#m')?.root, 6);
+    eq(chord('C#m7')?.root, 1);
+    eq(chord('Ab')?.root, 8);
+    eq(chord('Gb')?.root, 6);
   });
 
   test(CH, 'slash chords keep a bass pitch class', () => {
@@ -413,11 +415,11 @@ export function addMusicTests(test, assert, eq) {
   });
 
   test(CH, 'the symbol and a quality name are kept', () => {
-    const c = parseChord('Dmaj9');
+    const c = chord('Dmaj9');
     eq(c?.symbol, 'Dmaj9');
     eq(c?.quality, 'maj9');
-    eq(parseChord('Em')?.quality, 'm');
-    eq(parseChord('G')?.quality, '');
+    eq(chord('Em')?.quality, 'm');
+    eq(chord('G')?.quality, '');
   });
 
   test(CH, 'no chord, and nonsense', () => {

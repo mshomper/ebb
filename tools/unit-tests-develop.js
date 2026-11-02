@@ -20,6 +20,7 @@ export function addDevelopTests(test, assert, eq) {
     // The browser fetches the recipe; Node (tools/run-tests.mjs) reads it from disk.
     const j = async (/** @type {string} */ p) => {
       const url = new URL(`../${p}`, import.meta.url);
+      // @ts-ignore Node only
       if (url.protocol === 'file:') { const fs = await import('node:fs/promises'); return JSON.parse(await fs.readFile(url, 'utf8')); }
       return (await fetch(url)).json();
     };

@@ -71,7 +71,7 @@ export function addTreatsTests(test, assert, eq) {
     let state = { creatures: { [key]: { groups: [{ id: 1 }], trust: 0.3 } } };
     state = addSwarmEvent(state, key, { kind: 'treat', hour: 50, treat: 'leaf-pack' });
     state = addSwarmEvent(state, key, { kind: 'treat', hour: 51, treat: 'leaf-pack' });
-    const S = { ...state.creatures[key] };
+    const S = /** @type {any} */ ({ ...state.creatures[key] });
     const ev = applySwarmTrust(S, P, key);
     eq(S.trust, r4(0.3 + P.feedTrust * P.treatFeeds), 'one treat counted of two');
     eq(S.treatDay, 2, 'its day kept');

@@ -105,7 +105,7 @@ export function addJournalTests(test, assert, eq) {
   test(JOURNAL, 'read marks: new notes since you looked, notes you may have missed, and pages with news', async () => {
     let j = { ...initialJournal(0), notes: [{ hour: 0, date: 'old', text: 'an old note', sp: 'reeds' }] };
     // Three notes at once; the first two shown on the island, the third lost in the burst.
-    const burst = [1, 2, 3].map((i) => ({ hour: 5, date: 'd', text: `note ${i}`, sp: i === 3 ? 'frogs' : 'reeds' }));
+    /** @type {any[]} */ const burst = [1, 2, 3].map((i) => ({ hour: 5, date: 'd', text: `note ${i}`, sp: i === 3 ? 'frogs' : 'reeds' }));
     j = stampNotes({ ...j, notes: [...burst.slice().reverse(), ...j.notes] }, burst);
     eq(burst.map((n) => n.n).join(','), '1,2,3', 'note numbers');
     j = markShown(markShown(j, 1), 2);
