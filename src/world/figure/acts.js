@@ -2,7 +2,8 @@
 // The walker's short acts (keeper's camp, docs/future/13-keepers-camp.md 2.3): drink, pitch, lay,
 // strike (the fire steel), crawlIn and climbOut, and dig (the shovel, docs/future/13 10.2: bent over, the
 // hands drive the blade, and a twist of the chest tips the spoil, P2c), and liftClump (the shovel
-// levers a plant up whole, P2g). Each is a track of keys in recipes/world/figure.json
+// levers a plant up whole, P2g), and wake (coming to by the hook after the Hollow's light went out, H3a:
+// it starts low on hands and knees, fromLow, while the screen is still dark). Each is a track of keys in recipes/world/figure.json
 // poses: at t seconds in, how far into the kneel and the crawl, extra lean, head pitch and hip drop,
 // and where each hand reaches (body meters, y over the ground under you). A key changes only what it
 // names; the rest carries on from the key before. Between keys the pose eases (smoothstep), so
@@ -16,7 +17,7 @@
 import { smooth, lerp } from './kinematics.js';
 
 /** The acts there are. */
-export const ACTS = ['drink', 'pitch', 'lay', 'strike', 'crawlIn', 'climbOut', 'dig', 'liftClump'];
+export const ACTS = ['drink', 'pitch', 'lay', 'strike', 'crawlIn', 'climbOut', 'dig', 'liftClump', 'wake'];
 
 /**
  * @typedef {Object} ActPose

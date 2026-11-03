@@ -11,6 +11,9 @@ import { floorInputs, floorsPerFill, burn, sip, fuelWord, lightShare, dropInTheD
 import { buildFloor } from '../src/world/hollow/floor.js';
 import { clean9, SECTIONS9 } from '../src/save/migrate-format9.js';
 import { createZones } from '../src/world/zones/live.js';
+import { actLength } from '../src/world/figure/acts.js';
+import { createWalk } from '../src/world/walk/index.js';
+import { flushDeferred } from '../src/core/events.js';
 
 const G = 'hollowTrip';
 const hollow = async () => (await fetch(new URL('../recipes/world/hollow.json', import.meta.url))).json();
@@ -83,6 +86,29 @@ export function addHollowTripTests(test, assert, eq) {
     eq(JSON.stringify(clean9('hollow', undefined)), JSON.stringify(emptyHollow()), 'a save from before the Hollow');
     eq(JSON.stringify(cleanHollow({ version: 1, trips: 3, deepest: 5 })), JSON.stringify({ version: 1, trips: 3, deepest: 5 }), 'kept as saved');
     eq(cleanHollow({ version: 1, trips: -2, deepest: 'x' }).trips, 0, 'nonsense reads as none');
+  });
+
+  test(G, 'the wake by the hook is an act, and it plays right after a zone entry (control held until you stand)', async () => {
+    const R = await (await fetch(new URL('../recipes/world/walker.json', import.meta.url))).json();
+    const figure = await (await fetch(new URL('../recipes/world/figure.json', import.meta.url))).json();
+    const water = await (await fetch(new URL('../recipes/world/water.json', import.meta.url))).json();
+    assert(actLength(figure.poses, 'wake') > 0, 'wake is one of the acts');
+    assert(figure.poses.wake.fromLow === true && (figure.poses.wake.keys[0].crawl ?? 0) > 0, 'it starts low, put down there at once');
+    const camera = { eye: [10, 5, 0], target: [10, 1, 10], viewProj: new Float32Array(16), setGround() {}, follow() {}, setYaw() {} };
+    const walk = createWalk({
+      recipe: R, figure, tide: water.tide, hours: () => 0, creatures: () => [], camera: /** @type {any} */ (camera),
+      terrain: /** @type {any} */ ({ sampleHeight: () => 1, openBounds: () => ({ openMin: [0, 0], openMax: [40, 20] }), sampleMaterial: () => ({ grass: 1, sand: 0, rock: 0, soil: 0 }) }),
+      water: { sim: { live: false }, tide: -5, sampleLive: () => ({ depth: 0 }) },
+    });
+    flushDeferred();
+    const ok = walk.enterZone({ id: 'stack-mouth', ground: () => 0, water: () => 0, bounds: [0, 0, 10, 10], cellM: 0.25, at: { x: 5, z: 5, yaw: 0 } });
+    assert(ok, 'into the zone');
+    eq(walk.act('wake'), true, 'the wake plays at once');
+    eq(walk.acting, 'wake', 'and holds control while it plays');
+    for (let i = 0; i < 60 * 10; i++) { walk.update(1 / 60); flushDeferred(); }
+    eq(walk.acting, null, 'over once you stand');
+    eq(walk.walker.posture, 'stand', 'standing again');
+    walk.dispose();
   });
 
   test(G, 'zones: a fade within a zone runs its own swap, and the dark holds while its floor is made', () => {

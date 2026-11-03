@@ -197,7 +197,7 @@
       { "t": 1.6 },
       { "t": 2.0, "lean": 0, "head": 0, "arms": 0, "l": [0.12, 0.5, 0.25], "r": [-0.12, 0.5, 0.25] }
     ] },
-    "wake": { "posture": "kneel", "after": "stand", "note": "Waking by the hook in the stack's mouth after the light went out in the Hollow (H3a; doc 16, When the lantern goes out): down on hands and knees where the dark ended, a hand pushing up to a kneel, head down, then looking up at the hook's lantern, a long breath, and up onto your feet. It begins as the screen goes dark (the Hollow's trip.darkS hold and the zones' fadeS), so the first 4.4 s are held low on hands and knees and the waking is seen. While it plays you cannot walk; control comes back as you stand.", "keys": [
+    "wake": { "posture": "kneel", "after": "stand", "fromLow": true, "note": "Waking by the hook in the stack's mouth after the light went out in the Hollow (H3a; doc 16, When the lantern goes out): down on hands and knees where the dark ended, a hand pushing up to a kneel, head down, then looking up at the hook's lantern, a long breath, and up onto your feet. It begins as the screen goes dark (the Hollow's trip.darkS hold and the zones' fadeS), so the first 4.4 s are held low on hands and knees and the waking is seen. fromLow: it is put down low at once (never begun from however low the figure is, as climbOut is), since the walker is set down standing by the hook while the screen is dark. While it plays you cannot walk; control comes back as you stand.", "keys": [
       { "t": 0, "crawl": 1, "lean": 6, "head": 26, "arms": 1, "l": [0.14, 0.05, 0.55], "r": [-0.14, 0.05, 0.55] },
       { "t": 4.4 },
       { "t": 5.4, "crawl": 0, "kneel": 1, "lean": 22, "head": 24, "l": [0.14, 0.3, 0.34], "r": [-0.14, 0.05, 0.5] },
