@@ -153,6 +153,17 @@ export function addHollowCineTests(test, assert, eq) {
     let atHeight = false;
     for (let i = 0; i < after.nLights; i++) if (Math.abs(after.lights[i * LIGHT_FLOATS + 1] - 1.5) < 0.05 && Math.abs(after.lights[i * LIGHT_FLOATS + 2] - 4) < 0.05) atHeight = true;
     assert(atHeight, 'the burst\'s light is at the stone\'s height, 1.5 m');
+    // The swing's slash: threads at staff height (rising to a floater) that are gone within its life, and no filled fan.
+    const fx3 = createMoveFx(FX, { seed: 4, ground: () => 0 });
+    fx3.cue('swing.slash', { x: 0, z: 0, yaw: 0, r: 1.4, deg: 130, y0: 1, y1: 1.5 });
+    fx3.update(FX.swing.slash.sweepS);
+    const s1 = fx3.gpu();
+    let lo = 9, hi = -9;
+    for (let i = 0; i < s1.nThreads; i++) for (const k of [1, 5]) { const y = s1.threads[i * 12 + k]; lo = Math.min(lo, y); hi = Math.max(hi, y); }
+    assert(s1.nThreads > 10 && lo >= 0.99 && hi <= 1.51 && hi > 1.3, `a slash of ${s1.nThreads} threads from ${lo.toFixed(2)} m up to ${hi.toFixed(2)} m`);
+    assert(fx3.marks().every((m) => m.shape !== 'disc' && (m.shape !== 'arc' || (m.r1 ?? 0) - (m.r0 ?? 0) < 0.05)), 'its floor scuff is a thin arc, not a fan');
+    for (let i = 0; i < Math.ceil(FX.swing.slash.lifeS * 60); i++) fx3.update(1 / 60);
+    eq(fx3.gpu().nThreads, 0, 'gone within its life');
     // The same seed and steps give the same effects.
     const a = createMoveFx(FX, { seed: 9, ground: () => 0 }), b = createMoveFx(FX, { seed: 9, ground: () => 0 });
     for (const e of [a, b]) { e.cue('castFlame.burst', { x: 1, z: 2, ringM: 1.3, scorchS: 3 }); for (let i = 0; i < 30; i++) e.update(1 / 60); }

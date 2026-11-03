@@ -52,6 +52,7 @@ export function createHollow(o) {
     /** @type {null | ((e: any) => boolean)} */ catchHit: null,
     /** @type {null | ((size: 'glance' | 'land' | 'break', a: any) => void)} */ contact: null,
     /** @type {null | ((a: any) => boolean)} */ reaches: null,
+    /** @type {null | ((p: { x: number, z: number, yaw: number, r: number, deg: number, landed: boolean }) => void)} */ slash: null,
   };
   /** The lantern's passing shares of its strength and reach as drawn (cine-light.js); the light the things feel is unchanged. */
   const lightShare = { gain: 1, reach: 1 };
@@ -177,8 +178,12 @@ export function createHollow(o) {
     if (!on.length) tally.misses++;
     // The world holds still a moment as a hit lands (and a little less for a glance); with the moves' beats, the contact does it.
     if (on.length && !hooks.contact) hitStop = HR.swing.hitStopS * (landed ? 1 : 0.5);
-    const col = landed ? MARK.ember : on.length ? MARK.paper : MARK.miss;
-    marks.push({ age: 0, life: 0.6, draw: (out, k) => pushArc(out, x, z, 0.45, S.reachM, yaw, S.arcDeg, ground, col.map((v) => v * k)) });
+    // The swing's mark: with the moves' effects, a slash at staff height (in place of the old filled fan); else the fan.
+    if (hooks.slash) hooks.slash({ x, z, yaw, r: S.reachM * 0.85, deg: S.arcDeg, landed });
+    else {
+      const col = landed ? MARK.ember : on.length ? MARK.paper : MARK.miss;
+      marks.push({ age: 0, life: 0.6, draw: (out, k) => pushArc(out, x, z, 0.45, S.reachM, yaw, S.arcDeg, ground, col.map((v) => v * k)) });
+    }
   }
 
   /** What the stand-ins did this frame: strikes on you, calls. @param {any[]} ev */

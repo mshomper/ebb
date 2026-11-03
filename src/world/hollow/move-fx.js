@@ -146,6 +146,8 @@ export function createMoveFx(FX, o) {
   let beams = [];
   /** @type {Map<string, any>} */
   const lasting = new Map();
+  /** Slashes in the air (the swing, Hook and turn, Feint): each lasts its lifeS. @type {any[]} */
+  let slashes = [];
   /** Swarms of moths, and moths still leaving after their swarm ended. */
   /** @type {any[]} */
   let moths = [];
@@ -183,6 +185,8 @@ export function createMoveFx(FX, o) {
     /** Hook and turn: a pale arc swept round the thing as it turns. @param {any} p { x, z, r, yaw } */
     'hookTurn'(p) {
       const H = FX.hookTurn;
+      // A curved streak swept round the thing at its body's height, and a thin arrow's arc on the floor.
+      startSlash(H.slash, p.x, p.z, p.r, p.yaw, 220, p.y ?? gy(p.x, p.z, 0.4), p.y ?? gy(p.x, p.z, 0.4));
       mark(0.9, H.sweepS, (g, k) => ({ shape: 'arc', x: p.x, z: p.z, r0: p.r, r1: p.r + H.widthM, yaw: p.yaw - (1 - g) * 1.9, deg: 220 * g, col: scale(H.col, k) }));
       burst(H.chips, p.x, p.y ?? gy(p.x, p.z, 0.3), p.z, p.yaw + 1.6);
     },
@@ -252,6 +256,8 @@ export function createMoveFx(FX, o) {
     /** Feint: a faint arc swept quickly, a few pale motes. @param {any} p { x, z, yaw, r, arcDeg } */
     'feint'(p) {
       const F = FX.feint;
+      // A pale half-streak at staff height where the swing would have gone, and a faint arc on the floor.
+      startSlash(F.slash, p.x, p.z, p.r, p.yaw, p.arcDeg * 0.6, gy(p.x, p.z, F.slash.y), gy(p.x, p.z, F.slash.y));
       mark(0.6, F.sweepS, (g, k) => ({ shape: 'arc', x: p.x, z: p.z, r0: p.r - F.widthM, r1: p.r, yaw: p.yaw, deg: p.arcDeg * g, col: scale(F.col, 0.7 * k) }));
       burst(F.motes, p.x + Math.sin(p.yaw) * p.r * 0.8, gy(p.x, p.z, 0.7), p.z + Math.cos(p.yaw) * p.r * 0.8, p.yaw);
     },
@@ -298,13 +304,32 @@ export function createMoveFx(FX, o) {
       const S = FX.springChorus;
       for (let i = 0; i < S.gather.n; i++) { const a = rnd() * TAU, r = 0.4 + rnd() * 1.2, x = p.x + Math.sin(a) * r, z = p.z + Math.cos(a) * r; burst(S.gather, x, gy(x, z, 0.05 + rnd() * 0.2), z, undefined, 1); }
     },
+    /**
+     * The staff's swing (the cinematic pass: in place of the old filled fan on the floor): a curved
+     * streak along the staff tip's path at staff height, rising to a floater's body (y1), gone within
+     * lifeS, and a faint scuff on the floor. @param {any} p { x, z, yaw, r, deg, y0, y1 }
+     */
+    'swing.slash'(p) {
+      const S = FX.swing.slash;
+      startSlash(S, p.x, p.z, p.r, p.yaw, p.deg, p.y0, p.y1);
+      mark(S.scuffS, 0, (_g, k) => ({ shape: 'arc', x: p.x, z: p.z, r0: p.r * 0.55, r1: p.r * 0.55 + S.scuffW, yaw: p.yaw, deg: p.deg * 0.5, ink: true, col: scale(S.scuffCol, k) }));
+    },
     /** The swing lands: chips along the blow at the body's height, and for a landed hit a small warm light and dust. @param {any} p { x, y, z, dir, size: 'glance' | 'land' | 'break' } */
     'swing.contact'(/** @type {any} */ p) {
       const W = FX.swing, k = p.size === 'break' ? W.breakShare : p.size === 'land' ? 1 : W.glanceShare;
       burst(W.chips, p.x, p.y, p.z, p.dir, Math.round(W.chips.n * k));
+      // A brief bright star where it struck, so a hit reads from the Hollow camera's 5.5 m.
+      if (W.star) burst(W.star, p.x, p.y, p.z, undefined, Math.max(1, Math.round(W.star.n * k)));
       if (p.size !== 'glance') { flash(W.light, p.x, p.z, p.y); burst(W.dust, p.x, p.y, p.z, undefined, Math.round(W.dust.n * k)); }
     },
   };
+
+  /**
+   * A slash: a streak swept over an arc round (x, z), r out, deg wide about yaw, from height y0 to y1.
+   * @param {any} S { sweepS, lifeS, segments, widthM, coreW, col, core } @param {number} x @param {number} z @param {number} r
+   * @param {number} yaw @param {number} deg @param {number} y0 @param {number} y1
+   */
+  function startSlash(S, x, z, r, yaw, deg, y0, y1) { slashes.push({ S, x, z, r, yaw, deg, y0, y1, age: 0 }); }
 
   /** Things that last: their kinds, what starts them and what each frame does. */
   const kinds = {
@@ -479,7 +504,7 @@ export function createMoveFx(FX, o) {
     /** Everything cleared (a new floor). */
     clear() {
       for (const k of [...lasting.keys()]) this.stop(k);
-      nSparks = 0; nThreads = 0; nMoths = 0; nLights = 0; lights = []; marks = []; flights = []; beams = []; moths = []; carry.clear();
+      nSparks = 0; nThreads = 0; nMoths = 0; nLights = 0; lights = []; marks = []; flights = []; beams = []; moths = []; slashes = []; carry.clear();
     },
     /** @param {number} dt */
     update(dt) {
@@ -509,6 +534,8 @@ export function createMoveFx(FX, o) {
         if (more === false) { lasting.delete(key); carry.delete(key); }
       }
       stepSparks(dt);
+      for (const sl of slashes) sl.age += dt;
+      slashes = slashes.filter((sl) => sl.age < sl.S.lifeS);
       moths = moths.filter((m) => stepMoth(m, dt));
       for (const m of marks) m.age += dt;
       marks = marks.filter((m) => m.age < m.life);
@@ -535,6 +562,17 @@ export function createMoveFx(FX, o) {
         const a = [b.x0, gy(b.x0, b.z0, K.fromY), b.z0], e = [b.at[0], gy(b.at[0], b.at[2], K.fromY * 0.5), b.at[2]];
         thread(a, e, K.beam.widthM, 0.8, K.beam.col);
         thread(a, e, K.core.widthM, 1, K.core.col);
+      }
+      // Slashes: swept in over sweepS, the head brightest, the whole fading out over lifeS.
+      for (const sl of slashes) {
+        const S = sl.S, sweep = ease(sl.age / S.sweepS), fade = (1 - sl.age / S.lifeS) ** 2, half = (sl.deg / 2) * Math.PI / 180;
+        const at = (/** @type {number} */ u) => { const a = sl.yaw + half - 2 * half * u; return [sl.x + Math.sin(a) * sl.r, lerp(sl.y0, sl.y1, u), sl.z + Math.cos(a) * sl.r]; };
+        const n = Math.max(2, Math.round(S.segments * sweep));
+        for (let i = 0; i < n; i++) {
+          const u0 = (i / n) * sweep, u1 = ((i + 1) / n) * sweep, head = 0.25 + 0.75 * ((i + 1) / n);
+          thread(at(u0), at(u1), S.widthM * (0.5 + 0.5 * head), fade * head * 0.8, S.col);
+          thread(at(u0), at(u1), S.coreW, fade * head, S.core);
+        }
       }
       nMoths = 0;
       for (const m of moths) {

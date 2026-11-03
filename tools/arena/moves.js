@@ -87,7 +87,11 @@ export function createMoveLayer(o) {
     const c = LC.map((v) => v * kl + L.ambient);
     for (let i = 0; i < lit.length; i += 8) {
       if (!(lit[i + 3] > 0)) continue;
-      const d = Math.hypot(lit[i] - x, lit[i + 1] - y, lit[i + 2] - z), k = fall(d, lit[i + 3]) * (0.35 + 0.65 * Math.max(0, (lit[i + 1] - y) / Math.max(d, 1e-3)));
+      const d = Math.hypot(lit[i] - x, lit[i + 1] - y, lit[i + 2] - z), r = lit[i + 3];
+      // A shadow-casting flash falls off as lib-fx-light.wgsl has it (its shadows left out here).
+      const q = d / Math.max(r * 0.12, 1e-3), t = Math.min(1, Math.max(0, (d - r * 0.55) / (r * 0.45)));
+      const f = lit[i + 7] > 0.5 ? (1 / (1 + q * q)) * (1 - t * t * (3 - 2 * t)) : fall(d, r);
+      const k = f * (0.35 + 0.65 * Math.max(0, (lit[i + 1] - y) / Math.max(d, 1e-3)));
       for (let j = 0; j < 3; j++) c[j] += lit[i + 4 + j] * k;
     }
     return c.map((v, j) => v * R0[j] * 1.4);
@@ -200,7 +204,7 @@ export function createMoveLayer(o) {
           t.foe.take({ kind: 'turn', openS: m.openS });
           const yaw = Math.atan2(t.x - walker.x, t.z - walker.z) + Math.PI, b = bodyAt(t);
           beat(id, 'impact', b);
-          if (fx) fx.cue('hookTurn', { x: t.x, y: b.y, z: t.z, r: t.size + 0.35, yaw });
+          if (fx) fx.cue('hookTurn', { x: t.x, y: b.y, z: t.z, r: (HR?.foes[t.kind]?.bodyM ?? 0.3) + 0.25, yaw });
           else hollow.mark(0.9, (/** @type {number[]} */ out, /** @type {number} */ k) => {
             pushArc(out, t.x, t.z, t.size + 0.35, t.size + 0.48, yaw, 220, ground, scale(C.paper, k));
             const ea = yaw + (110 * Math.PI) / 180, r = t.size + 0.42, ex = t.x + Math.sin(ea) * r, ez = t.z + Math.cos(ea) * r;
@@ -317,6 +321,14 @@ export function createMoveLayer(o) {
     const b = bodyAt(a), dir = Math.atan2(a.x - walker.x, a.z - walker.z);
     cine?.contact(size, b);
     fx?.cue('swing.contact', { ...b, dir, size });
+  };
+  /** The swing's slash, at staff height, rising to a locked floater's body. @param {any} p */
+  hollow.hooks.slash = (p) => {
+    if (!fx) return;
+    const y0 = ground(p.x, p.z) + (o.FX.swing.slash.y ?? 1);
+    const t = hollow.byId(hollow.lock.target);
+    const y1 = t && inReach(t) && Math.hypot(t.x - p.x, t.z - p.z) <= p.r + 1 ? Math.max(y0, bodyAt(t).y) : y0;
+    fx.cue('swing.slash', { ...p, y0, y1 });
   };
   /** The swing reaches only things up to the reach ceiling. */
   hollow.hooks.reaches = inReach;

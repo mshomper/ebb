@@ -298,7 +298,7 @@ Every move shows itself with light, not only a mark on the floor. In the dark of
 - **Light carries it** (`cine-light.js` and the effect lights):
   - The lantern dims as power gathers (to half for Groundline, to 45 % with its reach drawn in for Kindling burst).
   - It swells as the move leaves, then comes back, sputtering after the big ones.
-  - The release's flash reaches 7 to 8 m, lights the walls and casts soft shadows. A light marked shadow is blocked by upright capsules (the walker, the things, the six pillars; motes cast none) in `src/shaders/lib-fx-light.wgsl`. It is an analytic soft shadow with no shadow map, and a capsule the light or the point sits inside is skipped.
+  - The release's flash stays local, as a blow landing does, not a camera flash (the orchestrator's look, November 3, 2026). It is bright at the source and falls off as 1 / (1 + (d / 0.12 reach)^2), windowed out before its 8 to 10 m reach, so it still reaches the pillars and throws their shadows while the room's corners stay dark. The lantern's swell on release is held to at most 1.1, so the frame keeps its contrast. It casts soft shadows. A light marked shadow is blocked by upright capsules (the walker, the things, the six pillars; motes cast none) in `src/shaders/lib-fx-light.wgsl`. It is an analytic soft shadow with no shadow map, and a capsule the light or the point sits inside is skipped.
   - Afterglows hold on the floor and fade slowly. A glowing floor mark fades into the floor's own light, never to black; ink marks (a scorch, a crack's core) stay dark.
   - The light stays physical in HDR, with the palette at the tonemap.
 - **Particles with weight** (`move-fx.js`):
@@ -327,12 +327,13 @@ Every move shows itself with light, not only a mark on the floor. In the dark of
     Anchor (0.14) and Feint (0.1) stay quick, and Back step stays instant.
   - **A roll in a wind-up cancels the move with nothing spent.** Its wait goes back to what it was, a once-a-floor move is unspent, seeds return, and fuel is only taken as the move leaves. A roll in the follow-through ends it. A roll ends Snuff, which moving already did. No move forbids a roll out of its wind-up; Back step is itself the roll.
 - **Sound hooks:** every beat sends `hollow:beat` with the move and the beat (wind, release, impact, end, and catch, trip, spring, burst, break, unsnuff, out, cancel), and the swing's contact sends glance, land or break. No audio yet; the panel counts them.
+- **The swing's mark is a slash** (in place of H0's filled fan on the floor): a curved streak along the staff tip's path at staff height (1 m, rising to a locked floater's body), swept in 0.06 s and gone in 0.2 s, with only a faint thin scuff on the floor. Hook and turn sweeps a streak round the thing at its body's height, Feint a pale half-streak, and their floor arcs are now thin lines.
 - **The swing's contact** by size:
 
   | Hit | Hit-stop | Also |
   |---|---|---|
   | Glance off a front | 0.04 s | A small shake |
-  | Landed | 0.07 s | A kick along the blow, chips and a small warm flash at the body's height |
+  | Landed | 0.07 s | A kick along the blow, chips 5 to 8.5 cm across and a brief bright star, so it reads from 5.5 m, and a small warm flash at the body's height |
   | Breaks it | 0.12 s | Then 0.24 s at 40 % speed |
 
 - **Reaching floaters** (Matt, November 3, 2026; `recipes/world/hollow.json` reach):

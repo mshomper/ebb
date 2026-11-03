@@ -32,14 +32,14 @@
     "groundline": {
       "body": { "release": 0.62, "hold": 0.3, "top": 0.82, "snapU": 0.15, "snapS": 0.3 },
       "wind": { "push": { "distM": 0.6, "pitchDeg": 4, "inS": 0.45, "holdS": 0.5, "outS": 0.7 }, "gather": { "gain": 0.5, "reach": 0.8 }, "fx": "groundline.gather" },
-      "release": { "stopS": 0.08, "shake": 0.55, "kick": { "pitchDeg": 2.2, "distM": -0.1 }, "reframe": { "weight": 0.35, "inS": 0.3, "holdS": 0.35, "outS": 0.7 }, "release": { "swell": 1.5, "backS": 0.7, "sputter": 0.5 }, "fx": "groundline.slam" },
+      "release": { "stopS": 0.08, "shake": 0.55, "kick": { "pitchDeg": 2.2, "distM": -0.1 }, "reframe": { "weight": 0.35, "inS": 0.3, "holdS": 0.35, "outS": 0.7 }, "release": { "swell": 1.05, "backS": 0.8, "sputter": 0.5 }, "fx": "groundline.slam" },
       "trip": { "stopS": 0.04, "shake": 0.12 },
       "end": { "shake": 0.1 }
     },
     "castFlame": {
       "body": { "release": 0.42, "hold": 0.3, "top": 0.85, "snapU": 0.2, "snapS": 0.35 },
       "wind": { "push": { "distM": -0.3, "inS": 0.32, "holdS": 0.3, "outS": 0.6 }, "gather": { "gain": 0.6, "reach": 0.85 }, "fx": "castFlame.gather" },
-      "release": { "kick": { "yawDeg": 0.8, "pitchDeg": 0.6 }, "reframe": { "weight": 0.3, "inS": 0.35, "holdS": 0.5, "outS": 0.7 }, "release": { "swell": 1.25, "backS": 0.45, "sputter": 0 } },
+      "release": { "kick": { "yawDeg": 0.8, "pitchDeg": 0.6 }, "reframe": { "weight": 0.3, "inS": 0.35, "holdS": 0.5, "outS": 0.7 }, "release": { "swell": 1.0, "backS": 0.5, "sputter": 0 } },
       "impact": { "stopS": 0.05, "slowS": 0.22, "slowRate": 0.4, "shake": 0.42, "kick": { "distM": 0.1, "pitchDeg": 0.8 } }
     },
     "wickSnare": {
@@ -51,7 +51,7 @@
     "kindlingBurst": {
       "body": { "release": 0.6, "hold": 0.35, "top": 0.85, "snapU": 0.15, "snapS": 0.3 },
       "wind": { "push": { "distM": 0.7, "pitchDeg": 3, "inS": 0.55, "holdS": 0.5, "outS": 0.8 }, "gather": { "gain": 0.45, "reach": 0.4 }, "fx": "kindling.gather" },
-      "release": { "stopS": 0.1, "slowS": 0.28, "slowRate": 0.35, "shake": 0.5, "kick": { "distM": 0.18, "pitchDeg": 1.2 }, "reframe": { "weight": 0.35, "inS": 0.3, "holdS": 0.5, "outS": 0.8 }, "release": { "swell": 1.8, "backS": 0.9, "sputter": 1 } }
+      "release": { "stopS": 0.1, "slowS": 0.28, "slowRate": 0.35, "shake": 0.5, "kick": { "distM": 0.18, "pitchDeg": 1.2 }, "reframe": { "weight": 0.35, "inS": 0.3, "holdS": 0.5, "outS": 0.8 }, "release": { "swell": 1.1, "backS": 1.0, "sputter": 1 } }
     },
     "backStep": {
       "release": { "kick": { "distM": 0.25 } },

@@ -9,7 +9,9 @@
 // each a foot and top height and a radius. A point is shaded by how near the line from it to the
 // light passes each capsule's axis, softened over count.z metres: an analytic soft shadow, with no
 // shadow map. A capsule the point or the light sits inside is skipped, so nothing shadows its own
-// skin and a flash at the walker's hands still lights the room.
+// skin and a flash at the walker's hands still lights the room. A shadow-casting light also falls off
+// as 1 / (1 + (d / 0.12 reach)^2), windowed out over its last 45 %, so it stays local and keeps the
+// frame's contrast (the orchestrator's look, November 3, 2026).
 
 struct FxLights {
   count: vec4f,               // x how many lights (0..8), y how many capsules (0..12), z the shadows' softness (m)
@@ -59,11 +61,17 @@ fn fxLight(world: vec3f, n: vec3f) -> vec3f {
     let d = a.xyz - world;
     let dist = length(d);
     if (dist > a.w) { continue; }
-    let fall = 1.0 - smoothstep(0.0, max(a.w, 1e-3), dist);
     let nl = 0.35 + 0.65 * max(dot(n, d / max(dist, 1e-3)), 0.0);
-    var sh = 1.0;
-    if (col.w > 0.5) { sh = fxShadow(world, a.xyz); }
-    c += col.rgb * (fall * fall * nl * sh);
+    let s0 = 1.0 - smoothstep(0.0, max(a.w, 1e-3), dist);
+    var k = s0 * s0;
+    if (col.w > 0.5) {
+      // A shadow-casting flash falls off as a real light does: bright at the source, a dim
+      // inverse-square tail that still reaches the pillars and throws their shadows, cut off before
+      // reach so the room's far corners stay dark.
+      let q = dist / max(a.w * 0.12, 1e-3);
+      k = (1.0 / (1.0 + q * q)) * (1.0 - smoothstep(a.w * 0.55, a.w, dist)) * fxShadow(world, a.xyz);
+    }
+    c += col.rgb * (k * nl);
   }
   return c;
 }
