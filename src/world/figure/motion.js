@@ -170,7 +170,7 @@ export function createFigureMotion(R, skeleton, clipFile = null) {
     /**
      * Play one of Matt's clips once over the walker (clips.js shoot; the tool pages' fighting clips).
      * Returns its length, 0 without clips or for no such clip.
-     * @param {string} name @param {{ span?: number[], lenS?: number, easeS?: number, mask?: string[], feet?: boolean }} [o]
+     * @param {string} name @param {{ span?: number[], lenS?: number, easeS?: number, mask?: string[], feet?: boolean, weight?: number, knots?: number[][] }} [o]
      */
     shoot(name, o) { return clips ? clips.shoot(name, o) : 0; },
     /** Add a clip set for shots (the fighting set, tool pages only). @param {import('./clips.js').ClipFile} f */

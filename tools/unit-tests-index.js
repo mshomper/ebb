@@ -24,6 +24,7 @@ export const TEST_FILES = {
   'chords-extra': '',
   'click': '',
   'cliff': '',
+  'clip-knots': '',
   'clock': '',
   'cove': '',
   'crawler': '',
