@@ -302,9 +302,11 @@ export function createOrbitCamera(r) {
 
     let at = cur.target;
     if (offset) {
-      const o = offset, d = cur.distance + o.distM, p = pitch + o.pitch, y = cur.yaw + o.yaw, cp = Math.cos(p);
-      at = vec3.set(cur.target[0] + o.target[0], cur.target[1] + o.target[1], cur.target[2] + o.target[2], offTarget);
-      vec3.set(at[0] + d * cp * Math.sin(y) + o.eye[0], at[1] + d * Math.sin(p) + o.eye[1], at[2] + d * cp * Math.cos(y) + o.eye[2], eye);
+      // The eye stays on its own orbit round the walker; only the aim slides toward a reframe's point,
+      // so the view turns to the effect instead of carrying the whole camera over the walker.
+      const o = offset, d = cur.distance + o.distM, p = pitch + o.pitch, y = cur.yaw + o.yaw, cp = Math.cos(p), T = cur.target;
+      vec3.set(T[0] + d * cp * Math.sin(y) + o.eye[0], T[1] + d * Math.sin(p) + o.eye[1], T[2] + d * cp * Math.cos(y) + o.eye[2], eye);
+      at = vec3.set(T[0] + o.target[0], T[1] + o.target[1], T[2] + o.target[2], offTarget);
     }
     mat4.lookAt(eye, at, [0, 1, 0], view);
     mat4.perspectiveReverseZ(fovY, viewW / viewH, r.near, Infinity, proj);

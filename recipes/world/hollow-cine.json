@@ -38,8 +38,8 @@
     },
     "castFlame": {
       "body": { "release": 0.42, "hold": 0.3, "top": 0.85, "snapU": 0.2, "snapS": 0.35 },
-      "wind": { "push": { "distM": -0.3, "inS": 0.32, "holdS": 0.3, "outS": 0.6 }, "gather": { "gain": 0.6, "reach": 0.85 }, "fx": "castFlame.gather" },
-      "release": { "kick": { "yawDeg": 0.8, "pitchDeg": 0.6 }, "reframe": { "weight": 0.3, "inS": 0.35, "holdS": 0.5, "outS": 0.7 }, "release": { "swell": 1.0, "backS": 0.5, "sputter": 0 } },
+      "wind": { "push": { "distM": 0.6, "inS": 0.32, "holdS": 0.9, "outS": 0.8 }, "gather": { "gain": 0.6, "reach": 0.85 }, "fx": "castFlame.gather" },
+      "release": { "kick": { "yawDeg": 0.8, "pitchDeg": 0.6 }, "reframe": { "weight": 0.45, "inS": 0.35, "holdS": 0.5, "outS": 0.7 }, "release": { "swell": 1.0, "backS": 0.5, "sputter": 0 } },
       "impact": { "stopS": 0.05, "slowS": 0.22, "slowRate": 0.4, "shake": 0.42, "kick": { "distM": 0.1, "pitchDeg": 0.8 } }
     },
     "wickSnare": {
@@ -70,7 +70,7 @@
     },
     "taproot": {
       "body": { "release": 0.42, "hold": 0.3, "top": 0.85, "snapU": 0.2, "snapS": 0.35 },
-      "wind": { "push": { "distM": -0.2, "inS": 0.26, "holdS": 0.3, "outS": 0.5 }, "fx": "taproot.gather" },
+      "wind": { "push": { "distM": 0.4, "inS": 0.26, "holdS": 0.6, "outS": 0.6 }, "fx": "taproot.gather" },
       "release": { "kick": { "yawDeg": 0.6 } },
       "impact": { "shake": 0.08 },
       "burst": { "stopS": 0.07, "shake": 0.3, "kick": { "distM": 0.08 } },
@@ -83,7 +83,7 @@
     },
     "mothLure": {
       "body": { "release": 0.3, "hold": 0.3, "top": 0.85, "snapU": 0.25, "snapS": 0.3 },
-      "wind": { "push": { "distM": -0.15, "inS": 0.26, "holdS": 0.3, "outS": 0.5 }, "gather": { "gain": 0.7, "reach": 0.85 } },
+      "wind": { "push": { "distM": 0.3, "inS": 0.26, "holdS": 0.8, "outS": 0.8 }, "gather": { "gain": 0.7, "reach": 0.85 } },
       "release": { "reframe": { "weight": 0.15, "inS": 0.6, "holdS": 1.0, "outS": 1.0 }, "release": { "swell": 1, "backS": 0.4, "sputter": 0 }, "lightHold": { "gain": 0.85, "reach": 0.9 } },
       "out": {}
     }
