@@ -54,6 +54,6 @@ export function tests(ctx) {
   // Up at once with no reveal, then into the mouth room (as `?stack=lamp`), then the trip.
   if (!stack.risen) { const from = stack.startRoad(); stack.writeRoad(1); stack.roadDone(from, false); }
   const L = stack.layout;
-  ctx.stackPut = { x: L.stand[0], z: L.stand[1], yaw: Math.atan2(L.x - L.stand[0], L.z - L.stand[1]), mouth: true, tries: 3000 };
+  ctx.stackPut = { x: L.stand[0], z: L.stand[1], yaw: Math.atan2(L.x - L.stand[0], L.z - L.stand[1]), mouth: true, tries: 20000 };
   ctx.hollowPut = { floor, fuel };
 }

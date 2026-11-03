@@ -297,7 +297,7 @@ export function createStackMouth(o) {
     return { data: Array.from(all.data), idx: Array.from(all.idx) };
   }
 
-  /** Coming back up from the Hollow (H3a): set down by the hook, sitting if waking from the dark, and a line. @type {{ sit: boolean, line: string } | null} */
+  /** Coming back up from the Hollow (H3a): set down by the hook, waking (on hands and knees, then up) after the dark, and a line. @type {{ wake: boolean, line: string } | null} */
   let byHook = null;
   /** The arch's line once seen, from the Hollow (src/world/hollow/zone-live.js archLine): null keeps "Not with empty hands". @type {() => string | null} */
   let archLine = () => null;
@@ -320,7 +320,9 @@ export function createStackMouth(o) {
       at: { x: ax, z: az, yaw, viewYaw: yaw + Math.PI + (back ? 0 : (R.view.arriveTurnDeg * Math.PI) / 180) }, camera: R.view.camera });
     if (!ok) return false;
     flag('setpiece:stack:crossed');
-    if (back?.sit) o.walk.posture?.('sit');
+    // Waking after the light went out: low on the floor, up to a kneel, then onto your feet (figure.json
+    // poses.wake); you cannot walk until you stand.
+    if (back?.wake) o.walk.act?.('wake');
     notice(back ? back.line : W.below);
     return true;
   };
@@ -537,7 +539,7 @@ export function createStackMouth(o) {
   return {
     id: ID,
     floor, ground, cardAt,
-    /** Back up from the Hollow next: set down by the hook (sitting, waking from the dark), and a line. @param {{ sit: boolean, line: string }} b */
+    /** Back up from the Hollow next: set down by the hook (waking, after the dark), and a line. @param {{ wake: boolean, line: string }} b */
     arriveByHook(b) { byHook = b; },
     /** The arch's line from the Hollow (H3a). @param {() => string | null} fn */
     setArchLine(fn) { archLine = fn; },

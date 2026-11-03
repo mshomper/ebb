@@ -8,7 +8,7 @@
 // beside it, whose card says what is left in the lantern, in words. The walker's lantern is the only
 // light, and it is fuel and health in one: it burns down (a little faster each floor down), a hit
 // costs a sip (hit, for H3b), and when it runs low the light shrinks and the walker says so. When it
-// goes out, the screen goes dark, you feel your way up, and wake sitting by the hook in the mouth; a
+// goes out, the screen goes dark, you feel your way up, and wake low on the floor by the hook in the mouth and get up; a
 // seeded third of what this trip found is dropped. The way up brings you back by the hook keeping
 // everything. Saved (the store slice `hollow`, trip.js): only the trip count and the deepest floor;
 // being below is never saved and nothing down here simulates while away. Publishes the store slice
@@ -278,7 +278,7 @@ export function createHollowZone(o) {
   function climbUp() {
     if (!trip || o.walk.zone !== ID || o.zones.busy()) return false;
     update('identify', () => null);
-    o.mouth.arriveByHook?.({ sit: false, line: W.up });
+    o.mouth.arriveByHook?.({ wake: false, line: W.up });
     o.zones.go(o.stackMouthId);
     return true;
   }
@@ -297,7 +297,7 @@ export function createHollowZone(o) {
       trip.outT += dt;
       // The flame gone: a moment's dark, then the long dark of feeling the way up.
       if (trip.outT >= T.gutterS) {
-        o.mouth.arriveByHook?.({ sit: true, line: W.wake });
+        o.mouth.arriveByHook?.({ wake: true, line: W.wake });
         notice(W.dark, T.darkS + 1.5);
         o.zones.go(o.stackMouthId, { holdS: T.darkS });
       }

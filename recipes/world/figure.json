@@ -197,6 +197,16 @@
       { "t": 1.6 },
       { "t": 2.0, "lean": 0, "head": 0, "arms": 0, "l": [0.12, 0.5, 0.25], "r": [-0.12, 0.5, 0.25] }
     ] },
+    "wake": { "posture": "kneel", "after": "stand", "note": "Waking by the hook in the stack's mouth after the light went out in the Hollow (H3a; doc 16, When the lantern goes out): down on hands and knees where the dark ended, a hand pushing up to a kneel, head down, then looking up at the hook's lantern, a long breath, and up onto your feet. It begins as the screen goes dark (the Hollow's trip.darkS hold and the zones' fadeS), so the first 4.4 s are held low on hands and knees and the waking is seen. While it plays you cannot walk; control comes back as you stand.", "keys": [
+      { "t": 0, "crawl": 1, "lean": 6, "head": 26, "arms": 1, "l": [0.14, 0.05, 0.55], "r": [-0.14, 0.05, 0.55] },
+      { "t": 4.4 },
+      { "t": 5.4, "crawl": 0, "kneel": 1, "lean": 22, "head": 24, "l": [0.14, 0.3, 0.34], "r": [-0.14, 0.05, 0.5] },
+      { "t": 6.0, "lean": 14, "head": 16, "r": [-0.14, 0.32, 0.3] },
+      { "t": 6.9, "lean": 0, "head": -20, "l": [0.12, 0.4, 0.28], "r": [-0.12, 0.4, 0.28] },
+      { "t": 8.0 },
+      { "t": 8.8, "kneel": 0, "lean": 4, "head": -6, "l": [0.16, 0.45, 0.3], "r": [-0.16, 0.45, 0.3] },
+      { "t": 9.4, "lean": 0, "head": 0, "arms": 0, "l": [0.12, 0.5, 0.25], "r": [-0.12, 0.5, 0.25] }
+    ] },
     "dig": { "speed": 1.667, "posture": "stand", "after": "stand", "note": "One press of Dig (docs/future/13 10.2, P2c; src/world/dig): both hands on the shovel (the right on the handle's top, the left lower down; the shovel's shaft runs from the right hand through the left), ready, bend over and raise the blade, drive it down into the spot with both hands, pull the handle back to lever, lift the spadeful, twist right to tip the spoil onto its heap, ready again. The feet stay put (Matt, October 25, 2026: hands only, bent over). About 2 real seconds (it plays in real time at any speed). twist turns the chest to the right (degrees).", "keys": [
       { "t": 0, "arms": 1, "head": 10, "l": [-0.12, 0.68, 0.42], "r": [-0.18, 1.0, 0.18] },
       { "t": 0.3, "lean": 55, "head": 30, "drop": 0.1, "l": [-0.02, 0.62, 0.48], "r": [-0.12, 0.74, 0.36] },
