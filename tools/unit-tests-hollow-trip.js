@@ -9,6 +9,7 @@
 
 import { floorInputs, floorsPerFill, burn, sip, fuelWord, lightShare, dropInTheDark, cleanHollow, emptyHollow } from '../src/world/hollow/trip.js';
 import { buildFloor } from '../src/world/hollow/floor.js';
+import { wrapGrid } from '../src/world/hollow/walk-grid.js';
 import { clean9, SECTIONS9 } from '../src/save/migrate-format9.js';
 import { createZones } from '../src/world/zones/live.js';
 import { actLength } from '../src/world/figure/acts.js';
@@ -108,6 +109,30 @@ export function addHollowTripTests(test, assert, eq) {
     for (let i = 0; i < 60 * 10; i++) { walk.update(1 / 60); flushDeferred(); }
     eq(walk.acting, null, 'over once you stand');
     eq(walk.walker.posture, 'stand', 'standing again');
+    walk.dispose();
+  });
+
+  test(G, 'in a zone that brings its own walk grid (the Hollow), the walker walks on that grid', async () => {
+    const R = await (await fetch(new URL('../recipes/world/walker.json', import.meta.url))).json();
+    const figure = await (await fetch(new URL('../recipes/world/figure.json', import.meta.url))).json();
+    const water = await (await fetch(new URL('../recipes/world/water.json', import.meta.url))).json();
+    const camera = { eye: [10, 5, 0], target: [10, 1, 10], viewProj: new Float32Array(16), setGround() {}, follow() {}, setYaw() {} };
+    const walk = createWalk({
+      recipe: R, figure, tide: water.tide, hours: () => 0, creatures: () => [], camera: /** @type {any} */ (camera),
+      terrain: /** @type {any} */ ({ sampleHeight: () => 1, openBounds: () => ({ openMin: [0, 0], openMax: [40, 20] }), sampleMaterial: () => ({ grass: 1, sand: 0, rock: 0, soil: 0 }) }),
+      water: { sim: { live: false }, tide: -5, sampleLive: () => ({ depth: 0 }) },
+    });
+    flushDeferred();
+    // A floor beside a wall: the ground jumps 3 m at the wall, which the island's slope rule would read
+    // as steep on the floor cell next to it. The zone's own grid says that cell is open.
+    const w = 20, h = 20, N = w * h, steep = new Uint8Array(N);
+    for (let j = 0; j < h; j++) steep[j * w + w - 1] = 1;
+    const g = wrapGrid({ cellM: 0.5, w, h, minX: 0, minZ: 0, height: new Float32Array(N), steep, floor: new Uint8Array(N).fill(1), water: new Float32Array(N), room: new Float32Array(N).fill(3) });
+    const ground = (/** @type {number} */ x) => (x >= 9.5 ? 3 : 0);
+    const ok = walk.enterZone({ id: 'hollow', ground, water: () => 0, bounds: [0, 0, 10, 10], cellM: 0.5, grid: g, at: { x: 5, z: 5, yaw: 0 } });
+    assert(ok, 'into the zone');
+    eq(walk.grid, g, "the walker's grid is the zone's own");
+    eq(walk.grid.steep[g.cellAt(9.25, 5)], 0, 'the floor cell beside the wall stays open');
     walk.dispose();
   });
 

@@ -542,8 +542,10 @@ export function createWalk(o) {
      * bounds, no island solids, and you stand at `at`, below, the view behind you. The island's spot
      * and grid are kept for leaveZone. False if there is nowhere to stand there.
      * @param {{ id: string, ground: (x: number, z: number) => number, water: (x: number, z: number) => number,
-     *   bounds: number[], cellM: number, at: { x: number, z: number, yaw: number, viewYaw?: number }, camera?: any }} z bounds [x0, z0, x1, z1] (m);
-     *   camera: the zone's own view below (walker.json camera's fields), else the walker's
+     *   bounds: number[], cellM: number, at: { x: number, z: number, yaw: number, viewYaw?: number }, camera?: any, grid?: any }} z bounds [x0, z0, x1, z1] (m);
+     *   camera: the zone's own view below (walker.json camera's fields), else the walker's;
+     *   grid: the zone's own walk grid (the Hollow's, with grid.js's interface), used as it is instead of
+     *   one read from `ground` with the island's slope rule, which shuts every cell beside a wall
      */
     enterZone(z) {
       if (zone) return false;
@@ -552,7 +554,7 @@ export function createWalk(o) {
       walker.stop();
       acting = null;
       standAt = 0;
-      grid = createWalkGrid({ ground: z.ground, minX: z.bounds[0], minZ: z.bounds[1], maxX: z.bounds[2], maxZ: z.bounds[3], cellM: z.cellM, maxSlopeDeg: R.grid.maxSlopeDeg });
+      grid = z.grid ?? createWalkGrid({ ground: z.ground, minX: z.bounds[0], minZ: z.bounds[1], maxX: z.bounds[2], maxZ: z.bounds[3], cellM: z.cellM, maxSlopeDeg: R.grid.maxSlopeDeg });
       solids.set([]);
       if (!walker.place(z.at.x, z.at.z, z.at.yaw, R.grid.snapM * 3)) { this.leaveZone(island); return false; }
       figure?.motion.place('stand');

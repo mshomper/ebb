@@ -110,6 +110,9 @@ export function addHollowFloorTests(test, assert, eq) {
       const f = buildFloor({ seed: 41, trip: 2, floor: 3, level: 6, ...c }, F);
       const name = `${f.plan.depthId}${f.plan.flavor === 'sponge' ? ' sponge' : ''}`;
       assert(f.check.ok, `${name}: walkable (${f.tries.map((t) => t.reason || 'ok').join(', ')})`);
+      // Matt's click-test (November 3, 2026): the walker couldn't get everywhere. Nearly all the open
+      // floor is reached from the way in, not just a path to the way down.
+      assert(f.check.reachedShare > 0.95, `${name}: ${(100 * f.check.reachedShare).toFixed(1)}% of the open floor reached from the way in`);
       // (The stone forms, decision 0001 as the stack's mouth, H3a: about a quarter more than H1's bare rock.)
       assert(f.mesh.triangles > 45000 && f.mesh.triangles < 150000, `${name}: ${f.mesh.triangles} triangles`);
       // Normals are unit length and the floor faces up somewhere.

@@ -206,14 +206,14 @@ export function createHollowZone(o) {
   }
   o.pass.setMesh('lantern', lanternMesh());
 
-  /** Into the floor made: the walk on its ground, the Hollow's camera, standing in the way in. */
+  /** Into the floor made: the walk on its ground and the floor's own walk grid, the Hollow's camera, standing in the way in. */
   function walkIn() {
     if (!made) return false;
     show(made);
     made = null;
     const g = here.f.grid;
     return o.walk.enterZone({ id: ID, ground: here.ground, water: (/** @type {number} */ x, /** @type {number} */ z) => { const k = g.cellAt(x, z); return k >= 0 ? g.water[k] : 0; },
-      bounds: [g.minX, g.minZ, g.minX + g.w * g.cellM, g.minZ + g.h * g.cellM], cellM: F.walk.cellM,
+      bounds: [g.minX, g.minZ, g.minX + g.w * g.cellM, g.minZ + g.h * g.cellM], cellM: F.walk.cellM, grid: g,
       at: { x: here.at.x, z: here.at.z, yaw: here.yaw, viewYaw: here.yaw + Math.PI }, camera: H.camera });
   }
 
