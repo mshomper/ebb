@@ -7,8 +7,10 @@
 
 /**
  * @typedef {'idle' | 'out' | 'hold' | 'in'} Phase
- * @typedef {{ phase: Phase, t: number, to: string | null, from: string | null }} Fade
- *   to: the zone being entered (null: back to the island); from: the zone being left
+ * @typedef {{ phase: Phase, t: number, to: string | null, from: string | null, again?: boolean, holdS?: number }} Fade
+ *   to: the zone being entered (null: back to the island); from: the zone being left; again: a fade
+ *   within the zone you are in (the Hollow's next floor), its swap the zone's own; holdS: this fade's
+ *   own hold in the dark, in place of the recipe's (the light going out below)
  */
 
 /** No fade going. @returns {Fade} */
@@ -24,7 +26,7 @@ export function stepFade(f, dt, R) {
   if (f.phase === 'idle') return { fade: f, swap: false, done: false };
   const t = f.t + dt;
   if (f.phase === 'out') return t >= R.fadeS ? { fade: { ...f, phase: 'hold', t: 0 }, swap: true, done: false } : { fade: { ...f, t }, swap: false, done: false };
-  if (f.phase === 'hold') return t >= R.holdS ? { fade: { ...f, phase: 'in', t: 0 }, swap: false, done: false } : { fade: { ...f, t }, swap: false, done: false };
+  if (f.phase === 'hold') return t >= (f.holdS ?? R.holdS) ? { fade: { ...f, phase: 'in', t: 0 }, swap: false, done: false } : { fade: { ...f, t }, swap: false, done: false };
   return t >= R.fadeS ? { fade: idleFade(), swap: false, done: true } : { fade: { ...f, t }, swap: false, done: false };
 }
 

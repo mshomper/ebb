@@ -161,8 +161,10 @@ export function createFigureMotion(R, skeleton, clipFile = null) {
       const len = actLength(PO, name);
       if (!len) return 0;
       const first = PO[name].keys[0].crawl ?? 0;
-      // An act that begins low (climbOut) begins from however low the figure is now.
-      act = { name, at: t, from: [sitE, kneelE, crawlE], crawlScale: first > 0 ? crawlE / first : 1 };
+      // An act that begins low (climbOut) begins from however low the figure is now; one marked fromLow
+      // (the wake, H3a: it starts while the screen is dark) is put down low at once, at its first key.
+      if (PO[name].fromLow) { sitE = 0; kneelE = PO[name].keys[0].kneel ?? 0; crawlE = first; snap = null; }
+      act = { name, at: t, from: [sitE, kneelE, crawlE], crawlScale: first > 0 && !PO[name].fromLow ? crawlE / first : 1 };
       low = false;
       clipFor(name, len);
       return len;

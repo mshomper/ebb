@@ -8,7 +8,8 @@
 // min, max and floor on the samples, with the gyroid's sines from det (src/core/rng.js), so a
 // floor is the same in every browser and worker, and a slab is the same however the floor is split.
 
-import { det } from '../../core/rng.js';
+import { det, hash32 } from '../../core/rng.js';
+import { cells2, spheres } from '../mesh/stone.js';
 import { ellDist } from './shapes.js';
 
 /** Smooth minimum (as body-bake.js). @param {number} a @param {number} b @param {number} k */
@@ -17,6 +18,8 @@ function smin(a, b, k) {
   const h = Math.max(k - Math.abs(a - b), 0) / k;
   return Math.min(a, b) - h * h * k * 0.25;
 }
+/** @param {number} a @param {number} b @param {number} k */
+const smax = (a, b, k) => -smin(-a, -b, k);
 
 /** A faceted pocket: the farthest plane. @param {any} q @param {number} x @param {number} y @param {number} z */
 function polyDist(q, x, y, z) {
@@ -157,7 +160,56 @@ export function airAt(D, chs, pas, rocks, x, y, z, g, cap) {
   const amt = W.amountM * (W.floorShare + (1 - W.floorShare) * up * up * (3 - 2 * up));
   air += (noise3(D.noiseSeed, x / W.scaleM, y / W.scaleM, z / W.scaleM) - 0.5) * 2 * amt;
   air += (noise3(D.noiseSeed + 1, x / W.fineScaleM, y / W.fineScaleM, z / W.fineScaleM) - 0.5) * 2 * W.fineM * (W.floorShare + (1 - W.floorShare) * up);
-  return air;
+  return D.stone ? stoneForms(D, air, x, y, z, floorY) : air;
+}
+
+/** A seeded share 0..1. @param {number} seed @param {...number} k */
+const u01 = (seed, ...k) => (hash32(seed, ...k) >>> 8) / 16777216;
+/** @param {number} a @param {number} b @param {number} x */
+const smooth = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
+
+/**
+ * Stone forms near the surface (decision 0001, as the stack's mouth, at the floors' coarser cell;
+ * Matt, November 3, 2026): the floor in flagstones, each lifted and tilted, cracked along their
+ * joints, sand settled flat in the low ones; the walls stepped back in bedding layers, cut by leaning
+ * joints into blocks set in or out, and rocky bulges hugging them. The floor keeps its flagstones
+ * flat and walkable. Far from the surface the field is clamped anyway, so nothing is added there.
+ * @param {any} D dressed floor @param {number} air the air's distance so far (negative in the air)
+ * @param {number} x @param {number} y @param {number} z @param {number} floorY the floor's base height here
+ */
+function stoneForms(D, air, x, y, z, floorY) {
+  const ST = D.stone, seed = D.noiseSeed;
+  if (Math.abs(air) > ST.nearM) return air;
+  let a = -air;
+  const wall = smooth(ST.wallFromM[0], ST.wallFromM[1], y - floorY);
+  if (wall < 1) {
+    const F = ST.slabs, c = cells2(seed + 41, x, z, F.sizeM);
+    const lift = (((c.id >>> 8) & 255) / 255 - 0.5) * 2 * F.liftM, ta = (((c.id >>> 16) & 255) / 255) * 2 * det.PI;
+    const tilt = F.tiltM * ((x - c.cx) * det.cos(ta) + (z - c.cz) * det.sin(ta)) / F.sizeM;
+    let stone = lift + tilt - F.crackM * (1 - smooth(0, F.crackW, c.edge));
+    const sand = smooth(1 - F.sandShare - 0.08, 1 - F.sandShare + 0.08, noise3(seed + 43, x * F.sandScale, 1.7, z * F.sandScale));
+    stone += (Math.max(stone, -F.liftM * 0.35) - stone) * sand;
+    a -= stone * (1 - wall);
+  }
+  if (wall <= 0) return -a;
+  const B = ST.beds, J = ST.joints;
+  const yy = y + B.dip[0] * x + B.dip[1] * z + (noise3(seed + 51, x * 0.5, 0.3, z * 0.5) - 0.5) * 2 * B.wobbleM;
+  const i = Math.floor(yy / B.stepM), f = yy / B.stepM - i;
+  const bed = (/** @type {number} */ k) => (u01(seed, 53, k) - 0.5) * 2 * B.offsetM;
+  const off = bed(i) + (bed(i + 1) - bed(i)) * smooth(1 - B.sharp, 1, f);
+  const c = cells2(seed + 57, x + y * J.lean, z - y * J.lean, J.sizeM);
+  const block = (((c.id >>> 8) & 255) / 255 - 0.5) * 2 * J.offsetM;
+  a += (off + block + J.grooveM * (1 - smooth(0, J.widthM, c.edge))) * wall;
+  // Rock bulges (rock is where -a is positive): clipped to a band round the surface, then joined.
+  const L = ST.lumps;
+  let rock = -a, size = L.sizeM, band = L.bandM * wall;
+  for (let o = 0; o < L.octaves; o++) {
+    let n = spheres(seed + 61 + o, x, y, z, size);
+    n = smax(n, rock - band, L.blendM);
+    rock = smin(n, rock, L.blendM);
+    size *= L.gain; band *= L.gain;
+  }
+  return rock;
 }
 
 /**

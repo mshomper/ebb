@@ -60,7 +60,7 @@
   "things": {
     "lantern": { "at": [2.6, -1.7], "radiusM": 0.07, "heightM": 0.26, "tapM": 0.3 },
     "note": { "at": [3.0, -2.15], "sizeM": [0.16, 0.11], "tapM": 0.25 },
-    "hook": { "fromArchM": 0.55, "heightM": 1.6, "armM": 0.2, "standM": 0.75 },
+    "hook": { "fromArchM": 0.55, "heightM": 1.6, "armM": 0.2, "standM": 0.75, "backM": 2.2 },
     "soot": { "radiusM": 1.7, "darken": 0.96 },
     "rubble": { "seed": 7193, "spacingM": 0.3, "radiusM": [0.16, 0.26], "layerK": 0.75, "slope": 0.8, "toeM": 0.2, "roofGapM": 0.12, "shellM": 0.45, "lump": 0.3, "flat": 0.8, "occFloor": 0.45 },
     "door": { "tapM": 0.9 }

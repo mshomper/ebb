@@ -6,7 +6,7 @@
 > never stops while you are gone.
 
 **Status:** Built October 31, 2026, with the underground spring (the spring-ore plan, O3), its first
-zone. The sea cave (`docs/future/16-the-sea-cave.md`) and the Hollow will use the same system.
+zone. The stack's mouth room followed (F19), then the Hollow (H3a, November 3, 2026).
 
 ## How it works
 
@@ -26,7 +26,12 @@ flowchart LR
 - **The registry** (`src/world/zones/live.js`): a zone registers `enter` and `leave` (it moves the
   walker in and out), and what it brings: its `light` each frame, its `sound` bed, its `cardAt`, where
   a click meets its floor (`groundAt`), and how far back the view may sit (`viewRoom`); `rayCard`
-  picks out a thing along a tap's ray before the floor (a rope, a pan leaning on a stone). A tap and
+  picks out a thing along a tap's ray before the floor (a rope, a pan leaning on a stone).
+  Since the Hollow (H3a): `pending` (still making what it needs: the fade holds dark until it is
+  done), `again` (a fade within the zone, `zones.again()`, its swap the zone's own: the next floor),
+  `up` (Go up's own way out, when the zone has one) and a `holdS` of its own on `zones.go` (the dark
+  held longer when the light goes out). `leave` is told where you are going, so a zone left for
+  another zone says nothing about coming up. A tap and
   a hover (the pointer's rest, or the centre dot with the mouse captured) both ask `zoneCardAt` in
   app.js, so what the hand names is what a click opens. The store slice `zone` holds the zone you are
   in (null on the island). Events: `zone:entered`, `zone:left`.
@@ -64,6 +69,10 @@ on the island, by the hole. Being in a zone is never saved.
    zone), and the zone's light written to the zone lighting group each frame.
 4. A way in on the island (a card action that calls `zones.go(id)`) and out (`zones.back()`).
 5. A test link that goes straight in (`zones.goNow(id)`), like `?spring=cave`.
+
+## The Hollow
+
+The third zone (H3a, November 3, 2026; `src/world/hollow/zone-live.js`, doc 16 "H3a as built"): seeded floors through the stack's arch, reached from the mouth room, which is itself a zone, so going through is a fade from one zone to the next and coming back up lands by the hook. Each floor is made in the workers while the fade holds dark, and the next floor is a fade within the zone. The walk's ground is the floor's own walk grid, eased between cells. The view keeps the Hollow camera's distance and never pulls in: the rock in the way is cut away and ghosted back. Its pass is lit only by the walker's lantern, its shadows traced through the floor's field. Test links: `?hollow`, `?hollow=3`, `?hollow=dark`.
 
 ## The spring's cave
 

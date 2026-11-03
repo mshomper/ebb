@@ -19,7 +19,7 @@ const parts = (more = {}) => /** @type {any} */ ({ build: 't', seed: 1, island: 
 export function addFormat9Tests(test, assert, eq) {
   test(G, 'one step from 8 to 9 adds camp, pack, gather, dig, cook and dyes, empty (and the sketchbook, P2i)', () => {
     assert(FORMAT >= 9, 'this build writes format 9 or later (10 since planting on foot, tools/unit-tests-sowing.js)');
-    eq(SECTIONS9.join(), 'camp,pack,gather,dig,cook,dyes,sketchbook,kit,threads,fishing,shaped,islet,stack', 'the six sections of section 12.1, then the sketchbook (P2i), the kit (the Keeper book Kit page), its threads, fishing (F17), shaped ground (B3 S0), the meadow islet (B3a) and the stack (F19)');
+    eq(SECTIONS9.join(), 'camp,pack,gather,dig,cook,dyes,sketchbook,kit,threads,fishing,shaped,islet,stack,hollow', 'the six sections of section 12.1, then the sketchbook (P2i), the kit (the Keeper book Kit page), its threads, fishing (F17), shaped ground (B3 S0), the meadow islet (B3a), the stack (F19) and the Hollow (H3a)');
     eq(MIGRATIONS.filter((m) => m.from === 8 && m.to === 9).length, 1, 'one step');
     const old = { meta: { worldT: 5 }, unlocks: { shells: true }, nets: { version: 1, nets: [], released: [], nextId: 1 } };
     const up = migrate(structuredClone(old), 8);
@@ -53,7 +53,8 @@ export function addFormat9Tests(test, assert, eq) {
       fishing: { version: 1, sketched: { 'reef-1': { seed: 77, hour: 40, cm: 18 } }, glimpsed: { goby: 12 }, casts: 9 },
       shaped: { version: 1, ponds: [{ x: 4, z: -20, born: 30, seen: 90 }], wrack: { since: 60 }, steps: [[300, 88]], visits: { lookedH: 90, by: { seals: { last: 3, x: 1, z: 2, n: 1 } } } },
       islet: { version: 1, earnedH: 300, lowH: 666, applied: 1, planted: ['0:campion'] },
-      stack: { version: 1, startDay: 0, cleared: true, risen: true, from: [12.5, -3], shown: true, lantern: 'hung', rubble: 3, dugDay: 9 } };
+      stack: { version: 1, startDay: 0, cleared: true, risen: true, from: [12.5, -3], shown: true, lantern: 'hung', rubble: 3, dugDay: 9 },
+      hollow: { version: 1, trips: 4, deepest: 6 } };
     const { sections } = snapshot(parts(live));
     const back = /** @type {any} */ (restore(Object.fromEntries(sections)));
     for (const id of SECTIONS9) eq(JSON.stringify(back[id]), JSON.stringify(live[id]), `${id} comes back exactly`);

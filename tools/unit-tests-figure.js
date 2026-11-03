@@ -486,7 +486,8 @@ export function addFigureTests(test, assert, eq) {
       const motion = createFigureMotion(R, built.skeleton);
       const { len, frames } = playAct(R, built, motion, name);
       eq(len, actLength(R.poses, name), `${name} length`);
-      assert(len > 1 && len < 5, `${name} lasts ${len} s`);
+      // (The wake, H3a, holds low through the Hollow's dark before it is seen: its own, longer length.)
+      assert(len > 1 && len < (name === 'wake' ? 10 : 5), `${name} lasts ${len} s`);
       const ends = frames.filter((f) => f.done === name);
       eq(ends.length, 1, `${name} reports its end once`);
       assert(Math.abs(ends[0].u - len) < 1.5 / 60, `${name} ended at ${ends[0].u.toFixed(3)} s, not ${len} s`);

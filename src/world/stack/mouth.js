@@ -297,21 +297,36 @@ export function createStackMouth(o) {
     return { data: Array.from(all.data), idx: Array.from(all.idx) };
   }
 
+  /** Coming back up from the Hollow (H3a): set down by the hook, waking (on hands and knees, then up) after the dark, and a line. @type {{ wake: boolean, line: string } | null} */
+  let byHook = null;
+  /** The arch's line once seen, from the Hollow (src/world/hollow/zone-live.js archLine): null keeps "Not with empty hands". @type {() => string | null} */
+  let archLine = () => null;
   const enter = () => {
     build();
     things();
-    // You come in facing the arch and the lantern's hook (the room's story), the view low behind you.
-    const [ax, az] = world(R.view.arriveM, 0), [lx, lz] = world(R.view.lookAt[0], R.view.lookAt[1]), yaw = Math.atan2(lx - ax, lz - az);
+    const back = byHook;
+    byHook = null;
+    // You come in facing the arch and the lantern's hook (the room's story), the view low behind you;
+    // back from the Hollow, a couple of steps out from the hook toward the way in, turned to it and the arch.
+    let [ax, az] = world(R.view.arriveM, 0), [lx, lz] = world(R.view.lookAt[0], R.view.lookAt[1]), yaw = Math.atan2(lx - ax, lz - az);
+    if (back) {
+      const [hx, hz] = world(hookAt.x, hookAt.z), dx = ax - hx, dz = az - hz, d = Math.hypot(dx, dz) || 1, out = Math.min(d, T.hook.backM);
+      ax = hx + (dx / d) * out; az = hz + (dz / d) * out;
+      yaw = Math.atan2(hx - ax, hz - az);
+    }
     const xs = [S.boundsM[0], S.boundsM[3]], zs = [S.boundsM[2], S.boundsM[5]], pts = xs.flatMap((a) => zs.map((b) => world(a, b)));
     const bounds = [Math.min(...pts.map((p) => p[0])), Math.min(...pts.map((p) => p[1])), Math.max(...pts.map((p) => p[0])), Math.max(...pts.map((p) => p[1]))];
     const ok = o.walk.enterZone({ id: ID, ground, water, bounds, cellM: R.walk.cellM,
-      at: { x: ax, z: az, yaw, viewYaw: yaw + Math.PI + (R.view.arriveTurnDeg * Math.PI) / 180 }, camera: R.view.camera });
+      at: { x: ax, z: az, yaw, viewYaw: yaw + Math.PI + (back ? 0 : (R.view.arriveTurnDeg * Math.PI) / 180) }, camera: R.view.camera });
     if (!ok) return false;
     flag('setpiece:stack:crossed');
-    notice(W.below);
+    // Waking after the light went out: low on the floor, up to a kneel, then onto your feet (figure.json
+    // poses.wake); you cannot walk until you stand.
+    if (back?.wake) o.walk.act?.('wake');
+    notice(back ? back.line : W.below);
     return true;
   };
-  const leave = () => { carry = null; thingsKey = ''; o.walk.leaveZone(null); notice(W.up); };
+  const leave = (/** @type {string | null | undefined} */ toZone) => { carry = null; thingsKey = ''; o.walk.leaveZone(null); if (!toZone) notice(W.up); };
 
   // ---- the things you do ----
 
@@ -372,7 +387,7 @@ export function createStackMouth(o) {
     return { ...base, sp: 'stack:lantern', stackLantern: s.lantern, name: W.lanternName, icon: 'lamp', text: s.lantern === 'hung' ? W.lanternHung : s.lantern === 'lit' ? W.lanternLit : W.lanternCold, ...p, r: 0.3, reachR: 0.7 };
   }
   const noteCard = () => ({ ...base, sp: 'stack:note', stackNote: true, name: W.noteName, icon: 'note', text: W.note, ...at(T.note.at[0], T.note.at[1]), r: 0.25, reachR: 0.7 });
-  const archCard = () => ({ ...base, sp: 'stack:arch', name: W.archName, icon: 'stack', text: flags().includes('setpiece:stack:arch') ? `${W.arch} ${W.archShut}` : W.arch,
+  const archCard = () => ({ ...base, sp: 'stack:arch', name: W.archName, icon: 'stack', text: flags().includes('setpiece:stack:arch') ? `${W.arch} ${archLine() ?? W.archShut}` : W.arch,
     ...at(S.arch.at[0] - 0.9, S.arch.at[1] - 0.4), r: 0.5, reachR: 1.0 });
   function rubbleCard() {
     const s = saved(), f = rubbleFront();
@@ -524,6 +539,10 @@ export function createStackMouth(o) {
   return {
     id: ID,
     floor, ground, cardAt,
+    /** Back up from the Hollow next: set down by the hook (waking, after the dark), and a line. @param {{ wake: boolean, line: string }} b */
+    arriveByHook(b) { byHook = b; },
+    /** The arch's line from the Hollow (H3a). @param {() => string | null} fn */
+    setArchLine(fn) { archLine = fn; },
     /** Start building the room once the road stands, so going in is quick. */
     prepare() { if (o.stack.risen && !built) build(); },
     debug: { shape, hookAt, world, local, rubbleFront, dug, lit, hang, pass: o.pass, get built() { return built; } },

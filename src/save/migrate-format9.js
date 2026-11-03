@@ -18,9 +18,10 @@ import { cleanFishing, emptyFishing } from '../world/fishing/model.js';
 import { cleanShaped, emptyShaped } from '../world/ecology/shaped-live.js';
 import { cleanIslet, emptyIslet } from '../world/islet/model.js';
 import { cleanStack, emptyStack } from '../world/stack/model.js';
+import { cleanHollow, emptyHollow } from '../world/hollow/trip.js';
 
 /** The sections format 9 brings in, in the order they are written. */
-export const SECTIONS9 = /** @type {const} */ (['camp', 'pack', 'gather', 'dig', 'cook', 'dyes', 'sketchbook', 'kit', 'threads', 'fishing', 'shaped', 'islet', 'stack']);
+export const SECTIONS9 = /** @type {const} */ (['camp', 'pack', 'gather', 'dig', 'cook', 'dyes', 'sketchbook', 'kit', 'threads', 'fishing', 'shaped', 'islet', 'stack', 'hollow']);
 
 /** @typedef {typeof SECTIONS9[number]} Section9 */
 
@@ -41,6 +42,7 @@ export function empty9(id) {
   if (id === 'shaped') return emptyShaped();
   if (id === 'islet') return emptyIslet();
   if (id === 'stack') return emptyStack();
+  if (id === 'hollow') return emptyHollow();
   return { version: 1 };
 }
 
@@ -77,6 +79,9 @@ export function clean9(id, v) {
   // The stack (docs/future/19, src/world/stack/model.js): a save without it reads as "not yet", so the
   // stack arrives on the next load.
   if (id === 'stack') return cleanStack(v);
+  // The Hollow (H3a, src/world/hollow/trip.js): the trip count and the deepest floor; a save from
+  // before it reads as no trips yet.
+  if (id === 'hollow') return cleanHollow(v);
   if (!v || typeof v !== 'object' || Array.isArray(v) || v.version !== 1) return empty9(id);
   const out = structuredClone(v);
   return out;

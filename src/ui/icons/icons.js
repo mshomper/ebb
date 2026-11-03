@@ -1679,6 +1679,23 @@ const ICONS = {
     <path ${ACCENT} d="M9.4 20.5C9.4 15.4 10.4 11.2 12 9.4C13.6 11.2 14.6 15.4 14.6 20.5Z"/>
     <path d="M9.4 20.5C9.4 15.4 10.4 11.2 12 9.4C13.6 11.2 14.6 15.4 14.6 20.5"/>
     <path d="M2.5 20.5H21.5"/>`,
+  // The Hollow's way up (H3a): a rope hanging from a crack in the roof, knotted for the hands, an arrow up beside it.
+  ropeup: `
+    <path d="M3 3.5H10L12 5L14 3.5H21"/>
+    <path d="M12 5V20.5"/>
+    <path ${ACCENT} d="M10.6 9.2H13.4V11H10.6Z"/>
+    <path d="M10.6 9.2H13.4V11H10.6Z"/>
+    <path d="M10.6 14.6H13.4V16.4H10.6Z"/>
+    <path d="M18 18V9.5"/>
+    <path d="M15.8 11.7L18 9.5L20.2 11.7"/>`,
+  // The Hollow's way down (H3a): a dark shaft in the floor, a stake beside it and a rope going over the lip.
+  shaftdown: `
+    <path ${ACCENT} d="M6 15.5A6 2.8 0 1 0 18 15.5A6 2.8 0 1 0 6 15.5"/>
+    <path d="M6 15.5A6 2.8 0 1 0 18 15.5A6 2.8 0 1 0 6 15.5"/>
+    <path d="M4.5 4V12"/>
+    <path d="M4.5 6C8 6 10.5 8.5 11.5 15.5"/>
+    <path d="M16 3.5V10"/>
+    <path d="M13.8 7.8L16 10L18.2 7.8"/>`,
 };
 
 /** Names of every icon in the sprite. */
