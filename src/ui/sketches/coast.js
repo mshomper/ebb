@@ -1,9 +1,9 @@
 // @ts-check
 // Field sketches of B3's coast and pond lives (doc 13, the autumn and winter creatures): the ruddy
-// turnstone on the strandline, the purple sandpiper on wet rock, the European eel on the pond bed,
-// the teal on the water and the grey seal hauled out with her pup. Drawn by hand in the pen, as the
-// turtle and the hen are. Layout as living.js: the drawing in x 40..236, a scale bar at x 30,
-// labels from x 250.
+// turnstone flipping wrack on the strandline, the purple sandpiper hunched on wet rock, the European
+// eel on the pond bed, the teal on the water and the grey seal hauled out with her pup. Drawn by hand
+// in the pen, as the turtle and the hen are, each at its own shape (no outline is shared). Layout as
+// living.js: the drawing in x 40..236, a scale bar at x 30, labels from x 250.
 
 import { blade, wave } from './pen.js';
 import { WASH } from './living.js';
@@ -16,68 +16,58 @@ const TEAL_HEAD = '#8A4A2E', TEAL_GREEN = '#3F7A5A';
 const SEAL = '#8C8E8A', SEAL_DARK = '#4E504C';
 
 /**
- * A small wader standing side on, facing right, its feet on the ground at y 206: the shared body
- * of the turnstone and the purple sandpiper, in each one's colors and bill.
- * @param {import('./pen.js').Pen} p
- * @param {{ back: string, breast: string, belly: string, leg: string, bill: string }} o
- */
-function wader(p, o) {
-  const g = 206;
-  // The short tail, then the far leg, behind the body.
-  p.shape('M86 150L58 157L84 166Z', o.back, 0.6, 1.2);
-  p.shape(`M146 178L150 178L152 ${g - 2}L148 ${g - 2}Z`, o.leg, 0.8, 1);
-  p.line(`M150 ${g - 1}L162 ${g}M150 ${g - 1}L142 ${g}M150 ${g - 1}L156 ${g - 4}`, 1.1);
-  // The plump body and its pale belly.
-  p.shape('M80 150C92 128 130 120 160 126C180 130 194 142 196 156C196 170 182 180 160 182C130 184 100 180 88 172C80 166 76 158 80 150Z', o.back, 0.55, 1.5);
-  p.tint('M96 172C120 182 160 184 184 172C190 166 194 160 194 156C180 166 140 172 96 172Z', o.belly, 0.75);
-  // The breast below the head.
-  p.shape('M174 134C188 138 197 148 196 160C188 158 180 154 168 152C170 144 172 138 174 134Z', o.breast, 0.6, 1.1);
-  // The folded wing, its feather edges, and the white bar along it that shows in flight.
-  p.shape('M98 146C118 134 150 132 172 140C166 156 146 164 120 166C106 166 96 160 92 154C92 150 94 148 98 146Z', o.back, 0.6, 1.1);
-  p.shape('M104 158C124 154 148 152 166 146L168 150C150 157 126 161 106 162Z', WASH.petal, 0.8, 0.8);
-  p.fine('M100 162l-8 4M108 164l-6 6M116 166l-4 6M124 166l-2 6', 0.9, 0.7);
-  p.fine('M110 144C126 140 146 140 160 144M106 150C122 147 142 147 156 150', 0.8, 0.5);
-  // The head, the eye, the bill.
-  p.oval(196, 126, 17, 15, o.back, 0.55, 1.3);
-  p.oval(202, 122, 2.2, 2, WASH.tip, 0.9, 0.7);
-  p.dot(202.3, 122, 1);
-  p.shape(o.bill, WASH.tip, 0.85, 1);
-  // The near leg and its toes.
-  p.shape(`M132 180L136 180L138 ${g - 2}L134 ${g - 2}Z`, o.leg, 0.8, 1);
-  p.line(`M136 ${g - 1}L150 ${g + 1}M136 ${g - 1}L126 ${g}M136 ${g - 1}L142 ${g - 4}`, 1.2);
-}
-
-/**
- * Ruddy turnstone: side on along the strandline, a strand of wrack beside it, its back a patchwork
- * of chestnut and black over a white belly, the black breast band, the short wedge of a bill.
+ * Ruddy turnstone: long and low, side on along the strandline, head down and its short, slightly
+ * upturned wedge of a bill under a strand of wrack it is flipping over: the white head with its
+ * black harlequin bands running into the breast band, chestnut and black back, white belly, short
+ * orange legs.
  * @param {import('./pen.js').Pen} p @param {string} [scale]
  */
 export function turnstone(p, scale) {
   const g = 206;
   p.tint(`M40 ${g}H236V250H40Z`, WASH.sand, 0.4);
   p.line(`M40 ${g}C90 ${g - 2} 170 ${g + 2} 236 ${g - 1}`, 1.3);
-  // The wrack it has been turning: dried strands and a bladder or two along the line.
+  // Wrack along the line behind it, a pebble.
   p.shape(`M44 ${g + 6}C70 ${g + 1} 96 ${g + 10} 120 ${g + 4}C112 ${g + 12} 80 ${g + 16} 44 ${g + 12}Z`, WASH.brown, 0.55, 1);
   for (const [x, y] of [[62, g + 9], [84, g + 10], [104, g + 7]]) p.oval(x, y, 3, 2.4, WASH.mud, 0.6, 0.8);
-  p.fine(`M170 ${g + 10}C186 ${g + 6} 204 ${g + 14} 226 ${g + 8}M188 ${g + 20}l14 -3`, 1, 0.6);
-  p.oval(214, g - 3, 9, 5, WASH.grey, 0.45, 1.1);
-  wader(p, { back: TURN_BACK, breast: TURN_DARK, belly: WASH.petal, leg: ORANGE,
-    bill: 'M211 122L231 119L212 129Z' });
-  // The tortoiseshell back: black marks among the chestnut.
-  p.fine('M118 138l10 -2M134 136l8 2M146 140l10 -3M126 148l8 0M140 150l10 -2', 2, 0.55);
-  // The black of the face running down into the breast band.
-  p.fine('M190 132C194 136 198 140 196 148M184 128C186 134 188 138 186 144', 1.4, 0.7);
-  p.label('bill', 250, 60, 228, 121);
-  p.label('breast', 250, 116, 190, 150);
-  p.label('wings', 250, 172, 140, 154);
-  p.label('legs', 250, 228, 137, 196);
-  p.scale(30, 110, g, scale);
-  return p.svg(400, 260, 'Field sketch of a ruddy turnstone on the strandline beside a strand of wrack');
+  p.oval(170, g + 12, 8, 4.5, WASH.grey, 0.45, 1.1);
+  // The short tail, then the far leg, behind the body.
+  p.shape('M76 134L50 138L74 150Z', TURN_DARK, 0.6, 1.2);
+  p.shape(`M144 172L148 172L150 ${g - 2}L146 ${g - 2}Z`, ORANGE, 0.8, 1);
+  p.line(`M148 ${g - 1}L160 ${g}M148 ${g - 1}L140 ${g}M148 ${g - 1}L154 ${g - 4}`, 1.1);
+  // The long, low body, its back nearly level, and the white belly.
+  p.shape('M72 138C86 122 126 116 158 120C182 124 196 136 198 150C198 164 184 172 160 174C128 176 96 170 82 162C74 156 70 146 72 138Z', TURN_BACK, 0.55, 1.5);
+  p.tint('M92 166C120 174 160 176 188 164C194 158 198 154 198 150C182 160 140 166 92 166Z', WASH.petal, 0.8);
+  // The folded wing, chestnut with black patches, the white stripe along it.
+  p.shape('M92 134C114 124 150 120 176 128C170 144 148 152 122 154C106 154 96 148 92 142C90 139 90 136 92 134Z', TURN_BACK, 0.6, 1.1);
+  p.shape('M98 146C120 144 146 140 168 134L170 138C148 146 122 150 100 150Z', WASH.petal, 0.8, 0.8);
+  p.fine('M110 132l12 -3M132 128l10 1M150 130l12 -1M118 140l10 0M140 138l12 -2', 2.2, 0.6);
+  p.fine('M98 150l-6 4M106 152l-5 5M114 153l-3 6', 0.9, 0.7);
+  // The black breast band, reaching up the neck to the lowered head.
+  p.shape('M178 128C192 134 204 146 210 160L198 170C192 162 184 154 172 148C174 140 176 134 178 128Z', TURN_DARK, 0.65, 1.1);
+  // The white head held low, its black bands, the eye.
+  p.oval(207, 168, 13, 10.5, WASH.petal, 0.8, 1.3);
+  p.fine('M196 162C202 166 210 166 216 162M200 172C206 176 212 176 218 172', 1.6, 0.8);
+  p.oval(206, 164, 2, 1.8, WASH.tip, 0.9, 0.7);
+  p.dot(206.2, 164, 0.9);
+  // The wrack strand it is turning, lifted on the short wedge of its bill.
+  p.shape(`M196 ${g - 2}C208 186 222 180 236 182L235 188C224 188 212 192 202 ${g + 2}Z`, WASH.brown, 0.6, 1);
+  p.oval(226, 184, 2.6, 2.2, WASH.mud, 0.6, 0.8);
+  p.shape('M217 170L233 179L216 176Z', WASH.tip, 0.85, 1);
+  // The near leg and its toes.
+  p.shape(`M128 174L132 174L134 ${g - 2}L130 ${g - 2}Z`, ORANGE, 0.8, 1);
+  p.line(`M132 ${g - 1}L146 ${g + 1}M132 ${g - 1}L122 ${g}M132 ${g - 1}L138 ${g - 4}`, 1.2);
+  p.label('bill', 250, 60, 228, 177);
+  p.label('breast', 250, 116, 190, 146);
+  p.label('wings', 250, 172, 140, 144);
+  p.label('legs', 250, 228, 133, 194);
+  p.scale(30, 116, g, scale);
+  return p.svg(400, 260, 'Field sketch of a ruddy turnstone on the strandline, head down, flipping a strand of wrack');
 }
 
 /**
- * Purple sandpiper: side on, standing on wet rock with weed on it, slate grey with a purple sheen,
- * the long bill a little drooped, short yellow legs.
+ * Purple sandpiper: round and hunched on wet, weedy rock, its head pulled in close with no neck to
+ * see, the long bill a little drooped, slate grey with a purple sheen and pale feather edges on the
+ * wing, the short yellow legs.
  * @param {import('./pen.js').Pen} p @param {string} [scale]
  */
 export function sandpiper(p, scale) {
@@ -88,18 +78,37 @@ export function sandpiper(p, scale) {
   p.shape(`M48 ${g + 2}C70 ${g - 6} 196 ${g - 8} 226 ${g}C236 ${g + 12} 230 ${g + 30} 214 238H60C46 ${g + 28} 42 ${g + 12} 48 ${g + 2}Z`, WASH.grey, 0.5, 1.4);
   p.fine(`M76 ${g + 10}l16 6M170 ${g + 6}l-12 10M128 ${g + 22}l10 -4`, 0.9, 0.5);
   for (const x of [60, 72, 196, 210]) p.shape(blade(x, 236, x + 4, 222, 2.6, 3), WASH.green, 0.5, 0.9);
-  wader(p, { back: SLATE, breast: SLATE, belly: WASH.petal, leg: PIPER_LEG,
-    bill: 'M211 120C222 121 233 125 241 131C232 130 222 129 212 127Z' });
-  // The purple sheen on the back and breast, the streaks down the flank.
-  p.tint('M110 132C130 126 156 126 172 134C150 136 128 138 110 132Z', SHEEN, 0.5);
-  p.tint('M176 138C186 142 192 148 194 156C186 152 180 148 174 146Z', SHEEN, 0.5);
-  p.fine('M170 160l-6 6M160 164l-6 6M180 162l-4 6', 1, 0.6);
-  p.label('bill', 250, 60, 236, 128);
-  p.label('breast', 250, 116, 188, 150);
-  p.label('wings', 250, 172, 140, 154);
-  p.label('legs', 250, 228, 137, 196);
-  p.scale(30, 110, g, scale);
-  return p.svg(400, 260, 'Field sketch of a purple sandpiper standing on a wet, weedy rock');
+  // The short tail tipped down, the far leg.
+  p.shape('M92 166L66 180L94 178Z', SLATE, 0.6, 1.2);
+  p.shape(`M152 186L156 186L158 ${g - 2}L154 ${g - 2}Z`, PIPER_LEG, 0.8, 1);
+  p.line(`M156 ${g - 1}L168 ${g}M156 ${g - 1}L148 ${g}M156 ${g - 1}L162 ${g - 4}`, 1.1);
+  // The round, hunched body, the pale belly under it, the sheen on the breast.
+  p.shape('M86 158C86 126 116 108 148 108C178 108 198 128 198 154C198 178 178 192 146 192C114 192 86 182 86 158Z', SLATE, 0.55, 1.5);
+  p.tint('M100 178C124 190 168 192 190 174C194 168 196 164 196 160C180 176 140 184 100 178Z', WASH.petal, 0.75);
+  p.tint('M170 126C186 132 196 146 196 160C186 152 176 146 164 142Z', SHEEN, 0.5);
+  p.fine('M176 164l-6 6M166 168l-6 6M186 166l-4 6', 1, 0.6);
+  // The folded wing, its feathers edged pale, the thin white bar along it.
+  p.shape('M100 144C122 130 158 128 180 140C174 160 152 172 126 172C110 172 100 164 96 156C96 150 97 147 100 144Z', SLATE, 0.6, 1.1);
+  p.tint('M110 136C130 130 156 130 172 138C150 140 128 142 110 136Z', SHEEN, 0.45);
+  p.shape('M106 160C126 156 150 154 170 148L172 152C152 159 128 163 108 164Z', WASH.petal, 0.8, 0.8);
+  let edges = '';
+  for (let i = 0; i < 6; i++) edges += `M${110 + i * 11} ${146 - i * 1.2}q5 4 10 0`;
+  p.fine(edges, 0.9, 0.6);
+  // The head pulled in close on the body, the pale ring round the eye, the long, drooped bill.
+  p.oval(186, 118, 15, 13.5, SLATE, 0.55, 1.3);
+  p.oval(191, 114, 3, 2.8, WASH.petal, 0.9, 0.7);
+  p.dot(191.2, 114, 1.1);
+  p.shape('M199 118C212 120 224 126 234 135C223 133 211 128 200 125Z', WASH.tip, 0.85, 1);
+  p.tint('M199 118C204 119 208 120 211 121L201 124Z', PIPER_LEG, 0.8);
+  // The near leg and its toes.
+  p.shape(`M136 188L140 188L142 ${g - 2}L138 ${g - 2}Z`, PIPER_LEG, 0.8, 1);
+  p.line(`M140 ${g - 1}L154 ${g + 1}M140 ${g - 1}L130 ${g}M140 ${g - 1}L146 ${g - 4}`, 1.2);
+  p.label('bill', 250, 60, 228, 131);
+  p.label('breast', 250, 116, 186, 140);
+  p.label('wings', 250, 172, 140, 158);
+  p.label('legs', 250, 228, 141, 198);
+  p.scale(30, 108, g, scale);
+  return p.svg(400, 260, 'Field sketch of a purple sandpiper hunched on a wet, weedy rock');
 }
 
 /**
