@@ -102,6 +102,13 @@ export function createOrbitCamera(r) {
   /** The point a free view looks at, a couple of meters ahead (what follows the camera's target). */
   const freeTarget = vec3.create();
   const FREE_AHEAD_M = 2;
+  /**
+   * A passing offset laid over the view each frame and never kept (the Hollow moves' camera, src/world/hollow/cine-camera.js):
+   * distM further back, pitch and yaw (rad) added, target and eye moved (world m). null: none.
+   * @type {{ distM: number, pitch: number, yaw: number, target: number[], eye: number[] } | null}
+   */
+  let offset = null;
+  const offTarget = vec3.create();
   /** The view above you left when you went down, so Go up rises to the same height and angle. */
   let above = { distance: r.start.distance, pitch: r.start.pitchDeg * DEG };
   const minSoft = () => ground?.minDistance ?? close?.minDistance ?? r.distanceSoft[0];
@@ -293,7 +300,13 @@ export function createOrbitCamera(r) {
       goal.pitch = Math.max(goal.pitch, pitch);
     }
 
-    mat4.lookAt(eye, cur.target, [0, 1, 0], view);
+    let at = cur.target;
+    if (offset) {
+      const o = offset, d = cur.distance + o.distM, p = pitch + o.pitch, y = cur.yaw + o.yaw, cp = Math.cos(p);
+      at = vec3.set(cur.target[0] + o.target[0], cur.target[1] + o.target[1], cur.target[2] + o.target[2], offTarget);
+      vec3.set(at[0] + d * cp * Math.sin(y) + o.eye[0], at[1] + d * Math.sin(p) + o.eye[1], at[2] + d * cp * Math.cos(y) + o.eye[2], eye);
+    }
+    mat4.lookAt(eye, at, [0, 1, 0], view);
     mat4.perspectiveReverseZ(fovY, viewW / viewH, r.near, Infinity, proj);
     mat4.multiply(proj, view, viewProj);
     mat4.inverse(viewProj, invViewProj);
@@ -333,6 +346,8 @@ export function createOrbitCamera(r) {
 
   return {
     orbit, pan, zoom, twist, update, ray, focus, look,
+    /** Lay a passing offset over the view from the next update on (see offset), or null for none. @param {{ distM: number, pitch: number, yaw: number, target: number[], eye: number[] } | null} o */
+    setOffset(o) { offset = o; },
     /** The yaw the view is turning to (radians; the eye sits at +sin, +cos from the target). */
     get yaw() { return free ? free.yaw : goal.yaw; },
     /** Is the game gliding the camera (not the player moving it)? Photo mode's free view counts: it never startles. */

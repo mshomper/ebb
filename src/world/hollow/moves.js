@@ -19,7 +19,8 @@ export function createMoves(MR, o = {}) {
   /** Once-a-floor moves already spent. @type {Set<string>} */
   const spent = new Set();
   /** The move playing: its id, where it goes, seconds in, and whether its active part began. */
-  /** @type {{ id: string, at: any, t: number, active: boolean, ended: boolean, cut: number } | null} */
+  /** was: its wait before this start, given back if it is cancelled in its wind-up. */
+  /** @type {{ id: string, at: any, t: number, active: boolean, ended: boolean, cut: number, was: { left: number, of: number } | null } | null} */
   let playing = null;
   const M = (/** @type {string} */ id) => MR.moves[id];
   const total = (/** @type {any} */ m) => m.windS + m.activeS + m.recoverS;
@@ -57,11 +58,38 @@ export function createMoves(MR, o = {}) {
     start(id, at) {
       if (this.why(id)) return false;
       const m = M(id), w = (m.waitS ?? 0) * (gentle ? MR.gentlerWaitK : 1);
+      const was = waits[id] ? { ...waits[id] } : null;
       waits[id] = { left: w, of: w };
       if (m.once) spent.add(id);
       if (m.seeds) seeds -= m.seeds;
-      playing = { id, at, t: 0, active: false, ended: false, cut: Infinity };
+      playing = { id, at, t: 0, active: false, ended: false, cut: Infinity, was };
       return true;
+    },
+    /** The move playing is still in its wind-up (nothing has left yet). */
+    get winding() { return !!playing && !playing.active; },
+    /** The move playing is in its recovery (its active part is over). */
+    get recovering() { return !!playing && playing.ended; },
+    /**
+     * Cancel the move in its wind-up (a roll out of it: the orchestrator's guardrail, November 3,
+     * 2026, so a longer wind-up never locks you in): nothing has left, so nothing is spent. Its wait
+     * goes back to what it was, a once-a-floor move is unspent and its seeds return. The caller
+     * gives back any fuel it took. Returns the move's id, or null when there is no wind-up to cancel.
+     */
+    cancel() {
+      if (!playing || playing.active) return null;
+      const id = playing.id, m = M(id);
+      if (playing.was) waits[id] = playing.was; else delete waits[id];
+      if (m.once) spent.delete(id);
+      if (m.seeds) seeds += m.seeds;
+      playing = null;
+      return id;
+    },
+    /** End the move at once in its recovery (a roll out of the follow-through; its costs stay spent). Returns its id, or null. */
+    stopRecovery() {
+      if (!playing || !playing.ended) return null;
+      const id = playing.id;
+      playing = null;
+      return id;
     },
     /** Cut the move playing short: straight to its recovery (Snuff ends when you move or are hit). */
     cut() { if (playing) { const m = M(playing.id); playing.cut = Math.min(playing.t, m.windS + m.activeS); } },

@@ -334,9 +334,11 @@ function makeStage(canvas, gpu, lib) {
     /**
      * The move effects' lights (src/world/hollow/fx-layout.js: LIGHT_FLOATS each), added to the
      * lantern in the Hollow on everything drawn. A light with no reach is skipped; null clears them.
+     * occ: the capsules a light marked shadow is blocked by (the walker, the things, the pillars), and the shadows' softness.
      * @param {Float32Array | null} lights @param {number} [n] how many (else all in the array)
+     * @param {{ list: import('./arena/fx-lights.js').FxOccluder[], softM: number } | null} [occ]
      */
-    setFxLights(lights, n) { device.queue.writeBuffer(fxbuf, 0, packFxLights(lights, n, fxF)); },
+    setFxLights(lights, n, occ = null) { device.queue.writeBuffer(fxbuf, 0, packFxLights(lights, n, fxF, occ)); },
     /**
      * The figure's baked maps, from its GLB (mipmapped; colour read as sRGB). @param {import('../src/render/gltf.js').Glb} glb
      */

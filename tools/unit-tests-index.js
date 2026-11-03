@@ -60,6 +60,7 @@ export const TEST_FILES = {
   'hen': '',
   'herbs': '',
   'hints': '',
+  'hollow-cine': '',
   'hollow-floors': '',
   'hollow': '',
   'intro': '',

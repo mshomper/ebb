@@ -41,6 +41,9 @@ import { createCrawlerPass } from './arena/crawler-pass.js';
 import { loadWatcherModel } from '../src/world/hollow/watcher-model.js';
 import { createWatcherPass } from './arena/watcher-pass.js';
 import { createFxPass } from './arena/fx-pass.js';
+import { createCine } from '../src/world/hollow/cine.js';
+import { createCinePanel } from './arena/cine-panel.js';
+import { emit as busEmit } from '../src/core/events.js';
 
 const $ = (/** @type {string} */ id) => /** @type {HTMLElement} */ (document.getElementById(id));
 /** @param {string} p */
@@ -63,6 +66,9 @@ const FC = course.dark ? await recipe('world/fight-clips') : null;
 const MR = course.dark ? await recipe('world/hollow-moves') : null;
 // How the moves look (the move effects, October 27, 2026).
 const FXR = course.dark ? await recipe('world/hollow-move-fx') : null;
+// How the moves feel (the cinematic pass, November 3, 2026): the camera, the clock and the lantern in each beat.
+const CRC = course.dark ? await recipe('world/hollow-cine') : null;
+const CRC0 = structuredClone(CRC);
 /** The Hollow's recipes as loaded, to show what the sliders changed. */
 const HR0 = structuredClone(HR), MR0 = structuredClone(MR), FC0 = structuredClone(FC);
 // The soot motes, Matt's model (H2), drawn in the stage's pass.
@@ -82,7 +88,26 @@ let fxFrame = null;
  * Hand the effects for the next frame drawn: their lights go to the stage, the rest to the fx pass.
  * @param {import('./arena/fx-pass.js').FxFrame & { lights?: Float32Array, nLights?: number } | null} fx
  */
-function setFx(fx) { stage.setFxLights(fx?.lights ?? null, fx?.nLights); fxFrame = fx; }
+function setFx(fx) { stage.setFxLights(fx?.lights ?? null, fx?.nLights, CRC?.shadows.on ? { list: occluders(), softM: CRC.shadows.softM } : null); fxFrame = fx; }
+/**
+ * What a flash's shadows are cast by (the cinematic pass): the walker, the things in reach of the
+ * light (not the motes) and the pillars nearest you, as upright capsules (tools/arena/fx-lights.js).
+ * @returns {import('./arena/fx-lights.js').FxOccluder[]}
+ */
+function occluders() {
+  const gy = ground(walker.x, walker.z);
+  /** @type {import('./arena/fx-lights.js').FxOccluder[]} */
+  const list = [{ x: walker.x, z: walker.z, r: 0.2, y0: gy + 0.1, y1: gy + 1.25 }];
+  for (const a of actors) {
+    // A mote swarm is small things spread loose: one capsule round it would throw a false blot, so motes cast none.
+    if (!a.foe || a.broken || a.kind === 'motes') continue;
+    const y = ground(a.x, a.z) + (moveLayer?.bodyY(a) ?? 0.3), r = HR?.foes[a.kind]?.bodyM ?? 0.3;
+    list.push({ x: a.x, z: a.z, r: r * 0.85, y0: y - r * 0.6, y1: y + r * 0.4 });
+  }
+  const pillars = course.solids.filter((c) => c.r !== undefined).sort((p, q) => Math.hypot(p.x - walker.x, p.z - walker.z) - Math.hypot(q.x - walker.x, q.z - walker.z));
+  for (const c of pillars) list.push({ x: c.x, z: c.z, r: /** @type {number} */ (c.r), y0: ground(c.x, c.z), y1: ground(c.x, c.z) + c.heightM });
+  return list.slice(0, 12);
+}
 // The Hollow's crowd (H2): attack slots and bodies kept apart (src/world/hollow/crowd.js).
 const crowd = HR ? createCrowd(HR.crowd, 1) : null;
 
@@ -135,13 +160,19 @@ const head = () => [walker.x, walker.y + R.camera.lookHeightM - (H.stand - (H[wa
 const say = (/** @type {string} */ s) => { note.textContent = s; };
 
 // ---- the Hollow (H0): lantern, staff, swing, lock-on, the floor dot ----
+/** The beats (src/world/hollow/cine.js): each sends its sound cue on the bus as hollow:beat (no audio yet). */
+const cine = CRC && MR ? createCine(CRC, MR, { seed: 7, emit: busEmit }) : null;
+/** The camera's passing offset this frame (the moves' camera), so the floor dot reads the camera's own tilt. */
+let camOffset = { distM: 0, pitch: 0, yaw: 0, target: [0, 0, 0], eye: [0, 0, 0] };
+/** How far the chest leans back to reach a floater now (degrees, eased). */
+let aimUpDeg = 0;
 const hollow = HR ? createHollow({
   HR, FR: FC, walker, camera, grid, ground, course, motion, held: await createHeld(FR, built), built, DS,
-  actors: () => actors, head, say, lookRates: () => R.steer.look,
+  actors: () => actors, head, say, lookRates: () => R.steer.look, pitchOffset: () => camOffset.pitch, dotLook: CRC?.dot,
 }) : null;
 const SR = hollow ? await recipe('world/staff') : null;
 // The Q and E moves (H0b).
-const moveLayer = hollow && MR ? createMoveLayer({ MR, hollow, walker, motion, FC, FR, R, FX: FXR, ground, say }) : null;
+const moveLayer = hollow && MR ? createMoveLayer({ MR, hollow, walker, motion, FC, FR, R, FX: FXR, HR, cine, ground, say }) : null;
 /** The staff's look: ?staff=a (slim) or b (knotted). */
 const staffLook = SR ? SR.looks[params.get('staff') === 'b' ? 1 : 0].id : '';
 
@@ -186,8 +217,9 @@ const keyWay = () => {
 const keys = attachMoveKeys(window, {
   onPress(name) {
     if (name === 'move') { if (walker.pathing && !walker.retreating) walker.stop(); return true; }
-    // A roll breaks off a swing (never during a stagger).
+    // A roll breaks off a swing (never during a stagger), and rolls out of a move's wind-up with nothing spent.
     if (hollow?.reeling) return true;
+    if (moveLayer && !moveLayer.rollOut()) return true;
     if (hollow?.swinging) hollow.cancelSwing();
     MOVES.roll(keyWay());
     return true;
@@ -284,6 +316,8 @@ const movesPanel = moveLayer && HR && MR ? createMovesPanel($('moves-panel'), {
   layer: moveLayer, MR, HR, MR0, HR0, FC, FC0, say, blocks: /** @type {HTMLTextAreaElement} */ ($('blocks')),
 }) : null;
 if (movesPanel) $('moves-panel').hidden = false;
+const cinePanel = cine && CRC0 ? createCinePanel($('cine-panel'), { CR: CRC, CR0: CRC0, cine, MR, say, blocks: /** @type {HTMLTextAreaElement} */ ($('blocks')) }) : null;
+if (cinePanel) $('cine-panel').hidden = false;
 
 // ---- tuning: sliders, the feel, copy as recipe blocks ----
 const feelOf = () => R.steer.profiles[walker.feel];
@@ -400,7 +434,8 @@ function frame(/** @type {number} */ now) {
 /** One step of everything, realDt seconds; draw false skips drawing (arena.run). @param {number} realDt */
 function tick(realDt, draw = true) {
   // A hit-stop holds the world nearly still for a moment; the camera keeps real time.
-  const dt = hollow ? hollow.simDt(realDt) : realDt;
+  // With the beats, the fight's clock bends (cine-time.js: the fight and what is drawn only, never world time).
+  const dt = cine ? cine.step(realDt) : hollow ? hollow.simDt(realDt) : realDt;
   clockS += dt;
   camera.setViewport(view.clientWidth, view.clientHeight);
   look.update();
@@ -429,11 +464,26 @@ function tick(realDt, draw = true) {
   hollow?.update(dt);
   moveLayer?.update(dt);
   cam.update(realDt);
+  if (cine && hollow) {
+    // The moves' camera, laid over the view as a passing offset, and the lantern's shares as drawn; real time.
+    const c = cine.update(realDt, camera.target);
+    camOffset = c.offset;
+    camera.setOffset(c.offset);
+    hollow.lightShare.gain = c.light.gain; hollow.lightShare.reach = c.light.reach;
+  }
   camera.update(realDt);
   const e = camera.eye, t = camera.target;
+  // Reaching up (the cinematic pass): locked on a thing above the chest while swinging or playing a
+  // move, the chest leans back toward it (recipes/world/hollow-cine.json aimUp).
+  if (cine && hollow && moveLayer) {
+    const tg = hollow.byId(hollow.lock.target), A = CRC.aimUp;
+    const want = tg && (hollow.swinging || moveLayer.moves.playing)
+      ? Math.min(A.maxDeg, Math.max(0, Math.atan2(ground(tg.x, tg.z) + moveLayer.bodyY(tg) - (walker.y + A.chestM), Math.hypot(tg.x - walker.x, tg.z - walker.z)) * 180 / Math.PI)) : 0;
+    aimUpDeg += (want - aimUpDeg) * Math.min(1, realDt * A.rate);
+  }
   const r = motion.update(dt, {
     x: walker.x, z: walker.z, y: walker.y, yaw: walker.yaw, speed: walker.speed, moving: walker.moving, retreating: walker.retreating,
-    rolling: moveLayer?.backStepping ? -1 : walker.rolling, airborne: walker.airborne, ground, depth: depthAt, posture: walker.posture, below: true, look: { yaw: Math.atan2(t[0] - e[0], t[2] - e[2]) },
+    rolling: moveLayer?.backStepping ? -1 : walker.rolling, airborne: walker.airborne, ground, depth: depthAt, posture: walker.posture, below: true, look: { yaw: Math.atan2(t[0] - e[0], t[2] - e[2]) }, aimUpDeg,
   });
   samples.push({ t: clockS, v: walker.speed, roll: walker.rolling >= 0 });
   samples = samples.filter((s) => clockS - s.t <= TRACE_S);
@@ -463,11 +513,12 @@ function tick(realDt, draw = true) {
       + (hollow ? `<dt>Floor dot</dt><dd>${(() => { const d = hollow.dot(); return d.locked ? 'under the locked target' : `${d.m.toFixed(1)} m out`; })()}</dd>` : '');
     panel?.show();
     movesPanel?.show();
+    cinePanel?.show();
   }
 }
 requestAnimationFrame(frame);
 /** For checking from the console: the walker, the actors, the solids. */
-/** @type {any} */ (window).arena = { walker, crawlerPass, motePass, watcherPass, fxPass, setFx, cues, gpu: stage.gpu, crowd, HR, get actors() { return actors; }, get solids() { return solids; }, camera, grid, R, hollow, motion, moveLayer,
+/** @type {any} */ (window).arena = { walker, crawlerPass, motePass, watcherPass, fxPass, setFx, cues, gpu: stage.gpu, crowd, HR, get actors() { return actors; }, get solids() { return solids; }, camera, grid, R, hollow, motion, moveLayer, cine, CRC, keys,
   /** Run on s seconds at once in 60ths (checks from the console, and a hidden tab). @param {number} s */
   run(s) { const n = Math.round(s * 60); for (let i = 0; i < n; i++) tick(1 / 60, i === n - 1); last = performance.now(); },
   /** Hold time still (the view still draws), for checks and screenshots. @param {boolean} on */

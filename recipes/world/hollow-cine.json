@@ -1,0 +1,91 @@
+{
+  "type": "hollow-cine",
+  "version": 1,
+  "note": "How the Hollow's Q and E moves and the staff's swing feel (the cinematic pass, November 3, 2026; docs/future/16-the-sea-cave.md, How the moves look). Read by src/world/hollow/cine.js (the beats), cine-camera.js, cine-time.js and cine-light.js; loaded by tools/move-arena.html?course=hollow only until H3b. camera: amount scales every camera motion (the Camera motion setting, 0 off to 1 full); kick: the spring a jolt rides (stiffness per s2, damping per s); shake: the most it tips (degrees) and moves the eye (m) at full trauma (trauma squared, on smooth noise at hz, losing decayPerS of trauma a second). time: stopRate, how fast the fight runs during a hit-stop (a share); maxStopS, the longest hit-stop; slowOutShare, the share of a slow-down spent easing back. light: the lantern's sputter after a big release (sputterHz, sputterShare of its strength). shadows: the effect lights marked shadow cast soft shadows from the walker, the things and the pillars (softM, how soft the edge is). contact: the swing's hit by its size (glance off an armored front, land, break): stopS hit-stop, shake trauma, kick (degrees of tilt along the blow), slowS and slowRate a slow-down after a break, flash a small warm light at the body. moves: each move's beats. body: how its clip is retimed (release, the share of its clip span where the hand lets go or the staff lands, put exactly at the end of the wind-up; hold, the share of the wind-up spent near the top; top, how far toward release the clip is when the hold starts; snapU and snapS, the share of the rest of the time and of the rest of the clip spent on the fast release before the follow-through settles). Each beat (wind, release, impact, end and the move's own: catch, trip, spring, burst, unsnuff, out) may hold: push (ease in, distM negative closer, pitchDeg, over inS, holdS, outS), hold (a push kept until the move ends), kick (distM, pitchDeg, yawDeg), shake (trauma 0..1), reframe (the aim slides weight of the way toward the effect over inS, holds holdS, settles over outS), stopS (hit-stop), slowS with slowRate (slow-down), gather (the lantern dims to gain and reach, shares, over the wind-up), release (the lantern swells to swell, back to full over backS, sputter 0..1), lightHold (a share kept while it lasts) and fx (an effect cue in move-fx.js). Every beat also sends a sound cue, hollow:beat with the move and the beat, with no audio yet.",
+  "camera": {
+    "amount": 1,
+    "kick": { "stiffness": 140, "damping": 15 },
+    "shake": { "maxPitchDeg": 1.4, "maxYawDeg": 1.6, "maxEyeM": 0.045, "hz": 13, "decayPerS": 1.5 }
+  },
+  "time": { "on": true, "stopRate": 0.04, "maxStopS": 0.16, "slowOutShare": 0.55 },
+  "light": { "sputterHz": 9, "sputterShare": 0.3 },
+  "dot": { "note": "The floor dot as drawn (Matt, November 3, 2026: the old white disc looked bad and the floor clipped through it; tools/arena/props.js pushFloorDot): an ink ring rM across the middle (inkW wide) on a soft pale halo (haloW each side), an ink point pointM across in the middle, every point liftM over the floor or the water under it; it swells by swell at breatheHz. Colours drawn unlit (negative), as the arena's marks.", "rM": 0.17, "inkW": 0.022, "haloW": 0.05, "pointM": 0.03, "liftM": 0.035, "swell": 0.06, "breatheHz": 0.7, "ink": [-0.1, -0.12, -0.11], "halo": [-2.6, -2.45, -2.1] },
+  "aimUp": { "note": "Reaching up to a floater (Matt, November 3, 2026): locked on a thing whose body is above the chest (chestM over the feet) while swinging or playing a move, the chest and spine lean back toward it, up to maxDeg, easing at rate a second.", "maxDeg": 26, "chestM": 1.0, "rate": 10 },
+  "shadows": { "on": true, "softM": 0.35 },
+  "contact": {
+    "glance": { "stopS": 0.04, "shake": 0.12, "kick": { "pitchDeg": 0.5 } },
+    "land": { "stopS": 0.07, "shake": 0.22, "kick": { "pitchDeg": 0.9, "distM": 0.06 }, "flash": true },
+    "break": { "stopS": 0.12, "shake": 0.4, "kick": { "pitchDeg": 1.4, "distM": 0.1 }, "slowS": 0.24, "slowRate": 0.4, "flash": true }
+  },
+  "moves": {
+    "anchor": {
+      "body": { "release": 0.42, "hold": 0.3, "top": 0.85, "snapU": 0.15, "snapS": 0.35 },
+      "wind": { "push": { "distM": -0.25, "pitchDeg": 1, "inS": 0.14, "holdS": 0.55, "outS": 0.45 } },
+      "release": { "kick": { "pitchDeg": 1.2, "distM": -0.05 }, "shake": 0.12 },
+      "catch": { "stopS": 0.09, "shake": 0.38, "kick": { "distM": 0.18, "pitchDeg": -1 } }
+    },
+    "hookTurn": {
+      "body": { "release": 0.26, "hold": 0.35, "top": 0.8, "snapU": 0.2, "snapS": 0.3 },
+      "wind": { "push": { "distM": -0.15, "inS": 0.22, "holdS": 0.2, "outS": 0.4 } },
+      "impact": { "stopS": 0.07, "shake": 0.22, "kick": { "yawDeg": 1.2, "pitchDeg": 0.5 } }
+    },
+    "groundline": {
+      "body": { "release": 0.62, "hold": 0.3, "top": 0.82, "snapU": 0.15, "snapS": 0.3 },
+      "wind": { "push": { "distM": 0.6, "pitchDeg": 4, "inS": 0.45, "holdS": 0.5, "outS": 0.7 }, "gather": { "gain": 0.5, "reach": 0.8 }, "fx": "groundline.gather" },
+      "release": { "stopS": 0.08, "shake": 0.55, "kick": { "pitchDeg": 2.2, "distM": -0.1 }, "reframe": { "weight": 0.35, "inS": 0.3, "holdS": 0.35, "outS": 0.7 }, "release": { "swell": 1.5, "backS": 0.7, "sputter": 0.5 }, "fx": "groundline.slam" },
+      "trip": { "stopS": 0.04, "shake": 0.12 },
+      "end": { "shake": 0.1 }
+    },
+    "castFlame": {
+      "body": { "release": 0.42, "hold": 0.3, "top": 0.85, "snapU": 0.2, "snapS": 0.35 },
+      "wind": { "push": { "distM": -0.3, "inS": 0.32, "holdS": 0.3, "outS": 0.6 }, "gather": { "gain": 0.6, "reach": 0.85 }, "fx": "castFlame.gather" },
+      "release": { "kick": { "yawDeg": 0.8, "pitchDeg": 0.6 }, "reframe": { "weight": 0.3, "inS": 0.35, "holdS": 0.5, "outS": 0.7 }, "release": { "swell": 1.25, "backS": 0.45, "sputter": 0 } },
+      "impact": { "stopS": 0.05, "slowS": 0.22, "slowRate": 0.4, "shake": 0.42, "kick": { "distM": 0.1, "pitchDeg": 0.8 } }
+    },
+    "wickSnare": {
+      "body": { "release": 0.55, "hold": 0.35, "top": 0.85, "snapU": 0.3, "snapS": 0.3 },
+      "wind": { "push": { "distM": -0.4, "pitchDeg": 3, "inS": 0.32, "holdS": 0.3, "outS": 0.6 } },
+      "release": { "fx": "wick.flare", "kick": { "pitchDeg": 0.4 } },
+      "spring": { "stopS": 0.05, "shake": 0.16 }
+    },
+    "kindlingBurst": {
+      "body": { "release": 0.6, "hold": 0.35, "top": 0.85, "snapU": 0.15, "snapS": 0.3 },
+      "wind": { "push": { "distM": 0.7, "pitchDeg": 3, "inS": 0.55, "holdS": 0.5, "outS": 0.8 }, "gather": { "gain": 0.45, "reach": 0.4 }, "fx": "kindling.gather" },
+      "release": { "stopS": 0.1, "slowS": 0.28, "slowRate": 0.35, "shake": 0.5, "kick": { "distM": 0.18, "pitchDeg": 1.2 }, "reframe": { "weight": 0.35, "inS": 0.3, "holdS": 0.5, "outS": 0.8 }, "release": { "swell": 1.8, "backS": 0.9, "sputter": 1 } }
+    },
+    "backStep": {
+      "release": { "kick": { "distM": 0.25 } },
+      "end": { "shake": 0.08 }
+    },
+    "feint": {
+      "body": { "release": 0.4, "hold": 0.2, "top": 0.8, "snapU": 0.3, "snapS": 0.4 },
+      "wind": { "push": { "distM": -0.15, "inS": 0.1, "holdS": 0.1, "outS": 0.3 } },
+      "release": { "kick": { "yawDeg": -0.8 } }
+    },
+    "snuff": {
+      "body": { "release": 0.7, "hold": 0.2, "top": 0.8, "snapU": 0, "snapS": 0 },
+      "wind": { "hold": { "distM": -0.35, "pitchDeg": 1.5, "inS": 0.3, "outS": 0.6 }, "gather": { "gain": 0.4, "reach": 0.5 } },
+      "release": { "release": { "swell": 1, "backS": 0.3, "sputter": 0 } },
+      "unsnuff": { "fx": "snuff.flare", "release": { "swell": 1.35, "backS": 0.5, "sputter": 0.4 } }
+    },
+    "taproot": {
+      "body": { "release": 0.42, "hold": 0.3, "top": 0.85, "snapU": 0.2, "snapS": 0.35 },
+      "wind": { "push": { "distM": -0.2, "inS": 0.26, "holdS": 0.3, "outS": 0.5 }, "fx": "taproot.gather" },
+      "release": { "kick": { "yawDeg": 0.6 } },
+      "impact": { "shake": 0.08 },
+      "burst": { "stopS": 0.07, "shake": 0.3, "kick": { "distM": 0.08 } },
+      "break": { "slowS": 0.2, "slowRate": 0.45 }
+    },
+    "springChorus": {
+      "body": { "release": 0.55, "hold": 0.4, "top": 0.85, "snapU": 0.2, "snapS": 0.25 },
+      "wind": { "push": { "distM": 0.5, "pitchDeg": 4, "inS": 0.4, "holdS": 0.6, "outS": 0.8 }, "gather": { "gain": 0.75, "reach": 0.9 }, "fx": "chorus.gather" },
+      "release": { "shake": 0.14, "release": { "swell": 1.15, "backS": 0.6, "sputter": 0 } }
+    },
+    "mothLure": {
+      "body": { "release": 0.3, "hold": 0.3, "top": 0.85, "snapU": 0.25, "snapS": 0.3 },
+      "wind": { "push": { "distM": -0.15, "inS": 0.26, "holdS": 0.3, "outS": 0.5 }, "gather": { "gain": 0.7, "reach": 0.85 } },
+      "release": { "reframe": { "weight": 0.15, "inS": 0.6, "holdS": 1.0, "outS": 1.0 }, "release": { "swell": 1, "backS": 0.4, "sputter": 0 }, "lightHold": { "gain": 0.85, "reach": 0.9 } },
+      "out": {}
+    }
+  }
+}

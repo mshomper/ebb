@@ -4,7 +4,9 @@
 // (tools/arena/moth-mesh.js) and flapping in the vertex shader, shaded pale and dusty and lit like the
 // stage (the lantern plus the effects' own lights, src/shaders/lib-fx-light.wgsl), with a faint light
 // of their own; then threads (glowing strands) and sparks (soft glowing discs facing the eye, streaked
-// along their motion), added onto what is drawn. Used by the move arena and tools/fx-pass-check.html.
+// along their motion), added onto what is drawn. A spark whose colour is negative is dust (the
+// cinematic pass, November 3, 2026): a soft puff, shaded by the lantern and the effect lights and laid
+// over what is behind it, never glowing. Used by the move arena and tools/fx-pass-check.html.
 
 import { loadShader } from '../../src/core/gpu.js';
 import { MAX_SPARKS, SPARK_FLOATS, MAX_THREADS, THREAD_FLOATS, MAX_MOTHS, MOTH_FLOATS } from '../../src/world/hollow/fx-layout.js';
@@ -123,7 +125,8 @@ fn turnY(p: vec3f, a: f32) -> vec3f { let c = cos(a); let s = sin(a); return vec
 }
 
 // ---- sparks: soft discs facing the eye, streaked along their motion, added on ----
-struct SparkOut { @builtin(position) pos: vec4f, @location(0) q: vec2f, @location(1) @interpolate(flat) h: f32, @location(2) col: vec3f };
+struct SparkOut { @builtin(position) pos: vec4f, @location(0) q: vec2f, @location(1) @interpolate(flat) h: f32, @location(2) col: vec3f,
+                  @location(3) world: vec3f, @location(4) @interpolate(flat) dust: f32, @location(5) @interpolate(flat) alpha: f32 };
 
 @vertex fn vsSpark(@builtin(vertex_index) vi: u32, @builtin(instance_index) inst: u32) -> SparkOut {
   let q = corner(vi);
@@ -145,12 +148,28 @@ struct SparkOut { @builtin(position) pos: vec4f, @location(0) q: vec2f, @locatio
   // In units of the round size: along (out to hl / size), across, and the streak's half length.
   o.q = vec2f(q.x * hl, q.y * a.w) / max(a.w, 1e-6);
   o.h = L * 0.5 / max(a.w, 1e-6);
-  // A long streak spreads the same light thinner.
-  o.col = b.rgb * b.a * mix(1.0, a.w / hl, 0.5);
+  // A long streak spreads the same light thinner. Dust carries its albedo and its own alpha instead.
+  let dust = b.r < 0.0 || b.g < 0.0 || b.b < 0.0;
+  o.col = select(b.rgb * b.a * mix(1.0, a.w / hl, 0.5), -b.rgb, dust);
+  o.world = world; o.dust = select(0.0, 1.0, dust); o.alpha = b.a;
   return o;
 }
 
+@fragment fn fsDust(i: SparkOut) -> @location(0) vec4f {
+  if (i.dust < 0.5) { discard; }
+  let r2 = i.q.x * i.q.x + i.q.y * i.q.y;
+  if (r2 > 1.0) { discard; }
+  // A soft puff: thick in the middle, wisping out, a little uneven.
+  let soft = (1.0 - r2) * (1.0 - r2);
+  let toEye = normalize(f.eye.xyz - i.world);
+  let n = normalize(toEye + vec3f(0.0, 0.6, 0.0));
+  let a = soft * min(1.0, i.alpha * 1.6) * 0.8;
+  let c = finish(i.col * light(i.world, n)).rgb;
+  return vec4f(c * a, a);
+}
+
 @fragment fn fsSpark(i: SparkOut) -> @location(0) vec4f {
+  if (i.dust > 0.5) { discard; }
   let along = max(abs(i.q.x) - i.h, 0.0);
   let r2 = along * along + i.q.y * i.q.y;
   if (r2 > 1.0) { discard; }
@@ -235,6 +254,14 @@ export async function createFxPass(gpu) {
     depthStencil: { ...depthStencil, depthWriteEnabled: false },
   });
   const sparkPipe = additive('fx-sparks', 'vsSpark', 'fsSpark');
+  // Dust: laid over what is behind it (premultiplied), drawn before the glowing things.
+  const dustPipe = device.createRenderPipeline({
+    label: 'fx-dust', layout: pl,
+    vertex: { module, entryPoint: 'vsSpark' },
+    fragment: { module, entryPoint: 'fsDust', targets: [{ format, blend: { color: { srcFactor: 'one', dstFactor: 'one-minus-src-alpha', operation: 'add' }, alpha: { srcFactor: 'zero', dstFactor: 'one', operation: 'add' } } }] },
+    primitive: { topology: 'triangle-list' },
+    depthStencil: { ...depthStencil, depthWriteEnabled: false },
+  });
   const threadPipe = additive('fx-threads', 'vsThread', 'fsThread');
 
   const buf = (/** @type {number} */ size, /** @type {number} */ usage) => device.createBuffer({ size, usage: usage | GPUBufferUsage.COPY_DST });
@@ -278,6 +305,7 @@ export async function createFxPass(gpu) {
       device.queue.writeBuffer(frameBuf, 0, frame);
       pass.setBindGroup(0, group);
       if (nM) { pass.setPipeline(mothPipe); pass.setVertexBuffer(0, vb); pass.draw(mesh.vertices, nM); }
+      if (nS) { pass.setPipeline(dustPipe); pass.draw(6, nS); }
       if (nT) { pass.setPipeline(threadPipe); pass.draw(6, nT); }
       if (nS) { pass.setPipeline(sparkPipe); pass.draw(6, nS); }
     },
