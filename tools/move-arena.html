@@ -41,7 +41,8 @@
   select { font: 700 16px 'Nunito', system-ui, sans-serif; padding: 8px 10px; border-radius: 10px; border: 1px solid #E3D9C9; background: #FFFDF8; color: #1E2624; max-width: 100%; }
   ul.notes { columns: 1; }
   #hollow-panel { display: flex; flex-direction: column; gap: 10px; }
-  #hollow-panel[hidden], #moves-panel[hidden] { display: none; }
+  #hollow-panel[hidden], #moves-panel[hidden], #cine-panel[hidden] { display: none; }
+  #cine-panel { display: flex; flex-direction: column; gap: 10px; }
   #moves-panel { display: flex; flex-direction: column; gap: 10px; }
   .tablets { display: flex; flex-wrap: wrap; justify-content: center; gap: 28px; }
   .peg { display: flex; flex-direction: column; align-items: center; gap: 6px; }
@@ -89,10 +90,12 @@
         <dt>Tab</dt><dd>Locks on; again for the next, left to right; off after the last</dd>
         <dt>Esc (pointer free)</dt><dd>Drops the lock</dd>
         <dt>Q, E</dt><dd>The two moves: fire at once, or ready them and click (the switch beside)</dd>
+        <dt>Space in a wind-up</dt><dd>Rolls out of the move: nothing is spent</dd>
       </dl>
     </div>
     <div class="card">
       <section id="moves-panel" hidden></section>
+      <section id="cine-panel" hidden></section>
       <section id="hollow-panel" hidden></section>
       <div class="buttons">
         <button id="reset">Back to the start</button>

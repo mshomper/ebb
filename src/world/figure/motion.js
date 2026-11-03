@@ -41,6 +41,7 @@ import { createTrailing } from './trailing.js';
  * @property {boolean} [below]  you are on foot (false: you went up, and the figure waits)
  * @property {boolean} [sleepy] it is night, for half lids while sitting
  * @property {import('./look.js').Interest[]} [interests]  things near you worth a look (creatures, finds, the fire)
+ * @property {number} [aimUpDeg]  lean the chest back to reach up (degrees, the Hollow's swing at a floater; 0 or none, unchanged)
  */
 
 const ID = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1];
@@ -172,7 +173,7 @@ export function createFigureMotion(R, skeleton, clipFile = null) {
     /**
      * Play one of Matt's clips once over the walker (clips.js shoot; the tool pages' fighting clips).
      * Returns its length, 0 without clips or for no such clip.
-     * @param {string} name @param {{ span?: number[], lenS?: number, easeS?: number, mask?: string[], feet?: boolean }} [o]
+     * @param {string} name @param {{ span?: number[], lenS?: number, easeS?: number, mask?: string[], feet?: boolean, weight?: number, knots?: number[][] }} [o]
      */
     shoot(name, o) { return clips ? clips.shoot(name, o) : 0; },
     /** Add a clip set for shots (the fighting set, tool pages only). @param {import('./clips.js').ClipFile} f */
@@ -518,12 +519,14 @@ export function createFigureMotion(R, skeleton, clipFile = null) {
       // With the clip: its back, with the lean into starts and stops (the lean past the pace's own),
       // breathing, the look's share and an act's twist on top.
       const leanOn = (paceLean - (P.leanDeg * m + 1.5 * (1 - m))) * DEG * standW;
-      const spineQ = qaxis([1, 0, 0], lean * 0.5 + br * R.idle.breathDeg * 0.3 * DEG);
-      set(I.spine, { q: CP ? qslerp(spineQ, qmul(clipQ(CP, I.spine), qaxis([1, 0, 0], leanOn * 0.5 + br * R.idle.breathDeg * 0.3 * DEG)), cwOf(I.spine)) : spineQ });
+      // Reaching up (aimUpDeg): the spine and chest share a lean back, over whatever the clip does.
+      const up = -(s.aimUpDeg ?? 0) * DEG * 0.5;
+      const spineQ = qaxis([1, 0, 0], lean * 0.5 + br * R.idle.breathDeg * 0.3 * DEG + up);
+      set(I.spine, { q: CP ? qslerp(spineQ, qmul(clipQ(CP, I.spine), qaxis([1, 0, 0], leanOn * 0.5 + br * R.idle.breathDeg * 0.3 * DEG + up)), cwOf(I.spine)) : spineQ });
       // An act's twist turns the chest to the right (the dig's tip onto the spoil heap).
       const actTwist = A ? -(A.twist ?? 0) * DEG : 0;
-      const chestQ0 = qmul(qaxis([1, 0, 0], lean * 0.5), qaxis([0, 1, 0], -twist * 0.8 + LK.chest + actTwist));
-      set(I.chest, { q: CP ? qslerp(chestQ0, qmul(clipQ(CP, I.chest), qmul(qaxis([1, 0, 0], leanOn * 0.5), qaxis([0, 1, 0], LK.chest + actTwist))), cwOf(I.chest)) : chestQ0,
+      const chestQ0 = qmul(qaxis([1, 0, 0], lean * 0.5 + up), qaxis([0, 1, 0], -twist * 0.8 + LK.chest + actTwist));
+      set(I.chest, { q: CP ? qslerp(chestQ0, qmul(clipQ(CP, I.chest), qmul(qaxis([1, 0, 0], leanOn * 0.5 + up), qaxis([0, 1, 0], LK.chest + actTwist))), cwOf(I.chest)) : chestQ0,
         s: [1 + 0.006 * br, 1 + 0.004 * br, 1 + 0.008 * br] });
       const headPitch = Math.max(-L.maxPitchDeg * DEG, Math.min(L.maxPitchDeg * DEG, pitch)) - lean * 0.7 + RO.headDeg * DEG * tuck;
       const headQ = qmul(qaxis([0, 1, 0], LK.yaw), qaxis([1, 0, 0], headPitch));

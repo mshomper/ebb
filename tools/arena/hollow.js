@@ -12,7 +12,7 @@ import { createLock } from '../../src/world/hollow/lock.js';
 import { dotRange, walkDot } from '../../src/world/hollow/aim.js';
 import { arcHits, createSwingChain } from '../../src/world/hollow/swing.js';
 import { inTheWay } from '../../src/world/hollow/occlude.js';
-import { pushRing, pushArc, pushDisc, pushSolidEdges } from './props.js';
+import { pushRing, pushArc, pushSolidEdges, pushFloorDot } from './props.js';
 
 /** Colours of the marks: drawn unlit (negative), so they read in the dark. Paper, ink, ember. */
 // Bright enough to stand out on the lantern-lit floor (the stage tonemaps them like light).
@@ -23,8 +23,10 @@ const wrap = (/** @type {number} */ a) => Math.atan2(Math.sin(a), Math.cos(a));
  * @param {{
  *   HR: any, FR: any, walker: any, camera: any, grid: any, ground: (x: number, z: number) => number, course: any,
  *   motion: any, held: any, built: any, DS: number, actors: () => any[], head: () => number[], say: (s: string) => void,
- *   lookRates: () => { degPerPx: number, halfLifeS: number },
+ *   lookRates: () => { degPerPx: number, halfLifeS: number }, pitchOffset?: () => number, dotLook?: any,
  * }} o
+ *   dotLook: the floor dot's look (recipes/world/hollow-cine.json dot);
+ *   pitchOffset: the camera's passing tilt (rad, the moves' camera, cine-camera.js), taken off before the tilt sets the dot's range
  */
 export function createHollow(o) {
   const { HR, FR, walker, camera, grid, ground, course, motion } = o;
@@ -42,21 +44,36 @@ export function createHollow(o) {
   let shove = null;
   /** The hit-stop left (s): the world holds still a moment as a hit lands. */
   let hitStop = 0;
-  /** Things standing in for the game's moves (H0b) hook in here: a brace that catches a hit. */
-  const hooks = { /** @type {null | ((e: any) => boolean)} */ catchHit: null };
+  /**
+   * Things standing in for the game's moves (H0b) hook in here: a brace that catches a hit; the
+   * swing's contact (its beat and chips, by size); which things the swing reaches (the reach ceiling).
+   */
+  const hooks = {
+    /** @type {null | ((e: any) => boolean)} */ catchHit: null,
+    /** @type {null | ((size: 'glance' | 'land' | 'break', a: any) => void)} */ contact: null,
+    /** @type {null | ((a: any) => boolean)} */ reaches: null,
+    /** @type {null | ((p: { x: number, z: number, yaw: number, r: number, deg: number, landed: boolean }) => void)} */ slash: null,
+  };
+  /** The lantern's passing shares of its strength and reach as drawn (cine-light.js); the light the things feel is unchanged. */
+  const lightShare = { gain: 1, reach: 1 };
 
-  /** Live stand-ins (not the frog, not broken). */
-  const foes = () => o.actors().filter((a) => a.foe && !a.broken);
+  /** Live stand-ins (not the frog; not broken, unless all). */
+  const foes = (all = false) => o.actors().filter((a) => a.foe && (all || !a.broken));
   const byId = (/** @type {number | null} */ id) => (id === null ? null : foes().find((a) => a.id === id) ?? null);
 
   const HAND = o.built.skeleton.findIndex((/** @type {any} */ b) => b.name === 'hand.l');
-  /** The lantern's light: where it hangs from the left hand, which the raise lifts (world m). */
-  function lampAt() {
-    const m = motion.bones, p = o.built.skeleton[HAND].pivot, i = HAND * 16;
+  const HAND_R = o.built.skeleton.findIndex((/** @type {any} */ b) => b.name === 'hand.r');
+  /** Where a bone's pivot is in the world (m), as the stage draws the figure. @param {number} k */
+  function boneAt(k) {
+    const m = motion.bones, p = o.built.skeleton[k].pivot, i = k * 16;
     const b = [0, 1, 2].map((r) => (m[i + r] * p[0] + m[i + 4 + r] * p[1] + m[i + 8 + r] * p[2] + m[i + 12 + r]) * o.DS);
     const c = Math.cos(walker.yaw), s = Math.sin(walker.yaw);
-    return [walker.x + c * b[0] + s * b[2], walker.y + b[1] - 0.12, walker.z - s * b[0] + c * b[2]];
+    return [walker.x + c * b[0] + s * b[2], walker.y + b[1], walker.z - s * b[0] + c * b[2]];
   }
+  /** The lantern's light: where it hangs from the left hand, which the raise lifts (world m). */
+  function lampAt() { const b = boneAt(HAND); b[1] -= 0.12; return b; }
+  /** The weapon hand (world m): where a throw leaves, at the clip's own release frame. */
+  const handAt = () => boneAt(HAND_R);
   /** The lantern as the stand-ins read it. */
   function lampState() {
     const p = lampAt();
@@ -83,7 +100,8 @@ export function createHollow(o) {
     const t = byId(lock.target);
     if (t) return { x: t.x, z: t.z, locked: true, m: Math.hypot(t.x - walker.x, t.z - walker.z) };
     const e = camera.eye, g = camera.target, gx = g[0] - e[0], gz = g[2] - e[2];
-    const pitchDeg = Math.atan2(e[1] - g[1], Math.hypot(gx, gz)) * 180 / Math.PI;
+    // The camera's own tilt: a move's kick or shake must not jolt the dot.
+    const pitchDeg = (Math.atan2(e[1] - g[1], Math.hypot(gx, gz)) - (o.pitchOffset?.() ?? 0)) * 180 / Math.PI;
     const r = walkDot(grid, walker.rules, walker.x, walker.z, gx, gz, dotRange(pitchDeg, HR.dot), HR.dot.stepM);
     return { x: r.x, z: r.z, locked: false, m: r.m };
   }
@@ -142,7 +160,8 @@ export function createHollow(o) {
   /** One hit of the swing: the arc on the floor, and what it lands on. */
   function landHit() {
     const S = HR.swing, x = walker.x, z = walker.z, yaw = walker.yaw;
-    const on = arcHits(x, z, yaw, foes(), S.reachM, S.arcDeg, (a) => a.size);
+    // Up to the reach ceiling: the staff reaches the watcher floating at 1.5 m (Matt, November 3, 2026).
+    const on = arcHits(x, z, yaw, foes().filter((a) => hooks.reaches?.(a) ?? true), S.reachM, S.arcDeg, (a) => a.size);
     let landed = false;
     for (const a of on) {
       const r = a.foe.take({ kind: 'hit', fromX: x, fromZ: z, world: { open } });
@@ -154,12 +173,17 @@ export function createHollow(o) {
         if (r.side === 'back') tally.back++;
         if (r.broke) tally.broke++;
       }
+      hooks.contact?.(r.broke ? 'break' : r.landed && !r.glanced ? 'land' : 'glance', a);
     }
     if (!on.length) tally.misses++;
-    // The world holds still a moment as a hit lands (and a little less for a glance).
-    if (on.length) hitStop = HR.swing.hitStopS * (landed ? 1 : 0.5);
-    const col = landed ? MARK.ember : on.length ? MARK.paper : MARK.miss;
-    marks.push({ age: 0, life: 0.6, draw: (out, k) => pushArc(out, x, z, 0.45, S.reachM, yaw, S.arcDeg, ground, col.map((v) => v * k)) });
+    // The world holds still a moment as a hit lands (and a little less for a glance); with the moves' beats, the contact does it.
+    if (on.length && !hooks.contact) hitStop = HR.swing.hitStopS * (landed ? 1 : 0.5);
+    // The swing's mark: with the moves' effects, a slash at staff height (in place of the old filled fan); else the fan.
+    if (hooks.slash) hooks.slash({ x, z, yaw, r: S.reachM * 0.85, deg: S.arcDeg, landed });
+    else {
+      const col = landed ? MARK.ember : on.length ? MARK.paper : MARK.miss;
+      marks.push({ age: 0, life: 0.6, draw: (out, k) => pushArc(out, x, z, 0.45, S.reachM, yaw, S.arcDeg, ground, col.map((v) => v * k)) });
+    }
   }
 
   /** What the stand-ins did this frame: strikes on you, calls. @param {any[]} ev */
@@ -227,9 +251,10 @@ export function createHollow(o) {
       pushRing(out, t.x, t.z, t.size + 0.28, ground, MARK.paper, 0.07);
       pushRing(out, t.x, t.z, t.size + 0.28, ground, MARK.ink, 0.03);
     } else {
-      const d = dot();
-      pushDisc(out, d.x, d.z, 0.28, ground, MARK.paper);
-      pushDisc(out, d.x, d.z, 0.13, ground, MARK.ink);
+      // The floor dot (Matt, November 3, 2026: the white disc looked bad and the floor clipped through
+      // it): a small ink ring on a soft pale halo, every point lifted off the floor under it, breathing a little.
+      const d = dot(), D = o.dotLook;
+      if (D) pushFloorDot(out, d.x, d.z, (x, z) => Math.max(ground(x, z), course.waterY), { ...D, breathe: Math.sin(performance.now() / 1000 * D.breatheHz * 2 * Math.PI) });
     }
     const h = o.head(), eye = camera.eye, F = HR.camera.fade;
     /** @type {Set<number>} */ const faded = new Set();
@@ -275,7 +300,7 @@ export function createHollow(o) {
   }
 
   return {
-    lantern, lock, cam, tally, hooks, marks: () => marks, foes, byId, dot, lampAt,
+    lantern, lock, cam, tally, hooks, lightShare, marks: () => marks, foes, byId, dot, lampAt, handAt,
     steerWay, swingNow, onEvents, update, youExtra, draw, heldTris, fadedShapes, onKey,
     get swinging() { return chain.swinging; },
     /** Break off a swing (a roll). */
@@ -295,7 +320,7 @@ export function createHollow(o) {
     /** The stage's lantern light for this frame. */
     lamp() {
       const L = HR.lantern;
-      return { at: lampAt(), reachM: Math.max(0.01, lantern.reach()), ambient: L.ambient, strength: lantern.out ? 0 : L.strength * (lantern.snuffed ? 0.4 : 1) };
+      return { at: lampAt(), reachM: Math.max(0.01, lantern.reach() * lightShare.reach), ambient: L.ambient, strength: lantern.out ? 0 : L.strength * (lantern.snuffed ? 0.4 : 1) * lightShare.gain };
     },
   };
 }

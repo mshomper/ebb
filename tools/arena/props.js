@@ -40,15 +40,15 @@ export function pushCylinder(out, c, r, hgt, col, sides = 16) {
 }
 
 /**
- * A flat ring on the ground (the creep zone, a frog's ring), as thin quads following the ground.
+ * A flat ring on the ground (the creep zone, a frog's ring), as thin quads following the ground, lift over it.
  * @param {number[]} out @param {number} x @param {number} z @param {number} r @param {(x: number, z: number) => number} ground @param {number[]} col
  */
-export function pushRing(out, x, z, r, ground, col, widthM = 0.05, sides = 48) {
+export function pushRing(out, x, z, r, ground, col, widthM = 0.05, sides = 48, lift = 0.03) {
   for (let i = 0; i < sides; i++) {
     const pts = [i, i + 1].flatMap((k) => {
       const a = (k / sides) * 2 * Math.PI, s = Math.sin(a), c = Math.cos(a);
       return [[x + s * (r - widthM), z + c * (r - widthM)], [x + s * (r + widthM), z + c * (r + widthM)]];
-    }).map(([px, pz]) => [px, ground(px, pz) + 0.03, pz]);
+    }).map(([px, pz]) => [px, ground(px, pz) + lift, pz]);
     for (const k of [0, 1, 3, 0, 3, 2]) out.push(...pts[k], 0, 1, 0, ...col);
   }
 }
@@ -84,9 +84,9 @@ export function pushLane(out, x0, z0, x1, z1, widthM, ground, col, pieces = 16, 
   }
 }
 
-/** A flat disc on the ground (the floor dot). @param {number[]} out @param {number} x @param {number} z @param {number} r @param {(x: number, z: number) => number} ground @param {number[]} col */
-export function pushDisc(out, x, z, r, ground, col, sides = 20) {
-  const y = ground(x, z) + 0.04;
+/** A flat disc on the ground (a scorch); lift: how far over it (m), so discs laid on each other never fight. @param {number[]} out @param {number} x @param {number} z @param {number} r @param {(x: number, z: number) => number} ground @param {number[]} col */
+export function pushDisc(out, x, z, r, ground, col, sides = 20, lift = 0.04) {
+  const y = ground(x, z) + lift;
   for (let i = 0; i < sides; i++) {
     const a0 = (i / sides) * 2 * Math.PI, a1 = ((i + 1) / sides) * 2 * Math.PI;
     out.push(x, y, z, 0, 1, 0, ...col, x + Math.sin(a0) * r, y, z + Math.cos(a0) * r, 0, 1, 0, ...col, x + Math.sin(a1) * r, y, z + Math.cos(a1) * r, 0, 1, 0, ...col);
@@ -117,4 +117,33 @@ export function pushSolidEdges(out, s, y, col, sides = 16) {
     for (const h of [y, y + s.heightM]) seg([a[0], h, a[1]], [b[0], h, b[1]]);
     seg([a[0], y, a[1]], [a[0], y + s.heightM, a[1]]);
   }
+}
+
+/**
+ * The Hollow's floor dot (Matt, November 3, 2026: the old white disc looked bad, and being one flat
+ * disc at its middle's height, the floor's slopes and the pool's water came up through it): a small
+ * ink ring on a soft pale halo, with an ink point at its middle. Every point sits liftM over the
+ * surface under it (surface: the floor or the water, whichever is higher), so nothing clips through.
+ * breathe -1..1 swells it a little. Colours are drawn unlit (negative), as the arena's marks.
+ * @param {number[]} out @param {number} x @param {number} z @param {(x: number, z: number) => number} surface
+ * @param {{ rM: number, inkW: number, haloW: number, pointM: number, liftM: number, swell: number, breathe: number, ink: number[], halo: number[] }} L
+ */
+export function pushFloorDot(out, x, z, surface, L) {
+  const r = L.rM * (1 + L.swell * L.breathe), sides = 40, y = (/** @type {number} */ px, /** @type {number} */ pz) => surface(px, pz) + L.liftM;
+  /** A band between radii r0 and r1, its colour fading from c0 inside to c1 outside. @param {number} r0 @param {number} r1 @param {number[]} c0 @param {number[]} c1 @param {number} up */
+  const band = (r0, r1, c0, c1, up) => {
+    for (let i = 0; i < sides; i++) {
+      const a0 = (i / sides) * 2 * Math.PI, a1 = ((i + 1) / sides) * 2 * Math.PI;
+      const P = (/** @type {number} */ a, /** @type {number} */ rr) => { const px = x + Math.sin(a) * rr, pz = z + Math.cos(a) * rr; return [px, y(px, pz) + up, pz]; };
+      const q = [[P(a0, r0), c0], [P(a0, r1), c1], [P(a1, r0), c0], [P(a1, r1), c1]];
+      for (const k of [0, 1, 3, 0, 3, 2]) out.push(.../** @type {number[]} */ (q[k][0]), 0, 1, 0, .../** @type {number[]} */ (q[k][1]));
+    }
+  };
+  const fade = L.halo.map((v) => v * 0.15);
+  // The halo, soft on both edges, then the ink ring on it and the point, each a hair higher so they never fight.
+  band(Math.max(0, r - L.haloW), r, fade, L.halo, 0);
+  band(r, r + L.haloW, L.halo, fade, 0);
+  band(r - L.inkW / 2, r + L.inkW / 2, L.ink, L.ink, 0.004);
+  band(0, L.pointM, L.ink, L.ink, 0.004);
+  band(L.pointM, L.pointM + L.haloW * 0.6, L.halo, fade, 0.002);
 }

@@ -282,6 +282,66 @@ A sixth, **Point**, is one arm held out, the smallest clip in the set. Back step
 
 Every move shows itself with light, not only a mark on the floor. In the dark of the Hollow, an effect's light falls on the floor, the walls, the walker and the Hollow's things, so a thrown flame lights its way and a beam sweeps the room. Four pieces serve every move: real point lights, glowing sparks (embers, chips, seeds, spores, dust), glowing threads (the wick's binding, the beam) and moths. Moths look like moths, pale and dusty with their wings beating, not glowing specks. Floor marks grow in and fade. No move needs a new body clip for its effect. The numbers live in `recipes/world/hollow-move-fx.json`; `src/world/hollow/move-fx.js` runs them, and `tools/move-fx-lab.html` plays each one alone.
 
+**The cinematic pass as built (November 3, 2026; claude/hollow-moves-cine, in the move arena only).** Matt found the moves flat and underwhelming, with no cinematic feel. Now every move has a wind-up, a release and an aftermath, and each beat plays through five things. Numbers are in `recipes/world/hollow-cine.json`, with sliders in the arena's "How the moves feel" panel.
+
+- **The camera takes part** (`src/world/hollow/cine-camera.js`, through one offset hook in `src/render/camera.js`, `setOffset`, which the camera lays over its own view each frame and never keeps):
+  - It eases in, or pulls back, over the wind-up.
+  - It kicks on release, a jolt on a damped spring.
+  - It shakes in proportion to the hit. The shake is the trauma squared, on smooth seeded noise, and it decays fast.
+  - For Groundline, Kindling burst and Cast the flame's landing, the aim slides part way toward the effect, holds, and settles back.
+  - A **Camera motion** setting (0 to 1) scales all of it, down to off.
+  - The floor dot reads the camera's own tilt, so a kick never jolts it.
+- **Time bends** (`cine-time.js`):
+  - A hit-stop on contact: the fight runs at 4 % for 0.04 to 0.12 s, sized to the hit.
+  - A short slow-down on a peak or a break, easing back.
+  - It bends only the fight's step and what is drawn, never world time: the island's clock and its hourly simulation keep running at full speed behind the Hollow, and no seeded draw reads the scale. The module's header says so for H3b.
+- **Light carries it** (`cine-light.js` and the effect lights):
+  - The lantern dims as power gathers (to half for Groundline, to 45 % with its reach drawn in for Kindling burst).
+  - It swells as the move leaves, then comes back, sputtering after the big ones.
+  - The release's flash stays local, as a blow landing does, not a camera flash (the orchestrator's look, November 3, 2026). It is bright at the source and falls off as 1 / (1 + (d / 0.12 reach)^2), windowed out before its 8 to 10 m reach, so it still reaches the pillars and throws their shadows while the room's corners stay dark. The lantern's swell on release is held to at most 1.1, so the frame keeps its contrast. It casts soft shadows. A light marked shadow is blocked by upright capsules (the walker, the things, the six pillars; motes cast none) in `src/shaders/lib-fx-light.wgsl`. It is an analytic soft shadow with no shadow map, and a capsule the light or the point sits inside is skipped.
+  - Afterglows hold on the floor and fade slowly. A glowing floor mark fades into the floor's own light, never to black; ink marks (a scorch, a crack's core) stay dark.
+  - The light stays physical in HDR, with the palette at the tonemap.
+- **Particles with weight** (`move-fx.js`):
+  - Sparks can bounce (a share of their fall kept, a friction) and cool to a dull red as they lie on the floor.
+  - Dust is a lit, soft puff laid over the scene, never a glow.
+  - Groundline leaves a jagged crack whose glow cools over 4.5 s. Cast the flame's scorch has an ember rim. Anchor's plant leaves a crack ring round the feet.
+  - Moths stay moths.
+- **The body sells it:**
+  - A shot can carry timing knots (`src/world/figure/clips.js` `knotShare`). With none, every clip plays exactly as before, which `tools/unit-tests-clip-knots.js` proves against pose hashes taken on main.
+  - Each move's clip rises slowly into its wind-up, all but holds at the top, reaches its release share (the frame the hand lets go or the staff lands, found from the hand's path) exactly as the wind-up ends, then snaps through and follows through. The effect never leaves ahead of the hand.
+  - Cast the flame's flame grows in the right hand during the wind-up, as Taproot's seed glows there. Kindling burst draws sparks into the glass.
+  - Wind-ups are longer:
+
+    | Move | Wind-up before (s) | Wind-up now (s) |
+    |---|---|---|
+    | Groundline | 0.18 | 0.45 |
+    | Kindling burst | 0.2 | 0.55 |
+    | Spring chorus | 0.15 | 0.4 |
+    | Cast the flame | 0.15 | 0.32 |
+    | Wick snare | 0.2 | 0.32 |
+    | Moth lure | 0.1 | 0.26 |
+    | Taproot | 0.12 | 0.26 |
+    | Hook and turn | 0.12 | 0.22 |
+    | Snuff | 0.1 | 0.22 |
+
+    Anchor (0.14) and Feint (0.1) stay quick, and Back step stays instant.
+  - **A roll in a wind-up cancels the move with nothing spent.** Its wait goes back to what it was, a once-a-floor move is unspent, seeds return, and fuel is only taken as the move leaves. A roll in the follow-through ends it. A roll ends Snuff, which moving already did. No move forbids a roll out of its wind-up; Back step is itself the roll.
+- **Sound hooks:** every beat sends `hollow:beat` with the move and the beat (wind, release, impact, end, and catch, trip, spring, burst, break, unsnuff, out, cancel), and the swing's contact sends glance, land or break. No audio yet; the panel counts them.
+- **The swing's mark is a slash** (in place of H0's filled fan on the floor): a curved streak along the staff tip's path at staff height (1 m, rising to a locked floater's body), swept in 0.06 s and gone in 0.2 s, with only a faint thin scuff on the floor. Hook and turn sweeps a streak round the thing at its body's height, Feint a pale half-streak, and their floor arcs are now thin lines.
+- **The swing's contact** by size:
+
+  | Hit | Hit-stop | Also |
+  |---|---|---|
+  | Glance off a front | 0.04 s | A small shake |
+  | Landed | 0.07 s | A kick along the blow, chips 5 to 8.5 cm across and a brief bright star, so it reads from 5.5 m, and a small warm flash at the body's height |
+  | Breaks it | 0.12 s | Then 0.24 s at 40 % speed |
+
+- **Reaching floaters** (Matt, November 3, 2026; `recipes/world/hollow.json` reach):
+  - The swing and every targeted move hit things whose body is up to 1.8 m over the floor (crawler 0.2 m, motes 0.5 m, the watcher 1.5 m).
+  - Locked on, Cast the flame, Taproot and Hook and turn aim at the body. The flame bursts on the stone in the air and its embers rain down, while its ring and scorch stay on the floor beneath.
+  - Locked on a thing above the chest, the chest and spine lean back toward it while swinging or playing a move, up to 26 degrees (an `aimUpDeg` input to the figure's motion, 0 by default).
+- **The floor dot** (Matt, November 3, 2026: the white disc looked bad, and the floor often clipped through it). It was one flat disc at its middle's height, so the pool's slope came through its rim, and in the shallows it lay under the water. Now it is a small ink ring on a soft warm halo with an ink point at its middle. Every point sits 3.5 cm over the floor or the water under it, whichever is higher, and it breathes a little.
+
 ### The sixteen moves
 
 **Fighting: weapon and body.** Close and natural. Each weapon kind still flavors these: a spear's Groundline runs longer, a club's Anchor reels harder, a knife's Hook and turn is quicker.
@@ -440,6 +500,8 @@ The walker camera, with only its recipe numbers changed in the Hollow, so the fl
 | Distance behind | 1.8 to 5.2 m (starts 3) | 4 to 7 m (starts 5.5) |
 | Tilt down | -8° to 45° (starts 14°) | 20° to 55° (starts 32°) |
 | Walls in the way | The camera pulls in | Walls between the camera and the walker fade to a soft outline, so the camera never lurches in a tight passage |
+
+The Hollow's distance is measured along the slant to the point the view aims at, 1.3 m over the walker's feet (checked in the move arena, November 3, 2026). At the starting 5.5 m and 32 degrees, the camera stands only 4.7 m behind on the floor, which is why it can look closer than 5.5 m. The numbers stay as they are.
 
 Things behind the walker give a sound and a glint at the edge of the light.
 

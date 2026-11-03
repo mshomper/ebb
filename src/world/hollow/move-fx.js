@@ -15,10 +15,17 @@ import {
   MAX_FX_LIGHTS, LIGHT_FLOATS, MAX_SPARKS, SPARK_FLOATS, MAX_THREADS, THREAD_FLOATS, MAX_MOTHS, MOTH_FLOATS,
 } from './fx-layout.js';
 
-/** @typedef {{ n: number, speed: number[], up: number[], lifeS: number[], size: number[], col: number[], gravity: number, drag: number, stretch: number, spread: number, blink?: number }} SparkSpec */
-/** @typedef {{ col: number[], reachM: number, lifeS?: number, curve?: 'flash' | 'hold' | 'pulse', fadeS?: number, flicker?: number, y?: number, pulseHz?: number }} LightSpec */
+/**
+ * bounce: how much of its fall a spark keeps on hitting the floor (0.25 without), friction what it keeps of its slide;
+ * cool: the colour it cools to over its life (an ember lying on the floor); dust: a lit, soft, non-glowing puff
+ * (col is then its albedo, drawn shaded by the lights, not added on).
+ * @typedef {{ n: number, speed: number[], up: number[], lifeS: number[], size: number[], col: number[], gravity: number, drag: number, stretch: number, spread: number, blink?: number, bounce?: number, friction?: number, cool?: number[], dust?: boolean }} SparkSpec
+ */
+/** shadow: it throws soft shadows of the walker, the things and the pillars (the cinematic pass's flashes). */
+/** @typedef {{ col: number[], reachM: number, lifeS?: number, curve?: 'flash' | 'hold' | 'pulse', fadeS?: number, flicker?: number, y?: number, pulseHz?: number, shadow?: boolean }} LightSpec */
 /** A floor mark for the arena to draw: its shape and numbers, and its colour (linear light) already faded. */
-/** @typedef {{ shape: 'ring' | 'disc' | 'arc' | 'lane', x: number, z: number, r?: number, r0?: number, r1?: number, yaw?: number, deg?: number, x1?: number, z1?: number, w?: number, col: number[] }} Mark */
+/** lift: how far over the floor (m), for a mark laid over another; ink: a dark mark (a scorch, a crack's core), not a glow. */
+/** @typedef {{ shape: 'ring' | 'disc' | 'arc' | 'lane', x: number, z: number, r?: number, r0?: number, r1?: number, yaw?: number, deg?: number, x1?: number, z1?: number, w?: number, lift?: number, ink?: boolean, col: number[] }} Mark */
 
 const TAU = Math.PI * 2;
 const lerp = (/** @type {number} */ a, /** @type {number} */ b, /** @type {number} */ t) => a + (b - a) * t;
@@ -40,8 +47,9 @@ export function createMoveFx(FX, o) {
 
   // ---- sparks: a fixed pool, written straight into the array the GPU reads ----
   const sparks = new Float32Array(MAX_SPARKS * SPARK_FLOATS);
-  /** Per spark: age, life, gravity, drag, base alpha, blink rate, base r g b. */
-  const sp = new Float32Array(MAX_SPARKS * 9);
+  /** Per spark: age, life, gravity, drag, bounce, blink rate, base r g b, friction, cooled r g b (a dust puff's colours are negative: lit, not glowing). */
+  const SP = 13;
+  const sp = new Float32Array(MAX_SPARKS * SP);
   let nSparks = 0;
 
   /**
@@ -53,9 +61,9 @@ export function createMoveFx(FX, o) {
     for (let i = 0; i < k && nSparks < MAX_SPARKS; i++) {
       const half = ((S.spread ?? 360) / 2) * Math.PI / 180;
       const a = (dir ?? rnd() * TAU) + (dir === undefined ? 0 : (rnd() * 2 - 1) * half);
-      const v = range(S.speed), j = nSparks++, b = j * SPARK_FLOATS, q = j * 9;
-      sparks.set([x, y, z, range(S.size), S.col[0], S.col[1], S.col[2], 1, Math.sin(a) * v, range(S.up), Math.cos(a) * v, S.stretch ?? 0], b);
-      sp.set([0, range(S.lifeS), S.gravity ?? 0, S.drag ?? 0, 1, S.blink ?? 0, S.col[0], S.col[1], S.col[2]], q);
+      const v = range(S.speed), j = nSparks++, b = j * SPARK_FLOATS, q = j * SP, sg = S.dust ? -1 : 1, c = S.col, cc = S.cool ?? c;
+      sparks.set([x, y, z, range(S.size), c[0] * sg, c[1] * sg, c[2] * sg, 1, Math.sin(a) * v, range(S.up), Math.cos(a) * v, S.stretch ?? 0], b);
+      sp.set([0, range(S.lifeS), S.gravity ?? 0, S.drag ?? 0, S.bounce ?? 0.25, S.blink ?? 0, c[0] * sg, c[1] * sg, c[2] * sg, S.friction ?? 0.5, cc[0] * sg, cc[1] * sg, cc[2] * sg], q);
     }
   }
   /** Sparks at a rate: carry the remainder so a slow rate still emits. @type {Map<string, number>} */
@@ -70,7 +78,7 @@ export function createMoveFx(FX, o) {
   function stepSparks(dt) {
     let w = 0;
     for (let i = 0; i < nSparks; i++) {
-      const b = i * SPARK_FLOATS, q = i * 9;
+      const b = i * SPARK_FLOATS, q = i * SP;
       sp[q] += dt;
       const age = sp[q], life = sp[q + 1];
       if (age >= life) continue;
@@ -80,11 +88,14 @@ export function createMoveFx(FX, o) {
       sparks[b] += sparks[b + 8] * dt; sparks[b + 1] += sparks[b + 9] * dt; sparks[b + 2] += sparks[b + 10] * dt;
       // Settle on the floor rather than fall through it.
       const g = ground(sparks[b], sparks[b + 2]) + 0.01;
-      if (sparks[b + 1] < g) { sparks[b + 1] = g; sparks[b + 9] = Math.abs(sparks[b + 9]) * 0.25; sparks[b + 8] *= 0.5; sparks[b + 10] *= 0.5; }
+      if (sparks[b + 1] < g) { sparks[b + 1] = g; sparks[b + 9] = Math.abs(sparks[b + 9]) * sp[q + 4]; sparks[b + 8] *= sp[q + 9]; sparks[b + 10] *= sp[q + 9]; }
       // Fade in fast, out slow; a blink rate twinkles it (the chorus's motes).
       const t = age / life, blink = sp[q + 5] > 0 ? 0.55 + 0.45 * Math.sin(age * sp[q + 5] * TAU + i) : 1;
       sparks[b + 7] = Math.min(1, t * 12) * (1 - t) ** 1.5 * blink;
-      if (w !== i) { sparks.copyWithin(w * SPARK_FLOATS, b, b + SPARK_FLOATS); sp.copyWithin(w * 9, q, q + 9); }
+      // Cooling: toward its cooled colour over its life (an ember on the floor goes from gold to a dull red).
+      const ck = t ** 0.6;
+      for (let c = 0; c < 3; c++) sparks[b + 4 + c] = sp[q + 6 + c] + (sp[q + 10 + c] - sp[q + 6 + c]) * ck;
+      if (w !== i) { sparks.copyWithin(w * SPARK_FLOATS, b, b + SPARK_FLOATS); sp.copyWithin(w * SP, q, q + SP); }
       w++;
     }
     nSparks = w;
@@ -103,7 +114,8 @@ export function createMoveFx(FX, o) {
   function strength(l) {
     const L = l.spec, t = l.age / Math.max(1e-3, l.life);
     let k = 1;
-    if (L.curve === 'flash') k = Math.min(1, l.age * 30) * (1 - t) ** 2;
+    // A flash is full at once (a hit-stop holds it there, lit), then falls away.
+    if (L.curve === 'flash') k = (1 - t) ** 2;
     else if (L.curve === 'hold') k = Math.min(1, l.age * 20) * clamp01((l.life - l.age) / Math.max(1e-3, L.fadeS ?? 0.5));
     else if (L.curve === 'pulse') k = Math.min(1, l.age * 10) * (1 - t) * (0.6 + 0.4 * Math.cos(l.age * (L.pulseHz ?? 2) * TAU));
     const f = L.flicker ?? 0, tt = clock + l.ph;
@@ -134,6 +146,8 @@ export function createMoveFx(FX, o) {
   let beams = [];
   /** @type {Map<string, any>} */
   const lasting = new Map();
+  /** Slashes in the air (the swing, Hook and turn, Feint): each lasts its lifeS. @type {any[]} */
+  let slashes = [];
   /** Swarms of moths, and moths still leaving after their swarm ended. */
   /** @type {any[]} */
   let moths = [];
@@ -147,8 +161,8 @@ export function createMoveFx(FX, o) {
   const arcAt = (f, t) => [lerp(f.from[0], f.to[0], t), lerp(f.from[1], f.to[1], t) + 4 * f.arcM * t * (1 - t), lerp(f.from[2], f.to[2], t)];
 
   /** @param {any} C */
-  function throwIt(C, /** @type {number[]} */ from, /** @type {number} */ x1, /** @type {number} */ z1, /** @type {() => void} */ land, light = null, /** @type {number | undefined} */ durS = undefined) {
-    flights.push({ from, to: [x1, gy(x1, z1, 0.1), z1], t: 0, dur: durS ?? C.flightS, arcM: C.arcM, head: C.head, trail: C.trail, trailHz: C.trailHz ?? C.trailRateHz, light, land, key: `f${n}`, at: from.slice() });
+  function throwIt(C, /** @type {number[]} */ from, /** @type {number} */ x1, /** @type {number} */ z1, /** @type {() => void} */ land, light = null, /** @type {number | undefined} */ durS = undefined, /** @type {number | undefined} */ y1 = undefined) {
+    flights.push({ from, to: [x1, y1 ?? gy(x1, z1, 0.1), z1], t: 0, dur: durS ?? C.flightS, arcM: C.arcM, head: C.head, trail: C.trail, trailHz: C.trailHz ?? C.trailRateHz, light, land, key: `f${n}`, at: from.slice() });
   }
 
   const cues = {
@@ -156,7 +170,10 @@ export function createMoveFx(FX, o) {
     'anchor.brace'(p) {
       const A = FX.anchor;
       burst(A.dust, p.x, gy(p.x, p.z, 0.05), p.z);
+      if (A.plantDust) burst(A.plantDust, p.x, gy(p.x, p.z, 0.05), p.z);
       mark(0.8, A.ring.growS, (g, k) => ({ shape: 'ring', x: p.x, z: p.z, r: 0.7 * (0.4 + 0.6 * g), w: A.ring.widthM, col: scale(A.ring.col, k * 0.7) }));
+      // Where the staff went in: a small crack round the feet, darkening away over its life.
+      if (A.crack) mark(A.crack.lifeS, 0.08, (g, k) => ({ shape: 'ring', x: p.x, z: p.z, r: A.crack.rM * g, w: A.crack.widthM, ink: true, col: scale(A.crack.col, k) }));
     },
     /** Anchor catches a hit: a flash and sparks toward the one that struck. @param {any} p { x, z, tx, tz } */
     'anchor.catch'(p) {
@@ -168,27 +185,62 @@ export function createMoveFx(FX, o) {
     /** Hook and turn: a pale arc swept round the thing as it turns. @param {any} p { x, z, r, yaw } */
     'hookTurn'(p) {
       const H = FX.hookTurn;
+      // A curved streak swept round the thing at its body's height, and a thin arrow's arc on the floor.
+      startSlash(H.slash, p.x, p.z, p.r, p.yaw, 220, p.y ?? gy(p.x, p.z, 0.4), p.y ?? gy(p.x, p.z, 0.4));
       mark(0.9, H.sweepS, (g, k) => ({ shape: 'arc', x: p.x, z: p.z, r0: p.r, r1: p.r + H.widthM, yaw: p.yaw - (1 - g) * 1.9, deg: 220 * g, col: scale(H.col, k) }));
-      burst(H.chips, p.x, gy(p.x, p.z, 0.3), p.z, p.yaw + 1.6);
+      burst(H.chips, p.x, p.y ?? gy(p.x, p.z, 0.3), p.z, p.yaw + 1.6);
     },
     /** Groundline's crack has reached its end: it glows a moment along its length. @param {any} p { x0, z0, x1, z1 } */
-    'groundline.end'(p) { flash(FX.groundline.glowLight, (p.x0 + p.x1) / 2, (p.z0 + p.z1) / 2); },
+    'groundline.end'(p) {
+      const G = FX.groundline, C = G.crack;
+      flash(G.glowLight, (p.x0 + p.x1) / 2, (p.z0 + p.z1) / 2);
+      // The crack stays, jagged (a seeded zigzag of pieces): its glow cools from ember to nothing while its dark core lingers longer.
+      const len = Math.hypot(p.x1 - p.x0, p.z1 - p.z0), n = Math.max(2, Math.round(len / C.pieceM)), ux = (p.x1 - p.x0) / (len || 1), uz = (p.z1 - p.z0) / (len || 1);
+      const pts = Array.from({ length: n + 1 }, (_, i) => { const t = i / n, j = i === 0 || i === n ? 0 : (rnd() * 2 - 1) * C.jagM; return [lerp(p.x0, p.x1, t) - uz * j, lerp(p.z0, p.z1, t) + ux * j]; });
+      mark(C.lifeS, 0, (_g, k) => {
+        /** @type {Mark[]} */ const out = [];
+        for (let i = 0; i < n; i++) {
+          const [ax, az] = pts[i], [bx, bz] = pts[i + 1];
+          out.push({ shape: 'lane', x: ax, z: az, x1: bx, z1: bz, w: C.glowW, col: scale(C.glowCol, k ** C.coolPow) });
+          out.push({ shape: 'lane', x: ax, z: az, x1: bx, z1: bz, w: C.coreW, lift: 0.045, ink: true, col: scale(C.coreCol, Math.min(1, k * 2)) });
+        }
+        return out;
+      });
+    },
+    /** Groundline's wind-up: dust lifts off the floor round the feet as the staff goes up. @param {any} p { x, z } */
+    'groundline.gather'(p) {
+      const G = FX.groundline;
+      for (let i = 0; i < G.gatherDust.n; i++) { const a = rnd() * TAU, r = 0.3 + rnd() * 0.9, x = p.x + Math.sin(a) * r, z = p.z + Math.cos(a) * r; burst(G.gatherDust, x, gy(x, z, 0.03), z, undefined, 1); }
+    },
+    /** Groundline's slam: a flash at the feet that throws shadows, a ring of dust, chips that bounce, a crater ring. @param {any} p { x, z, yaw } */
+    'groundline.slam'(p) {
+      // The flash where the staff strikes, a little ahead, so the walker throws a shadow back behind it.
+      const G = FX.groundline, y = gy(p.x, p.z, 0.05), ax = p.x + Math.sin(p.yaw) * (G.slamAheadM ?? 0), az = p.z + Math.cos(p.yaw) * (G.slamAheadM ?? 0);
+      flash(G.slamLight, ax, az);
+      burst(G.slamDust, p.x, y, p.z); burst(G.slamChips, p.x, y, p.z, p.yaw);
+      mark(G.crack.lifeS * 0.5, 0.06, (g, k) => ({ shape: 'ring', x: p.x, z: p.z, r: 0.2 + 0.25 * g, w: 0.03, col: scale(G.crack.glowCol, 0.35 * k ** 3) }));
+    },
     /** Cast the flame leaves the hand. @param {any} p { from: [x, y, z], x, z, ringM, scorchS, flightS (else the recipe's) } */
     'castFlame.throw'(p) {
       const C = FX.castFlame;
-      throwIt(C, p.from, p.x, p.z, () => cues['castFlame.burst'](p), C.flightLight, p.flightS);
+      throwIt(C, p.from, p.x, p.z, () => cues['castFlame.burst'](p), C.flightLight, p.flightS, p.y);
     },
     /** Cast the flame lands: a burst, embers, a flash and a glow that lingers on the scorch. @param {any} p { x, z, ringM, scorchS } */
     'castFlame.burst'(p) {
-      const C = FX.castFlame, y = gy(p.x, p.z, 0.15);
+      // On a floater it bursts in the air at its body, and the embers rain down; the marks stay on the floor beneath.
+      const C = FX.castFlame, y = p.y ?? gy(p.x, p.z, 0.15);
       burst(C.burst, p.x, y, p.z); burst(C.embers, p.x, y, p.z);
-      flash(C.burstLight, p.x, p.z);
-      flash({ ...C.glowLight, lifeS: p.scorchS ?? C.glowLight.lifeS }, p.x, p.z);
+      if (C.fallEmbers) burst(C.fallEmbers, p.x, y, p.z);
+      if (C.smoke) burst(C.smoke, p.x, y, p.z);
+      flash(C.burstLight, p.x, p.z, p.y);
+      flash({ ...C.glowLight, lifeS: (p.scorchS ?? C.glowLight.lifeS) * (C.glowShare ?? 1) }, p.x, p.z);
       const r = p.ringM ?? 1.3;
       mark(0.6, C.ring.growS, (g, k) => ({ shape: 'ring', x: p.x, z: p.z, r: r * (0.3 + 0.7 * g), w: C.ring.widthM * (1 + g), col: scale(C.ring.col, k) }));
-      mark(p.scorchS ?? 3, 0.1, (g, k) => [
-        { shape: 'disc', x: p.x, z: p.z, r: r * 0.8 * g, col: scale(C.scorch.col, k) },
-        { shape: 'disc', x: p.x, z: p.z, r: r * 0.45 * g, col: scale(C.ring.col, 0.35 * k * k) },
+      mark((p.scorchS ?? 3) * (C.scorch.lifeShare ?? 1), 0.1, (g, k) => [
+        { shape: 'disc', x: p.x, z: p.z, r: r * 0.8 * g, ink: true, col: scale(C.scorch.col, k) },
+        // An ember rim round the scorch, cooling first.
+        ...(C.scorch.rimCol ? [/** @type {Mark} */ ({ shape: 'ring', x: p.x, z: p.z, r: r * 0.78 * g, w: 0.07, lift: 0.055, col: scale(C.scorch.rimCol, k ** 3) })] : []),
+        { shape: 'disc', x: p.x, z: p.z, r: r * 0.45 * g, lift: 0.05, col: scale(C.ring.col, 0.35 * k * k) },
       ]);
     },
     /** Kindling burst: a beam sweeps out from the lantern. @param {any} p { x0, z0, x1, z1, fadeS, widthM } */
@@ -204,18 +256,25 @@ export function createMoveFx(FX, o) {
     /** Feint: a faint arc swept quickly, a few pale motes. @param {any} p { x, z, yaw, r, arcDeg } */
     'feint'(p) {
       const F = FX.feint;
+      // A pale half-streak at staff height where the swing would have gone, and a faint arc on the floor.
+      startSlash(F.slash, p.x, p.z, p.r, p.yaw, p.arcDeg * 0.6, gy(p.x, p.z, F.slash.y), gy(p.x, p.z, F.slash.y));
       mark(0.6, F.sweepS, (g, k) => ({ shape: 'arc', x: p.x, z: p.z, r0: p.r - F.widthM, r1: p.r, yaw: p.yaw, deg: p.arcDeg * g, col: scale(F.col, 0.7 * k) }));
       burst(F.motes, p.x + Math.sin(p.yaw) * p.r * 0.8, gy(p.x, p.z, 0.7), p.z + Math.cos(p.yaw) * p.r * 0.8, p.yaw);
     },
     /** Snuff: the flame drops to an ember, a puff of sparks leaves it. @param {any} p { x, y, z } */
     'snuff.out'(p) { burst(FX.snuff.puff, p.x, p.y, p.z); },
     /** Taproot's seed leaves the hand. @param {any} p { from, x, z } */
-    'taproot.throw'(p) { throwIt(FX.taproot, p.from, p.x, p.z, () => {}, null, p.flightS); },
+    'taproot.throw'(p) {
+      const T = FX.taproot;
+      // The seed sticks where it lands (on the body, locked on a floater) with a green flick of light.
+      throwIt(T, p.from, p.x, p.z, () => { if (T.stick) { burst(T.stick, p.x, p.y ?? gy(p.x, p.z, 0.3), p.z); flash(T.stickLight, p.x, p.z, p.y); } }, null, p.flightS, p.y);
+    },
     /** Taproot bursts: green sparks, drifting spores and a green flash. @param {any} p { x, z, size } */
     'taproot.burst'(p) {
-      const T = FX.taproot, y = gy(p.x, p.z, 0.4);
+      const T = FX.taproot, y = p.y ?? gy(p.x, p.z, 0.4);
       burst(T.burst, p.x, y, p.z); burst(T.burstSpores, p.x, y, p.z);
-      flash(T.burstLight, p.x, p.z);
+      if (T.burstDust) burst(T.burstDust, p.x, y, p.z);
+      flash(T.burstLight, p.x, p.z, p.y);
       mark(0.7, 0.12, (g, k) => ({ shape: 'ring', x: p.x, z: p.z, r: (p.size ?? 0.5) + 0.9 * g, w: 0.06, col: scale(T.burst.col, 0.5 * k) }));
     },
     /** Spring chorus: green rings roll out, a green pulse of light, motes lift like spring evenings. @param {any} p { x, z, r } */
@@ -236,10 +295,71 @@ export function createMoveFx(FX, o) {
         burst(S.motes, x, gy(x, z, 0.1 + rnd() * 0.3), z, undefined, 1);
       }
     },
+    /** The wick lights: a match-flare and a spit of sparks. @param {any} p { x, z } */
+    'wick.flare'(/** @type {any} */ p) { const W = FX.wickSnare; flash(W.flareLight, p.x, p.z); burst(W.flare, p.x, gy(p.x, p.z, 0.25), p.z); },
+    /** Snuff ends: the flame comes back with a small flare. @param {any} p { x, y, z } */
+    'snuff.flare'(/** @type {any} */ p) { flash(FX.snuff.flareLight, p.x, p.z, p.y); burst(FX.snuff.puff, p.x, p.y, p.z); },
+    /** Spring chorus's wind-up: green motes lift round the walker. @param {any} p { x, z } */
+    'chorus.gather'(/** @type {any} */ p) {
+      const S = FX.springChorus;
+      for (let i = 0; i < S.gather.n; i++) { const a = rnd() * TAU, r = 0.4 + rnd() * 1.2, x = p.x + Math.sin(a) * r, z = p.z + Math.cos(a) * r; burst(S.gather, x, gy(x, z, 0.05 + rnd() * 0.2), z, undefined, 1); }
+    },
+    /**
+     * The staff's swing (the cinematic pass: in place of the old filled fan on the floor): a curved
+     * streak along the staff tip's path at staff height, rising to a floater's body (y1), gone within
+     * lifeS, and a faint scuff on the floor. @param {any} p { x, z, yaw, r, deg, y0, y1 }
+     */
+    'swing.slash'(p) {
+      const S = FX.swing.slash;
+      startSlash(S, p.x, p.z, p.r, p.yaw, p.deg, p.y0, p.y1);
+      mark(S.scuffS, 0, (_g, k) => ({ shape: 'arc', x: p.x, z: p.z, r0: p.r * 0.55, r1: p.r * 0.55 + S.scuffW, yaw: p.yaw, deg: p.deg * 0.5, ink: true, col: scale(S.scuffCol, k) }));
+    },
+    /** The swing lands: chips along the blow at the body's height, and for a landed hit a small warm light and dust. @param {any} p { x, y, z, dir, size: 'glance' | 'land' | 'break' } */
+    'swing.contact'(/** @type {any} */ p) {
+      const W = FX.swing, k = p.size === 'break' ? W.breakShare : p.size === 'land' ? 1 : W.glanceShare;
+      burst(W.chips, p.x, p.y, p.z, p.dir, Math.round(W.chips.n * k));
+      // A brief bright star where it struck, so a hit reads from the Hollow camera's 5.5 m.
+      if (W.star) burst(W.star, p.x, p.y, p.z, undefined, Math.max(1, Math.round(W.star.n * k)));
+      if (p.size !== 'glance') { flash(W.light, p.x, p.z, p.y); burst(W.dust, p.x, p.y, p.z, undefined, Math.round(W.dust.n * k)); }
+    },
   };
+
+  /**
+   * A slash: a streak swept over an arc round (x, z), r out, deg wide about yaw, from height y0 to y1.
+   * @param {any} S { sweepS, lifeS, segments, widthM, coreW, col, core } @param {number} x @param {number} z @param {number} r
+   * @param {number} yaw @param {number} deg @param {number} y0 @param {number} y1
+   */
+  function startSlash(S, x, z, r, yaw, deg, y0, y1) { slashes.push({ S, x, z, r, yaw, deg, y0, y1, age: 0 }); }
 
   /** Things that last: their kinds, what starts them and what each frame does. */
   const kinds = {
+    /** A flame (or a seed's glow) growing in the hand over the wind-up: p.spec names whose (castFlame, taproot), p.at the hand. */
+    hand: {
+      begin: (/** @type {any} */ p) => ({ ...p, age: 0 }),
+      step(/** @type {any} */ s, /** @type {number} */ dt, /** @type {string} */ key) {
+        const H = s.spec === 'taproot' ? FX.taproot.hand : FX.castFlame.hand;
+        s.age += dt;
+        const g = ease(s.age / H.growS);
+        rate(key, H.rateHz * g, dt, () => burst(H.sparks, s.at[0], s.at[1], s.at[2]));
+        lights.push({ x: s.at[0], y: s.at[1], z: s.at[2], spec: { ...H.light, curve: undefined }, age: 0, life: 1e9, k: g, ph: (s.ph ??= rnd() * 100), held: true });
+      },
+    },
+    /** Kindling burst's wind-up: sparks drawn in round the lantern, spiralling into the glass (p.at the lamp). */
+    spiral: {
+      begin: (/** @type {any} */ p) => ({ ...p }),
+      step(/** @type {any} */ s, /** @type {number} */ dt, /** @type {string} */ key) {
+        const K = FX.kindlingBurst.gather;
+        rate(key, K.rateHz, dt, () => {
+          const a = rnd() * TAU, r = range(K.radiusM), h = (rnd() - 0.5) * K.heightM, j = nSparks;
+          burst(K.sparks, s.at[0] + Math.sin(a) * r, s.at[1] + h, s.at[2] + Math.cos(a) * r, undefined, 1);
+          if (j < nSparks) {
+            // Aimed in at the glass with a swirl round it, so each comes in on a curve and arrives as it fades.
+            const b = j * SPARK_FLOATS, life = sp[j * SP + 1], tang = K.swirl;
+            sparks[b + 8] = (-Math.sin(a) + Math.cos(a) * tang) * r / life; sparks[b + 9] = -h / life; sparks[b + 10] = (-Math.cos(a) - Math.sin(a) * tang) * r / life;
+          }
+        });
+      },
+    },
     /** Wick snare's little flame on the floor. */
     wick: {
       begin: (/** @type {any} */ p) => ({ ...p }),
@@ -278,6 +398,7 @@ export function createMoveFx(FX, o) {
       step(/** @type {any} */ s, /** @type {number} */ dt, /** @type {string} */ key) {
         const G = FX.groundline;
         rate(key, G.tipRateHz, dt, () => { burst(G.tipSparks, s.x, gy(s.x, s.z, 0.03), s.z); if (rnd() < 0.5) burst(G.chips, s.x, gy(s.x, s.z, 0.03), s.z); });
+        if (G.plume) rate(key + 'p', G.plumeRateHz, dt, () => burst(G.plume, s.x, gy(s.x, s.z, 0.05), s.z));
         light(G.tipLight, s.x, s.z, 1, s);
       },
     },
@@ -383,7 +504,7 @@ export function createMoveFx(FX, o) {
     /** Everything cleared (a new floor). */
     clear() {
       for (const k of [...lasting.keys()]) this.stop(k);
-      nSparks = 0; nThreads = 0; nMoths = 0; nLights = 0; lights = []; marks = []; flights = []; beams = []; moths = []; carry.clear();
+      nSparks = 0; nThreads = 0; nMoths = 0; nLights = 0; lights = []; marks = []; flights = []; beams = []; moths = []; slashes = []; carry.clear();
     },
     /** @param {number} dt */
     update(dt) {
@@ -405,7 +526,7 @@ export function createMoveFx(FX, o) {
         // Sparks shed along the beam as it reaches each meter.
         while (b.done < want) { const u = b.done / Math.max(len, 1e-3), x = lerp(b.x0, b.x1, u), z = lerp(b.z0, b.z1, u); burst(K.sparks, x, gy(x, z, K.fromY * (1 - u * 0.6)), z, undefined, 1); b.done += 1 / K.sparksPerM; }
         b.at = [lerp(b.x0, b.x1, b.t), 0, lerp(b.z0, b.z1, b.t)];
-        if (b.t >= 1) { flash({ ...K.sweepLight, lifeS: 0.5, curve: 'flash' }, b.x1, b.z1); carry.delete(b.key); }
+        if (b.t >= 1) { flash({ ...K.sweepLight, lifeS: K.endFlashS ?? 0.5, curve: 'flash', shadow: K.shadow }, b.x1, b.z1); carry.delete(b.key); }
       }
       beams = beams.filter((b) => b.t < 1);
       for (const [key, l] of [...lasting]) {
@@ -413,6 +534,8 @@ export function createMoveFx(FX, o) {
         if (more === false) { lasting.delete(key); carry.delete(key); }
       }
       stepSparks(dt);
+      for (const sl of slashes) sl.age += dt;
+      slashes = slashes.filter((sl) => sl.age < sl.S.lifeS);
       moths = moths.filter((m) => stepMoth(m, dt));
       for (const m of marks) m.age += dt;
       marks = marks.filter((m) => m.age < m.life);
@@ -421,14 +544,14 @@ export function createMoveFx(FX, o) {
     gpu() {
       // Lights from flights and beams this frame, then the brightest eight.
       const K = FX.kindlingBurst;
-      /** @type {{ x: number, y: number, z: number, col: number[], reachM: number, k: number }[]} */
-      const all = lights.map((l) => ({ x: l.x, y: l.y, z: l.z, col: l.spec.col, reachM: l.spec.reachM, k: strength(l) * l.k }));
+      /** @type {{ x: number, y: number, z: number, col: number[], reachM: number, k: number, shadow?: boolean }[]} */
+      const all = lights.map((l) => ({ x: l.x, y: l.y, z: l.z, col: l.spec.col, reachM: l.spec.reachM, k: strength(l) * l.k, shadow: l.spec.shadow }));
       for (const f of flights) if (f.light) all.push({ x: f.at[0], y: f.at[1], z: f.at[2], col: f.light.col, reachM: f.light.reachM, k: 1 - (f.light.flicker ?? 0) * 0.5 * (1 + Math.sin(clock * 31)) * 0.5 });
       for (const b of beams) if (b.t < 1) all.push({ x: b.at[0], y: gy(b.at[0], b.at[2], K.sweepLight.y), z: b.at[2], col: K.sweepLight.col, reachM: K.sweepLight.reachM, k: 1 });
       all.sort((a, b) => b.k * (b.col[0] + b.col[1] + b.col[2]) * b.reachM - a.k * (a.col[0] + a.col[1] + a.col[2]) * a.reachM);
       lightOut.fill(0);
       nLights = Math.min(MAX_FX_LIGHTS, all.length);
-      for (let i = 0; i < nLights; i++) { const l = all[i]; lightOut.set([l.x, l.y, l.z, l.reachM, l.col[0] * l.k, l.col[1] * l.k, l.col[2] * l.k, 0], i * LIGHT_FLOATS); }
+      for (let i = 0; i < nLights; i++) { const l = all[i]; lightOut.set([l.x, l.y, l.z, l.reachM, l.col[0] * l.k, l.col[1] * l.k, l.col[2] * l.k, l.shadow ? 1 : 0], i * LIGHT_FLOATS); }
       // The thrown heads and the beam are drawn as sparks and threads of their own this frame.
       let ns = nSparks;
       for (const f of flights) if (ns < MAX_SPARKS) {
@@ -439,6 +562,17 @@ export function createMoveFx(FX, o) {
         const a = [b.x0, gy(b.x0, b.z0, K.fromY), b.z0], e = [b.at[0], gy(b.at[0], b.at[2], K.fromY * 0.5), b.at[2]];
         thread(a, e, K.beam.widthM, 0.8, K.beam.col);
         thread(a, e, K.core.widthM, 1, K.core.col);
+      }
+      // Slashes: swept in over sweepS, the head brightest, the whole fading out over lifeS.
+      for (const sl of slashes) {
+        const S = sl.S, sweep = ease(sl.age / S.sweepS), fade = (1 - sl.age / S.lifeS) ** 2, half = (sl.deg / 2) * Math.PI / 180;
+        const at = (/** @type {number} */ u) => { const a = sl.yaw + half - 2 * half * u; return [sl.x + Math.sin(a) * sl.r, lerp(sl.y0, sl.y1, u), sl.z + Math.cos(a) * sl.r]; };
+        const n = Math.max(2, Math.round(S.segments * sweep));
+        for (let i = 0; i < n; i++) {
+          const u0 = (i / n) * sweep, u1 = ((i + 1) / n) * sweep, head = 0.25 + 0.75 * ((i + 1) / n);
+          thread(at(u0), at(u1), S.widthM * (0.5 + 0.5 * head), fade * head * 0.8, S.col);
+          thread(at(u0), at(u1), S.coreW, fade * head, S.core);
+        }
       }
       nMoths = 0;
       for (const m of moths) {

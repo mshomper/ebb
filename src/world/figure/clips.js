@@ -90,6 +90,22 @@ function settle(acc, w) {
  * @param {ClipFile} file @param {any} RC recipes/world/figure.json clips
  * @param {{ name: string, parent: number, pivot: number[] }[]} skeleton from rig.js
  */
+/**
+ * A shot's timing knots (the Hollow moves' cinematic pass, November 3, 2026): pairs [u, s], u a share
+ * of the shot's time and s the share of its span reached then, straight between them (a slow rise
+ * into a wind-up, a held top, a fast release). With no knots the span plays evenly, exactly as before.
+ * @param {number[][] | undefined} knots @param {number} u 0..1
+ */
+export function knotShare(knots, u) {
+  if (!knots || knots.length < 2) return u;
+  if (u <= knots[0][0]) return knots[0][1];
+  for (let i = 1; i < knots.length; i++) {
+    const [u1, s1] = knots[i];
+    if (u <= u1) { const [u0, s0] = knots[i - 1]; return u1 > u0 ? s0 + (s1 - s0) * (u - u0) / (u1 - u0) : s1; }
+  }
+  return Math.min(1, knots[knots.length - 1][1]);
+}
+
 export function createClipPlayer(file, RC, skeleton) {
   const I = Object.fromEntries(skeleton.map((b, i) => [b.name, i]));
   const driven = file.bones.map((n) => I[n]);
@@ -107,7 +123,7 @@ export function createClipPlayer(file, RC, skeleton) {
   /**
    * The one-shot playing (shoot()): its clip, the span (s into the clip) played over lenS, its age,
    * which driven bones it takes (by pose slot), and whether its feet lead.
-   * @type {{ c: ReturnType<typeof prepare>, span: number[], lenS: number, t: number, ease: number, take: boolean[], feet: boolean, most: number } | null}
+   * @type {{ c: ReturnType<typeof prepare>, span: number[], lenS: number, t: number, ease: number, take: boolean[], feet: boolean, most: number, knots?: number[][] } | null}
    */
   let shot = null, shotW = 0, shotFeet = 0, shotEnded = false;
   /**
@@ -217,7 +233,7 @@ export function createClipPlayer(file, RC, skeleton) {
         const u = shot.t / shot.lenS;
         if (u >= 1) { shot = null; shotEnded = true; }
         else {
-          sample(shot.c, lerp(shot.span[0], shot.span[1], u), shotPose);
+          sample(shot.c, lerp(shot.span[0], shot.span[1], shot.knots ? knotShare(shot.knots, u) : u), shotPose);
           const e = shot.ease / shot.lenS;
           shotW = shot.most * smooth(u / Math.max(e, 1e-3)) * (1 - smooth((u - (1 - e)) / Math.max(e, 1e-3)));
         }
@@ -268,7 +284,8 @@ export function createClipPlayer(file, RC, skeleton) {
      * driven bones it takes (all without one; the fighting clips leave the lantern arm to the code).
      * feet: its feet lead too (else they stay where the code has them). weight: at most this much over
      * the code (a stoop over a kneel only half). Returns its length (0 for no such clip).
-     * @param {string} name @param {{ span?: number[], lenS?: number, easeS?: number, mask?: string[], feet?: boolean, weight?: number }} [o]
+     * knots: the shot's timing (knotShare), evenly without.
+     * @param {string} name @param {{ span?: number[], lenS?: number, easeS?: number, mask?: string[], feet?: boolean, weight?: number, knots?: number[][] }} [o]
      */
     shoot(name, o = {}) {
       const f = files.find((x) => x.clips[name]);
@@ -276,7 +293,7 @@ export function createClipPlayer(file, RC, skeleton) {
       const c = prepare(f, name), span = o.span ?? [0, c.dur];
       const lenS = Math.max(0.05, o.lenS ?? span[1] - span[0]);
       shot = { c, span, lenS, t: 0, ease: Math.min(o.easeS ?? RC.shotEaseS ?? 0.15, lenS / 2), take: file.bones.map((b) => !o.mask || o.mask.includes(b)), feet: !!o.feet,
-        most: Math.max(0, Math.min(1, o.weight ?? 1)) };
+        most: Math.max(0, Math.min(1, o.weight ?? 1)), knots: o.knots };
       return lenS;
     },
     /** Stop the shot playing at once. */
