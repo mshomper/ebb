@@ -244,7 +244,7 @@ export function turtle(p, scale) {
  * slow worm's, a lizard's tail), as one closed path. @param {number[][]} c center points
  * @param {number[]} r radius at each @param {(n: number) => string} f
  */
-function tube(c, r, f) {
+export function tube(c, r, f) {
   /** @type {number[][]} */ const L = [], R = [];
   for (let i = 0; i < c.length; i++) {
     const a = c[Math.max(0, i - 1)], b = c[Math.min(c.length - 1, i + 1)];

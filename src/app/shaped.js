@@ -65,7 +65,8 @@ export async function start(ctx) {
  * Test links (testing, unsaved): `?shape=bar|wall|pond|wrack` (or several joined by commas) shapes
  * that ground with real strokes (src/world/ecology/shaped-demo.js); `?shape=pond` ages the pond to
  * test.pond.ageDays (`&pondAge=N` for another age), `?shape=wrack` thickens the strandline's wrack
- * and says it has lain test.wrack.days. `?visit=<sp>` makes that species' visit now.
+ * and says it has lain test.wrack.days, and `?shape=pond,reeds` sets reeds round the dug pond's
+ * edge (the teal's home). `?visit=<sp>` makes that species' visit now.
  * @param {import('./context.js').AppContext} ctx
  */
 export function tests(ctx) {
@@ -95,6 +96,21 @@ export function tests(ctx) {
       shapedWatch.look();
     });
   }
+  if (kinds.includes('reeds')) {
+    // Reeds round the dug pond's edge once it holds water, so it is the teal's reedy pond.
+    let planted = false;
+    shapedAfterLook.push((r) => {
+      const p = planted ? null : r.ponds.find((/** @type {any} */ q) => q.dug);
+      if (!p) return;
+      planted = true;
+      const R0 = Math.sqrt(p.areaM2 / Math.PI);
+      for (const rr of [R0 - 0.4, R0 + 0.6]) for (let a = 0; a < 2 * Math.PI; a += 0.9 / rr) {
+        ctx.growth.plant('reeds', p.x + Math.cos(a) * rr, p.z + Math.sin(a) * rr, { size: 0.9, minSuit: 0.01 });
+      }
+      updateStore('world', () => ctx.world.state);
+      shapedWatch.look();
+    });
+  }
   const strokes = kinds.filter((k) => k === 'bar' || k === 'wall' || k === 'pond');
   if (strokes.length) {
     buildShapedDemo({ terrain, history, kinds: strokes, T, focus: (x, z, distance, pitchDeg) => camera.focus(x, z, distance, pitchDeg) })
@@ -104,7 +120,8 @@ export function tests(ctx) {
   const sp = params.get('visit');
   if (sp) {
     // Once the island is up and its journal is in place.
-    const wait = () => (getStore('journal') && ctx.world.env.habitat?.() ? ctx.visitNow(sp) : setTimeout(wait, 500));
+    // After a `?day=` island has grown, so the visit is today's and tomorrow morning's hint comes.
+    const wait = () => (getStore('journal') && ctx.world.env.habitat?.() && getStore('testGrow')?.done !== false ? ctx.visitNow(sp) : setTimeout(wait, 500));
     setTimeout(wait, 1500);
   }
 }

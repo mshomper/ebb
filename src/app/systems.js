@@ -47,6 +47,7 @@ import * as testCamp from './test-links-camp.js';
 import * as testFlax from './test-links-flax.js';
 import * as meadow from './meadow.js';
 import * as testMeadow from './test-links-meadow.js';
+import * as testPage from './test-links-page.js';
 
 /** @type {import('./context.js').StartStep[]} */
 export const SYSTEMS = [
@@ -102,6 +103,7 @@ export const SYSTEMS = [
   testCamp.spring,
   testFlax.flax,
   testMeadow.meadow,
+  testPage.page,
   kit.teaReveal,
   testLinks.autumn,
   testLinks.frogScale,

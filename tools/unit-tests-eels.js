@@ -77,7 +77,12 @@ export function addEelTests(test, assert, eq) {
     eq(H.need.ageDays, 56, 'a year old');
     eq(H.need.wetGrass, true, 'wet grass between');
     eq(H.max.seaM, 30, 'within 30 m of the sea');
-    const pond = (/** @type {any} */ o) => ({ ponds: [{ dug: true, ageDays: 60, wetGrass: true, seaM: 12, x: 1, z: 2, ...o }] });
+    // Wet grass a pond can have: the bar is no higher than the bank's damp one square out (growth.json
+    // habitat.bankM, falling off as src/world/growth/habitat.js does), so a path to the shore can meet it.
+    const bankM = (await json('world/growth')).habitat.bankM, reach = 3 * bankM;
+    const oneOut = Math.floor((255 * (reach - 3) ** 2) / reach ** 2);
+    assert((await json('world/shaped')).pond.wetGrass.moisture <= oneOut, `wet grass asks no more than ${oneOut}, the bank's damp a square out`);
+    const pond =(/** @type {any} */ o) => ({ ponds: [{ dug: true, ageDays: 60, wetGrass: true, seaM: 12, x: 1, z: 2, ...o }] });
     eq(homeOf(pond({}), H).met, true, 'a year-old dug pond 12 m from the sea');
     eq(homeOf(pond({ ageDays: 30 }), H).met, false, 'too young');
     eq(homeOf(pond({ wetGrass: false }), H).met, false, 'no wet grass');

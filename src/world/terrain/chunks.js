@@ -7,12 +7,12 @@ import { CHUNK_CELLS as C, WORLD_CELLS as N, CHUNK_SIZE, chunkFirstCell, chunkKe
 
 const LANDFORM_JOB = { module: './world/terrain/landform.js', fn: 'buildBase' };
 
-/** @typedef {'sea'|'rising'|'open'|'raised'} ChunkState  raised: new land drawn there (the meadow islet), outside the open land the brushes reach */
+/** @typedef {'sea'|'rising'|'open'|'raised'} ChunkState  raised: new land drawn there (the meadow islet), outside the open land; the brushes reach it once risen (terrain reachLand) */
 
 export function createChunkTable() {
   /** @type {Map<string, { cx: number, cz: number, state: ChunkState, land: string }>} */
   const open = new Map();
-  /** Chunks of new land risen outside the open land (src/world/islet): drawn, never brushed or saved. @type {Set<string>} */
+  /** Chunks of new land risen outside the open land (src/world/islet): drawn, and saved once brushed. @type {Set<string>} */
   const raised = new Set();
   return {
     /** @param {number} cx @param {number} cz @param {string} land */
@@ -22,6 +22,8 @@ export function createChunkTable() {
     /** @param {number} cx @param {number} cz @returns {ChunkState} */
     state(cx, cz) { return open.get(chunkKey(cx, cz))?.state ?? (raised.has(chunkKey(cx, cz)) ? 'raised' : 'sea'); },
     list() { return [...open.values()]; },
+    /** The raised chunks. @returns {{ cx: number, cz: number }[]} */
+    raisedList() { return [...raised].map((k) => { const [cx, cz] = k.split(',').map(Number); return { cx, cz }; }); },
     /**
      * Bounding box of the open chunks, in world meters and in cells.
      * (The open land is a square block, 3 x 3 or 4 x 4, so a box is exact; uneven shapes arrive with expansion.)

@@ -24,6 +24,7 @@ const KNOWN = ['meta', 'world', 'journal', 'water', 'unlocks', 'view', 'looks', 
 /**
  * @typedef {Object} SavedChunk
  * @property {number} cx @property {number} cz @property {string} land @property {boolean} edited
+ * @property {boolean} [raised]  a chunk of new land risen beside the open land (the meadow islet), saved once brushed
  * @property {Uint16Array} [heightQ]  128 x 128, only if edited
  * @property {Uint8Array} [material]  128 x 128 x 4, only if edited
  */
@@ -91,9 +92,10 @@ export function snapshot(p) {
     ...SECTIONS9.map((id) => /** @type {[string, any]} */ ([id, clean9(id, p[id])])),
   ];
   for (const [key, c] of Object.entries(p.chunks ?? {})) {
-    if (c.state !== 'open') continue;
+    if (c.state !== 'open' && !(c.state === 'raised' && c.edited)) continue;
     const [cx, cz] = key.split(',').map(Number);
     /** @type {SavedChunk} */ const rec = { cx, cz, land: c.land, edited: !!c.edited };
+    if (c.state === 'raised') rec.raised = true;
     if (c.edited && p.mirror) Object.assign(rec, copyChunk(p.mirror, cx, cz));
     sections.push([`chunk:${key}`, rec]);
   }
