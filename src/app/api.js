@@ -15,7 +15,7 @@ import { PALETTES } from './recipes.js';
  * @param {() => void} stop
  */
 export function result(ctx, stop) {
-  const { applyTier, autumn, autumnMoods, autumnRecipe, baker, cairns, camera, camp, canvas, creatures, dig, figureRecipe, finds, fishing, fishingRecipe, frogScale, gather, glints, gpu, growth, hen, intro, island, islands, keepTestLog, keepsakesApi, keepsakesRecipe, kit, kite, lanterns, lift, live, midges, nets, netsRecipe, pack, passingBoat, perchSticks, photo, pieces, piles, planting, presence, reasons, save, schools, setpieces, sowing, speciesRecipes, springCave, stack, stackMouth, stackReveal, stackShade, stores, terrain, testSwarms, tickHour, tonemap, walk, water, world, ww, zones } = ctx;
+  const { applyTier, autumn, autumnMoods, autumnRecipe, baker, cairns, camera, camp, canvas, creatures, dig, figureRecipe, finds, fishing, fishingRecipe, frogScale, gather, glints, gpu, growth, hen, hollow, hollowPass, intro, island, islands, keepTestLog, keepsakesApi, keepsakesRecipe, kit, kite, lanterns, lift, live, midges, nets, netsRecipe, pack, passingBoat, perchSticks, photo, pieces, piles, planting, presence, reasons, save, schools, setpieces, sowing, speciesRecipes, springCave, stack, stackMouth, stackReveal, stackShade, stores, terrain, testSwarms, tickHour, tonemap, walk, water, world, ww, zones } = ctx;
   return {
     ok: /** @type {const} */ (true), get tier() { return ctx.tier; }, tierReasons: reasons,
     adapterInfo: gpu.adapter.info ?? null,
@@ -93,6 +93,8 @@ export function result(ctx, stop) {
     kite,
     /** The light on the stack (docs/future/19): its cards on the island, the reveal and the mouth room. */
     stack, stackReveal, stackMouth, stackShade,
+    /** The Hollow (H3a, src/world/hollow/zone-live.js) and its pass, for tools and testing. */
+    hollow, hollowPass,
     /**
      * Testing helpers, on window.ebb with `?debug`: autumn's misty morning and kept logs, skipping to
      * a time of year, and bringing a settled school or swarm. They change this island's time and

@@ -143,6 +143,7 @@
     "species/seal": "species/seal.json",
     "audio/seal": "audio/seal.json",
     "setpieces/stack": "setpieces/stack.json",
-    "world/stack-mouth": "world/stack-mouth.json"
+    "world/stack-mouth": "world/stack-mouth.json",
+    "world/hollow": "world/hollow.json"
   }
 }

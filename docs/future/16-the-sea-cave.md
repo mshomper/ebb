@@ -754,6 +754,30 @@ flowchart LR
 
   Below them, a table of times, triangles, walk checks, seeds tried and the one-thread hash check, and a "many seeds" sweep. The measure curves and threat budgets are H4's.
 
+### H3a as built: the Hollow as a zone (November 3, 2026)
+
+A trip works end to end in the game, with no things in the dark yet (H3b brings them). The modules are `src/world/hollow/zone-live.js` (the zone), `trip.js` (pure: seeds, fuel, words, the drop, the save section), `src/render/passes/hollow.js` with `src/shaders/hollow-draw.wgsl`, `src/ui/hollow-flame.js` and `src/app/hollow.js`. Numbers are in `recipes/world/hollow.json` under `zone`, `trip` and `floors.stone`.
+
+```mermaid
+flowchart LR
+  M["The mouth, by the hook"] -->|"Go through: a weapon made, the old lantern hung"| F["Dark: the floor built in the workers"]
+  F --> W["The way in, under the rope"]
+  W -->|"the way down: 'Half a light left'"| F
+  W -->|"Climb up, or Go up"| M
+  W -. "the light runs out" .-> D["Dark: up by feel, a third of the finds dropped"]
+  D --> M2["Wake sitting by the hook"]
+```
+
+- **The arch.** Its card offers Go through once a weapon from `zone.weapons` (the driftwood staff) is made and the old lantern hangs on its hook (the hook is where every trip starts and ends). Without a weapon it still says "Not with empty hands"; with one but the lantern not hung, "The old lantern should hang by the arch first." The first time through, the flag `setpiece:stack:through` writes the thread's line, and a first `lamp / arch` goes on the trail list for the Lamplighter's trail (H3d draws it).
+- **A floor's seed** is the island seed, the trip's number (the saved count plus one) and the floor's place in the trip. Its level is the floor's place until H4's measure sets where a trip starts. The zones' fade holds dark until the floor is made: about 1 to 2 seconds on all cores.
+- **The lantern** hangs by its bail from the left hand and is the only light. It is a point light of 14 candela at 1850 K. Its soft shadows are traced through the floor's own signed field, uploaded as a half-float 3D texture (about 3 MB on the wet shelf, 5 MB on the dripstone and silt). The same field gives the occlusion, plus a faint bounce gathered round the flame. On a 120k-triangle dripstone floor at 1893 x 1266 the Hollow pass took 0.84 ms.
+- **Fuel** starts full each trip (the stand-in until rushlights) and burns 0.095 a second on the first floor, 10% faster each floor down. One fill lasts about 4.8 floors at 3 minutes a floor (6.6 at 2, 3.8 at 4). `hit()` costs a sip (H3b calls it). Below a quarter the light shrinks toward 40% and the walker says "The light won't last." once. A drawn flame on the HUD is the only gauge.
+- **Going out.** The flame gutters over 1.2 s, then the screen holds dark 3 s ("The light's gone. Hand on the stone. Up, by feel."), and you wake sitting by the hook. A seeded third of the trip's finds list is dropped; the list stays empty until H3c.
+- **The camera** is the walker camera with `camera`'s numbers, set through the walk's per-zone camera. It never pulls in. Rock seen from inside the stone (the eye above a low roof) is cut away. Walls and the roof between the eye and you fade, but the floor never does. A veil pass after the walker ghosts them back at `camera.fade` fillAlpha, with an outline where they turn edge-on.
+- **The look (Matt, November 3, 2026: the same treatment as the entrance).** The floors' field takes the stack mouth's stone forms (decision 0001), scaled up for the coarser cell: flagstones with cracks and sand in the low ones, bedding ledges, leaning joints and rocky bulges on the walls (`floors.stone`, the shared helpers in `src/world/mesh/stone.js`). The island's rock scan goes on the rock triplanar. The stone forms add about a quarter more triangles, so a floor is now about 60k to 140k. Standing water is a still sheet drawn a little under its level, clipped to the air. Each depth's full look is still H3c's.
+- **Saves.** The `hollow` section (format 9's list) keeps the trip count and the deepest floor. An older save reads as no trips yet.
+- **Tests** are in group `hollowTrip`: the same seed and trip give the same plan and mesh hash, another trip gives another floor, the fuel curve, the low line once, the drop share, the save section, and the fade within a zone that holds dark until its floor is made.
+
 ## What it would change
 
 - **01** vision: the non-goal "no combat" gains its one exception, the Hollow, which is opt-in and never reaches the surface. **Matt's call.**

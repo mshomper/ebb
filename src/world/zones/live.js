@@ -15,14 +15,18 @@ import { emitDeferred } from '../../core/events.js';
 import { idleFade, stepFade, darkness, startFade } from './zone.js';
 
 /**
- * @typedef {{ id: string, enter: () => boolean, leave: () => void, tick?: (dt: number) => void,
+ * @typedef {{ id: string, enter: () => boolean, leave: (to?: string | null) => void, tick?: (dt: number) => void,
  *   cardAt?: (x: number, z: number) => any, light?: (d: any) => { uniforms: number[], sunDir: number[], sunIlluminance: number[], ambient?: number[] },
  *   sound?: () => any, groundAt?: (ro: number[], rd: number[]) => number[] | null, viewRoom?: (target: ArrayLike<number>, eye: ArrayLike<number>) => number,
  *   ready?: () => boolean, rayCard?: (ro: number[], rd: number[]) => any, pass?: { setUniforms: (u: number[]) => void },
- *   floor?: (x: number, z: number) => number, exposureBiasEV?: number, camera?: any }} Zone
+ *   floor?: (x: number, z: number) => number, exposureBiasEV?: number, camera?: any,
+ *   pending?: () => boolean, again?: () => void, up?: () => boolean }} Zone
  *   rayCard: a card a tap's ray picks out before the floor (a rope, a small thing lying there); pass: the
  *   cave pass its light goes to (the spring cave's when left out); floor: its floor alone, for the view;
- *   exposureBiasEV: how far the eye stays darker than the meter asks (the spring cave's when left out)
+ *   exposureBiasEV: how far the eye stays darker than the meter asks (the spring cave's when left out);
+ *   pending: still making what it needs (a Hollow floor in the workers): the screen stays dark until it
+ *   is done; again: the swap of a fade within the zone (zones.again), with the screen dark; up: Go up's
+ *   own way out of the zone (true when it took it; else Go up is zones.back)
  */
 
 /** @param {{ R: any, host?: HTMLElement | null }} o R: recipes/world/zones.json; host: where the fade's veil goes (none in tests) */
@@ -45,8 +49,9 @@ export function createZones(o) {
 
   /** The swap, while the screen is dark: out of the zone left, into the zone entered. */
   function swap() {
+    if (fade.again) { if (current) zones.get(current)?.again?.(); return; }
     const from = fade.from ? zones.get(fade.from) : null, to = fade.to ? zones.get(fade.to) : null;
-    if (from && current === from.id) { from.leave(); emitDeferred('zone:left', { id: from.id }); current = null; }
+    if (from && current === from.id) { from.leave(fade.to); emitDeferred('zone:left', { id: from.id }); current = null; }
     if (to && to.enter()) { current = to.id; emitDeferred('zone:entered', { id: to.id }); }
     publish();
   }
@@ -54,8 +59,14 @@ export function createZones(o) {
   return {
     /** A zone the game can go to. @param {Zone} z */
     register(z) { zones.set(z.id, z); },
-    /** Go down (or in) to a zone, fading through dark. @param {string} id */
-    go(id) { if (zones.get(id)?.ready?.() !== false) fade = startFade(fade, id, current); },
+    /** Go down (or in) to a zone, fading through dark. @param {string} id @param {{ holdS?: number }} [opts] holdS: this fade's own hold in the dark */
+    go(id, opts) {
+      if (zones.get(id)?.ready?.() === false) return;
+      fade = startFade(fade, id, current);
+      if (opts?.holdS !== undefined && fade.to === id) fade = { ...fade, holdS: opts.holdS };
+    },
+    /** Through the dark and back into the zone you are in (the Hollow's next floor): its `again` is the swap. */
+    again() { if (current && fade.phase === 'idle') fade = { phase: 'out', t: 0, to: current, from: current, again: true }; },
     /** Back up to the island, fading through dark. */
     back() { if (current) fade = startFade(fade, null, current); },
     /** Straight into a zone with no fade (the test links). @param {string} id */
@@ -71,8 +82,10 @@ export function createZones(o) {
     /** Each frame, before the camera: the fade, the swap, the zone's own tick. @param {number} dt real seconds */
     tick(dt) {
       const s = stepFade(fade, dt, R);
-      fade = s.fade;
-      if (s.swap) swap();
+      // The zone ahead still making what it needs: the screen stays dark (the swap waits) until it is done.
+      const ahead = s.swap ? zones.get(/** @type {string} */ (fade.to)) : null;
+      if (ahead?.pending?.()) fade = { ...fade, t: R.fadeS };
+      else { fade = s.fade; if (s.swap) swap(); }
       if (veil) veil.style.opacity = String(darkness(fade, R));
       if (current) zones.get(current)?.tick?.(dt);
     },

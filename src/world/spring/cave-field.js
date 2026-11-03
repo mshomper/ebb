@@ -15,6 +15,7 @@
 
 import { hash32, det } from '../../core/rng.js';
 import { noise3 } from '../hollow/field.js';
+import { cells2, spheres } from '../mesh/stone.js';
 import { surfaceNets, gridNormals } from '../mesh/surface-nets.js';
 
 /** Smooth minimum (as the Hollow's field). @param {number} a @param {number} b @param {number} k */
@@ -29,40 +30,6 @@ const smax = (a, b, k) => -smin(-a, -b, k);
 const u01 = (seed, ...k) => (hash32(seed, ...k) >>> 8) / 16777216;
 /** @param {number} a @param {number} b @param {number} x */
 const smooth = (a, b, x) => { const t = Math.max(0, Math.min(1, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
-
-/**
- * The 2D cells round (x, z) at `size` metres (a seeded jittered grid): the nearest cell's id and
- * middle, and how far (x, z) is from the line between it and the next nearest (half the gap between
- * their distances), the joint between two cells. Pure.
- * @param {number} seed @param {number} x @param {number} z @param {number} size
- * @returns {{ id: number, cx: number, cz: number, edge: number }}
- */
-export function cells2(seed, x, z, size) {
-  const gx = x / size, gz = z / size, ix = Math.floor(gx), iz = Math.floor(gz);
-  let d1 = Infinity, d2 = Infinity, id = 0, cx = 0, cz = 0;
-  for (let j = -1; j <= 1; j++) for (let i = -1; i <= 1; i++) {
-    const a = ix + i, b = iz + j, h = hash32(seed, a, b);
-    const px = a + 0.15 + 0.7 * ((h >>> 8) & 255) / 255, pz = b + 0.15 + 0.7 * ((h >>> 16) & 255) / 255;
-    const d = Math.hypot(px - gx, pz - gz);
-    if (d < d1) { d2 = d1; d1 = d; id = h; cx = px * size; cz = pz * size; } else if (d < d2) d2 = d;
-  }
-  return { id, cx, cz, edge: ((d2 - d1) / 2) * size };
-}
-
-/**
- * Rocky bulges round a point (IQ's "FBM detail in SDFs"): the distance to the nearest of the seeded
- * spheres on the corners of a size-metre grid (negative inside one). @param {number} seed
- * @param {number} x @param {number} y @param {number} z @param {number} size
- */
-function spheres(seed, x, y, z, size) {
-  const gx = x / size, gy = y / size, gz = z / size, ix = Math.floor(gx), iy = Math.floor(gy), iz = Math.floor(gz);
-  let d = Infinity;
-  for (let k = 0; k <= 1; k++) for (let j = 0; j <= 1; j++) for (let i = 0; i <= 1; i++) {
-    const r = 0.5 * ((hash32(seed, ix + i, iy + j, iz + k) >>> 8) / 16777216);
-    d = Math.min(d, Math.hypot(gx - ix - i, gy - iy - j, gz - iz - k) - r);
-  }
-  return d * size;
-}
 
 /**
  * The cave's shape functions. @param {any} S spring-cave.json shape @param {number} seed

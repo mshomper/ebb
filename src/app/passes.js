@@ -14,6 +14,8 @@ export const passes = (c) => [
   c.cavePass,
   // The stack's mouth room (docs/future/19; drawn only while you are in it; it clears the frame).
   c.mouthPass,
+  // The Hollow (H3a; drawn only while you are down in it; it clears the frame).
+  c.hollowPass,
   c.shadowPass,
   c.terrainPass,
   c.grassPass,
@@ -26,6 +28,8 @@ export const passes = (c) => [
   // The beam of light down the cave's shaft, over the walker.
   c.caveBeam,
   c.mouthBeam,
+  // The Hollow's veil: the rock cut away from the view, ghosted back over the walker.
+  c.hollowVeil,
   c.hen.pass,
   // The gathering knife on the walker's belt (the forager's trail).
   c.belt.pass,
@@ -81,4 +85,4 @@ export const passes = (c) => [
  * The passes that run down in a zone (src/world/zones), beside the walker and the post passes; every
  * other pass is off while you are in one. @param {import('./context.js').AppContext} c @returns {Pass[]}
  */
-export const zonePasses = (c) => [c.walk.pass, c.exposure, c.bloom, c.tonemap, c.dof, c.cavePass, c.caveBeam, c.mouthPass, c.mouthBeam].filter(Boolean);
+export const zonePasses = (c) => [c.walk.pass, c.exposure, c.bloom, c.tonemap, c.dof, c.cavePass, c.caveBeam, c.mouthPass, c.mouthBeam, c.hollowPass, c.hollowVeil].filter(Boolean);

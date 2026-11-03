@@ -48,6 +48,7 @@ import { stream, subSeed, det } from '../../core/rng.js';
  * @property {{ pts: number[][], r: number, lift: number }[]} passages
  * @property {Prim[]} rock rock stood in the air after the chambers join (columns, hanging stone, crystals)
  * @property {any} wear
+ * @property {any} stone the stone forms (floors.stone), or null
  * @property {number} passageBlend
  * @property {number} cellShare how much coarser this depth's mesh is sampled (its busier rock)
  * @property {any} sponge the gyroid's numbers, or null
@@ -101,7 +102,7 @@ export function dressFloor(plan, F) {
     const r = sponge ? sponge.joinRadiusM : p.r;
     return { pts: p.pts, r, lift: r * P.liftShare };
   });
-  return { plan, chambers, passages, rock, wear: F.wear, passageBlend: P.blendM, sponge, cellShare: S.cellShare ?? 1, noiseSeed: subSeed(root, `${keys.join('.')}`) };
+  return { plan, chambers, passages, rock, wear: F.wear, stone: F.stone ?? null, passageBlend: P.blendM, sponge, cellShare: S.cellShare ?? 1, noiseSeed: subSeed(root, `${keys.join('.')}`) };
 }
 
 /** @param {any} ch @param {number} height @param {number} reach @param {number} blend @returns {DressedChamber} */

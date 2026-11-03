@@ -28,7 +28,8 @@ export function start(ctx) {
     if (zones.busy() && (a.type === 'look.tap' || a.type.startsWith('walk.'))) return;
     if (zones.active() && walk.below) {
       if (a.type === 'look.tap') { zoneTap(a.x, a.y); return; }
-      if (a.type === 'walk.up') { zones.back(); return; }
+      // (The Hollow takes Go up as its own way up, back to the hook in the stack's mouth.)
+      if (a.type === 'walk.up') { if (!zones.zone()?.up?.()) zones.back(); return; }
     }
     // Below (the walker): a drag looks around you, a zoom stays on you, a tap walks there, and the
     // shaping tools are put away until you go up.

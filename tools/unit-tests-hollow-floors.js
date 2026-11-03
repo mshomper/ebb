@@ -4,7 +4,7 @@
 // of 3 to 5 ending at the way down, 1 to 3 side chambers, 12 to 20 m chambers, bent passages, the
 // sponge about 1 in 12 from depth 2, never on the wet shelf), and the floor itself: the same inputs
 // give the identical plan and mesh hash, sampling in slabs gives the same field as all at once, every
-// depth meshes near 60k to 100k triangles and walks from the way in to the way down by the island's
+// depth meshes near 60k to 140k triangles (with the stone forms) and walks from the way in to the way down by the island's
 // path finder, and a floor that can never be walked tries the next seeds and says so. Also the shared
 // surface nets mesher: a sphere comes out closed.
 
@@ -103,14 +103,15 @@ export function addHollowFloorTests(test, assert, eq) {
     eq(meshHash(meshField(joined, bounds)), meshHash(meshField(whole, bounds)), 'and so does the mesh');
   });
 
-  test(G, 'every depth and the sponge mesh near 60k to 100k triangles and walk from the way in to the way down', async () => {
+  test(G, 'every depth and the sponge mesh near 60k to 140k triangles and walk from the way in to the way down', async () => {
     const F = await floors();
     const cases = [{ depth: 0, flavor: 'rock' }, { depth: 1, flavor: 'rock' }, { depth: 2, flavor: 'rock' }, { depth: 3, flavor: 'rock' }, { depth: 2, flavor: 'sponge' }];
     for (const c of cases) {
       const f = buildFloor({ seed: 41, trip: 2, floor: 3, level: 6, ...c }, F);
       const name = `${f.plan.depthId}${f.plan.flavor === 'sponge' ? ' sponge' : ''}`;
       assert(f.check.ok, `${name}: walkable (${f.tries.map((t) => t.reason || 'ok').join(', ')})`);
-      assert(f.mesh.triangles > 45000 && f.mesh.triangles < 125000, `${name}: ${f.mesh.triangles} triangles`);
+      // (The stone forms, decision 0001 as the stack's mouth, H3a: about a quarter more than H1's bare rock.)
+      assert(f.mesh.triangles > 45000 && f.mesh.triangles < 150000, `${name}: ${f.mesh.triangles} triangles`);
       // Normals are unit length and the floor faces up somewhere.
       const V = f.mesh.vertices;
       let up = 0;

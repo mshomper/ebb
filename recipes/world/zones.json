@@ -5,5 +5,5 @@
   "fadeS": 0.7,
   "holdS": 0.35,
   "color": "#05070a",
-  "list": { "spring-cave": "world/spring-cave", "stack-mouth": "world/stack-mouth" }
+  "list": { "spring-cave": "world/spring-cave", "stack-mouth": "world/stack-mouth", "hollow": "world/hollow" }
 }
