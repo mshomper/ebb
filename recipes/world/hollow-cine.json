@@ -9,7 +9,7 @@
   },
   "time": { "on": true, "stopRate": 0.04, "maxStopS": 0.16, "slowOutShare": 0.55 },
   "light": { "sputterHz": 9, "sputterShare": 0.3 },
-  "dot": { "note": "The floor dot as drawn (Matt, November 3, 2026: the old white disc looked bad and the floor clipped through it; tools/arena/props.js pushFloorDot): an ink ring rM across the middle (inkW wide) on a soft pale halo (haloW each side), an ink point pointM across in the middle, every point liftM over the floor or the water under it; it swells by swell at breatheHz. Colours drawn unlit (negative), as the arena's marks.", "rM": 0.17, "inkW": 0.022, "haloW": 0.05, "pointM": 0.03, "liftM": 0.035, "swell": 0.06, "breatheHz": 0.7, "ink": [-0.1, -0.12, -0.11], "halo": [-2.6, -2.45, -2.1] },
+  "dot": { "note": "The floor dot as drawn (Matt, November 3, 2026: the old white disc looked bad and the floor clipped through it; tools/arena/props.js pushFloorDot): an ink ring rM across the middle (inkW wide) on a soft pale halo (haloW each side), an ink point pointM across in the middle, every point liftM over the floor or the water under it; it swells by swell at breatheHz. Colours drawn unlit (negative), as the arena's marks.", "rM": 0.17, "inkW": 0.022, "haloW": 0.05, "pointM": 0.03, "liftM": 0.035, "swell": 0.06, "breatheHz": 0.7, "ink": [-0.1, -0.12, -0.11], "halo": [-1.5, -1.4, -1.15] },
   "aimUp": { "note": "Reaching up to a floater (Matt, November 3, 2026): locked on a thing whose body is above the chest (chestM over the feet) while swinging or playing a move, the chest and spine lean back toward it, up to maxDeg, easing at rate a second.", "maxDeg": 26, "chestM": 1.0, "rate": 10 },
   "shadows": { "on": true, "softM": 0.35 },
   "contact": {

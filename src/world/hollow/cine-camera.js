@@ -46,7 +46,7 @@ export function createCineCamera(C, o = {}) {
   return {
     /** Ease in or pull back (distM negative is closer), hold, then ease back. @param {Push} p */
     push(p) { pushes.push({ ...p, t: 0 }); },
-    /** A push that holds until let go (Snuff). @param {string} key @param {Push} p */
+    /** A push that holds until let go (Snuff). @param {string} key @param {{ distM?: number, pitchDeg?: number, inS: number, outS: number }} p */
     hold(key, p) { held.set(key, { ...p, holdS: Infinity, t: 0, letGo: false }); },
     /** Let a held push ease back. @param {string} key */
     letGo(key) { const h = held.get(key); if (h && !h.letGo) { h.letGo = true; h.holdS = Math.max(0, h.t - h.inS); } },
