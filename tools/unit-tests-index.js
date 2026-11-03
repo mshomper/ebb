@@ -104,6 +104,7 @@ export const TEST_FILES = {
   'shaped': '',
   'shore-sand': '',
   'sketchbook': '',
+  'sketches-coast': '',
   'sky-and-seasons': '',
   'small-lights': '',
   'smoke': '',
